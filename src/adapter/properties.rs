@@ -497,7 +497,7 @@ pub(super) fn resolve_implemented_trait_property<'a, V: AsVertex<Vertex<'a>> + '
                     })
                     .clone()
                     .into()
-            } else if let Some((_, last)) = impld.path.name.rsplit_once("::") {
+            } else if let Some((_, last)) = impld.path.path.rsplit_once("::") {
                 // For some reason, we didn't find the item either locally or
                 // in the `paths` section of the rustdoc JSON.
                 //
@@ -508,7 +508,7 @@ pub(super) fn resolve_implemented_trait_property<'a, V: AsVertex<Vertex<'a>> + '
                 // Otherwise, fall through to the `else` block to return it as-is.
                 last.to_string().into()
             } else {
-                impld.path.name.clone().into()
+                impld.path.path.clone().into()
             }
         }),
         "instantiated_name" => resolve_property_with(contexts, |vertex| {

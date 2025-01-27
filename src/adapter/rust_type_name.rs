@@ -318,8 +318,8 @@ fn fmt_type(this: &Type, f: &mut Formatter<'_>) -> Result {
         } => {
             if let Some(trait_) = trait_ {
                 // In a trait declaration, Self::Assoc is encoded as <Self as "">::Assoc
-                // where `trait_.name` is the empty string.
-                if !trait_.name.is_empty() {
+                // where `trait_.path` is the empty string.
+                if !trait_.path.is_empty() {
                     write!(f, "<{} as {}>", Type(self_type, false), Path(trait_, false))?;
                 } else {
                     write!(f, "{}", Type(self_type, false))?;
@@ -464,7 +464,7 @@ fn fmt_generic_args(this: &GenericArgs, f: &mut Formatter<'_>) -> Result {
 display_wrapper!(GenericArgs, fmt_generic_args, bool);
 
 fn fmt_path(this: &Path, f: &mut Formatter<'_>) -> Result {
-    write!(f, "{}", this.0.name)?;
+    write!(f, "{}", this.0.path)?;
     if let Some(args) = this.0.args.as_deref() {
         write!(f, "{}", GenericArgs(args, this.1))?;
     }
