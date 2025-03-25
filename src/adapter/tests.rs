@@ -6135,8 +6135,8 @@ fn struct_repr_attributes() {
         },
         Output {
             name: "ReprPackedStruct".into(),
-            attrs: vec!["#[repr(packed)]".into()],
-            attr_raw: "#[repr(packed)]".into(),
+            attrs: vec!["#[repr(packed(1))]".into()],
+            attr_raw: "#[repr(packed(1))]".into(),
             attr_repr_kind: "packed".into(),
         },
         Output {

@@ -368,8 +368,14 @@ fn fmt_generic_bound(this: &GenericBound, f: &mut Formatter<'_>) -> Result {
         }
         rustdoc_types::GenericBound::Outlives(lt) => write!(f, "{lt}"),
         rustdoc_types::GenericBound::Use(vec) => {
+            // TODO: this portion needs tests
             write!(f, "use<")?;
-            intersperse(f, ", ", vec, String::fmt)?;
+            intersperse(f, ", ", vec, |arg, f| match arg {
+                rustdoc_types::PreciseCapturingArg::Lifetime(lifetime) => {
+                    write!(f, "'{}", lifetime)
+                }
+                rustdoc_types::PreciseCapturingArg::Param(p) => write!(f, "{}", p),
+            })?;
             write!(f, ">")
         }
     }
@@ -455,6 +461,9 @@ fn fmt_generic_args(this: &GenericArgs, f: &mut Formatter<'_>) -> Result {
             if let Some(output) = output {
                 write!(f, " -> {}", Type(output, this.1))?;
             }
+        }
+        rustdoc_types::GenericArgs::ReturnTypeNotation => {
+            write!(f, "(..)")?;
         }
     }
 
