@@ -1,6 +1,6 @@
 [package]
 name = "trustfall-rustdoc-adapter"
-version = "43.0.0"
+version = "45.0.0"
 edition = "2021"
 authors = ["Predrag Gruevski <obi1kenobi82@gmail.com>"]
 license = "Apache-2.0 OR MIT"
@@ -25,7 +25,7 @@ cargo_metadata = "0.19.1"
 # Keep this dependency last, its own block, since we change it often via automated means
 # and we'd like to avoid merge conflicts.
 #
-rustdoc-types = "0.39.0"
+rustdoc-types = "0.41.0"
 #
 # No dependencies after this point. Put all dependencies above this section.
 #
