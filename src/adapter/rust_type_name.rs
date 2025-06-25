@@ -329,11 +329,20 @@ fn fmt_type(this: &Type, f: &mut Formatter<'_>) -> Result {
             }
 
             assert!(
-                !matches!(&**args, rustdoc_types::GenericArgs::Parenthesized { .. }),
+                !matches!(
+                    args.as_deref(),
+                    Some(&rustdoc_types::GenericArgs::Parenthesized { .. })
+                ),
                 "args for a type should be bracketed, not parenthesized"
             );
 
-            write!(f, "::{}{}", name, GenericArgs(args, false))
+            write!(f, "::{name}")?;
+
+            if let Some(args) = args.as_deref() {
+                write!(f, "{}", GenericArgs(args, false))
+            } else {
+                Ok(())
+            }
         }
         rustdoc_types::Type::Pat { .. } => unimplemented!("Type::Pat is unstable"),
     }
@@ -427,12 +436,10 @@ fn fmt_generic_args(this: &GenericArgs, f: &mut Formatter<'_>) -> Result {
                 }
 
                 intersperse(f, ", ", constraints, |constraint, f| {
-                    write!(
-                        f,
-                        "{}{}",
-                        constraint.name,
-                        GenericArgs(&constraint.args, false)
-                    )?;
+                    write!(f, "{}", constraint.name,)?;
+                    if let Some(args) = constraint.args.as_deref() {
+                        write!(f, "{}", GenericArgs(args, false))?;
+                    }
                     match &constraint.binding {
                         rustdoc_types::AssocItemConstraintKind::Constraint(c) => {
                             write!(f, ": ")?;

@@ -877,6 +877,22 @@ fn get_typedef_equivalent_reexport_target<'a>(
     if let rustdoc_types::Type::ResolvedPath(resolved_path) = &ty.type_ {
         let underlying = crate_.index.get(&resolved_path.id)?;
 
+        let underlying_generics = match &underlying.inner {
+            rustdoc_types::ItemEnum::Struct(struct_) => &struct_.generics,
+            rustdoc_types::ItemEnum::Enum(enum_) => &enum_.generics,
+            rustdoc_types::ItemEnum::Trait(trait_) => &trait_.generics,
+            rustdoc_types::ItemEnum::Union(union_) => &union_.generics,
+            rustdoc_types::ItemEnum::TypeAlias(ty) => &ty.generics,
+            _ => unreachable!("unexpected underlying item kind: {underlying:?}"),
+        };
+
+        // If the underlying type is generic and the typedef is not
+        // (e.g. by relying on the generics' default values),
+        // then the generic is clearly not a re-export.
+        if !underlying_generics.params.is_empty() && resolved_path.args.is_none() {
+            return None;
+        }
+
         if let Some(GenericArgs::AngleBracketed { args, constraints }) =
             resolved_path.args.as_deref()
         {
@@ -885,15 +901,6 @@ fn get_typedef_equivalent_reexport_target<'a>(
                 // This is not equivalent to a re-export.
                 return None;
             }
-
-            let underlying_generics = match &underlying.inner {
-                rustdoc_types::ItemEnum::Struct(struct_) => &struct_.generics,
-                rustdoc_types::ItemEnum::Enum(enum_) => &enum_.generics,
-                rustdoc_types::ItemEnum::Trait(trait_) => &trait_.generics,
-                rustdoc_types::ItemEnum::Union(union_) => &union_.generics,
-                rustdoc_types::ItemEnum::TypeAlias(ty) => &ty.generics,
-                _ => unreachable!("unexpected underlying item kind: {underlying:?}"),
-            };
 
             // For the typedef to be equivalent to a re-export, all of the following must hold:
             // - The typedef has the same number of generic parameters as the underlying.
