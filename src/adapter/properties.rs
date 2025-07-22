@@ -7,7 +7,10 @@ use trustfall::{
     },
 };
 
-use crate::{PackageIndex, attributes::Attribute};
+use crate::{
+    PackageIndex,
+    attributes::{Attribute, structured_attr_to_arc_str},
+};
 
 use super::{origin::Origin, rust_type_name, vertex::Vertex};
 
@@ -44,7 +47,16 @@ pub(super) fn resolve_item_property<'a, V: AsVertex<Vertex<'a>> + 'a>(
         "crate_id" => resolve_property_with(contexts, field_property!(as_item, crate_id)),
         "name" => resolve_property_with(contexts, field_property!(as_item, name)),
         "docs" => resolve_property_with(contexts, field_property!(as_item, docs)),
-        "attrs" => resolve_property_with(contexts, field_property!(as_item, attrs)),
+        "attrs" => resolve_property_with(
+            contexts,
+            field_property!(as_item, attrs, {
+                attrs
+                    .iter()
+                    .map(structured_attr_to_arc_str)
+                    .collect::<Vec<_>>()
+                    .into()
+            }),
+        ),
         "deprecated" => resolve_property_with(
             contexts,
             field_property!(as_item, deprecation, { deprecation.is_some().into() }),
@@ -52,10 +64,7 @@ pub(super) fn resolve_item_property<'a, V: AsVertex<Vertex<'a>> + 'a>(
         "doc_hidden" => resolve_property_with(
             contexts,
             field_property!(as_item, attrs, {
-                attrs
-                    .iter()
-                    .any(|attr| Attribute::is_doc_hidden(attr))
-                    .into()
+                attrs.iter().any(Attribute::is_doc_hidden).into()
             }),
         ),
         "public_api_eligible" => resolve_property_with(contexts, move |vertex| {
@@ -70,8 +79,7 @@ pub(super) fn resolve_item_property<'a, V: AsVertex<Vertex<'a>> + 'a>(
             let item = vertex.as_item().expect("vertex was not an Item");
             let is_public = matches!(item.visibility, Visibility::Public | Visibility::Default);
             (is_public
-                && (item.deprecation.is_some()
-                    || !item.attrs.iter().any(|attr| Attribute::is_doc_hidden(attr))))
+                && (item.deprecation.is_some() || !item.attrs.iter().any(Attribute::is_doc_hidden)))
             .into()
         }),
         "visibility_limit" => resolve_property_with(contexts, |vertex| {
@@ -467,7 +475,7 @@ pub(super) fn resolve_attribute_property<'a, V: AsVertex<Vertex<'a>> + 'a>(
         "raw_attribute" => {
             resolve_property_with(contexts, accessor_property!(as_attribute, raw_attribute))
         }
-        "is_inner" => resolve_property_with(contexts, field_property!(as_attribute, is_inner)),
+        "is_inner" => resolve_property_with(contexts, accessor_property!(as_attribute, is_inner)),
         _ => unreachable!("Attribute property {property_name}"),
     }
 }
@@ -477,13 +485,14 @@ pub(super) fn resolve_attribute_meta_item_property<'a, V: AsVertex<Vertex<'a>> +
     property_name: &str,
 ) -> ContextOutcomeIterator<'a, V, FieldValue> {
     match property_name {
-        "raw_item" => {
-            resolve_property_with(contexts, field_property!(as_attribute_meta_item, raw_item))
-        }
-        "base" => resolve_property_with(contexts, field_property!(as_attribute_meta_item, base)),
+        "raw_item" => resolve_property_with(
+            contexts,
+            accessor_property!(as_attribute_meta_item, raw_item),
+        ),
+        "base" => resolve_property_with(contexts, accessor_property!(as_attribute_meta_item, base)),
         "assigned_item" => resolve_property_with(
             contexts,
-            field_property!(as_attribute_meta_item, assigned_item),
+            accessor_property!(as_attribute_meta_item, assigned_item),
         ),
         _ => unreachable!("AttributeMetaItem property {property_name}"),
     }

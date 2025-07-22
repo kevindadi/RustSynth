@@ -79,7 +79,7 @@ impl Origin {
 
     pub(super) fn make_attribute_meta_item_vertex<'a>(
         &self,
-        meta_item: Rc<AttributeMetaItem<'a>>,
+        meta_item: AttributeMetaItem<'a>,
     ) -> Vertex<'a> {
         Vertex {
             origin: *self,

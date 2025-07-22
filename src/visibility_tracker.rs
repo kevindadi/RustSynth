@@ -129,7 +129,7 @@ impl<'a> VisibilityTracker<'a> {
         }
 
         let next_doc_hidden =
-            currently_doc_hidden || item.attrs.iter().any(|attr| Attribute::is_doc_hidden(attr));
+            currently_doc_hidden || item.attrs.iter().any(Attribute::is_doc_hidden);
         let next_deprecated = currently_deprecated || item.deprecation.is_some();
 
         self.collect_publicly_importable_names_recurse(
@@ -464,7 +464,7 @@ fn resolve_crate_names(crate_: &Crate) -> NameResolution<'_> {
                 if inner_item
                     .attrs
                     .iter()
-                    .any(|attr| attr.as_str() == "#[macro_export]")
+                    .any(|attr| matches!(attr, rustdoc_types::Attribute::Other(x) if x == "#[macro_export]"))
                 {
                     for name in get_names_for_item(crate_, inner_item) {
                         result

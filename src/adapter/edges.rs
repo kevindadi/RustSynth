@@ -246,7 +246,7 @@ pub(super) fn resolve_item_edge<'a, V: AsVertex<Vertex<'a>> + 'a>(
             Box::new(
                 item.attrs
                     .iter()
-                    .map(move |attr| origin.make_attribute_vertex(Attribute::new(attr.as_str()))),
+                    .map(move |attr| origin.make_attribute_vertex(Attribute::new(attr))),
             )
         }),
         _ => unreachable!("resolve_item_edge {edge_name}"),
@@ -555,24 +555,9 @@ pub(super) fn resolve_enum_edge<'a, V: AsVertex<Vertex<'a>> + 'a>(
                 // - the enum has a defined `repr` binary representation, or
                 // - none of the enum variants contain any fields of their own.
 
-                let has_repr = outer_item.attrs.iter().any(move |attr| {
-                    let parsed_attr = Attribute::new(attr.as_str());
-
-                    parsed_attr.content.base == "repr"
-                        && parsed_attr.content.arguments.iter().flatten().any(|repr| {
-                            repr.base == "isize"
-                                || repr.base == "usize"
-                                || repr
-                                    .base
-                                    .strip_prefix("i")
-                                    .map(|num| num.chars().all(|c| c.is_ascii_digit()))
-                                    .unwrap_or(false)
-                                || repr
-                                    .base
-                                    .strip_prefix("u")
-                                    .map(|num| num.chars().all(|c| c.is_ascii_digit()))
-                                    .unwrap_or(false)
-                        })
+                let has_repr = outer_item.attrs.iter().any(|attr| match attr {
+                    rustdoc_types::Attribute::Repr(attr_repr) => attr_repr.int.is_some(),
+                    _ => false,
                 });
 
                 let mut has_fields_in_variants = false;
@@ -936,7 +921,7 @@ pub(super) fn resolve_attribute_edge<'a, V: AsVertex<Vertex<'a>> + 'a>(
 
             let attribute = vertex.as_attribute().expect("vertex was not an Attribute");
             Box::new(std::iter::once(
-                origin.make_attribute_meta_item_vertex(attribute.content.clone()),
+                origin.make_attribute_meta_item_vertex(attribute.content()),
             ))
         }),
         _ => unreachable!("resolve_attribute_edge {edge_name}"),
@@ -954,15 +939,13 @@ pub(super) fn resolve_attribute_meta_item_edge<'a, V: AsVertex<Vertex<'a>> + 'a>
             let meta_item = vertex
                 .as_attribute_meta_item()
                 .expect("vertex was not an AttributeMetaItem");
-            if let Some(arguments) = meta_item.arguments.clone() {
-                Box::new(
-                    arguments
-                        .into_iter()
-                        .map(move |argument| origin.make_attribute_meta_item_vertex(argument)),
-                )
-            } else {
-                Box::new(std::iter::empty())
-            }
+
+            Box::new(
+                meta_item
+                    .arguments()
+                    .into_iter()
+                    .map(move |argument| origin.make_attribute_meta_item_vertex(argument)),
+            )
         }),
         _ => unreachable!("resolve_attribute_meta_item_edge {edge_name}"),
     }
@@ -1157,37 +1140,14 @@ pub(super) fn resolve_requires_target_feature_edge<'a, V: AsVertex<Vertex<'a>> +
         let enabled_features = item
             .attrs
             .iter()
-            .filter(|&attr| attr.contains("target_feature"))
-            .filter_map(|attr| {
-                let attr = Attribute::new(attr.as_str());
-                if attr.content.base != "target_feature" {
-                    return None;
-                }
-
-                match attr.content.arguments.as_ref() {
-                    Some(args) => {
-                        // There may be multiple `enable` clauses as separate arguments.
-                        let mut feature_groups = vec![];
-                        for arg in args {
-                            if arg.base != "enable" {
-                                continue;
-                            }
-
-                            if let Some(feature_list) = arg.assigned_item {
-                                let feature_list = feature_list.trim().trim_matches('"').trim();
-                                feature_groups
-                                    .push(feature_list.split(",").map(|feature| feature.trim()));
-                            }
-                        }
-                        Some(feature_groups.into_iter().flatten())
-                    }
-                    None => None,
-                }
+            .filter_map(|attr| match attr {
+                rustdoc_types::Attribute::TargetFeature { enable } => Some(enable),
+                _ => None,
             })
             .flatten()
             .map(|feature_name| {
-                let feature_data = features_lookup.get(feature_name).copied();
-                (feature_name, feature_data)
+                let feature_data = features_lookup.get(feature_name.as_str()).copied();
+                (feature_name.as_str(), feature_data)
             });
 
         let resolver = TargetFeatureResolver::new(enabled_features, features_lookup);

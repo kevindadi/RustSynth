@@ -197,11 +197,7 @@ impl Reachability {
             },
             Reachability::PublicAPI => match item.visibility {
                 rustdoc_types::Visibility::Public | rustdoc_types::Visibility::Default => {
-                    if item.deprecation.is_none()
-                        && item
-                            .attrs
-                            .iter()
-                            .any(|attr| Attribute::is_doc_hidden(attr.as_str()))
+                    if item.deprecation.is_none() && item.attrs.iter().any(Attribute::is_doc_hidden)
                     {
                         Reachability::NonPublicAPI
                     } else {

@@ -48,7 +48,7 @@ pub enum VertexKind<'a> {
     Attribute(Attribute<'a>),
 
     #[non_exhaustive]
-    AttributeMetaItem(Rc<AttributeMetaItem<'a>>),
+    AttributeMetaItem(AttributeMetaItem<'a>),
 
     #[non_exhaustive]
     ImplementedTrait(ImplementedTrait<'a>),

@@ -1,5 +1,3 @@
-use crate::attributes::Attribute;
-
 /// Get the externally-visible name of the specified item, if any.
 ///
 /// Most Rust items do not have an externally-visible name. Only items intended
@@ -33,30 +31,9 @@ pub(crate) fn item_export_name(item: &rustdoc_types::Item) -> Option<&str> {
     let export_name = item
         .attrs
         .iter()
-        .filter_map(|attr| {
-            if attr.contains("export_name") {
-                let parsed = Attribute::new(attr);
-
-                let export_name_attr = if parsed.content.base == "unsafe" {
-                    parsed
-                        .content
-                        .arguments
-                        .as_ref()
-                        .and_then(|arg| arg.iter().find(|p| p.base == "export_name"))
-                } else if parsed.content.base == "export_name" {
-                    Some(&parsed.content)
-                } else {
-                    None
-                };
-
-                if let Some(attr) = export_name_attr {
-                    attr.assigned_item.map(|name| name.trim_matches('"'))
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
+        .filter_map(|attr| match attr {
+            rustdoc_types::Attribute::ExportName(export_name) => Some(export_name.as_str()),
+            _ => None,
         })
         .next();
 
@@ -67,7 +44,7 @@ pub(crate) fn item_export_name(item: &rustdoc_types::Item) -> Option<&str> {
         if item
             .attrs
             .iter()
-            .any(|attr| attr == "#[no_mangle]" || attr == "#[unsafe(no_mangle)]")
+            .any(|attr| matches!(attr, rustdoc_types::Attribute::NoMangle))
         {
             item.name.as_deref()
         } else {
