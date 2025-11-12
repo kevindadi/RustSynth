@@ -3,6 +3,7 @@ mod attributes;
 mod exported_name;
 mod hashtables;
 mod indexed_crate;
+pub mod export;
 mod item_flags;
 mod sealed_trait;
 mod visibility_tracker;
@@ -21,5 +22,6 @@ pub use cargo_metadata;
 pub use {
     adapter::RustdocAdapter,
     adapter::tracer::ptrace,
+    export::{export_llm_spec, export_llm_spec_to_writer},
     indexed_crate::{ImportablePath, IndexedCrate, PackageIndex, PackageStorage},
 };

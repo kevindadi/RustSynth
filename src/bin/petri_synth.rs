@@ -199,6 +199,12 @@ fn parse_args() -> Result<CliArgs> {
 
     while let Some(arg) = args.next() {
         match arg.as_str() {
+            "--rustdoc-json" => {
+                let value = args
+                    .next()
+                    .context("`--rustdoc-json` 需要一个输入文件路径")?;
+                json_path = Some(PathBuf::from(value));
+            }
             "--input" => {
                 let value = args
                     .next()
@@ -231,14 +237,8 @@ fn parse_args() -> Result<CliArgs> {
                 print_usage();
                 std::process::exit(0);
             }
-            other if other.starts_with('-') => {
-                bail!("未知参数:{other}");
-            }
             other => {
-                if json_path.is_some() {
-                    bail!("重复指定 JSON 文件路径:{other}");
-                }
-                json_path = Some(PathBuf::from(other));
+                bail!("未知参数:{other}");
             }
         }
     }
@@ -265,11 +265,12 @@ fn print_usage() {
   petri_synth target/doc/my_crate.json --input \"&str\" --goal \"String\"
 
 说明:
-  --input       设定初始可用的类型,可多次指定.
-  --goal        指定目标类型,可多次指定.
-  --emit-net    将构建好的 Petri 网拓扑写入 JSON 文件.
-  --max-depth   搜索调用序列的最大深度(默认 6).
-  --max-states  搜索过程中允许的最大状态数量(默认 10000)."
+  --rustdoc-json <path>     rustdoc JSON 输入文件路径 (required)
+  --input <类型>             设定初始可用的类型,可多次指定.
+  --goal <类型>              指定目标类型,可多次指定.
+  --emit-net <输出.json>     将构建好的 Petri 网拓扑写入 JSON 文件.
+  --max-depth <N>           搜索调用序列的最大深度(默认 6).
+  --max-states <N>          搜索过程中允许的最大状态数量(默认 10000)."
     );
 }
 

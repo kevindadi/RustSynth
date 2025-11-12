@@ -2,7 +2,7 @@ mod builder;
 mod net;
 mod synthesis;
 mod type_repr;
-mod util;
+pub(crate) mod util;
 
 pub use builder::PetriNetBuilder;
 pub use net::{
