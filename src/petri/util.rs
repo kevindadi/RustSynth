@@ -7,7 +7,6 @@ use rustdoc_types::{
     WherePredicate,
 };
 
-/// 类型格式化与遍历辅助工具,负责在 Petri 网构建过程中复用已有的 rustdoc 展示逻辑.
 pub(crate) struct TypeFormatter;
 
 impl TypeFormatter {
@@ -16,7 +15,6 @@ impl TypeFormatter {
         crate::adapter::rust_type_name::rust_type_name(ty)
     }
 
-    /// 将函数签名格式化为可读字符串.
     pub(crate) fn function_signature(func: &Function, name: &str) -> String {
         crate::adapter::rust_type_name::function_signature(func, name)
     }
@@ -28,7 +26,6 @@ impl TypeFormatter {
         lifetimes.into_iter().collect()
     }
 
-    /// 将泛型参数定义格式化为字符串.
     pub(crate) fn format_generic_param(param: &GenericParamDef) -> String {
         match &param.kind {
             GenericParamDefKind::Lifetime { outlives } => {
@@ -76,7 +73,6 @@ impl TypeFormatter {
         }
     }
 
-    /// 批量格式化泛型参数.
     pub(crate) fn format_generic_params(params: &[GenericParamDef]) -> Vec<String> {
         params
             .iter()
@@ -85,7 +81,6 @@ impl TypeFormatter {
             .collect()
     }
 
-    /// 格式化 where 子句.
     pub(crate) fn format_where_predicate(predicate: &WherePredicate) -> String {
         match predicate {
             WherePredicate::BoundPredicate {
@@ -135,12 +130,10 @@ impl TypeFormatter {
         }
     }
 
-    /// 批量格式化 where 子句.
     pub(crate) fn format_where_predicates(predicates: &[WherePredicate]) -> Vec<String> {
         predicates.iter().map(Self::format_where_predicate).collect()
     }
 
-    /// 格式化泛型约束.
     pub(crate) fn format_generic_bound(bound: &GenericBound) -> String {
         match bound {
             GenericBound::TraitBound {

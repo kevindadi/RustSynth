@@ -28,11 +28,25 @@ fn main() -> Result<()> {
     );
 
     if let Some(output_path) = args.emit_net {
-        let file = File::create(&output_path)
+        let mut file = File::create(&output_path)
             .with_context(|| format!("无法创建输出文件:{}", output_path.display()))?;
-        serde_json::to_writer_pretty(file, &petri_net)
-            .context("写出 Petri 网 JSON 失败")?;
-        println!("Petri 网拓扑已写入:{}", output_path.display());
+        let extension = output_path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(|ext| ext.to_ascii_lowercase());
+
+        match extension.as_deref() {
+            Some("dot") | Some("gv") => {
+                file.write_all(petri_net.to_dot().as_bytes())
+                    .context("写出 Petri 网 DOT 失败")?;
+                println!("Petri 网 DOT 拓扑已写入:{}", output_path.display());
+            }
+            _ => {
+                serde_json::to_writer_pretty(&mut file, &petri_net)
+                    .context("写出 Petri 网 JSON 失败")?;
+                println!("Petri 网 JSON 拓扑已写入:{}", output_path.display());
+            }
+        }
     }
 
     if args.goal_types.is_empty() {
@@ -199,10 +213,10 @@ fn parse_args() -> Result<CliArgs> {
 
     while let Some(arg) = args.next() {
         match arg.as_str() {
-            "--rustdoc-json" => {
+            "--rustdoc" => {
                 let value = args
                     .next()
-                    .context("`--rustdoc-json` 需要一个输入文件路径")?;
+                    .context("`--rustdoc` 需要一个输入文件路径")?;
                 json_path = Some(PathBuf::from(value));
             }
             "--input" => {
@@ -262,10 +276,10 @@ fn print_usage() {
                [--emit-net <输出.json>] [--max-depth N] [--max-states N]
 
 示例:
-  petri_synth target/doc/my_crate.json --input \"&str\" --goal \"String\"
+  petri_synth --rustdoc target/doc/my_crate.json --input \"&str\" --goal \"String\"
 
 说明:
-  --rustdoc-json <path>     rustdoc JSON 输入文件路径 (required)
+  --rustdoc <path>     rustdoc JSON 输入文件路径 (required)
   --input <类型>             设定初始可用的类型,可多次指定.
   --goal <类型>              指定目标类型,可多次指定.
   --emit-net <输出.json>     将构建好的 Petri 网拓扑写入 JSON 文件.
