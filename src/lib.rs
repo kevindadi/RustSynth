@@ -7,6 +7,8 @@ mod item_flags;
 mod sealed_trait;
 mod visibility_tracker;
 
+pub mod petri;
+
 #[cfg(test)]
 pub(crate) mod test_util;
 

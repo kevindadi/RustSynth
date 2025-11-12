@@ -1,0 +1,1354 @@
+{
+  "places": {
+    "0": {
+      "id": 0,
+      "descriptor": {
+        "canonical": "Self",
+        "display": "Self",
+        "borrow": "owned"
+      }
+    },
+    "1": {
+      "id": 1,
+      "descriptor": {
+        "canonical": "U",
+        "display": "U",
+        "borrow": "owned"
+      }
+    },
+    "2": {
+      "id": 2,
+      "descriptor": {
+        "canonical": "&mut Self",
+        "display": "&mut Self",
+        "borrow": "mut_ref"
+      }
+    },
+    "3": {
+      "id": 3,
+      "descriptor": {
+        "canonical": "&mut T",
+        "display": "&mut T",
+        "borrow": "mut_ref"
+      }
+    },
+    "4": {
+      "id": 4,
+      "descriptor": {
+        "canonical": "T",
+        "display": "T",
+        "borrow": "owned"
+      }
+    },
+    "5": {
+      "id": 5,
+      "descriptor": {
+        "canonical": "&Self",
+        "display": "&Self",
+        "borrow": "shared_ref"
+      }
+    },
+    "6": {
+      "id": 6,
+      "descriptor": {
+        "canonical": "u64",
+        "display": "u64",
+        "borrow": "owned"
+      }
+    },
+    "7": {
+      "id": 7,
+      "descriptor": {
+        "canonical": "&T",
+        "display": "&T",
+        "borrow": "shared_ref"
+      }
+    },
+    "8": {
+      "id": 8,
+      "descriptor": {
+        "canonical": "Result<T, <T as TryFrom<U>>::Error>",
+        "display": "Result<T, <T as TryFrom<U>>::Error>",
+        "borrow": "owned"
+      }
+    },
+    "9": {
+      "id": 9,
+      "descriptor": {
+        "canonical": "Result<U, <U as TryFrom<T>>::Error>",
+        "display": "Result<U, <U as TryFrom<T>>::Error>",
+        "borrow": "owned"
+      }
+    },
+    "10": {
+      "id": 10,
+      "descriptor": {
+        "canonical": "TypeId",
+        "display": "TypeId",
+        "borrow": "owned"
+      }
+    }
+  },
+  "transitions": {
+    "0": {
+      "id": 0,
+      "summary": {
+        "item_id": 28,
+        "name": "into",
+        "signature": "fn into(self: Self) -> U",
+        "generics": [
+          "T",
+          "U"
+        ],
+        "where_clauses": [
+          "U: From<T>"
+        ],
+        "trait_bounds": [
+          "Into<U>"
+        ],
+        "context": {
+          "trait_implementation": {
+            "receiver": {
+              "canonical": "Example",
+              "display": "Example",
+              "borrow": "owned"
+            },
+            "trait_path": "Into<U>"
+          }
+        },
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "Self",
+              "display": "Self",
+              "borrow": "owned"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "U",
+          "display": "U",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 0,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "Self",
+              "display": "Self",
+              "borrow": "owned"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 1,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "U",
+            "display": "U",
+            "borrow": "owned"
+          }
+        }
+      ]
+    },
+    "1": {
+      "id": 1,
+      "summary": {
+        "item_id": 28,
+        "name": "into",
+        "signature": "fn into(self: Self) -> U",
+        "context": "free_function",
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "Self",
+              "display": "Self",
+              "borrow": "owned"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "U",
+          "display": "U",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 0,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "Self",
+              "display": "Self",
+              "borrow": "owned"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 1,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "U",
+            "display": "U",
+            "borrow": "owned"
+          }
+        }
+      ]
+    },
+    "2": {
+      "id": 2,
+      "summary": {
+        "item_id": 24,
+        "name": "borrow_mut",
+        "signature": "fn borrow_mut(self: &mut Self) -> &mut T",
+        "generics": [
+          "T"
+        ],
+        "where_clauses": [
+          "T: ?Sized"
+        ],
+        "trait_bounds": [
+          "BorrowMut<T>"
+        ],
+        "context": {
+          "trait_implementation": {
+            "receiver": {
+              "canonical": "Example",
+              "display": "Example",
+              "borrow": "owned"
+            },
+            "trait_path": "BorrowMut<T>"
+          }
+        },
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&mut Self",
+              "display": "&mut Self",
+              "borrow": "mut_ref"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "&mut T",
+          "display": "&mut T",
+          "borrow": "mut_ref"
+        }
+      },
+      "inputs": [
+        {
+          "place": 2,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&mut Self",
+              "display": "&mut Self",
+              "borrow": "mut_ref"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 3,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "&mut T",
+            "display": "&mut T",
+            "borrow": "mut_ref"
+          }
+        }
+      ]
+    },
+    "3": {
+      "id": 3,
+      "summary": {
+        "item_id": 31,
+        "name": "from",
+        "signature": "fn from(t: T) -> T",
+        "context": "free_function",
+        "inputs": [
+          {
+            "name": "t",
+            "descriptor": {
+              "canonical": "T",
+              "display": "T",
+              "borrow": "owned"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "T",
+          "display": "T",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 4,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "t",
+            "descriptor": {
+              "canonical": "T",
+              "display": "T",
+              "borrow": "owned"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 4,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "T",
+            "display": "T",
+            "borrow": "owned"
+          }
+        }
+      ]
+    },
+    "4": {
+      "id": 4,
+      "summary": {
+        "item_id": 24,
+        "name": "borrow_mut",
+        "signature": "fn borrow_mut(self: &mut Self) -> &mut T",
+        "context": "free_function",
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&mut Self",
+              "display": "&mut Self",
+              "borrow": "mut_ref"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "&mut T",
+          "display": "&mut T",
+          "borrow": "mut_ref"
+        }
+      },
+      "inputs": [
+        {
+          "place": 2,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&mut Self",
+              "display": "&mut Self",
+              "borrow": "mut_ref"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 3,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "&mut T",
+            "display": "&mut T",
+            "borrow": "mut_ref"
+          }
+        }
+      ]
+    },
+    "5": {
+      "id": 5,
+      "summary": {
+        "item_id": 3,
+        "name": "add_method",
+        "signature": "fn add_method(self: &Self, left: u64, right: u64) -> u64",
+        "context": {
+          "inherent_method": {
+            "receiver": {
+              "canonical": "Example",
+              "display": "Example",
+              "borrow": "owned"
+            }
+          }
+        },
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          },
+          {
+            "name": "left",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          },
+          {
+            "name": "right",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "u64",
+          "display": "u64",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 5,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        },
+        {
+          "place": 6,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "left",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          }
+        },
+        {
+          "place": 6,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "right",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 6,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "u64",
+            "display": "u64",
+            "borrow": "owned"
+          }
+        }
+      ]
+    },
+    "6": {
+      "id": 6,
+      "summary": {
+        "item_id": 4,
+        "name": "method_returns_nothing",
+        "signature": "fn method_returns_nothing(self: &Self)",
+        "context": {
+          "inherent_method": {
+            "receiver": {
+              "canonical": "Example",
+              "display": "Example",
+              "borrow": "owned"
+            }
+          }
+        },
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "place": 5,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        }
+      ],
+      "outputs": []
+    },
+    "7": {
+      "id": 7,
+      "summary": {
+        "item_id": 20,
+        "name": "borrow",
+        "signature": "fn borrow(self: &Self) -> &T",
+        "context": "free_function",
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "&T",
+          "display": "&T",
+          "borrow": "shared_ref"
+        }
+      },
+      "inputs": [
+        {
+          "place": 5,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 7,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "&T",
+            "display": "&T",
+            "borrow": "shared_ref"
+          }
+        }
+      ]
+    },
+    "8": {
+      "id": 8,
+      "summary": {
+        "item_id": 47,
+        "name": "add_trait_fn",
+        "signature": "fn add_trait_fn(self: &Self, value: u64) -> u64",
+        "context": "free_function",
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          },
+          {
+            "name": "value",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "u64",
+          "display": "u64",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 5,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        },
+        {
+          "place": 6,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "value",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 6,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "u64",
+            "display": "u64",
+            "borrow": "owned"
+          }
+        }
+      ]
+    },
+    "9": {
+      "id": 9,
+      "summary": {
+        "item_id": 41,
+        "name": "try_from",
+        "signature": "fn try_from(value: U) -> Result<T, <T as TryFrom<U>>::Error>",
+        "generics": [
+          "T",
+          "U"
+        ],
+        "where_clauses": [
+          "U: Into<T>"
+        ],
+        "trait_bounds": [
+          "TryFrom<U>"
+        ],
+        "context": {
+          "trait_implementation": {
+            "receiver": {
+              "canonical": "Example",
+              "display": "Example",
+              "borrow": "owned"
+            },
+            "trait_path": "TryFrom<U>"
+          }
+        },
+        "inputs": [
+          {
+            "name": "value",
+            "descriptor": {
+              "canonical": "U",
+              "display": "U",
+              "borrow": "owned"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "Result<T, <T as TryFrom<U>>::Error>",
+          "display": "Result<T, <T as TryFrom<U>>::Error>",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 1,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "value",
+            "descriptor": {
+              "canonical": "U",
+              "display": "U",
+              "borrow": "owned"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 8,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "Result<T, <T as TryFrom<U>>::Error>",
+            "display": "Result<T, <T as TryFrom<U>>::Error>",
+            "borrow": "owned"
+          }
+        }
+      ]
+    },
+    "10": {
+      "id": 10,
+      "summary": {
+        "item_id": 48,
+        "name": "trait_fn_returns_nothing",
+        "signature": "fn trait_fn_returns_nothing(self: &Self)",
+        "context": "free_function",
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "place": 5,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        }
+      ],
+      "outputs": []
+    },
+    "11": {
+      "id": 11,
+      "summary": {
+        "item_id": 31,
+        "name": "from",
+        "signature": "fn from(t: T) -> T",
+        "generics": [
+          "T"
+        ],
+        "trait_bounds": [
+          "From<T>"
+        ],
+        "context": {
+          "trait_implementation": {
+            "receiver": {
+              "canonical": "Example",
+              "display": "Example",
+              "borrow": "owned"
+            },
+            "trait_path": "From<T>"
+          }
+        },
+        "inputs": [
+          {
+            "name": "t",
+            "descriptor": {
+              "canonical": "T",
+              "display": "T",
+              "borrow": "owned"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "T",
+          "display": "T",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 4,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "t",
+            "descriptor": {
+              "canonical": "T",
+              "display": "T",
+              "borrow": "owned"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 4,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "T",
+            "display": "T",
+            "borrow": "owned"
+          }
+        }
+      ]
+    },
+    "12": {
+      "id": 12,
+      "summary": {
+        "item_id": 41,
+        "name": "try_from",
+        "signature": "fn try_from(value: U) -> Result<T, <T as TryFrom<U>>::Error>",
+        "context": "free_function",
+        "inputs": [
+          {
+            "name": "value",
+            "descriptor": {
+              "canonical": "U",
+              "display": "U",
+              "borrow": "owned"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "Result<T, <T as TryFrom<U>>::Error>",
+          "display": "Result<T, <T as TryFrom<U>>::Error>",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 1,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "value",
+            "descriptor": {
+              "canonical": "U",
+              "display": "U",
+              "borrow": "owned"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 8,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "Result<T, <T as TryFrom<U>>::Error>",
+            "display": "Result<T, <T as TryFrom<U>>::Error>",
+            "borrow": "owned"
+          }
+        }
+      ]
+    },
+    "13": {
+      "id": 13,
+      "summary": {
+        "item_id": 20,
+        "name": "borrow",
+        "signature": "fn borrow(self: &Self) -> &T",
+        "generics": [
+          "T"
+        ],
+        "where_clauses": [
+          "T: ?Sized"
+        ],
+        "trait_bounds": [
+          "Borrow<T>"
+        ],
+        "context": {
+          "trait_implementation": {
+            "receiver": {
+              "canonical": "Example",
+              "display": "Example",
+              "borrow": "owned"
+            },
+            "trait_path": "Borrow<T>"
+          }
+        },
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "&T",
+          "display": "&T",
+          "borrow": "shared_ref"
+        }
+      },
+      "inputs": [
+        {
+          "place": 5,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 7,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "&T",
+            "display": "&T",
+            "borrow": "shared_ref"
+          }
+        }
+      ]
+    },
+    "14": {
+      "id": 14,
+      "summary": {
+        "item_id": 4,
+        "name": "method_returns_nothing",
+        "signature": "fn method_returns_nothing(self: &Self)",
+        "context": "free_function",
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "place": 5,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        }
+      ],
+      "outputs": []
+    },
+    "15": {
+      "id": 15,
+      "summary": {
+        "item_id": 3,
+        "name": "add_method",
+        "signature": "fn add_method(self: &Self, left: u64, right: u64) -> u64",
+        "context": "free_function",
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          },
+          {
+            "name": "left",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          },
+          {
+            "name": "right",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "u64",
+          "display": "u64",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 5,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        },
+        {
+          "place": 6,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "left",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          }
+        },
+        {
+          "place": 6,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "right",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 6,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "u64",
+            "display": "u64",
+            "borrow": "owned"
+          }
+        }
+      ]
+    },
+    "16": {
+      "id": 16,
+      "summary": {
+        "item_id": 35,
+        "name": "try_into",
+        "signature": "fn try_into(self: Self) -> Result<U, <U as TryFrom<T>>::Error>",
+        "generics": [
+          "T",
+          "U"
+        ],
+        "where_clauses": [
+          "U: TryFrom<T>"
+        ],
+        "trait_bounds": [
+          "TryInto<U>"
+        ],
+        "context": {
+          "trait_implementation": {
+            "receiver": {
+              "canonical": "Example",
+              "display": "Example",
+              "borrow": "owned"
+            },
+            "trait_path": "TryInto<U>"
+          }
+        },
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "Self",
+              "display": "Self",
+              "borrow": "owned"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "Result<U, <U as TryFrom<T>>::Error>",
+          "display": "Result<U, <U as TryFrom<T>>::Error>",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 0,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "Self",
+              "display": "Self",
+              "borrow": "owned"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 9,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "Result<U, <U as TryFrom<T>>::Error>",
+            "display": "Result<U, <U as TryFrom<T>>::Error>",
+            "borrow": "owned"
+          }
+        }
+      ]
+    },
+    "17": {
+      "id": 17,
+      "summary": {
+        "item_id": 1,
+        "name": "fn_returns_nothing",
+        "qualified_path": "function_params_and_return_value::fn_returns_nothing",
+        "signature": "fn fn_returns_nothing()",
+        "context": "free_function",
+        "inputs": []
+      },
+      "inputs": [],
+      "outputs": []
+    },
+    "18": {
+      "id": 18,
+      "summary": {
+        "item_id": 43,
+        "name": "type_id",
+        "signature": "fn type_id(self: &Self) -> TypeId",
+        "context": "free_function",
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "TypeId",
+          "display": "TypeId",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 5,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 10,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "TypeId",
+            "display": "TypeId",
+            "borrow": "owned"
+          }
+        }
+      ]
+    },
+    "19": {
+      "id": 19,
+      "summary": {
+        "item_id": 0,
+        "name": "add",
+        "qualified_path": "function_params_and_return_value::add",
+        "signature": "fn add(left: u64, right: u64) -> u64",
+        "context": "free_function",
+        "inputs": [
+          {
+            "name": "left",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          },
+          {
+            "name": "right",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "u64",
+          "display": "u64",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 6,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "left",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          }
+        },
+        {
+          "place": 6,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "right",
+            "descriptor": {
+              "canonical": "u64",
+              "display": "u64",
+              "borrow": "owned"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 6,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "u64",
+            "display": "u64",
+            "borrow": "owned"
+          }
+        }
+      ]
+    },
+    "20": {
+      "id": 20,
+      "summary": {
+        "item_id": 35,
+        "name": "try_into",
+        "signature": "fn try_into(self: Self) -> Result<U, <U as TryFrom<T>>::Error>",
+        "context": "free_function",
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "Self",
+              "display": "Self",
+              "borrow": "owned"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "Result<U, <U as TryFrom<T>>::Error>",
+          "display": "Result<U, <U as TryFrom<T>>::Error>",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 0,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "Self",
+              "display": "Self",
+              "borrow": "owned"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 9,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "Result<U, <U as TryFrom<T>>::Error>",
+            "display": "Result<U, <U as TryFrom<T>>::Error>",
+            "borrow": "owned"
+          }
+        }
+      ]
+    },
+    "21": {
+      "id": 21,
+      "summary": {
+        "item_id": 43,
+        "name": "type_id",
+        "signature": "fn type_id(self: &Self) -> TypeId",
+        "generics": [
+          "T"
+        ],
+        "where_clauses": [
+          "T: 'static + ?Sized"
+        ],
+        "trait_bounds": [
+          "Any"
+        ],
+        "context": {
+          "trait_implementation": {
+            "receiver": {
+              "canonical": "Example",
+              "display": "Example",
+              "borrow": "owned"
+            },
+            "trait_path": "Any"
+          }
+        },
+        "inputs": [
+          {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        ],
+        "output": {
+          "canonical": "TypeId",
+          "display": "TypeId",
+          "borrow": "owned"
+        }
+      },
+      "inputs": [
+        {
+          "place": 5,
+          "multiplicity": "one",
+          "parameter": {
+            "name": "self",
+            "descriptor": {
+              "canonical": "&Self",
+              "display": "&Self",
+              "borrow": "shared_ref"
+            }
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "place": 10,
+          "multiplicity": "one",
+          "descriptor": {
+            "canonical": "TypeId",
+            "display": "TypeId",
+            "borrow": "owned"
+          }
+        }
+      ]
+    }
+  }
+}

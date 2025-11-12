@@ -22,7 +22,7 @@ mod optimizations;
 mod origin;
 mod properties;
 mod receiver;
-mod rust_type_name;
+pub(crate) mod rust_type_name;
 pub mod tracer;
 mod vertex;
 
