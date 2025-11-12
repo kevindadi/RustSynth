@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::Serialize;
 
-/// 顶层导出结构。
+/// 顶层导出结构.
 #[derive(Debug, Clone, Serialize)]
 pub struct LlmSpec {
     pub crate_name: String,
@@ -10,7 +10,7 @@ pub struct LlmSpec {
     pub items: Vec<FunctionSpec>,
 }
 
-/// 单个公开 API 函数/方法的规格。
+/// 单个公开 API 函数/方法的规格.
 #[derive(Debug, Clone, Serialize)]
 pub struct FunctionSpec {
     pub kind: String,

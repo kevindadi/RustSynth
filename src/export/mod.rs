@@ -1,7 +1,7 @@
-//! 导出适用于 LLM 消费的 crate 规格。
+//! 导出适用于 LLM 消费的 crate 规格.
 //!
-//! 该模块基于 `IndexedCrate` 收集公开 API 函数/方法的语义信息，
-//! 经过文档清洗与启发式分析后生成结构化 JSON。
+//! 该模块基于 `IndexedCrate` 收集公开 API 函数/方法的语义信息,
+//! 经过文档清洗与启发式分析后生成结构化 JSON.
 
 use std::io::Write;
 
@@ -20,16 +20,16 @@ use collect::{collect_items, CollectOptions, CollectedItem};
 use hints::{infer_hints, HintsInput};
 use model::{FunctionSpec, LlmSpec, SpecDocs};
 
-/// 导出行为配置。
+/// 导出行为配置.
 #[derive(Debug, Clone)]
 pub struct ExportOptions {
-    /// 是否仅导出公共（可导入） API。默认 `true`。
+    /// 是否仅导出公共（可导入） API.默认 `true`.
     pub public_only: bool,
-    /// 限制文档分析时使用的最大原始 doc 字节数，超出则截断。
+    /// 限制文档分析时使用的最大原始 doc 字节数,超出则截断.
     pub max_doc_bytes: Option<usize>,
-    /// 跳过 panic/错误分析的快速路径。
+    /// 跳过 panic/错误分析的快速路径.
     pub skip_panic_pass: bool,
-    /// 手动覆盖 crate 名称。
+    /// 手动覆盖 crate 名称.
     pub crate_name_override: Option<String>,
 }
 
@@ -44,12 +44,12 @@ impl Default for ExportOptions {
     }
 }
 
-/// 构建完整 LLM 规格 JSON 值。
+/// 构建完整 LLM 规格 JSON 值.
 pub fn export_llm_spec(indexed: &IndexedCrate<'_>) -> anyhow::Result<Value> {
     export_llm_spec_with_options(indexed, &ExportOptions::default())
 }
 
-/// 将 LLM 规格写入给定 writer。
+/// 将 LLM 规格写入给定 writer.
 pub fn export_llm_spec_to_writer(
     indexed: &IndexedCrate<'_>,
     mut writer: impl Write,

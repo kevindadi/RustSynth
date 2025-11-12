@@ -1,12 +1,12 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
-use indexmap::IndexMap;
-use rustdoc_types::{Crate, Function, GenericParamDefKind, Impl, Item, ItemEnum};
+use rustdoc_types::{Crate, Function, GenericParamDefKind, Id, Impl, Item, ItemEnum, Path as RustdocPath, Type};
 
 use super::net::{
-    ArcMultiplicity, FunctionContext, FunctionSummary, ParameterSummary, PetriNet, Place,
-    PlaceId, Transition, TransitionId, TransitionInput, TransitionOutput,
+    ArcKind, ArcMultiplicity, FunctionContext, FunctionSummary, ParameterSummary, PetriNet,
+    PlaceId,
+    TransitionInput, TransitionOutput,
 };
 use super::type_repr::TypeDescriptor;
 use super::util::TypeFormatter;
@@ -14,19 +14,18 @@ use super::util::TypeFormatter;
 pub struct PetriNetBuilder<'a> {
     crate_: &'a Crate,
     net: PetriNet,
-    place_index: IndexMap<TypeDescriptor, PlaceId>,
-    next_place_id: usize,
-    next_transition_id: usize,
+    impl_function_ids: HashSet<Id>,
 }
 
 impl<'a> PetriNetBuilder<'a> {
+    /// 基于 rustdoc JSON 构造新的 Petri 网构建器
+    ///
+    /// 构建器会遍历 rustdoc 的 index , 将公开函数/方法映射为在类型之间移动令牌的变迁
     pub fn new(crate_: &'a Crate) -> Self {
         Self {
             crate_,
-            net: PetriNet::default(),
-            place_index: IndexMap::new(),
-            next_place_id: 0,
-            next_transition_id: 0,
+            net: PetriNet::new(),
+            impl_function_ids: HashSet::new(),
         }
     }
 
@@ -36,33 +35,36 @@ impl<'a> PetriNetBuilder<'a> {
         builder.finish()
     }
 
+    /// 遍历 rustdoc 索引, 将所有函数类条目注册为变迁
+    ///
+    /// 自由函数直接记入; impl块中的方法在上下文里携带 Self, 便于后续替换关联类型.
     pub fn ingest(&mut self) {
         for item in self.crate_.index.values() {
-            match &item.inner {
-                ItemEnum::Function(func) => {
-                    self.ingest_function(item, func, FunctionContext::FreeFunction);
+            if let ItemEnum::Impl(impl_block) = &item.inner {
+                self.ingest_impl(item, impl_block);
+            }
+        }
+
+        for item in self.crate_.index.values() {
+            if let ItemEnum::Function(func) = &item.inner {
+                if self.impl_function_ids.contains(&item.id) {
+                    continue;
                 }
-                ItemEnum::Impl(impl_block) => {
-                    self.ingest_impl(item, impl_block);
+                if !func.has_body {
+                    continue;
                 }
-                _ => {}
+                self.ingest_function(item, func, FunctionContext::FreeFunction);
             }
         }
     }
 
-    pub fn finish(mut self) -> PetriNet {
-        // Reconstruct lookup table inside net using the builder-side index to avoid duplicates.
-        for (descriptor, id) in &self.place_index {
-            if self.net.place_id(descriptor).is_none() {
-                self.net.insert_place(Place {
-                    id: *id,
-                    descriptor: descriptor.clone(),
-                });
-            }
-        }
+    pub fn finish(self) -> PetriNet {
         self.net
     }
 
+    /// 处理单个 impl 块, 将其中的方法映射为变迁
+    ///
+    /// impl 的接收者会记录在上下文, 以便后续把参数/返回中的 Self 替换成实际类型.
     fn ingest_impl(&mut self, item: &Item, impl_block: &Impl) {
         let receiver = TypeDescriptor::from_type(&impl_block.for_);
         let context = if let Some(trait_path) = &impl_block.trait_ {
@@ -85,9 +87,30 @@ impl<'a> PetriNetBuilder<'a> {
             impl_trait_bounds.push(TypeFormatter::path_to_string(trait_path));
         }
 
+        let trait_method_lookup: Option<HashMap<String, Id>> = impl_block.trait_.as_ref().and_then(|trait_path| {
+            self.crate_.index.get(&trait_path.id).and_then(|trait_item| {
+                if let ItemEnum::Trait(trait_def) = &trait_item.inner {
+                    let mut map = HashMap::new();
+                    for method_id in &trait_def.items {
+                        if let Some(item) = self.crate_.index.get(method_id) {
+                            if let ItemEnum::Function(_) = &item.inner {
+                                if let Some(name) = item.name.as_deref() {
+                                    map.entry(name.to_string()).or_insert(*method_id);
+                                }
+                            }
+                        }
+                    }
+                    Some(map)
+                } else {
+                    None
+                }
+            })
+        });
+
         for item_id in &impl_block.items {
             if let Some(inner_item) = self.crate_.index.get(item_id) {
                 if let ItemEnum::Function(func) = &inner_item.inner {
+                    self.impl_function_ids.insert(inner_item.id);
                     self.ingest_function_with_context(
                         inner_item,
                         func,
@@ -100,9 +123,25 @@ impl<'a> PetriNetBuilder<'a> {
             }
         }
 
-        // Impl items declared elsewhere (e.g. provided by trait) are recorded in `provided_trait_methods`.
-        if !impl_block.provided_trait_methods.is_empty() && impl_block.trait_.is_some() {
-            // Nothing to add: provided methods have default bodies in the trait, so they are not callable here.
+        // Trait default methods instantiated for this impl.
+        if let Some(method_lookup) = trait_method_lookup.as_ref() {
+            for method_name in &impl_block.provided_trait_methods {
+                if let Some(method_id) = method_lookup.get(method_name) {
+                    if let Some(item) = self.crate_.index.get(method_id) {
+                        if let ItemEnum::Function(func) = &item.inner {
+                            self.impl_function_ids.insert(item.id);
+                            self.ingest_function_with_context(
+                                item,
+                                func,
+                                context.clone(),
+                                impl_generics.clone(),
+                                impl_where.clone(),
+                                impl_trait_bounds.clone(),
+                            );
+                        }
+                    }
+                }
+            }
         }
 
         // Methods referenced via `item` (impl item itself) are handled via the loop above.
@@ -110,6 +149,12 @@ impl<'a> PetriNetBuilder<'a> {
     }
 
     fn ingest_function(&mut self, item: &Item, func: &Function, context: FunctionContext) {
+        let context = if matches!(context, FunctionContext::FreeFunction) {
+            self.infer_free_function_context(item).unwrap_or(context)
+        } else {
+            context
+        };
+
         self.ingest_function_with_context(
             item,
             func,
@@ -120,6 +165,7 @@ impl<'a> PetriNetBuilder<'a> {
         );
     }
 
+    /// 参数 -> 输入 place, 返回值 -> 输出 place, 同时在摘要中保存泛型与 where 约束以供分析.
     fn ingest_function_with_context(
         &mut self,
         item: &Item,
@@ -129,41 +175,53 @@ impl<'a> PetriNetBuilder<'a> {
         impl_where: Vec<String>,
         impl_trait_bounds: Vec<String>,
     ) {
-        let mut inputs = Vec::new();
-        let mut transition_inputs = Vec::new();
+        let receiver_descriptor = context_receiver_descriptor(&context);
+
+        let mut summary_inputs = Vec::new();
+        let mut input_arcs = Vec::new();
         for (name, ty) in &func.sig.inputs {
-            let descriptor = TypeDescriptor::from_type(ty);
+            let mut descriptor = TypeDescriptor::from_type(ty);
+            if let Some(receiver) = receiver_descriptor {
+                if let Some(replaced) = descriptor.replace_self(receiver) {
+                    descriptor = replaced;
+                }
+            }
             let place_id = self.ensure_place(descriptor.clone());
             let parameter = ParameterSummary {
                 name: (!name.is_empty()).then(|| Arc::<str>::from(name.as_str())),
                 descriptor: descriptor.clone(),
             };
-            inputs.push(parameter.clone());
-            transition_inputs.push(TransitionInput {
+            summary_inputs.push(parameter.clone());
+            input_arcs.push(TransitionInput {
                 place: place_id,
                 multiplicity: ArcMultiplicity::One,
-                parameter,
+                parameter: Some(parameter),
+                kind: ArcKind::Normal,
             });
         }
 
-        let output_descriptor = func
+        let mut output_descriptor = func
             .sig
             .output
             .as_ref()
             .map(|ty| TypeDescriptor::from_type(ty));
 
-        let outputs = output_descriptor
-            .as_ref()
-            .map(|descriptor| {
-                let place_id = self.ensure_place(descriptor.clone());
-                TransitionOutput {
-                    place: place_id,
-                    multiplicity: ArcMultiplicity::One,
-                    descriptor: descriptor.clone(),
-                }
-            })
-            .into_iter()
-            .collect::<Vec<_>>();
+        if let (Some(receiver), Some(descriptor)) = (receiver_descriptor, output_descriptor.as_mut()) {
+            if let Some(replaced) = descriptor.replace_self(receiver) {
+                *descriptor = replaced;
+            }
+        }
+
+        let mut output_arcs = Vec::new();
+        if let Some(descriptor) = output_descriptor.clone() {
+            let place_id = self.ensure_place(descriptor.clone());
+            output_arcs.push(TransitionOutput {
+                place: place_id,
+                multiplicity: ArcMultiplicity::One,
+                descriptor: descriptor.clone(),
+                kind: ArcKind::Normal,
+            });
+        }
 
         let mut generics = impl_generics
             .into_iter()
@@ -206,39 +264,63 @@ impl<'a> PetriNetBuilder<'a> {
             where_clauses,
             trait_bounds,
             context,
-            inputs,
+            inputs: summary_inputs,
             output: output_descriptor,
         };
 
-        let transition = Transition {
-            id: self.next_transition_id(),
-            summary: function_summary,
-            inputs: transition_inputs,
-            outputs,
-        };
+        let transition_id = self.net.add_transition(function_summary);
 
-        self.net.insert_transition(transition);
+        for arc in input_arcs {
+            self.net.add_input_arc(transition_id, arc);
+        }
+
+        for arc in output_arcs {
+            self.net.add_output_arc(transition_id, arc);
+        }
+    }
+
+    fn infer_free_function_context(&self, item: &Item) -> Option<FunctionContext> {
+        let summary = self.crate_.paths.get(&item.id)?;
+        if summary.path.len() < 2 {
+            return None;
+        }
+
+        let owner_path = &summary.path[..summary.path.len() - 1];
+        let owner_item = self.find_item_by_path(owner_path)?;
+
+        let owner_path_str = owner_path.join("::");
+        let path = RustdocPath {
+            path: owner_path_str.clone(),
+            id: owner_item.id,
+            args: None,
+        };
+        let resolved_type = Type::ResolvedPath(path.clone());
+        let descriptor = TypeDescriptor::from_type(&resolved_type);
+
+        match &owner_item.inner {
+            ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Union(_) => {
+                Some(FunctionContext::InherentMethod { receiver: descriptor })
+            }
+            ItemEnum::Trait(_) => Some(FunctionContext::TraitImplementation {
+                receiver: descriptor,
+                trait_path: Arc::<str>::from(TypeFormatter::path_to_string(&path)),
+            }),
+            _ => None,
+        }
+    }
+
+    fn find_item_by_path(&self, path: &[String]) -> Option<&Item> {
+        self.crate_.index.values().find(|candidate| {
+            self.crate_
+                .paths
+                .get(&candidate.id)
+                .map(|summary| paths_equal(&summary.path, path))
+                .unwrap_or(false)
+        })
     }
 
     fn ensure_place(&mut self, descriptor: TypeDescriptor) -> PlaceId {
-        if let Some(id) = self.place_index.get(&descriptor) {
-            return *id;
-        }
-
-        let id = PlaceId(self.next_place_id);
-        self.next_place_id += 1;
-        self.place_index.insert(descriptor.clone(), id);
-        self.net.insert_place(Place {
-            id,
-            descriptor,
-        });
-        id
-    }
-
-    fn next_transition_id(&mut self) -> TransitionId {
-        let id = TransitionId(self.next_transition_id);
-        self.next_transition_id += 1;
-        id
+        self.net.add_place(descriptor)
     }
 
     fn lookup_qualified_path(&self, item: &Item) -> Option<Arc<str>> {
@@ -247,6 +329,18 @@ impl<'a> PetriNetBuilder<'a> {
             .get(&item.id)
             .map(|summary| Arc::<str>::from(summary.path.join("::")))
     }
+}
+
+fn context_receiver_descriptor(context: &FunctionContext) -> Option<&TypeDescriptor> {
+    match context {
+        FunctionContext::InherentMethod { receiver } => Some(receiver),
+        FunctionContext::TraitImplementation { receiver, .. } => Some(receiver),
+        FunctionContext::FreeFunction => None,
+    }
+}
+
+fn paths_equal(lhs: &[String], rhs: &[String]) -> bool {
+    lhs.len() == rhs.len() && lhs.iter().zip(rhs.iter()).all(|(a, b)| a == b)
 }
 
 fn dedup_arc_vec(vec: &mut Vec<Arc<str>>) {
@@ -264,5 +358,58 @@ fn extract_trait_bounds(params: &[rustdoc_types::GenericParamDef]) -> Vec<String
         }
     }
     bounds
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn load_test_crate(name: &str) -> Crate {
+        let path = format!("./localdata/test_data/{name}/rustdoc.json");
+        let content =
+            std::fs::read_to_string(&path).unwrap_or_else(|err| panic!("failed to read {path}: {err}"));
+        serde_json::from_str(&content)
+            .unwrap_or_else(|err| panic!("failed to parse {path} as rustdoc JSON: {err}"))
+    }
+
+    #[test]
+    fn replaces_self_in_method_receivers() {
+        let crate_ = load_test_crate("method_self_receivers");
+        let net = PetriNetBuilder::from_crate(&crate_);
+
+        for place in net.places() {
+            assert!(
+                !place.descriptor.display().contains("Self"),
+                "unexpected Self in place {:?}",
+                place
+            );
+        }
+
+        for transition in net.transitions() {
+            let receiver = context_receiver_descriptor(&transition.summary.context);
+
+            if let Some(_) = receiver {
+                for input in &transition.inputs {
+                    if let Some(param) = &input.parameter {
+                        assert!(
+                            !param.descriptor.display().contains("Self"),
+                            "Self remained in {:?} of {:?}",
+                            param,
+                            transition.summary.name
+                        );
+                    }
+                }
+
+                if let Some(output) = &transition.summary.output {
+                    assert!(
+                        !output.display().contains("Self"),
+                        "Self remained in output {:?} of {:?}",
+                        output,
+                        transition.summary.name
+                    );
+                }
+            }
+        }
+    }
 }
 
