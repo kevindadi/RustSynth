@@ -23,6 +23,15 @@ pub enum Node {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Place {
     pub descriptor: TypeDescriptor,
+    /// 该类型实现的 trait 列表（用于基本类型）
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub implemented_traits: Vec<Arc<str>>,
+    /// 该泛型参数需要的 trait 约束（用于泛型参数）
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_trait_bounds: Vec<Arc<str>>,
+    /// 是否为泛型参数类型
+    #[serde(default)]
+    pub is_generic_parameter: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -190,12 +199,154 @@ impl PetriNet {
 
         let place = Place {
             descriptor: descriptor.clone(),
+            implemented_traits: Vec::new(),
+            required_trait_bounds: Vec::new(),
+            is_generic_parameter: false,
         };
         let node_idx = self.graph.add_node(Node::Place(place));
         let id = PlaceId(node_idx);
         
         self.place_lookup.insert(descriptor, id);
         id
+    }
+
+    /// 添加基本类型库所，并记录其实现的 trait
+    pub fn add_primitive_place(&mut self, descriptor: TypeDescriptor, implemented_traits: Vec<Arc<str>>) -> PlaceId {
+        if let Some(&id) = self.place_lookup.get(&descriptor) {
+            // 如果已存在，更新实现的 trait
+            if let Some(place) = self.graph.node_weight_mut(id.0) {
+                if let Node::Place(place) = place {
+                    let mut existing_traits: std::collections::HashSet<_> = place.implemented_traits.iter().cloned().collect();
+                    for trait_ in implemented_traits {
+                        existing_traits.insert(trait_);
+                    }
+                    place.implemented_traits = existing_traits.into_iter().collect();
+                    place.implemented_traits.sort();
+                }
+            }
+            return id;
+        }
+
+        let mut traits = implemented_traits;
+        traits.sort();
+        let place = Place {
+            descriptor: descriptor.clone(),
+            implemented_traits: traits,
+            required_trait_bounds: Vec::new(),
+            is_generic_parameter: false,
+        };
+        let node_idx = self.graph.add_node(Node::Place(place));
+        let id = PlaceId(node_idx);
+        
+        self.place_lookup.insert(descriptor, id);
+        id
+    }
+
+    /// 添加泛型参数库所，并记录其需要的 trait 约束
+    pub fn add_generic_parameter_place(&mut self, descriptor: TypeDescriptor, required_bounds: Vec<Arc<str>>) -> PlaceId {
+        if let Some(&id) = self.place_lookup.get(&descriptor) {
+            // 如果已存在，更新 trait 约束
+            if let Some(place) = self.graph.node_weight_mut(id.0) {
+                if let Node::Place(place) = place {
+                    let mut existing_bounds: std::collections::HashSet<_> = place.required_trait_bounds.iter().cloned().collect();
+                    for bound in required_bounds {
+                        existing_bounds.insert(bound);
+                    }
+                    place.required_trait_bounds = existing_bounds.into_iter().collect();
+                    place.required_trait_bounds.sort();
+                    place.is_generic_parameter = true;
+                }
+            }
+            return id;
+        }
+
+        let mut bounds = required_bounds;
+        bounds.sort();
+        let place = Place {
+            descriptor: descriptor.clone(),
+            implemented_traits: Vec::new(),
+            required_trait_bounds: bounds,
+            is_generic_parameter: true,
+        };
+        let node_idx = self.graph.add_node(Node::Place(place));
+        let id = PlaceId(node_idx);
+        
+        self.place_lookup.insert(descriptor, id);
+        id
+    }
+
+    /// 在基本类型和泛型参数之间添加约束变迁
+    pub fn add_constraint_transition(
+        &mut self,
+        from_primitive: PlaceId,
+        to_generic: PlaceId,
+        constraints: Vec<Arc<str>>,
+    ) -> TransitionId {
+        // 先获取描述符，避免借用冲突
+        let primitive_descriptor = {
+            let primitive_place = self.place(from_primitive).expect("primitive place should exist");
+            primitive_place.descriptor.clone()
+        };
+        let generic_descriptor = {
+            let generic_place = self.place(to_generic).expect("generic place should exist");
+            generic_place.descriptor.clone()
+        };
+        
+        let signature = if constraints.is_empty() {
+            format!("{} -> {}", primitive_descriptor.display(), generic_descriptor.display())
+        } else {
+            format!("{} -> {} [{}]", 
+                primitive_descriptor.display(), 
+                generic_descriptor.display(),
+                constraints.join(", "))
+        };
+
+        let summary = FunctionSummary {
+            item_id: rustdoc_types::Id(0), // 使用特殊的 ID 表示约束变迁
+            name: Arc::<str>::from("constraint"),
+            qualified_path: None,
+            signature: Arc::<str>::from(signature),
+            generics: constraints.clone(),
+            where_clauses: constraints.clone(),
+            trait_bounds: constraints.clone(),
+            context: FunctionContext::FreeFunction,
+            inputs: vec![ParameterSummary {
+                name: None,
+                descriptor: primitive_descriptor.clone(),
+            }],
+            output: Some(generic_descriptor.clone()),
+        };
+
+        let transition_id = self.add_transition(summary);
+
+        // 添加从基本类型到变迁的输入弧
+        self.add_input_arc_from_place(
+            from_primitive,
+            transition_id,
+            ArcData {
+                weight: 1,
+                parameter: Some(ParameterSummary {
+                    name: None,
+                    descriptor: primitive_descriptor,
+                }),
+                kind: ArcKind::Normal,
+                descriptor: None,
+            },
+        );
+
+        // 添加从变迁到泛型参数的输出弧
+        self.add_output_arc_to_place(
+            transition_id,
+            to_generic,
+            ArcData {
+                weight: 1,
+                parameter: None,
+                kind: ArcKind::Normal,
+                descriptor: Some(generic_descriptor),
+            },
+        );
+
+        transition_id
     }
 
     pub fn add_transition(&mut self, summary: FunctionSummary) -> TransitionId {

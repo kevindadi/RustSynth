@@ -1,7 +1,7 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
-use rustdoc_types::{Crate, Function, GenericParamDefKind, Id, Impl, Item, ItemEnum, Path as RustdocPath, Type};
+use rustdoc_types::{Crate, Function, GenericParamDefKind, Id, Impl, Item, ItemEnum, Path as RustdocPath, Type, WherePredicate};
 
 use super::net::{
     ArcData, ArcKind, FunctionContext, FunctionSummary, ParameterSummary, PetriNet,
@@ -14,6 +14,8 @@ pub struct PetriNetBuilder<'a> {
     crate_: &'a Crate,
     net: PetriNet,
     impl_function_ids: HashSet<Id>,
+    // 记录泛型参数及其约束
+    generic_parameters: HashMap<String, Vec<Arc<str>>>,
 }
 
 impl<'a> PetriNetBuilder<'a> {
@@ -25,6 +27,7 @@ impl<'a> PetriNetBuilder<'a> {
             crate_,
             net: PetriNet::new(),
             impl_function_ids: HashSet::new(),
+            generic_parameters: HashMap::new(),
         }
     }
 
@@ -38,23 +41,43 @@ impl<'a> PetriNetBuilder<'a> {
     ///
     /// 自由函数直接记入; impl块中的方法在上下文里携带 Self, 便于后续替换关联类型.
     pub fn ingest(&mut self) {
+        // 第一步：创建所有基本类型的库所（使用先验知识预填 trait 实现）
+        self.create_primitive_places();
+        
+        // 第二步：处理 impl 块，收集方法
         for item in self.crate_.index.values() {
             if let ItemEnum::Impl(impl_block) = &item.inner {
                 self.ingest_impl(item, impl_block);
             }
         }
 
+        // 第三步：处理自由函数，并收集泛型参数
         for item in self.crate_.index.values() {
             if let ItemEnum::Function(func) = &item.inner {
                 if self.impl_function_ids.contains(&item.id) {
                     continue;
                 }
+                // 使用函数名作为上下文，如果没有名称则使用 ID
+                let context = if let Some(name) = item.name.as_deref() {
+                    name.to_string()
+                } else if let Some(path) = self.lookup_qualified_path(item) {
+                    path.to_string()
+                } else {
+                    "<anonymous>".to_string()
+                };
+                self.collect_generic_parameters(&func.generics, &context);
                 if !func.has_body {
                     continue;
                 }
                 self.ingest_function(item, func, FunctionContext::FreeFunction);
             }
         }
+        
+        // 第四步：创建泛型参数库所
+        self.create_generic_parameter_places();
+        
+        // 第五步：创建从基本类型到符合约束的泛型参数的变迁
+        self.create_constraint_transitions();
     }
 
     pub fn finish(self) -> PetriNet {
@@ -65,6 +88,23 @@ impl<'a> PetriNetBuilder<'a> {
     ///
     /// impl 的接收者会记录在上下文, 以便后续把参数/返回中的 Self 替换成实际类型.
     fn ingest_impl(&mut self, item: &Item, impl_block: &Impl) {
+        // 获取 impl 目标的类型名称作为上下文
+        let impl_context = {
+            let receiver_type = TypeFormatter::type_name(&impl_block.for_);
+            // 如果有 trait，使用 trait 名称
+            if let Some(trait_path) = &impl_block.trait_ {
+                format!("impl<{}> {} for {}", 
+                    TypeFormatter::format_generic_params(&impl_block.generics.params).join(", "),
+                    TypeFormatter::path_to_string(trait_path),
+                    receiver_type)
+            } else {
+                format!("impl {}", receiver_type)
+            }
+        };
+        
+        // 收集 impl 块中的泛型参数
+        self.collect_generic_parameters(&impl_block.generics, &impl_context);
+        
         let receiver = TypeDescriptor::from_type(&impl_block.for_);
         let context = if let Some(trait_path) = &impl_block.trait_ {
             let trait_path_str = Arc::<str>::from(TypeFormatter::path_to_string(trait_path));
@@ -109,6 +149,18 @@ impl<'a> PetriNetBuilder<'a> {
         for item_id in &impl_block.items {
             if let Some(inner_item) = self.crate_.index.get(item_id) {
                 if let ItemEnum::Function(func) = &inner_item.inner {
+                    // 使用方法名作为上下文，如果没有名称则使用 ID
+                    let method_context = if let Some(name) = inner_item.name.as_deref() {
+                        name.to_string()
+                    } else if let Some(path) = self.lookup_qualified_path(inner_item) {
+                        path.to_string()
+                    } else {
+                        "<anonymous_method>".to_string()
+                    };
+                    
+                    // 收集函数中的泛型参数
+                    self.collect_generic_parameters(&func.generics, &method_context);
+                    
                     self.impl_function_ids.insert(inner_item.id);
                     self.ingest_function_with_context(
                         inner_item,
@@ -128,6 +180,18 @@ impl<'a> PetriNetBuilder<'a> {
                 if let Some(method_id) = method_lookup.get(method_name) {
                     if let Some(item) = self.crate_.index.get(method_id) {
                         if let ItemEnum::Function(func) = &item.inner {
+                            // 使用 trait 方法名作为上下文
+                            let method_context = if let Some(name) = item.name.as_deref() {
+                                name.to_string()
+                            } else if let Some(path) = self.lookup_qualified_path(item) {
+                                path.to_string()
+                            } else {
+                                "<anonymous_trait_method>".to_string()
+                            };
+                            
+                            // 收集函数中的泛型参数
+                            self.collect_generic_parameters(&func.generics, &method_context);
+                            
                             self.impl_function_ids.insert(item.id);
                             self.ingest_function_with_context(
                                 item,
@@ -328,6 +392,375 @@ impl<'a> PetriNetBuilder<'a> {
             .get(&item.id)
             .map(|summary| Arc::<str>::from(summary.path.join("::")))
     }
+
+    /// 获取基本类型的预定义 trait 实现
+    /// 
+    /// 返回该基本类型实现的标准 trait 列表
+    /// trait 名称使用简单名称（如 "Sized"），与 rustdoc JSON 中的格式保持一致
+    fn get_primitive_traits(primitive_name: &str) -> Vec<Arc<str>> {
+        match primitive_name {
+            // 整数类型（有符号和无符号）
+            "i8" | "i16" | "i32" | "i64" | "i128" | "isize" |
+            "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => {
+                vec![
+                    Arc::<str>::from("Copy"),
+                    Arc::<str>::from("Clone"),
+                    Arc::<str>::from("Debug"),
+                    Arc::<str>::from("PartialEq"),
+                    Arc::<str>::from("Eq"),
+                    Arc::<str>::from("PartialOrd"),
+                    Arc::<str>::from("Ord"),
+                    Arc::<str>::from("Hash"),
+                    Arc::<str>::from("Sized"),
+                    Arc::<str>::from("Send"),
+                    Arc::<str>::from("Sync"),
+                ]
+            },
+            // 浮点数类型（不实现 Ord 和 Eq，因为 NaN 问题）
+            "f32" | "f64" => {
+                vec![
+                    Arc::<str>::from("Copy"),
+                    Arc::<str>::from("Clone"),
+                    Arc::<str>::from("Debug"),
+                    Arc::<str>::from("PartialEq"),
+                    Arc::<str>::from("PartialOrd"),
+                    Arc::<str>::from("Sized"),
+                    Arc::<str>::from("Send"),
+                    Arc::<str>::from("Sync"),
+                ]
+            },
+            // bool 类型
+            "bool" => {
+                vec![
+                    Arc::<str>::from("Copy"),
+                    Arc::<str>::from("Clone"),
+                    Arc::<str>::from("Debug"),
+                    Arc::<str>::from("PartialEq"),
+                    Arc::<str>::from("Eq"),
+                    Arc::<str>::from("PartialOrd"),
+                    Arc::<str>::from("Ord"),
+                    Arc::<str>::from("Hash"),
+                    Arc::<str>::from("Sized"),
+                    Arc::<str>::from("Send"),
+                    Arc::<str>::from("Sync"),
+                ]
+            },
+            // char 类型
+            "char" => {
+                vec![
+                    Arc::<str>::from("Copy"),
+                    Arc::<str>::from("Clone"),
+                    Arc::<str>::from("Debug"),
+                    Arc::<str>::from("PartialEq"),
+                    Arc::<str>::from("Eq"),
+                    Arc::<str>::from("PartialOrd"),
+                    Arc::<str>::from("Ord"),
+                    Arc::<str>::from("Hash"),
+                    Arc::<str>::from("Sized"),
+                    Arc::<str>::from("Send"),
+                    Arc::<str>::from("Sync"),
+                ]
+            },
+            // str 类型（切片类型，不是 Sized）
+            "str" => {
+                vec![
+                    Arc::<str>::from("Clone"),
+                    Arc::<str>::from("Debug"),
+                    Arc::<str>::from("PartialEq"),
+                    Arc::<str>::from("Eq"),
+                    Arc::<str>::from("PartialOrd"),
+                    Arc::<str>::from("Ord"),
+                    Arc::<str>::from("Hash"),
+                    Arc::<str>::from("Send"),
+                    Arc::<str>::from("Sync"),
+                ]
+            },
+            _ => Vec::new(),
+        }
+    }
+    
+    /// 从 rustdoc JSON 中查询基本类型的额外 trait 实现
+    /// 
+    /// 对于关联类型约束（如 T: Iterator<Item = u8>），需要查询实际的 impl 条目
+    /// 返回的 trait 名称使用简单名称（如 "Sized"），与 rustdoc JSON 中的格式保持一致
+    fn query_primitive_impls_from_rustdoc(&self, primitive_name: &str) -> Vec<Arc<str>> {
+        let mut additional_traits = Vec::new();
+        
+        for item in self.crate_.index.values() {
+            if let ItemEnum::Impl(impl_block) = &item.inner {
+                // 检查是否为基本类型的 impl
+                if let Type::Primitive(ref name) = impl_block.for_ {
+                    if name == primitive_name {
+                        // 如果有 trait，记录 trait 名称
+                        if let Some(trait_path) = &impl_block.trait_ {
+                            let trait_name = TypeFormatter::path_to_string(trait_path);
+                            // 提取简单名称（JSON 中通常就是简单名称，但为了保险起见提取最后一部分）
+                            let simple_name = trait_name.split("::").last().unwrap_or(&trait_name);
+                            additional_traits.push(Arc::<str>::from(simple_name));
+                        }
+                    }
+                }
+            }
+        }
+        
+        additional_traits
+    }
+
+    /// 创建所有基本类型的库所
+    /// 
+    /// 使用先验知识预填常见 trait 实现，并查询 rustdoc JSON 获取额外的实现
+    fn create_primitive_places(&mut self) {
+        let primitives = vec![
+            "i8", "i16", "i32", "i64", "i128", "isize",
+            "u8", "u16", "u32", "u64", "u128", "usize",
+            "f32", "f64",
+            "bool", "char", "str",
+        ];
+
+        for primitive_name in primitives {
+            let descriptor = TypeDescriptor::from_type(&Type::Primitive(primitive_name.into()));
+            
+            // 获取预定义的 trait 实现（先验知识）
+            let mut implemented_traits = Self::get_primitive_traits(primitive_name);
+            
+            // 从 rustdoc JSON 中查询额外的 trait 实现
+            let additional_traits = self.query_primitive_impls_from_rustdoc(primitive_name);
+            implemented_traits.extend(additional_traits);
+            
+            // 去重并排序
+            let unique_traits: std::collections::HashSet<_> = implemented_traits.into_iter().collect();
+            let mut implemented_traits: Vec<_> = unique_traits.into_iter().collect();
+            implemented_traits.sort();
+            
+            self.net.add_primitive_place(descriptor, implemented_traits);
+        }
+    }
+
+    /// 收集泛型参数及其约束
+    /// 
+    /// `context` 参数用于绑定泛型参数的上下文，格式如 "foo::T" 或 "Vec::T"
+    /// 这样可以区分不同上下文中的同名泛型参数
+    fn collect_generic_parameters(&mut self, generics: &rustdoc_types::Generics, context: &str) {
+        for param in &generics.params {
+            if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
+                // 使用带上下文的名称：context::param_name
+                let scoped_param_name = format!("{}::{}", context, param.name);
+                let trait_bounds: Vec<Arc<str>> = bounds
+                    .iter()
+                    .map(|bound| Arc::<str>::from(TypeFormatter::format_generic_bound(bound)))
+                    .collect();
+
+                // 合并已有的约束
+                let existing_bounds = self.generic_parameters
+                    .entry(scoped_param_name)
+                    .or_insert_with(Vec::new);
+                
+                for bound in trait_bounds {
+                    if !existing_bounds.iter().any(|b| b.as_ref() == bound.as_ref()) {
+                        existing_bounds.push(bound);
+                    }
+                }
+            }
+        }
+
+        // 处理 where 子句中的约束
+        for predicate in &generics.where_predicates {
+            if let WherePredicate::BoundPredicate { type_, bounds, generic_params } = predicate {
+                if generic_params.is_empty() {
+                    if let Type::Generic(param_name) = type_ {
+                        // 使用带上下文的名称
+                        let scoped_param_name = format!("{}::{}", context, param_name);
+                        let existing_bounds = self.generic_parameters
+                            .entry(scoped_param_name)
+                            .or_insert_with(Vec::new);
+                        
+                        for bound in bounds {
+                            let bound_str = Arc::<str>::from(TypeFormatter::format_generic_bound(bound));
+                            if !existing_bounds.iter().any(|b| b.as_ref() == bound_str.as_ref()) {
+                                existing_bounds.push(bound_str);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// 创建泛型参数库所
+    fn create_generic_parameter_places(&mut self) {
+        for (param_name, bounds) in &self.generic_parameters {
+            let descriptor = TypeDescriptor::from_type(&Type::Generic(param_name.clone()));
+            self.net.add_generic_parameter_place(descriptor, bounds.clone());
+        }
+    }
+
+    /// 检查基本类型是否满足给定的 trait bound
+    /// 
+    /// 对于简单的 trait bound（如 Clone），检查基本类型是否实现了该 trait
+    /// 对于关联类型约束（如 Iterator<Item = u8>），需要更精确的检查
+    fn check_trait_bound_satisfied(
+        &self,
+        primitive_name: &str,
+        primitive_traits: &std::collections::HashSet<&str>,
+        bound: &str,
+    ) -> bool {
+        // 解析 trait bound
+        // 可能的格式：
+        // - "core::clone::Clone" (简单 trait)
+        // - "core::iter::Iterator" (简单 trait，可能有泛型参数)
+        // - "core::iter::Iterator<Item = u8>" (有关联类型约束)
+        
+        // 提取 trait 路径（去掉可能的关联类型约束）
+        let trait_path = if let Some(lt_pos) = bound.find('<') {
+            &bound[..lt_pos]
+        } else {
+            bound
+        };
+
+        // 规范化 trait 路径（移除可能的 '?' 修饰符等）
+        let trait_path = trait_path.trim_start_matches('?').trim();
+
+        // 检查基本类型是否实现了该 trait
+        // 支持多种路径格式：
+        // - 完整路径：core::clone::Clone
+        // - 短路径：Clone
+        let trait_simple_name = trait_path.split("::").last().unwrap_or(trait_path);
+        
+        // 检查完整路径或简单名称是否匹配
+        let is_implemented = primitive_traits.iter().any(|&t| {
+            t == trait_path || 
+            t.ends_with(&format!("::{}", trait_simple_name)) ||
+            t == trait_simple_name
+        });
+
+        if !is_implemented {
+            return false;
+        }
+
+        // 如果有关联类型约束，需要更精确的检查
+        // 例如：Iterator<Item = u8> 需要检查 Item 类型是否匹配
+        if bound.contains('<') && bound.contains('=') {
+            // 对于关联类型约束，我们需要查询 rustdoc JSON 中的 impl
+            // 这里采用保守策略：如果没有找到精确匹配，返回 false
+            // TODO: 可以扩展为查询 rustdoc JSON 中的 impl 条目来精确匹配
+            return self.check_associated_type_bound(primitive_name, bound);
+        }
+
+        true
+    }
+
+    /// 检查关联类型约束（如 Iterator<Item = u8>）
+    /// 
+    /// 对于复杂约束，查询 rustdoc JSON 中的 impl 条目
+    fn check_associated_type_bound(&self, primitive_name: &str, bound: &str) -> bool {
+        // 简化处理：如果 rustdoc JSON 中有对应的 impl，则认为满足
+        // 否则保守地返回 false
+        
+        // 解析 trait 名称
+        let trait_name = if let Some(lt_pos) = bound.find('<') {
+            &bound[..lt_pos]
+        } else {
+            bound
+        };
+        let trait_name = trait_name.trim_start_matches('?').trim();
+
+        // 查询 rustdoc JSON 中的 impl
+        for item in self.crate_.index.values() {
+            if let ItemEnum::Impl(impl_block) = &item.inner {
+                // 检查是否为该基本类型的 impl
+                if let Type::Primitive(ref name) = impl_block.for_ {
+                    if name == primitive_name {
+                        if let Some(trait_path) = &impl_block.trait_ {
+                            let impl_trait_name = TypeFormatter::path_to_string(trait_path);
+                            
+                            // 检查 trait 名称是否匹配
+                            let impl_simple_name = impl_trait_name.split("::").last().unwrap_or(&impl_trait_name);
+                            let bound_simple_name = trait_name.split("::").last().unwrap_or(trait_name);
+                            
+                            if impl_trait_name == trait_name || impl_simple_name == bound_simple_name {
+                                // 找到了对应的 impl，但还需要检查关联类型是否匹配
+                                // 这里简化处理：如果找到了 impl 就认为可能满足
+                                // TODO: 更精确地检查关联类型约束
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 如果没有找到对应的 impl，保守地返回 false
+        false
+    }
+
+    /// 创建从基本类型到符合约束的泛型参数的变迁
+    fn create_constraint_transitions(&mut self) {
+        // 遍历所有基本类型
+        let primitives = vec![
+            "i8", "i16", "i32", "i64", "i128", "isize",
+            "u8", "u16", "u32", "u64", "u128", "usize",
+            "f32", "f64",
+            "bool", "char", "str",
+        ];
+
+        for primitive_name in primitives {
+            let primitive_descriptor = TypeDescriptor::from_type(&Type::Primitive(primitive_name.into()));
+            let primitive_place_id = if let Some(place_id) = self.net.place_id(&primitive_descriptor) {
+                place_id
+            } else {
+                continue;
+            };
+
+            // 先获取基本类型实现的 trait（避免后续借用冲突）
+            let primitive_traits: std::collections::HashSet<_> = {
+                let primitive_place = self.net.place(primitive_place_id).expect("primitive place should exist");
+                primitive_place
+                    .implemented_traits
+                    .iter()
+                    .map(|t| t.as_ref())
+                    .collect()
+            };
+
+            // 收集所有需要创建的变迁（避免在循环中借用冲突）
+            let mut transitions_to_create = Vec::new();
+
+            // 遍历所有泛型参数
+            for (generic_name, required_bounds) in &self.generic_parameters {
+                let generic_descriptor = TypeDescriptor::from_type(&Type::Generic(generic_name.clone()));
+                let generic_place_id = if let Some(place_id) = self.net.place_id(&generic_descriptor) {
+                    place_id
+                } else {
+                    continue;
+                };
+
+                // 检查基本类型是否满足泛型参数的所有约束
+                let mut satisfied_constraints = Vec::new();
+                let mut all_satisfied = true;
+
+                for bound in required_bounds {
+                    if self.check_trait_bound_satisfied(primitive_name, &primitive_traits, bound.as_ref()) {
+                        satisfied_constraints.push(bound.clone());
+                    } else {
+                        all_satisfied = false;
+                        break; // 如果有一个约束不满足，就不需要检查其他的了
+                    }
+                }
+
+                // 记录需要创建的变迁
+                if all_satisfied && !required_bounds.is_empty() {
+                    transitions_to_create.push((primitive_place_id, generic_place_id, satisfied_constraints));
+                } else if required_bounds.is_empty() {
+                    // 如果泛型参数没有约束，所有基本类型都可以连接
+                    transitions_to_create.push((primitive_place_id, generic_place_id, Vec::new()));
+                }
+            }
+
+            // 现在创建所有变迁（此时已经没有不可变借用了）
+            for (from_place, to_place, constraints) in transitions_to_create {
+                self.net.add_constraint_transition(from_place, to_place, constraints);
+            }
+        }
+    }
 }
 
 fn context_receiver_descriptor(context: &FunctionContext) -> Option<&TypeDescriptor> {
@@ -411,4 +844,6 @@ mod tests {
         }
     }
 }
+
+
 
