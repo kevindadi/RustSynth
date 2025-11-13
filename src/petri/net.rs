@@ -1,6 +1,6 @@
 use std::{fmt::Write, sync::Arc};
 
-use petgraph::{graph::NodeIndex, stable_graph::StableGraph, Direction, visit::EdgeRef};
+use petgraph::{Direction, graph::NodeIndex, stable_graph::StableGraph, visit::EdgeRef};
 use rustdoc_types::Id;
 use serde::{Deserialize, Serialize};
 
@@ -102,6 +102,9 @@ pub struct ArcData {
     // 对于输出弧（Transition -> Place），存储类型描述符
     #[serde(skip_serializing_if = "Option::is_none")]
     pub descriptor: Option<TypeDescriptor>,
+    // 边上需要的借用类型约束（对于输入弧）或提供的借用类型（对于输出弧）
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub borrow_kind: Option<super::type_repr::BorrowKind>,
 }
 
 fn default_weight() -> ArcWeight {
@@ -112,7 +115,6 @@ fn default_weight() -> ArcWeight {
 pub struct Transition {
     pub summary: FunctionSummary,
 }
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PetriNet {
@@ -141,39 +143,33 @@ mod petgraph_serde {
             .edge_indices()
             .map(|idx| {
                 let (source, target) = graph.edge_endpoints(idx).unwrap();
-                (
-                    source.index(),
-                    target.index(),
-                    graph[idx].clone(),
-                )
+                (source.index(), target.index(), graph[idx].clone())
             })
             .collect();
         (nodes, edges).serialize(serializer)
     }
 
-    pub fn deserialize<'de, D>(
-        deserializer: D,
-        ) -> Result<StableGraph<Node, ArcData>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<StableGraph<Node, ArcData>, D::Error>
     where
         D: Deserializer<'de>,
     {
         let (nodes, edges): (Vec<(usize, Node)>, Vec<(usize, usize, ArcData)>) =
             Deserialize::deserialize(deserializer)?;
-        
+
         let mut graph = StableGraph::new();
         let mut index_map = std::collections::HashMap::new();
-        
+
         for (old_idx, node) in nodes {
             let new_idx = graph.add_node(node);
             index_map.insert(old_idx, new_idx);
         }
-        
+
         for (source_old, target_old, data) in edges {
             let source = index_map[&source_old];
             let target = index_map[&target_old];
             graph.add_edge(source, target, data);
         }
-        
+
         Ok(graph)
     }
 }
@@ -193,30 +189,38 @@ impl PetriNet {
     }
 
     pub fn add_place(&mut self, descriptor: TypeDescriptor) -> PlaceId {
-        if let Some(&id) = self.place_lookup.get(&descriptor) {
+        // 使用规范化版本进行查找和存储，这样 T、&T、&mut T 都映射到同一个库所
+        let normalized = descriptor.normalized();
+        if let Some(&id) = self.place_lookup.get(&normalized) {
             return id;
         }
 
         let place = Place {
-            descriptor: descriptor.clone(),
+            descriptor: normalized.clone(),
             implemented_traits: Vec::new(),
             required_trait_bounds: Vec::new(),
             is_generic_parameter: false,
         };
         let node_idx = self.graph.add_node(Node::Place(place));
         let id = PlaceId(node_idx);
-        
-        self.place_lookup.insert(descriptor, id);
+
+        self.place_lookup.insert(normalized, id);
         id
     }
 
     /// 添加基本类型库所，并记录其实现的 trait
-    pub fn add_primitive_place(&mut self, descriptor: TypeDescriptor, implemented_traits: Vec<Arc<str>>) -> PlaceId {
-        if let Some(&id) = self.place_lookup.get(&descriptor) {
+    pub fn add_primitive_place(
+        &mut self,
+        descriptor: TypeDescriptor,
+        implemented_traits: Vec<Arc<str>>,
+    ) -> PlaceId {
+        let normalized = descriptor.normalized();
+        if let Some(&id) = self.place_lookup.get(&normalized) {
             // 如果已存在，更新实现的 trait
             if let Some(place) = self.graph.node_weight_mut(id.0) {
                 if let Node::Place(place) = place {
-                    let mut existing_traits: std::collections::HashSet<_> = place.implemented_traits.iter().cloned().collect();
+                    let mut existing_traits: std::collections::HashSet<_> =
+                        place.implemented_traits.iter().cloned().collect();
                     for trait_ in implemented_traits {
                         existing_traits.insert(trait_);
                     }
@@ -230,25 +234,31 @@ impl PetriNet {
         let mut traits = implemented_traits;
         traits.sort();
         let place = Place {
-            descriptor: descriptor.clone(),
+            descriptor: normalized.clone(),
             implemented_traits: traits,
             required_trait_bounds: Vec::new(),
             is_generic_parameter: false,
         };
         let node_idx = self.graph.add_node(Node::Place(place));
         let id = PlaceId(node_idx);
-        
-        self.place_lookup.insert(descriptor, id);
+
+        self.place_lookup.insert(normalized, id);
         id
     }
 
     /// 添加泛型参数库所，并记录其需要的 trait 约束
-    pub fn add_generic_parameter_place(&mut self, descriptor: TypeDescriptor, required_bounds: Vec<Arc<str>>) -> PlaceId {
-        if let Some(&id) = self.place_lookup.get(&descriptor) {
+    pub fn add_generic_parameter_place(
+        &mut self,
+        descriptor: TypeDescriptor,
+        required_bounds: Vec<Arc<str>>,
+    ) -> PlaceId {
+        let normalized = descriptor.normalized();
+        if let Some(&id) = self.place_lookup.get(&normalized) {
             // 如果已存在，更新 trait 约束
             if let Some(place) = self.graph.node_weight_mut(id.0) {
                 if let Node::Place(place) = place {
-                    let mut existing_bounds: std::collections::HashSet<_> = place.required_trait_bounds.iter().cloned().collect();
+                    let mut existing_bounds: std::collections::HashSet<_> =
+                        place.required_trait_bounds.iter().cloned().collect();
                     for bound in required_bounds {
                         existing_bounds.insert(bound);
                     }
@@ -263,15 +273,15 @@ impl PetriNet {
         let mut bounds = required_bounds;
         bounds.sort();
         let place = Place {
-            descriptor: descriptor.clone(),
+            descriptor: normalized.clone(),
             implemented_traits: Vec::new(),
             required_trait_bounds: bounds,
             is_generic_parameter: true,
         };
         let node_idx = self.graph.add_node(Node::Place(place));
         let id = PlaceId(node_idx);
-        
-        self.place_lookup.insert(descriptor, id);
+
+        self.place_lookup.insert(normalized, id);
         id
     }
 
@@ -284,21 +294,29 @@ impl PetriNet {
     ) -> TransitionId {
         // 先获取描述符，避免借用冲突
         let primitive_descriptor = {
-            let primitive_place = self.place(from_primitive).expect("primitive place should exist");
+            let primitive_place = self
+                .place(from_primitive)
+                .expect("primitive place should exist");
             primitive_place.descriptor.clone()
         };
         let generic_descriptor = {
             let generic_place = self.place(to_generic).expect("generic place should exist");
             generic_place.descriptor.clone()
         };
-        
+
         let signature = if constraints.is_empty() {
-            format!("{} -> {}", primitive_descriptor.display(), generic_descriptor.display())
+            format!(
+                "{} -> {}",
+                primitive_descriptor.display(),
+                generic_descriptor.display()
+            )
         } else {
-            format!("{} -> {} [{}]", 
-                primitive_descriptor.display(), 
+            format!(
+                "{} -> {} [{}]",
+                primitive_descriptor.display(),
                 generic_descriptor.display(),
-                constraints.join(", "))
+                constraints.join(", ")
+            )
         };
 
         let summary = FunctionSummary {
@@ -327,10 +345,11 @@ impl PetriNet {
                 weight: 1,
                 parameter: Some(ParameterSummary {
                     name: None,
-                    descriptor: primitive_descriptor,
+                    descriptor: primitive_descriptor.clone(),
                 }),
                 kind: ArcKind::Normal,
                 descriptor: None,
+                borrow_kind: Some(primitive_descriptor.borrow_kind()),
             },
         );
 
@@ -342,7 +361,8 @@ impl PetriNet {
                 weight: 1,
                 parameter: None,
                 kind: ArcKind::Normal,
-                descriptor: Some(generic_descriptor),
+                descriptor: Some(generic_descriptor.clone()),
+                borrow_kind: Some(generic_descriptor.borrow_kind()),
             },
         );
 
@@ -354,7 +374,6 @@ impl PetriNet {
         let node_idx = self.graph.add_node(Node::Transition(transition));
         TransitionId(node_idx)
     }
-
 
     pub fn add_input_arc_from_place(
         &mut self,
@@ -375,57 +394,49 @@ impl PetriNet {
     }
 
     pub fn places(&self) -> impl Iterator<Item = (PlaceId, &Place)> {
-        self.graph
-            .node_indices()
-            .filter_map(|idx| {
-                if let Node::Place(place) = &self.graph[idx] {
-                    Some((PlaceId(idx), place))
-                } else {
-                    None
-                }
-            })
+        self.graph.node_indices().filter_map(|idx| {
+            if let Node::Place(place) = &self.graph[idx] {
+                Some((PlaceId(idx), place))
+            } else {
+                None
+            }
+        })
     }
 
     pub fn transitions(&self) -> impl Iterator<Item = (TransitionId, &Transition)> {
-        self.graph
-            .node_indices()
-            .filter_map(|idx| {
-                if let Node::Transition(transition) = &self.graph[idx] {
-                    Some((TransitionId(idx), transition))
-                } else {
-                    None
-                }
-            })
+        self.graph.node_indices().filter_map(|idx| {
+            if let Node::Transition(transition) = &self.graph[idx] {
+                Some((TransitionId(idx), transition))
+            } else {
+                None
+            }
+        })
     }
 
     pub fn place(&self, id: PlaceId) -> Option<&Place> {
-        self.graph
-            .node_weight(id.0)
-            .and_then(|node| {
-                if let Node::Place(place) = node {
-                    Some(place)
-                } else {
-                    None
-                }
-            })
+        self.graph.node_weight(id.0).and_then(|node| {
+            if let Node::Place(place) = node {
+                Some(place)
+            } else {
+                None
+            }
+        })
     }
 
     pub fn transition(&self, id: TransitionId) -> Option<&Transition> {
-        self.graph
-            .node_weight(id.0)
-            .and_then(|node| {
-                if let Node::Transition(transition) = node {
-                    Some(transition)
-                } else {
-                    None
-                }
-            })
+        self.graph.node_weight(id.0).and_then(|node| {
+            if let Node::Transition(transition) = node {
+                Some(transition)
+            } else {
+                None
+            }
+        })
     }
 
     pub fn place_id(&self, descriptor: &TypeDescriptor) -> Option<PlaceId> {
-        self.place_lookup
-            .get(descriptor)
-            .copied()
+        // 使用规范化版本进行查找
+        let normalized = descriptor.normalized();
+        self.place_lookup.get(&normalized).copied()
     }
 
     pub fn place_count(&self) -> usize {
@@ -443,7 +454,10 @@ impl PetriNet {
     }
 
     /// 获取 Transition 的所有输入边（从 Place 到 Transition）
-    pub fn transition_inputs(&self, transition: TransitionId) -> impl Iterator<Item = (PlaceId, &ArcData)> {
+    pub fn transition_inputs(
+        &self,
+        transition: TransitionId,
+    ) -> impl Iterator<Item = (PlaceId, &ArcData)> {
         self.graph
             .edges_directed(transition.0, Direction::Incoming)
             .filter_map(|edge| {
@@ -457,7 +471,10 @@ impl PetriNet {
     }
 
     /// 获取 Transition 的所有输出边（从 Transition 到 Place）
-    pub fn transition_outputs(&self, transition: TransitionId) -> impl Iterator<Item = (PlaceId, &ArcData)> {
+    pub fn transition_outputs(
+        &self,
+        transition: TransitionId,
+    ) -> impl Iterator<Item = (PlaceId, &ArcData)> {
         self.graph
             .edges_directed(transition.0, Direction::Outgoing)
             .filter_map(|edge| {
@@ -488,12 +505,7 @@ impl PetriNet {
         for (id, place) in self.places() {
             let text = format!("p{}: {}", id.0.index(), place.descriptor.display());
             let label = html_label(&[text.as_str()]);
-            let _ = writeln!(
-                dot,
-                "  p{} [shape=circle,label=<{}>];",
-                id.0.index(),
-                label
-            );
+            let _ = writeln!(dot, "  p{} [shape=circle,label=<{}>];", id.0.index(), label);
         }
     }
 
@@ -501,12 +513,7 @@ impl PetriNet {
         for (id, transition) in self.transitions() {
             let summary = &transition.summary;
             let label = html_label(&[summary.display_name(), summary.signature.as_ref()]);
-            let _ = writeln!(
-                dot,
-                "  t{} [shape=box,label=<{}>];",
-                id.0.index(),
-                label
-            );
+            let _ = writeln!(dot, "  t{} [shape=box,label=<{}>];", id.0.index(), label);
         }
     }
 
@@ -540,10 +547,9 @@ impl PetriNet {
             .as_ref()
             .map(|param| &param.descriptor)
             .or_else(|| self.place(place_id).map(|place| &place.descriptor));
-        
-        let label = descriptor_ref.and_then(|descriptor| {
-            edge_label_from_parameter(name_ref, descriptor)
-        });
+
+        let label =
+            descriptor_ref.and_then(|descriptor| edge_label_from_parameter(name_ref, descriptor));
         let attr = edge_attr(
             arc.kind,
             combine_edge_parts(label, weight_suffix(arc.weight)),
@@ -628,11 +634,7 @@ fn edge_label_from_parameter(name: Option<&str>, descriptor: &TypeDescriptor) ->
         }
     }
     label.push_str(descriptor.display());
-    if label.is_empty() {
-        None
-    } else {
-        Some(label)
-    }
+    if label.is_empty() { None } else { Some(label) }
 }
 
 fn combine_edge_parts(main: Option<String>, weight: Option<String>) -> Option<String> {
@@ -721,10 +723,11 @@ mod tests {
                 weight: 1,
                 parameter: Some(ParameterSummary {
                     name: Some(Arc::<str>::from("value")),
-                    descriptor: parameter_desc,
+                    descriptor: parameter_desc.clone(),
                 }),
                 kind: ArcKind::Normal,
                 descriptor: None,
+                borrow_kind: Some(parameter_desc.borrow_kind()),
             },
         );
 
@@ -735,7 +738,8 @@ mod tests {
                 weight: 1,
                 parameter: None,
                 kind: ArcKind::Normal,
-                descriptor: Some(output_desc),
+                descriptor: Some(output_desc.clone()),
+                borrow_kind: Some(output_desc.borrow_kind()),
             },
         );
 

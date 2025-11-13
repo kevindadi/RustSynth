@@ -3,11 +3,12 @@ use std::fs::File;
 use std::io::{self, BufReader, Write};
 use std::path::PathBuf;
 
-use anyhow::{anyhow, bail, Context, Result};
-use trustfall_rustdoc_adapter::petri::{
-    FunctionSummary, PetriNetBuilder, SynthesisConfig, SynthesisOutcome, Synthesizer, TypeDescriptor,
-};
+use anyhow::{Context, Result, anyhow, bail};
 use trustfall_rustdoc_adapter::Crate;
+use trustfall_rustdoc_adapter::petri::{
+    BorrowKind, FunctionSummary, PetriNetBuilder, SynthesisConfig, SynthesisOutcome, Synthesizer,
+    TypeDescriptor,
+};
 
 fn main() -> Result<()> {
     let args = parse_args()?;
@@ -16,8 +17,7 @@ fn main() -> Result<()> {
             .with_context(|| format!("无法打开 rustdoc JSON 文件:{}", args.json_path.display()))?,
     );
 
-    let crate_data: Crate =
-        serde_json::from_reader(reader).context("解析 rustdoc JSON 失败")?;
+    let crate_data: Crate = serde_json::from_reader(reader).context("解析 rustdoc JSON 失败")?;
 
     let petri_net = PetriNetBuilder::from_crate(&crate_data);
 
@@ -93,11 +93,7 @@ fn main() -> Result<()> {
 
 fn print_transition(index: usize, summary: &FunctionSummary) -> io::Result<()> {
     let mut stdout = io::stdout().lock();
-    writeln!(
-        stdout,
-        "步骤 {index}: {}",
-        summary.signature
-    )?;
+    writeln!(stdout, "步骤 {index}: {}", summary.signature)?;
     if let Some(path) = &summary.qualified_path {
         writeln!(stdout, "  定位:{path}")?;
     }
@@ -143,9 +139,7 @@ fn print_transition(index: usize, summary: &FunctionSummary) -> io::Result<()> {
 
 fn describe_context(context: &trustfall_rustdoc_adapter::petri::FunctionContext) -> String {
     match context {
-        trustfall_rustdoc_adapter::petri::FunctionContext::FreeFunction => {
-            "自由函数".to_string()
-        }
+        trustfall_rustdoc_adapter::petri::FunctionContext::FreeFunction => "无约束函数".to_string(),
         trustfall_rustdoc_adapter::petri::FunctionContext::InherentMethod { receiver } => {
             format!("固有方法,接收者:{}", receiver.display())
         }
@@ -183,14 +177,62 @@ fn find_descriptor(
     net: &trustfall_rustdoc_adapter::petri::PetriNet,
     name: &str,
 ) -> Option<TypeDescriptor> {
-    net.places().find_map(|place| {
+    // 解析借用类型前缀
+    let (base_name, borrow_kind) = parse_borrow_prefix(name);
+
+    // 查找基础类型（规范化版本）
+    let base_descriptor = net.places().find_map(|place| {
         let descriptor = &place.1.descriptor;
-        if descriptor.display() == name || descriptor.canonical() == name {
-            Some(descriptor.clone())
+        let normalized = descriptor.normalized();
+        if normalized.display() == base_name || normalized.canonical() == base_name {
+            Some(normalized)
         } else {
             None
         }
-    })
+    })?;
+
+    Some(base_descriptor.with_borrow_kind(borrow_kind))
+}
+
+/// 解析类型名中的借用前缀，返回基础类型名和借用类型
+fn parse_borrow_prefix(name: &str) -> (&str, BorrowKind) {
+    let name = name.trim();
+
+    // 检查原始指针
+    if name.starts_with("*const ") {
+        return (&name[7..].trim(), BorrowKind::RawConstPtr);
+    }
+    if name.starts_with("*mut ") {
+        return (&name[5..].trim(), BorrowKind::RawMutPtr);
+    }
+
+    // 检查引用
+    if name.starts_with('&') {
+        let mut rest = &name[1..];
+        // 跳过生命周期
+        while rest.starts_with('\'') {
+            let mut end = 1;
+            while end < rest.len() && (rest.as_bytes()[end] as char).is_alphanumeric()
+                || rest.as_bytes()[end] == b'_'
+            {
+                end += 1;
+            }
+            rest = &rest[end..].trim_start();
+        }
+        // 检查 mut
+        if rest.starts_with("mut ") {
+            return (&rest[4..].trim(), BorrowKind::MutRef);
+        } else if rest.starts_with("mut")
+            && (rest.len() == 3 || !(rest.as_bytes()[3] as char).is_alphabetic())
+        {
+            return (&rest[3..].trim(), BorrowKind::MutRef);
+        } else {
+            return (rest.trim(), BorrowKind::SharedRef);
+        }
+    }
+
+    // 没有借用前缀，是 Owned
+    (name, BorrowKind::Owned)
 }
 
 struct CliArgs {
@@ -214,15 +256,11 @@ fn parse_args() -> Result<CliArgs> {
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--rustdoc" => {
-                let value = args
-                    .next()
-                    .context("`--rustdoc` 需要一个输入文件路径")?;
+                let value = args.next().context("`--rustdoc` 需要一个输入文件路径")?;
                 json_path = Some(PathBuf::from(value));
             }
             "--input" => {
-                let value = args
-                    .next()
-                    .context("`--input` 需要一个类型字符串")?;
+                let value = args.next().context("`--input` 需要一个类型字符串")?;
                 input_types.push(value);
             }
             "--goal" => {
@@ -230,21 +268,15 @@ fn parse_args() -> Result<CliArgs> {
                 goal_types.push(value);
             }
             "--emit-net" => {
-                let value = args
-                    .next()
-                    .context("`--emit-net` 需要一个输出文件路径")?;
+                let value = args.next().context("`--emit-net` 需要一个输出文件路径")?;
                 emit_net = Some(PathBuf::from(value));
             }
             "--max-depth" => {
-                let value = args
-                    .next()
-                    .context("`--max-depth` 需要最大探索深度")?;
+                let value = args.next().context("`--max-depth` 需要最大探索深度")?;
                 max_depth = Some(value.parse().context("无法解析 --max-depth 为数字")?);
             }
             "--max-states" => {
-                let value = args
-                    .next()
-                    .context("`--max-states` 需要最大状态数量")?;
+                let value = args.next().context("`--max-states` 需要最大状态数量")?;
                 max_states = Some(value.parse().context("无法解析 --max-states 为数字")?);
             }
             "--help" | "-h" => {
@@ -287,4 +319,3 @@ fn print_usage() {
   --max-states <N>          搜索过程中允许的最大状态数量(默认 10000)."
     );
 }
-

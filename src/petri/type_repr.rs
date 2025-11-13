@@ -80,6 +80,71 @@ impl TypeDescriptor {
         &self.lifetimes
     }
 
+    /// 创建一个新的 TypeDescriptor，使用指定的借用类型
+    pub fn with_borrow_kind(&self, borrow: BorrowKind) -> Self {
+        Self {
+            canonical: self.canonical.clone(),
+            display: self.display.clone(),
+            borrow,
+            lifetimes: self.lifetimes.clone(),
+        }
+    }
+
+    /// `T`、`&T`、`&mut T` 映射到同一个库所
+    pub fn normalized(&self) -> Self {
+        // 如果已经是 Owned，直接返回
+        if matches!(self.borrow, BorrowKind::Owned) {
+            return self.clone();
+        }
+
+        // 从字符串中去掉引用前缀
+        let strip_ref_prefix = |s: &str| -> String {
+            let mut s = s.trim();
+            // 去掉原始指针前缀
+            if s.starts_with("*const ") {
+                return s[7..].trim().to_string();
+            }
+            if s.starts_with("*mut ") {
+                return s[5..].trim().to_string();
+            }
+            // 去掉引用前缀：&'lifetime mut 或 &'lifetime 或 &mut 或 &
+            if s.starts_with('&') {
+                s = &s[1..];
+                // 去掉生命周期：'a 或 'a_
+                while s.starts_with('\'') {
+                    // 找到生命周期结束位置
+                    let mut end = 1;
+                    while end < s.len() && (s.as_bytes()[end] as char).is_alphanumeric()
+                        || s.as_bytes()[end] == b'_'
+                    {
+                        end += 1;
+                    }
+                    s = &s[end..].trim_start();
+                }
+                // 去掉 mut
+                if s.starts_with("mut ") {
+                    s = &s[4..];
+                } else if s.starts_with("mut")
+                    && (s.len() == 3 || !(s.as_bytes()[3] as char).is_alphabetic())
+                {
+                    s = &s[3..];
+                }
+                return s.trim().to_string();
+            }
+            s.to_string()
+        };
+
+        let canonical = Arc::<str>::from(strip_ref_prefix(self.canonical()));
+        let display = Arc::<str>::from(strip_ref_prefix(self.display()));
+
+        Self {
+            canonical,
+            display,
+            borrow: BorrowKind::Owned,
+            lifetimes: self.lifetimes.clone(),
+        }
+    }
+
     pub(crate) fn replace_self(&self, replacement: &TypeDescriptor) -> Option<Self> {
         let display = self.display();
         let canonical = self.canonical();
@@ -124,4 +189,3 @@ mod tests {
         assert_eq!(replaced.display(), "&crate::MyType");
     }
 }
-
