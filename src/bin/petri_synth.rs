@@ -184,7 +184,7 @@ fn find_descriptor(
     name: &str,
 ) -> Option<TypeDescriptor> {
     net.places().find_map(|place| {
-        let descriptor = &place.descriptor;
+        let descriptor = &place.1.descriptor;
         if descriptor.display() == name || descriptor.canonical() == name {
             Some(descriptor.clone())
         } else {

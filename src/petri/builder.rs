@@ -4,9 +4,8 @@ use std::sync::Arc;
 use rustdoc_types::{Crate, Function, GenericParamDefKind, Id, Impl, Item, ItemEnum, Path as RustdocPath, Type};
 
 use super::net::{
-    ArcKind, ArcMultiplicity, FunctionContext, FunctionSummary, ParameterSummary, PetriNet,
+    ArcData, ArcKind, FunctionContext, FunctionSummary, ParameterSummary, PetriNet,
     PlaceId,
-    TransitionInput, TransitionOutput,
 };
 use super::type_repr::TypeDescriptor;
 use super::util::TypeFormatter;
@@ -192,12 +191,12 @@ impl<'a> PetriNetBuilder<'a> {
                 descriptor: descriptor.clone(),
             };
             summary_inputs.push(parameter.clone());
-            input_arcs.push(TransitionInput {
-                place: place_id,
-                multiplicity: ArcMultiplicity::One,
+            input_arcs.push((place_id, ArcData {
+                weight: 1,
                 parameter: Some(parameter),
                 kind: ArcKind::Normal,
-            });
+                descriptor: None,
+            }));
         }
 
         let mut output_descriptor = func
@@ -215,12 +214,12 @@ impl<'a> PetriNetBuilder<'a> {
         let mut output_arcs = Vec::new();
         if let Some(descriptor) = output_descriptor.clone() {
             let place_id = self.ensure_place(descriptor.clone());
-            output_arcs.push(TransitionOutput {
-                place: place_id,
-                multiplicity: ArcMultiplicity::One,
-                descriptor: descriptor.clone(),
+            output_arcs.push((place_id, ArcData {
+                weight: 1,
+                parameter: None,
                 kind: ArcKind::Normal,
-            });
+                descriptor: Some(descriptor),
+            }));
         }
 
         let mut generics = impl_generics
@@ -270,12 +269,12 @@ impl<'a> PetriNetBuilder<'a> {
 
         let transition_id = self.net.add_transition(function_summary);
 
-        for arc in input_arcs {
-            self.net.add_input_arc(transition_id, arc);
+        for (place_id, arc_data) in input_arcs {
+            self.net.add_input_arc_from_place(place_id, transition_id, arc_data);
         }
 
-        for arc in output_arcs {
-            self.net.add_output_arc(transition_id, arc);
+        for (place_id, arc_data) in output_arcs {
+            self.net.add_output_arc_to_place(transition_id, place_id, arc_data);
         }
     }
 
@@ -377,7 +376,7 @@ mod tests {
         let crate_ = load_test_crate("method_self_receivers");
         let net = PetriNetBuilder::from_crate(&crate_);
 
-        for place in net.places() {
+        for (_place_id, place) in net.places() {
             assert!(
                 !place.descriptor.display().contains("Self"),
                 "unexpected Self in place {:?}",
@@ -385,11 +384,11 @@ mod tests {
             );
         }
 
-        for transition in net.transitions() {
+        for (_transition_id, transition) in net.transitions() {
             let receiver = context_receiver_descriptor(&transition.summary.context);
 
             if let Some(_) = receiver {
-                for input in &transition.inputs {
+                for (_place_id, input) in net.transition_inputs(_transition_id) {
                     if let Some(param) = &input.parameter {
                         assert!(
                             !param.descriptor.display().contains("Self"),

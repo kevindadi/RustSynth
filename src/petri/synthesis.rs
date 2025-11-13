@@ -1,6 +1,6 @@
 use std::collections::{HashSet, VecDeque};
 
-use super::net::{ArcMultiplicity, PetriNet, Transition, TransitionId};
+use super::net::{PetriNet, PlaceId, TransitionId};
 use super::type_repr::TypeDescriptor;
 
 #[derive(Clone, Copy, Debug)]
@@ -55,13 +55,22 @@ impl<'a> Synthesizer<'a> {
         initial: &[TypeDescriptor],
         goal: &[TypeDescriptor],
     ) -> SynthesisOutcome {
-        let place_len = self.net.place_count();
+        // 创建 PlaceId 到索引的映射
+        let place_indices: std::collections::HashMap<PlaceId, usize> = self.net
+            .places()
+            .enumerate()
+            .map(|(idx, (place_id, _))| (place_id, idx))
+            .collect();
+        
+        let place_len = place_indices.len();
         let mut initial_marking = vec![0u32; place_len];
 
         let mut missing = Vec::new();
         for descriptor in initial {
             if let Some(place_id) = self.net.place_id(descriptor) {
-                initial_marking[place_id.0] += 1;
+                if let Some(&idx) = place_indices.get(&place_id) {
+                    initial_marking[idx] += 1;
+                }
             } else {
                 missing.push(descriptor.display().to_string());
             }
@@ -70,7 +79,9 @@ impl<'a> Synthesizer<'a> {
         let mut goal_tokens = vec![0u32; place_len];
         for descriptor in goal {
             if let Some(place_id) = self.net.place_id(descriptor) {
-                goal_tokens[place_id.0] += 1;
+                if let Some(&idx) = place_indices.get(&place_id) {
+                    goal_tokens[idx] += 1;
+                }
             } else {
                 missing.push(descriptor.display().to_string());
             }
@@ -97,20 +108,20 @@ impl<'a> Synthesizer<'a> {
                 continue;
             }
 
-            for transition in self.net.transitions() {
-                if !is_enabled(&marking, transition) {
+            for (transition_id, _transition) in self.net.transitions() {
+                if !is_enabled(&marking, self.net, transition_id, &place_indices) {
                     continue;
                 }
 
                 let mut next_marking = marking.clone();
-                fire_transition(&mut next_marking, transition);
+                fire_transition(&mut next_marking, self.net, transition_id, &place_indices);
 
                 if !visited.insert(next_marking.clone()) {
                     continue;
                 }
 
                 let mut next_path = path.clone();
-                next_path.push(transition.id);
+                next_path.push(transition_id);
 
                 if satisfies_goal(&next_marking, &goal_tokens) {
                     return SynthesisOutcome::Success(SynthesisPlan { transitions: next_path });
@@ -135,30 +146,39 @@ fn satisfies_goal(marking: &[u32], goal: &[u32]) -> bool {
         .all(|(have, need)| have >= need)
 }
 
-fn is_enabled(marking: &[u32], transition: &Transition) -> bool {
-    transition.inputs.iter().all(|input| {
-        let available = marking[input.place.0];
-        match input.multiplicity {
-            ArcMultiplicity::One => available >= 1,
-            ArcMultiplicity::Many(n) => available >= n,
+fn is_enabled(
+    marking: &[u32],
+    net: &PetriNet,
+    transition_id: TransitionId,
+    place_indices: &std::collections::HashMap<PlaceId, usize>,
+) -> bool {
+    net.transition_inputs(transition_id).all(|(place_id, arc_data)| {
+        if let Some(&idx) = place_indices.get(&place_id) {
+            let available = marking[idx];
+            available >= arc_data.weight
+        } else {
+            false
         }
     })
 }
 
-fn fire_transition(marking: &mut [u32], transition: &Transition) {
-    for input in &transition.inputs {
-        match input.multiplicity {
-            ArcMultiplicity::One => marking[input.place.0] = marking[input.place.0].saturating_sub(1),
-            ArcMultiplicity::Many(n) => {
-                marking[input.place.0] = marking[input.place.0].saturating_sub(n);
-            }
+fn fire_transition(
+    marking: &mut [u32],
+    net: &PetriNet,
+    transition_id: TransitionId,
+    place_indices: &std::collections::HashMap<PlaceId, usize>,
+) {
+    // 消耗输入弧的令牌
+    for (place_id, arc_data) in net.transition_inputs(transition_id) {
+        if let Some(&idx) = place_indices.get(&place_id) {
+            marking[idx] = marking[idx].saturating_sub(arc_data.weight);
         }
     }
 
-    for output in &transition.outputs {
-        match output.multiplicity {
-            ArcMultiplicity::One => marking[output.place.0] += 1,
-            ArcMultiplicity::Many(n) => marking[output.place.0] += n,
+    // 产生输出弧的令牌
+    for (place_id, arc_data) in net.transition_outputs(transition_id) {
+        if let Some(&idx) = place_indices.get(&place_id) {
+            marking[idx] += arc_data.weight;
         }
     }
 }

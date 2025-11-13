@@ -6,8 +6,8 @@ pub(crate) mod util;
 
 pub use builder::PetriNetBuilder;
 pub use net::{
-    ArcMultiplicity, FunctionContext, FunctionSummary, ParameterSummary, PetriNet, Place, PlaceId,
-    Transition, TransitionId, TransitionInput, TransitionOutput,
+    ArcData, ArcWeight, FunctionContext, FunctionSummary, ParameterSummary, PetriNet, Place, PlaceId,
+    Transition, TransitionId,
 };
 pub use synthesis::{SynthesisConfig, SynthesisOutcome, SynthesisPlan, Synthesizer};
 pub use type_repr::{BorrowKind, TypeDescriptor};

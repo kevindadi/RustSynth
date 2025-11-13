@@ -24,6 +24,7 @@ serde_json = "1.0.143"
 trustfall = "0.8.1"
 cargo_metadata = "0.23.0"
 indexmap = { version = "2.11.0", features = ["serde"] }
+petgraph = { version = "0.8.3", features = ["serde-1"] }
 
 #
 # Keep this dependency last, its own block, since we change it often via automated means
