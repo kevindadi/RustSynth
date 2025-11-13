@@ -6,8 +6,8 @@ use std::path::PathBuf;
 use anyhow::{Context, Result, anyhow, bail};
 use trustfall_rustdoc_adapter::Crate;
 use trustfall_rustdoc_adapter::petri::{
-    BorrowKind, FunctionSummary, PetriNetBuilder, SynthesisConfig, SynthesisOutcome, Synthesizer,
-    TypeDescriptor,
+    BorrowKind, FunctionSummary, PetriNetBuilder, PlaceId, SynthesisConfig, SynthesisOutcome,
+    Synthesizer, TypeDescriptor,
 };
 
 fn main() -> Result<()> {
@@ -66,9 +66,21 @@ fn main() -> Result<()> {
         SynthesisOutcome::Success(plan) => {
             println!("合成成功,调用序列长度:{}", plan.transitions.len());
             for (idx, transition_id) in plan.transitions.iter().enumerate() {
+                if idx < plan.states.len() {
+                    print_state(&petri_net, idx, &plan.states[idx], &plan.place_indices)?;
+                }
+
                 if let Some(transition) = petri_net.transition(*transition_id) {
                     print_transition(idx, &transition.summary)?;
                 }
+            }
+            if let Some(final_state) = plan.states.last() {
+                print_state(
+                    &petri_net,
+                    plan.transitions.len(),
+                    final_state,
+                    &plan.place_indices,
+                )?;
             }
         }
         SynthesisOutcome::InvalidTypes { missing } => {
@@ -88,6 +100,59 @@ fn main() -> Result<()> {
         }
     }
 
+    Ok(())
+}
+
+fn print_state(
+    net: &trustfall_rustdoc_adapter::petri::PetriNet,
+    step: usize,
+    state: &trustfall_rustdoc_adapter::petri::StepState,
+    place_indices: &std::collections::HashMap<PlaceId, usize>,
+) -> io::Result<()> {
+    let mut stdout = io::stdout().lock();
+    writeln!(stdout, "步骤 {step} 后的库所状态:")?;
+
+    // 找到所有有令牌的库所
+    let mut places_with_tokens = Vec::new();
+    for (place_id, place) in net.places() {
+        if let Some(&idx) = place_indices.get(&place_id) {
+            if state.marking[idx] > 0 {
+                places_with_tokens.push((place_id, place, state.marking[idx]));
+            }
+        }
+    }
+
+    if places_with_tokens.is_empty() {
+        writeln!(stdout, "  (无令牌)")?;
+    } else {
+        for (place_id, place, count) in places_with_tokens {
+            let borrow_kinds = state.available_borrows.get(&place_id);
+            let borrow_str = if let Some(borrows) = borrow_kinds {
+                let mut kinds: Vec<String> = borrows
+                    .iter()
+                    .map(|b| match *b {
+                        BorrowKind::Owned => "Owned".to_string(),
+                        BorrowKind::SharedRef => "&".to_string(),
+                        BorrowKind::MutRef => "&mut".to_string(),
+                        BorrowKind::RawConstPtr => "*const".to_string(),
+                        BorrowKind::RawMutPtr => "*mut".to_string(),
+                    })
+                    .collect();
+                kinds.sort();
+                format!("[{}]", kinds.join(", "))
+            } else {
+                "[Unknown]".to_string()
+            };
+            writeln!(
+                stdout,
+                "  {}: {} 个令牌, 借用类型: {}",
+                place.descriptor.display(),
+                count,
+                borrow_str
+            )?;
+        }
+    }
+    writeln!(stdout)?;
     Ok(())
 }
 

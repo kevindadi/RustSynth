@@ -19,8 +19,16 @@ impl Default for SynthesisConfig {
 }
 
 #[derive(Clone, Debug)]
+pub struct StepState {
+    pub marking: Vec<u32>,
+    pub available_borrows: std::collections::HashMap<PlaceId, HashSet<BorrowKind>>,
+}
+
+#[derive(Clone, Debug)]
 pub struct SynthesisPlan {
     pub transitions: Vec<TransitionId>,
+    pub states: Vec<StepState>, // 每个步骤后的状态（包括初始状态和每个变迁后的状态）
+    pub place_indices: std::collections::HashMap<PlaceId, usize>, // PlaceId 到索引的映射
 }
 
 #[derive(Clone, Debug)]
@@ -100,6 +108,12 @@ impl<'a> Synthesizer<'a> {
             return SynthesisOutcome::InvalidTypes { missing };
         }
 
+        // 记录初始状态
+        let initial_state = StepState {
+            marking: initial_marking.clone(),
+            available_borrows: available_borrows.clone(),
+        };
+
         if satisfies_goal(
             &initial_marking,
             &goal_tokens,
@@ -108,6 +122,8 @@ impl<'a> Synthesizer<'a> {
         ) {
             return SynthesisOutcome::Success(SynthesisPlan {
                 transitions: Vec::new(),
+                states: vec![initial_state],
+                place_indices: place_indices.clone(),
             });
         }
 
@@ -118,10 +134,16 @@ impl<'a> Synthesizer<'a> {
             Vec<u32>,
             Vec<TransitionId>,
             std::collections::HashMap<PlaceId, HashSet<BorrowKind>>,
+            Vec<StepState>, // 状态序列
         )> = VecDeque::new();
-        queue.push_back((initial_marking, Vec::new(), available_borrows));
+        queue.push_back((
+            initial_marking,
+            Vec::new(),
+            available_borrows,
+            vec![initial_state],
+        ));
 
-        while let Some((marking, path, available_borrows)) = queue.pop_front() {
+        while let Some((marking, path, available_borrows, states)) = queue.pop_front() {
             if path.len() >= self.config.max_depth {
                 continue;
             }
@@ -154,6 +176,14 @@ impl<'a> Synthesizer<'a> {
                 let mut next_path = path.clone();
                 next_path.push(transition_id);
 
+                // 记录新状态
+                let next_state = StepState {
+                    marking: next_marking.clone(),
+                    available_borrows: next_available_borrows.clone(),
+                };
+                let mut next_states = states.clone();
+                next_states.push(next_state);
+
                 if satisfies_goal(
                     &next_marking,
                     &goal_tokens,
@@ -162,6 +192,8 @@ impl<'a> Synthesizer<'a> {
                 ) {
                     return SynthesisOutcome::Success(SynthesisPlan {
                         transitions: next_path,
+                        states: next_states,
+                        place_indices: place_indices.clone(),
                     });
                 }
 
@@ -169,7 +201,7 @@ impl<'a> Synthesizer<'a> {
                     return SynthesisOutcome::LimitExceeded;
                 }
 
-                queue.push_back((next_marking, next_path, next_available_borrows));
+                queue.push_back((next_marking, next_path, next_available_borrows, next_states));
             }
         }
 
