@@ -4,7 +4,34 @@ use petgraph::{Direction, graph::NodeIndex, stable_graph::StableGraph, visit::Ed
 use rustdoc_types::Id;
 use serde::{Deserialize, Serialize};
 
-use super::type_repr::TypeDescriptor;
+use super::type_repr::{BorrowKind, TypeDescriptor};
+
+/// Token 表示 Petri 网中的令牌
+/// 类型化 Petri 网中，token 包含类型信息和借用信息
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Token {
+    /// 令牌的类型描述符（规范化后的类型，不考虑借用）
+    pub descriptor: TypeDescriptor,
+    /// 令牌的借用类型（Owned、SharedRef、MutRef 等）
+    pub borrow_kind: BorrowKind,
+}
+
+impl Token {
+    pub fn new(descriptor: TypeDescriptor, borrow_kind: BorrowKind) -> Self {
+        Self {
+            descriptor,
+            borrow_kind,
+        }
+    }
+
+    /// 从类型描述符创建 token（使用描述符本身的借用类型）
+    pub fn from_descriptor(descriptor: TypeDescriptor) -> Self {
+        Self {
+            borrow_kind: descriptor.borrow_kind(),
+            descriptor: descriptor.normalized(),
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PlaceId(pub(crate) NodeIndex);
@@ -502,18 +529,69 @@ impl PetriNet {
     }
 
     fn write_places(&self, dot: &mut String) {
+        // 按类型分组，基本类型在前
+        let mut primitive_places = Vec::new();
+        let mut other_places = Vec::new();
+        
         for (id, place) in self.places() {
-            let text = format!("p{}: {}", id.0.index(), place.descriptor.display());
-            let label = html_label(&[text.as_str()]);
-            let _ = writeln!(dot, "  p{} [shape=circle,label=<{}>];", id.0.index(), label);
+            let type_name = place.descriptor.display();
+            if matches!(
+                type_name,
+                "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
+                    | "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
+                    | "f32" | "f64" | "bool" | "char" | "str"
+            ) {
+                primitive_places.push((id, place));
+            } else {
+                other_places.push((id, place));
+            }
+        }
+        
+        // 先输出基本类型
+        for (id, place) in primitive_places {
+            let label = html_escape(place.descriptor.display());
+            let _ = writeln!(
+                dot,
+                "  p{} [shape=circle,style=filled,fillcolor=lightblue,label=\"{}\"];",
+                id.0.index(),
+                label
+            );
+        }
+        
+        // 再输出其他类型
+        for (id, place) in other_places {
+            let label = html_escape(place.descriptor.display());
+            let _ = writeln!(
+                dot,
+                "  p{} [shape=circle,label=\"{}\"];",
+                id.0.index(),
+                label
+            );
         }
     }
 
     fn write_transitions(&self, dot: &mut String) {
         for (id, transition) in self.transitions() {
             let summary = &transition.summary;
-            let label = html_label(&[summary.display_name(), summary.signature.as_ref()]);
-            let _ = writeln!(dot, "  t{} [shape=box,label=<{}>];", id.0.index(), label);
+            let name = summary.display_name();
+            let sig = summary.signature.as_ref();
+            
+            // 简化签名显示（只显示函数名和主要类型）
+            let short_sig = if sig.len() > 100 {
+                // 截断过长的签名
+                let truncated = &sig[..97];
+                format!("{}...", truncated)
+            } else {
+                sig.to_string()
+            };
+            
+            let label = format!("{}<BR/>{}", html_escape(name), html_escape(&short_sig));
+            let _ = writeln!(
+                dot,
+                "  t{} [shape=box,style=rounded,label=<{}>];",
+                id.0.index(),
+                label
+            );
         }
     }
 
@@ -538,18 +616,60 @@ impl PetriNet {
         transition_id: TransitionId,
         arc: &ArcData,
     ) {
-        let name_ref = arc
+        // 构建边标签
+        let mut label_parts = Vec::new();
+        
+        // 添加参数名（如果有）
+        if let Some(name) = arc
             .parameter
             .as_ref()
-            .and_then(|param| param.name.as_deref());
-        let descriptor_ref = arc
+            .and_then(|param| param.name.as_deref())
+        {
+            label_parts.push(html_escape(name));
+        }
+        
+        // 添加借用类型标记
+        if let Some(borrow_kind) = arc.borrow_kind {
+            let borrow_mark = match borrow_kind {
+                BorrowKind::Owned => "",
+                BorrowKind::SharedRef => "&",
+                BorrowKind::MutRef => "&mut ",
+                BorrowKind::RawConstPtr => "*const ",
+                BorrowKind::RawMutPtr => "*mut ",
+            };
+            if !borrow_mark.is_empty() {
+                label_parts.push(borrow_mark.to_string());
+            }
+        }
+        
+        // 添加类型名（简化显示）
+        if let Some(descriptor) = arc
             .parameter
             .as_ref()
             .map(|param| &param.descriptor)
-            .or_else(|| self.place(place_id).map(|place| &place.descriptor));
-
-        let label =
-            descriptor_ref.and_then(|descriptor| edge_label_from_parameter(name_ref, descriptor));
+            .or_else(|| self.place(place_id).map(|place| &place.descriptor))
+        {
+            let type_name = descriptor.display();
+            // 简化类型名显示
+            let short_name = if type_name.len() > 30 {
+                let parts: Vec<&str> = type_name.split("::").collect();
+                if parts.len() > 2 {
+                    format!("...{}", parts.last().unwrap_or(&type_name))
+                } else {
+                    format!("{}...", &type_name[..27])
+                }
+            } else {
+                type_name.to_string()
+            };
+            label_parts.push(html_escape(&short_name));
+        }
+        
+        let label = if label_parts.is_empty() {
+            None
+        } else {
+            Some(label_parts.join(" "))
+        };
+        
         let attr = edge_attr(
             arc.kind,
             combine_edge_parts(label, weight_suffix(arc.weight)),
@@ -570,11 +690,50 @@ impl PetriNet {
         place_id: PlaceId,
         arc: &ArcData,
     ) {
-        let label = arc
+        // 构建边标签
+        let mut label_parts = Vec::new();
+        
+        // 添加借用类型标记
+        if let Some(borrow_kind) = arc.borrow_kind {
+            let borrow_mark = match borrow_kind {
+                BorrowKind::Owned => "",
+                BorrowKind::SharedRef => "&",
+                BorrowKind::MutRef => "&mut ",
+                BorrowKind::RawConstPtr => "*const ",
+                BorrowKind::RawMutPtr => "*mut ",
+            };
+            if !borrow_mark.is_empty() {
+                label_parts.push(borrow_mark.to_string());
+            }
+        }
+        
+        // 添加类型名
+        if let Some(descriptor) = arc
             .descriptor
             .as_ref()
             .or_else(|| self.place(place_id).map(|place| &place.descriptor))
-            .map(|d| d.display().to_string());
+        {
+            let type_name = descriptor.display();
+            // 简化类型名显示
+            let short_name = if type_name.len() > 30 {
+                let parts: Vec<&str> = type_name.split("::").collect();
+                if parts.len() > 2 {
+                    format!("...{}", parts.last().unwrap_or(&type_name))
+                } else {
+                    format!("{}...", &type_name[..27])
+                }
+            } else {
+                type_name.to_string()
+            };
+            label_parts.push(html_escape(&short_name));
+        }
+        
+        let label = if label_parts.is_empty() {
+            None
+        } else {
+            Some(label_parts.join(" "))
+        };
+        
         let attr = edge_attr(
             arc.kind,
             combine_edge_parts(label, weight_suffix(arc.weight)),

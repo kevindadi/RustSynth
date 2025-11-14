@@ -287,7 +287,8 @@ fn is_enabled(
     place_indices: &std::collections::HashMap<PlaceId, usize>,
     available_borrows: &std::collections::HashMap<PlaceId, HashSet<BorrowKind>>,
 ) -> bool {
-    net.transition_inputs(transition_id)
+    // 首先检查所有有 Place 的输入弧是否满足
+    let all_place_inputs_satisfied = net.transition_inputs(transition_id)
         .all(|(place_id, arc_data)| {
             if let Some(&idx) = place_indices.get(&place_id) {
                 let available = marking[idx];
@@ -315,7 +316,112 @@ fn is_enabled(
             } else {
                 false
             }
+        });
+
+    if !all_place_inputs_satisfied {
+        return false;
+    }
+
+    // 检查泛型参数的 guard：对于没有 Place 的输入参数（泛型参数），检查是否有 token 满足约束
+    if let Some(transition) = net.transition(transition_id) {
+        let summary = &transition.summary;
+        
+        // 收集所有有 Place 的输入参数
+        let place_input_descriptors: HashSet<_> = net.transition_inputs(transition_id)
+            .filter_map(|(place_id, _)| {
+                net.place(place_id).map(|place| place.descriptor.clone())
+            })
+            .collect();
+
+        // 检查所有输入参数（包括泛型参数）
+        for input_param in &summary.inputs {
+            // 如果该输入参数没有对应的 Place（即泛型参数），需要 guard 检查
+            if !place_input_descriptors.contains(&input_param.descriptor.normalized()) {
+                if !check_generic_guard(
+                    &input_param.descriptor,
+                    marking,
+                    net,
+                    place_indices,
+                    available_borrows,
+                    &summary.trait_bounds,
+                ) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    true
+}
+
+/// 检查泛型参数的 guard：当前 marking 中是否有 token 满足该泛型参数的约束
+fn check_generic_guard(
+    _generic_descriptor: &TypeDescriptor,
+    marking: &[u32],
+    net: &PetriNet,
+    place_indices: &std::collections::HashMap<PlaceId, usize>,
+    _available_borrows: &std::collections::HashMap<PlaceId, HashSet<BorrowKind>>,
+    trait_bounds: &[std::sync::Arc<str>],
+) -> bool {
+    // 如果泛型参数没有 trait 约束，所有类型都可以满足（但这里应该至少有一个 token）
+    if trait_bounds.is_empty() {
+        // 检查 marking 中是否有任何 token
+        return marking.iter().any(|&count| count > 0);
+    }
+
+    // 对于每个有 token 的 Place，检查是否满足泛型参数的 trait 约束
+    for (place_id, place) in net.places() {
+        if let Some(&idx) = place_indices.get(&place_id) {
+            if marking[idx] > 0 {
+                // 检查该 Place 是否满足泛型参数的所有 trait 约束
+                if trait_bounds_satisfied(place, trait_bounds) {
+                    // 还需要检查借用类型兼容性（如果有要求）
+                    // 泛型参数默认是 Owned，但可以从其他借用类型转换
+                    return true;
+                }
+            }
+        }
+    }
+
+    false
+}
+
+/// 检查 Place 是否满足给定的 trait 约束
+fn trait_bounds_satisfied(
+    place: &super::net::Place,
+    trait_bounds: &[std::sync::Arc<str>],
+) -> bool {
+    // 获取 Place 实现的 trait 列表
+    let implemented_traits: HashSet<&str> = place
+        .implemented_traits
+        .iter()
+        .map(|t| t.as_ref())
+        .collect();
+
+    // 检查是否所有要求的 trait 都被实现了
+    trait_bounds.iter().all(|bound| {
+        let bound_str = bound.as_ref();
+        
+        // 提取 trait 名称（去掉可能的关联类型约束，如 Iterator<Item = u8> 中的 Iterator）
+        let trait_name = if let Some(lt_pos) = bound_str.find('<') {
+            &bound_str[..lt_pos].trim()
+        } else {
+            bound_str.trim()
+        };
+        
+        // 移除可能的 '?' 修饰符
+        let trait_name = trait_name.trim_start_matches('?').trim();
+        
+        // 提取简单名称（最后一部分）
+        let simple_name = trait_name.split("::").last().unwrap_or(trait_name);
+        
+        // 检查是否实现了该 trait（支持完整路径或简单名称匹配）
+        implemented_traits.iter().any(|&impl_trait| {
+            impl_trait == trait_name
+                || impl_trait.ends_with(&format!("::{}", simple_name))
+                || impl_trait == simple_name
         })
+    })
 }
 
 fn fire_transition(
