@@ -17,6 +17,8 @@ cargo_toml = { version = "0.22.3", features = ["features"] }
 anyhow = "1.0.99"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.143"
+log = "0.4"
+pretty_env_logger = "0.5"
 
 # Packages in our public API, where bumping a major version is a breaking change.
 # Extra spacing included to minimize the chance of merge conflicts.

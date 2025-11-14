@@ -1,6 +1,7 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
+use log::{info, debug};
 use rustdoc_types::{
     Crate, Function, GenericParamDefKind, Id, Impl, Item, ItemEnum, Path as RustdocPath, Type,
 };
@@ -46,20 +47,28 @@ impl<'a> PetriNetBuilder<'a> {
     /// 3. 泛型约束作为变迁的 guard，不需要为泛型参数创建 Place
     /// 4. 输入边带上 borrow_kind 约束，输出边带上返回类型的 borrow_kind
     pub fn ingest(&mut self) {
+        info!("🔨 开始构建 Petri Net...");
+        
         // 第一步：创建所有基本类型的库所
+        info!("📦 步骤 1/4: 创建基本类型的 Place");
         self.create_primitive_places();
 
         // 第二步：遍历所有 Struct、Enum、Union 等类型定义，为它们创建 Place
+        info!("📦 步骤 2/4: 创建类型定义的 Place (Struct/Enum/Union)");
+        let mut type_count = 0;
         for item in self.crate_.index.values() {
             match &item.inner {
                 ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Union(_) => {
                     self.create_type_place(item);
+                    type_count += 1;
                 }
                 _ => {}
             }
         }
+        debug!("   创建了 {} 个类型定义的 Place", type_count);
 
         // 第三步：根据已创建的类型 Place 的 id，查找对应的 impl 块，为方法创建变迁
+        info!("⚙️  步骤 3/4: 处理 impl 块，为方法创建 Transition");
         // 先收集所有需要处理的 impl_id，避免借用冲突
         let mut impl_items_to_process: Vec<(Id, &Impl)> = Vec::new();
         for (type_id, _place_id) in &self.type_place_map {
@@ -98,6 +107,8 @@ impl<'a> PetriNetBuilder<'a> {
         }
         
         // 现在处理所有收集到的 impl 块
+        let impl_count = impl_items_to_process.len();
+        debug!("   找到 {} 个 impl 块需要处理", impl_count);
         for (impl_id, impl_block) in impl_items_to_process {
             if let Some(impl_item) = self.crate_.index.get(&impl_id) {
                 self.ingest_impl(impl_item, impl_block);
@@ -105,6 +116,8 @@ impl<'a> PetriNetBuilder<'a> {
         }
 
         // 第四步：处理无约束函数
+        info!("⚙️  步骤 4/4: 处理无约束函数");
+        let mut free_func_count = 0;
         for item in self.crate_.index.values() {
             if let ItemEnum::Function(func) = &item.inner {
                 if self.impl_function_ids.contains(&item.id) {
@@ -114,11 +127,16 @@ impl<'a> PetriNetBuilder<'a> {
                     continue;
                 }
                 self.ingest_function(item, func, FunctionContext::FreeFunction);
+                free_func_count += 1;
             }
         }
+        debug!("   处理了 {} 个无约束函数", free_func_count);
     }
 
     pub fn finish(self) -> PetriNet {
+        info!("📊 Petri Net 构建完成");
+        info!("   ✅ 总共创建了 {} 个 Place", self.net.place_count());
+        info!("   ✅ 总共创建了 {} 个 Transition", self.net.transition_count());
         self.net
     }
 
@@ -363,7 +381,31 @@ impl<'a> PetriNetBuilder<'a> {
             output: output_descriptor,
         };
 
-        let transition_id = self.net.add_transition(function_summary);
+        let transition_id = self.net.add_transition(function_summary.clone());
+
+        // 记录日志
+        let context_str = match &function_summary.context {
+            FunctionContext::FreeFunction => "FreeFunction".to_string(),
+            FunctionContext::InherentMethod { receiver } => {
+                format!("InherentMethod({})", receiver.display())
+            }
+            FunctionContext::TraitImplementation { receiver, trait_path } => {
+                format!("TraitImplementation({}, {})", receiver.display(), trait_path)
+            }
+        };
+        info!(
+            "   🔄 [Transition] {} (Item ID: {}, Transition ID: {})",
+            function_summary.signature,
+            function_summary.item_id.0,
+            transition_id.0.index()
+        );
+        debug!("       Context: {}", context_str);
+        if !function_summary.generics.is_empty() {
+            debug!("       Generics: {}", function_summary.generics.join(", "));
+        }
+        if !function_summary.trait_bounds.is_empty() {
+            debug!("       Trait Bounds: {}", function_summary.trait_bounds.join(", "));
+        }
 
         for (place_id, arc_data) in input_arcs {
             self.net
@@ -446,7 +488,23 @@ impl<'a> PetriNetBuilder<'a> {
             return None;
         }
         
-        Some(self.net.add_place(descriptor))
+        // 检查 Place 是否已存在（通过规范化后的描述符）
+        let normalized_desc = descriptor.normalized();
+        let existing_id = self.net.place_id(&normalized_desc);
+        
+        if let Some(place_id) = existing_id {
+            // Place 已存在，返回已有 ID
+            return Some(place_id);
+        }
+        
+        // Place 不存在，创建新的并记录日志
+        let place_id = self.net.add_place(descriptor.clone());
+        debug!(
+            "   📍 [Place] {} (Place ID: {}) [通过 ensure_place 创建]",
+            descriptor.display(),
+            place_id.0.index()
+        );
+        Some(place_id)
     }
 
     /// 为类型定义（Struct、Enum、Union）创建 Place
@@ -475,7 +533,22 @@ impl<'a> PetriNetBuilder<'a> {
         let descriptor = TypeDescriptor::from_type(&type_ty);
 
         // 创建类型定义的 Place（使用 Owned 作为默认借用类型，因为这是类型定义本身）
-        let place_id = self.net.add_place(descriptor);
+        let place_id = self.net.add_place(descriptor.clone());
+
+        // 记录日志
+        let type_kind = match &item.inner {
+            ItemEnum::Struct(_) => "Struct",
+            ItemEnum::Enum(_) => "Enum",
+            ItemEnum::Union(_) => "Union",
+            _ => "Unknown",
+        };
+        info!(
+            "   🎯 [Place] {} {} (Item ID: {}, Place ID: {})",
+            type_kind,
+            descriptor.display(),
+            item.id.0,
+            place_id.0.index()
+        );
 
         // 记录类型 Item 的 id 到 PlaceId 的映射
         self.type_place_map.insert(item.id, place_id);
@@ -626,7 +699,13 @@ impl<'a> PetriNetBuilder<'a> {
             let mut implemented_traits: Vec<_> = unique_traits.into_iter().collect();
             implemented_traits.sort();
 
-            self.net.add_primitive_place(descriptor, implemented_traits);
+            let place_id = self.net.add_primitive_place(descriptor.clone(), implemented_traits.clone());
+            debug!(
+                "   📍 [Place] {} (Place ID: {}, Traits: [{}])",
+                descriptor.display(),
+                place_id.0.index(),
+                implemented_traits.join(", ")
+            );
         }
     }
 
