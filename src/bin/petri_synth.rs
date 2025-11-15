@@ -13,33 +13,28 @@ use trustfall_rustdoc_adapter::petri::{
 
 fn main() -> Result<()> {
     let args = parse_args()?;
-    
-    // 初始化日志 - 设置日志级别
     let log_level = if args.verbose {
         LevelFilter::Debug
     } else {
         LevelFilter::Info
     };
-    
-    // 如果指定了日志文件，输出到文件；否则输出到终端
+
     if let Some(log_file) = &args.log_file {
         let log_file_path = log_file.clone();
-        // 使用 pretty_env_logger 输出到文件
         pretty_env_logger::formatted_timed_builder()
             .filter_level(log_level)
             .target(pretty_env_logger::env_logger::Target::Pipe(Box::new(
                 File::create(&log_file_path)
-                    .with_context(|| format!("无法创建日志文件: {}", log_file_path.display()))?
+                    .with_context(|| format!("无法创建日志文件: {}", log_file_path.display()))?,
             )))
             .init();
         eprintln!("📝 日志将保存到: {}", log_file_path.display());
     } else {
-        // 输出到终端，使用彩色格式
         pretty_env_logger::formatted_timed_builder()
             .filter_level(log_level)
             .init();
     }
-    
+
     let reader = BufReader::new(
         File::open(&args.json_path)
             .with_context(|| format!("无法打开 rustdoc JSON 文件:{}", args.json_path.display()))?,
@@ -67,12 +62,12 @@ fn main() -> Result<()> {
             Some("dot") | Some("gv") => {
                 file.write_all(petri_net.to_dot().as_bytes())
                     .context("写出 Petri 网 DOT 失败")?;
-                println!("Petri 网 DOT 拓扑已写入:{}", output_path.display());
+                println!("Petri 网 DOT 文件已写入:{}", output_path.display());
             }
             _ => {
                 serde_json::to_writer_pretty(&mut file, &petri_net)
                     .context("写出 Petri 网 JSON 失败")?;
-                println!("Petri 网 JSON 拓扑已写入:{}", output_path.display());
+                println!("Petri 网 JSON 文件已写入:{}", output_path.display());
             }
         }
     }
@@ -291,15 +286,12 @@ fn find_descriptor(
 fn parse_borrow_prefix(name: &str) -> (&str, BorrowKind) {
     let name = name.trim();
 
-    // 检查原始指针
     if name.starts_with("*const ") {
         return (&name[7..].trim(), BorrowKind::RawConstPtr);
     }
     if name.starts_with("*mut ") {
         return (&name[5..].trim(), BorrowKind::RawMutPtr);
     }
-
-    // 检查引用
     if name.starts_with('&') {
         let mut rest = &name[1..];
         // 跳过生命周期
@@ -324,7 +316,6 @@ fn parse_borrow_prefix(name: &str) -> (&str, BorrowKind) {
         }
     }
 
-    // 没有借用前缀，是 Owned
     (name, BorrowKind::Owned)
 }
 

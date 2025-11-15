@@ -97,10 +97,8 @@ impl TypeDescriptor {
             return self.clone();
         }
 
-        // 从字符串中去掉引用前缀
         let strip_ref_prefix = |s: &str| -> String {
             let mut s = s.trim();
-            // 去掉原始指针前缀
             if s.starts_with("*const ") {
                 return s[7..].trim().to_string();
             }
@@ -110,9 +108,7 @@ impl TypeDescriptor {
             // 去掉引用前缀：&'lifetime mut 或 &'lifetime 或 &mut 或 &
             if s.starts_with('&') {
                 s = &s[1..];
-                // 去掉生命周期：'a 或 'a_
                 while s.starts_with('\'') {
-                    // 找到生命周期结束位置
                     let mut end = 1;
                     while end < s.len() && (s.as_bytes()[end] as char).is_alphanumeric()
                         || s.as_bytes()[end] == b'_'
@@ -170,27 +166,48 @@ impl TypeDescriptor {
         // 检查规范化后的类型名是否是单个标识符（可能是泛型参数）
         let normalized = self.normalized();
         let canonical = normalized.canonical();
-        
+
         // 简单检查：如果规范化后的类型名是单个标识符，且不在已知的基本类型列表中
         // 则可能是泛型参数（但需要更精确的检查）
         // 更好的方法是检查原始的 Type 是否是 Type::Generic
         // 但这里我们只能根据字符串模式来判断
-        
+
         // 如果包含 "::" 或 "<" 或 ">" 或 "("，则不是简单的泛型参数
-        if canonical.contains("::") || canonical.contains('<') || canonical.contains('>') || canonical.contains('(') {
+        if canonical.contains("::")
+            || canonical.contains('<')
+            || canonical.contains('>')
+            || canonical.contains('(')
+        {
             return false;
         }
-        
+
         // 检查是否是基本类型
         let _is_primitive = matches!(
             canonical.as_ref(),
-            "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
-                | "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
-                | "f32" | "f64" | "bool" | "char" | "str"
-                | "String" | "Vec" | "Option" | "Result" | "Box"
+            "i8" | "i16"
+                | "i32"
+                | "i64"
+                | "i128"
+                | "isize"
+                | "u8"
+                | "u16"
+                | "u32"
+                | "u64"
+                | "u128"
+                | "usize"
+                | "f32"
+                | "f64"
+                | "bool"
+                | "char"
+                | "str"
+                | "String"
+                | "Vec"
+                | "Option"
+                | "Result"
+                | "Box"
                 | "Self"
         );
-        
+
         // 如果不是基本类型且是单个标识符，可能是泛型参数
         // 但为了安全，我们需要更精确的检查
         // 这里先保守处理：只在明确知道是泛型时才返回 true

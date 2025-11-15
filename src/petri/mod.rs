@@ -9,5 +9,5 @@ pub use net::{
     ArcData, ArcWeight, FunctionContext, FunctionSummary, ParameterSummary, PetriNet, Place,
     PlaceId, Token, Transition, TransitionId,
 };
-pub use synthesis::{SynthesisConfig, SynthesisOutcome, SynthesisPlan, StepState, Synthesizer};
+pub use synthesis::{StepState, SynthesisConfig, SynthesisOutcome, SynthesisPlan, Synthesizer};
 pub use type_repr::{BorrowKind, TypeDescriptor};

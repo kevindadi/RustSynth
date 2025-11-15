@@ -529,25 +529,36 @@ impl PetriNet {
     }
 
     fn write_places(&self, dot: &mut String) {
-        // 按类型分组，基本类型在前
         let mut primitive_places = Vec::new();
         let mut other_places = Vec::new();
-        
+
         for (id, place) in self.places() {
             let type_name = place.descriptor.display();
             if matches!(
                 type_name,
-                "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
-                    | "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
-                    | "f32" | "f64" | "bool" | "char" | "str"
+                "i8" | "i16"
+                    | "i32"
+                    | "i64"
+                    | "i128"
+                    | "isize"
+                    | "u8"
+                    | "u16"
+                    | "u32"
+                    | "u64"
+                    | "u128"
+                    | "usize"
+                    | "f32"
+                    | "f64"
+                    | "bool"
+                    | "char"
+                    | "str"
             ) {
                 primitive_places.push((id, place));
             } else {
                 other_places.push((id, place));
             }
         }
-        
-        // 先输出基本类型
+
         for (id, place) in primitive_places {
             let label = html_escape(place.descriptor.display());
             let _ = writeln!(
@@ -557,8 +568,7 @@ impl PetriNet {
                 label
             );
         }
-        
-        // 再输出其他类型
+
         for (id, place) in other_places {
             let label = html_escape(place.descriptor.display());
             let _ = writeln!(
@@ -575,7 +585,7 @@ impl PetriNet {
             let summary = &transition.summary;
             let name = summary.display_name();
             let sig = summary.signature.as_ref();
-            
+
             // 简化签名显示（只显示函数名和主要类型）
             let short_sig = if sig.len() > 100 {
                 // 截断过长的签名
@@ -584,7 +594,7 @@ impl PetriNet {
             } else {
                 sig.to_string()
             };
-            
+
             let label = format!("{}<BR/>{}", html_escape(name), html_escape(&short_sig));
             let _ = writeln!(
                 dot,
@@ -618,7 +628,7 @@ impl PetriNet {
     ) {
         // 构建边标签
         let mut label_parts = Vec::new();
-        
+
         // 添加参数名（如果有）
         if let Some(name) = arc
             .parameter
@@ -627,7 +637,7 @@ impl PetriNet {
         {
             label_parts.push(html_escape(name));
         }
-        
+
         // 添加借用类型标记
         if let Some(borrow_kind) = arc.borrow_kind {
             let borrow_mark = match borrow_kind {
@@ -641,7 +651,7 @@ impl PetriNet {
                 label_parts.push(borrow_mark.to_string());
             }
         }
-        
+
         // 添加类型名（简化显示）
         if let Some(descriptor) = arc
             .parameter
@@ -663,13 +673,13 @@ impl PetriNet {
             };
             label_parts.push(html_escape(&short_name));
         }
-        
+
         let label = if label_parts.is_empty() {
             None
         } else {
             Some(label_parts.join(" "))
         };
-        
+
         let attr = edge_attr(
             arc.kind,
             combine_edge_parts(label, weight_suffix(arc.weight)),
@@ -692,7 +702,7 @@ impl PetriNet {
     ) {
         // 构建边标签
         let mut label_parts = Vec::new();
-        
+
         // 添加借用类型标记
         if let Some(borrow_kind) = arc.borrow_kind {
             let borrow_mark = match borrow_kind {
@@ -706,7 +716,7 @@ impl PetriNet {
                 label_parts.push(borrow_mark.to_string());
             }
         }
-        
+
         // 添加类型名
         if let Some(descriptor) = arc
             .descriptor
@@ -727,13 +737,13 @@ impl PetriNet {
             };
             label_parts.push(html_escape(&short_name));
         }
-        
+
         let label = if label_parts.is_empty() {
             None
         } else {
             Some(label_parts.join(" "))
         };
-        
+
         let attr = edge_attr(
             arc.kind,
             combine_edge_parts(label, weight_suffix(arc.weight)),
@@ -765,35 +775,12 @@ fn html_escape(text: &str) -> String {
     escaped
 }
 
-fn html_label(parts: &[&str]) -> String {
-    let mut label = String::new();
-    for (idx, part) in parts.iter().enumerate() {
-        if idx > 0 {
-            label.push_str("<BR ALIGN=\"LEFT\"/>");
-        }
-        label.push_str(&html_escape(part));
-    }
-    label
-}
-
 fn weight_suffix(weight: ArcWeight) -> Option<String> {
     if weight == 1 {
         None
     } else {
         Some(format!("×{}", weight))
     }
-}
-
-fn edge_label_from_parameter(name: Option<&str>, descriptor: &TypeDescriptor) -> Option<String> {
-    let mut label = String::new();
-    if let Some(name) = name {
-        if !name.trim().is_empty() {
-            label.push_str(name);
-            label.push_str(": ");
-        }
-    }
-    label.push_str(descriptor.display());
-    if label.is_empty() { None } else { Some(label) }
 }
 
 fn combine_edge_parts(main: Option<String>, weight: Option<String>) -> Option<String> {

@@ -1,7 +1,7 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
-use log::{info, debug};
+use log::{debug, info};
 use rustdoc_types::{
     Crate, Function, GenericParamDefKind, Id, Impl, Item, ItemEnum, Path as RustdocPath, Type,
 };
@@ -18,18 +18,18 @@ pub struct PetriNetBuilder<'a> {
     impl_function_ids: HashSet<Id>,
     // 记录类型 Item 的 id 到 PlaceId 的映射
     type_place_map: HashMap<Id, PlaceId>,
+    // StructFiled Type
+    struct_field_type_map: HashMap<Id, (Id, TypeDescriptor)>,
 }
 
 impl<'a> PetriNetBuilder<'a> {
-    /// 基于 rustdoc JSON 构造新的 Petri 网构建器
-    ///
-    /// 构建器会遍历 rustdoc 的 index , 将公开函数/方法映射为在类型之间移动令牌的变迁
     pub fn new(crate_: &'a Crate) -> Self {
         Self {
             crate_,
             net: PetriNet::new(),
             impl_function_ids: HashSet::new(),
             type_place_map: HashMap::new(),
+            struct_field_type_map: HashMap::new(),
         }
     }
 
@@ -39,26 +39,30 @@ impl<'a> PetriNetBuilder<'a> {
         builder.finish()
     }
 
-    /// 遍历 rustdoc 索引, 将所有函数类条目注册为变迁
+    /// 遍历 rustdoc 索引, 将所有ItemEnum::Function | ItemEnum::Impl 注册为变迁
+    /// ItemEnum::Trait 注册为 Guard
     ///
-    /// 重构后的算法：
-    /// 1. 首先对 Item 中的 Struct、Enum 等类型进行建模，创建 Place
+    /// 1. 首先对 Item 中的 Struct、Enum、Union、Variant 等类型进行建模，创建 Place
     /// 2. 根据已创建的类型 Place 的 id，从 index 中查找对应的 impl 块，为方法创建变迁
     /// 3. 泛型约束作为变迁的 guard，不需要为泛型参数创建 Place
     /// 4. 输入边带上 borrow_kind 约束，输出边带上返回类型的 borrow_kind
     pub fn ingest(&mut self) {
         info!("🔨 开始构建 Petri Net...");
-        
-        // 第一步：创建所有基本类型的库所
+
+        // Step 1: 创建所有基本类型的库所
         info!("📦 步骤 1/4: 创建基本类型的 Place");
         self.create_primitive_places();
 
-        // 第二步：遍历所有 Struct、Enum、Union 等类型定义，为它们创建 Place
+        // Step 2: 遍历所有 Struct、Enum、Union 等类型定义，为它们创建 Place
         info!("📦 步骤 2/4: 创建类型定义的 Place (Struct/Enum/Union)");
         let mut type_count = 0;
         for item in self.crate_.index.values() {
             match &item.inner {
-                ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Union(_) => {
+                ItemEnum::Struct(_)
+                | ItemEnum::StructField(_)
+                | ItemEnum::Enum(_)
+                | ItemEnum::Union(_)
+                | ItemEnum::Variant(_) => {
                     self.create_type_place(item);
                     type_count += 1;
                 }
@@ -67,9 +71,8 @@ impl<'a> PetriNetBuilder<'a> {
         }
         debug!("   创建了 {} 个类型定义的 Place", type_count);
 
-        // 第三步：根据已创建的类型 Place 的 id，查找对应的 impl 块，为方法创建变迁
+        // Step 3: 根据已创建的类型 Place 的 id，查找对应的 impl 块，为方法创建变迁
         info!("⚙️  步骤 3/4: 处理 impl 块，为方法创建 Transition");
-        // 先收集所有需要处理的 impl_id，避免借用冲突
         let mut impl_items_to_process: Vec<(Id, &Impl)> = Vec::new();
         for (type_id, _place_id) in &self.type_place_map {
             if let Some(type_item) = self.crate_.index.get(type_id) {
@@ -105,8 +108,7 @@ impl<'a> PetriNetBuilder<'a> {
                 }
             }
         }
-        
-        // 现在处理所有收集到的 impl 块
+
         let impl_count = impl_items_to_process.len();
         debug!("   找到 {} 个 impl 块需要处理", impl_count);
         for (impl_id, impl_block) in impl_items_to_process {
@@ -115,7 +117,7 @@ impl<'a> PetriNetBuilder<'a> {
             }
         }
 
-        // 第四步：处理无约束函数
+        // Step 4: 处理无约束函数
         info!("⚙️  步骤 4/4: 处理无约束函数");
         let mut free_func_count = 0;
         for item in self.crate_.index.values() {
@@ -136,16 +138,16 @@ impl<'a> PetriNetBuilder<'a> {
     pub fn finish(self) -> PetriNet {
         info!("📊 Petri Net 构建完成");
         info!("   ✅ 总共创建了 {} 个 Place", self.net.place_count());
-        info!("   ✅ 总共创建了 {} 个 Transition", self.net.transition_count());
+        info!(
+            "   ✅ 总共创建了 {} 个 Transition",
+            self.net.transition_count()
+        );
         self.net
     }
 
-    /// 处理单个 impl 块, 将其中的方法映射为变迁
-    ///
-    /// impl 的接收者会记录在上下文, 以便后续把参数/返回中的 Self 替换成实际类型.
+    /// 将 impl 块中的方法注册为变迁
+    /// 接收者会记录在上下文, 以便后续把参数/返回中的 Self 替换成实际类型.
     fn ingest_impl(&mut self, item: &Item, impl_block: &Impl) {
-        // 泛型约束会记录在 FunctionSummary 的 trait_bounds 中，作为变迁的 guard
-
         let receiver = TypeDescriptor::from_type(&impl_block.for_);
         let context = if let Some(trait_path) = &impl_block.trait_ {
             let trait_path_str = Arc::<str>::from(TypeFormatter::path_to_string(trait_path));
@@ -196,7 +198,6 @@ impl<'a> PetriNetBuilder<'a> {
             if let Some(inner_item) = self.crate_.index.get(item_id) {
                 if let ItemEnum::Function(func) = &inner_item.inner {
                     // 泛型约束会记录在 FunctionSummary 的 trait_bounds 中
-
                     self.impl_function_ids.insert(inner_item.id);
                     self.ingest_function_with_context(
                         inner_item,
@@ -216,8 +217,6 @@ impl<'a> PetriNetBuilder<'a> {
                 if let Some(method_id) = method_lookup.get(method_name) {
                     if let Some(item) = self.crate_.index.get(method_id) {
                         if let ItemEnum::Function(func) = &item.inner {
-                            // 泛型约束会记录在 FunctionSummary 的 trait_bounds 中
-
                             self.impl_function_ids.insert(item.id);
                             self.ingest_function_with_context(
                                 item,
@@ -316,7 +315,10 @@ impl<'a> PetriNetBuilder<'a> {
         let mut output_arcs = Vec::new();
         if let Some(descriptor) = output_descriptor.clone() {
             // 检查返回值是否为泛型类型
-            let is_generic = func.sig.output.as_ref()
+            let is_generic = func
+                .sig
+                .output
+                .as_ref()
                 .map(|ty| matches!(ty, Type::Generic(_)))
                 .unwrap_or(false);
             // 如果是泛型类型，不创建 Place
@@ -383,14 +385,20 @@ impl<'a> PetriNetBuilder<'a> {
 
         let transition_id = self.net.add_transition(function_summary.clone());
 
-        // 记录日志
         let context_str = match &function_summary.context {
             FunctionContext::FreeFunction => "FreeFunction".to_string(),
             FunctionContext::InherentMethod { receiver } => {
                 format!("InherentMethod({})", receiver.display())
             }
-            FunctionContext::TraitImplementation { receiver, trait_path } => {
-                format!("TraitImplementation({}, {})", receiver.display(), trait_path)
+            FunctionContext::TraitImplementation {
+                receiver,
+                trait_path,
+            } => {
+                format!(
+                    "TraitImplementation({}, {})",
+                    receiver.display(),
+                    trait_path
+                )
             }
         };
         info!(
@@ -404,7 +412,10 @@ impl<'a> PetriNetBuilder<'a> {
             debug!("       Generics: {}", function_summary.generics.join(", "));
         }
         if !function_summary.trait_bounds.is_empty() {
-            debug!("       Trait Bounds: {}", function_summary.trait_bounds.join(", "));
+            debug!(
+                "       Trait Bounds: {}",
+                function_summary.trait_bounds.join(", ")
+            );
         }
 
         for (place_id, arc_data) in input_arcs {
@@ -437,7 +448,7 @@ impl<'a> PetriNetBuilder<'a> {
         let descriptor = TypeDescriptor::from_type(&resolved_type);
 
         match &owner_item.inner {
-            ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Union(_) => {
+            ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Union(_) | ItemEnum::Variant(_) => {
                 Some(FunctionContext::InherentMethod {
                     receiver: descriptor,
                 })
@@ -465,38 +476,56 @@ impl<'a> PetriNetBuilder<'a> {
         // 检查是否为泛型类型
         let normalized = descriptor.normalized();
         let canonical = normalized.canonical();
-        
+
         // 如果类型名是单个标识符且不是基本类型，可能是泛型参数
         // 更精确的检查：通过原始 Type 来判断
         // 但这里我们只能根据字符串来判断，保守处理
         // 如果类型名包含 "::" 或者是已知的类型，则不是泛型参数
-        
+
         // 简单检查：如果规范化后的类型名不包含路径分隔符且不在基本类型列表中
         // 且不是 Self，可能是泛型参数
-        if !canonical.contains("::") 
+        if !canonical.contains("::")
             && !matches!(
                 canonical.as_ref(),
-                "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
-                    | "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
-                    | "f32" | "f64" | "bool" | "char" | "str"
-                    | "String" | "Self"
+                "i8" | "i16"
+                    | "i32"
+                    | "i64"
+                    | "i128"
+                    | "isize"
+                    | "u8"
+                    | "u16"
+                    | "u32"
+                    | "u64"
+                    | "u128"
+                    | "usize"
+                    | "f32"
+                    | "f64"
+                    | "bool"
+                    | "char"
+                    | "str"
+                    | "String"
+                    | "Self"
             )
             && canonical.chars().all(|c| c.is_alphanumeric() || c == '_')
-            && !canonical.chars().next().map(|c| c.is_uppercase()).unwrap_or(false)
+            && !canonical
+                .chars()
+                .next()
+                .map(|c| c.is_uppercase())
+                .unwrap_or(false)
         {
             // 可能是泛型参数（如 T, U），不创建 Place
             return None;
         }
-        
+
         // 检查 Place 是否已存在（通过规范化后的描述符）
         let normalized_desc = descriptor.normalized();
         let existing_id = self.net.place_id(&normalized_desc);
-        
+
         if let Some(place_id) = existing_id {
             // Place 已存在，返回已有 ID
             return Some(place_id);
         }
-        
+
         // Place 不存在，创建新的并记录日志
         let place_id = self.net.add_place(descriptor.clone());
         debug!(
@@ -520,7 +549,10 @@ impl<'a> PetriNetBuilder<'a> {
             }
         } else {
             // 如果没有路径信息，使用名称或 ID
-            let name = item.name.as_deref().map(|s| s.to_string())
+            let name = item
+                .name
+                .as_deref()
+                .map(|s| s.to_string())
                 .unwrap_or_else(|| format!("Item{}", item.id.0));
             rustdoc_types::Path {
                 path: name,
@@ -532,14 +564,15 @@ impl<'a> PetriNetBuilder<'a> {
         let type_ty = Type::ResolvedPath(type_path);
         let descriptor = TypeDescriptor::from_type(&type_ty);
 
-        // 创建类型定义的 Place（使用 Owned 作为默认借用类型，因为这是类型定义本身）
+        // 创建类型定义的 Place（使用 Owned 作为默认借用类型）
         let place_id = self.net.add_place(descriptor.clone());
 
-        // 记录日志
         let type_kind = match &item.inner {
             ItemEnum::Struct(_) => "Struct",
             ItemEnum::Enum(_) => "Enum",
             ItemEnum::Union(_) => "Union",
+            ItemEnum::Variant(_) => "Variant",
+            ItemEnum::StructField(_) => "StructField",
             _ => "Unknown",
         };
         info!(
@@ -699,7 +732,9 @@ impl<'a> PetriNetBuilder<'a> {
             let mut implemented_traits: Vec<_> = unique_traits.into_iter().collect();
             implemented_traits.sort();
 
-            let place_id = self.net.add_primitive_place(descriptor.clone(), implemented_traits.clone());
+            let place_id = self
+                .net
+                .add_primitive_place(descriptor.clone(), implemented_traits.clone());
             debug!(
                 "   📍 [Place] {} (Place ID: {}, Traits: [{}])",
                 descriptor.display(),
@@ -708,7 +743,6 @@ impl<'a> PetriNetBuilder<'a> {
             );
         }
     }
-
 }
 
 fn context_receiver_descriptor(context: &FunctionContext) -> Option<&TypeDescriptor> {
