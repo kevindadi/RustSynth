@@ -398,6 +398,11 @@ type StructField implements Item {
 
   # own edges
   raw_type: RawType
+
+  """
+  The struct that contains this field.
+  """
+  parent_struct: Struct
 }
 
 """
@@ -1082,12 +1087,13 @@ type Impl implements Item & GenericItem {
   """
   implemented_trait: ImplementedTrait
 
-  # """
-  # The generic type across which the blanket trait implementation is made.
+  """
+  The generic type across which the blanket trait implementation is made.
 
-  # TODO: implement me
-  # """
-  # blanket: GenericType
+  For example, in `impl<T> Borrow<T> for T`, this would point to the generic type parameter `T`.
+  Only present for blanket implementations (impls that implement a trait for a generic type).
+  """
+  blanket: GenericTypeParameter
 
   """
   Methods defined in this impl.
@@ -2993,8 +2999,12 @@ type GenericTypeParameter implements GenericParameter {
   """
   maybe_sized: Boolean!
 
-  # TODO: needs lifetime bounds
-  # lifetime_bound: ?
+  """
+  Lifetime bounds applied to this generic type parameter.
+
+  For example, in `<T: 'a + 'b>`, this edge would point to `'a` and `'b`.
+  """
+  lifetime_bound: [GenericLifetimeParameter!]
 }
 
 type GenericLifetimeParameter implements GenericParameter {
@@ -3029,8 +3039,12 @@ type GenericLifetimeParameter implements GenericParameter {
   position: Int!
 
   # own edges
-  # TODO: needs lifetime bounds
-  # lifetime_bound: ?
+  """
+  Lifetime bounds applied to this generic lifetime parameter.
+
+  For example, in `<'a: 'b + 'c>`, this edge would point to `'b` and `'c`.
+  """
+  lifetime_bound: [GenericLifetimeParameter!]
 }
 
 type GenericConstParameter implements GenericParameter {
@@ -3071,7 +3085,19 @@ type GenericConstParameter implements GenericParameter {
   position: Int!
 
   # own edges
-  # TODO: needs type and value
+  """
+  The type of this const generic parameter.
+
+  For example, in `const N: usize`, this would point to the `usize` type.
+  """
+  type: RawType
+
+  """
+  The default value of this const generic parameter, if any.
+
+  For example, in `const N: usize = 42`, this would be `"42"`.
+  """
+  default: String
 }
 
 """

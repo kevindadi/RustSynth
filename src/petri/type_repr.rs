@@ -160,6 +160,30 @@ impl TypeDescriptor {
         })
     }
 
+    /// 提取类型名称，去除路径信息
+    /// 例如：`base64::alphabet::ParseAlphabetError` -> `ParseAlphabetError`
+    /// 或者：`std::vec::Vec<i32>` -> `Vec<i32>` (保留泛型参数)
+    /// 或者：`std::option::Option<String>` -> `Option<String>` (保留泛型参数)
+    pub fn type_name_only(&self) -> Self {
+        let extract_name = |s: &str| -> String {
+            // 如果包含 "::"，提取最后一部分（包括泛型参数）
+            // 例如：`base64::alphabet::ParseAlphabetError` -> `ParseAlphabetError`
+            // 例如：`std::vec::Vec<i32>` -> `Vec<i32>`
+            if let Some((_, name)) = s.rsplit_once("::") {
+                name.to_string()
+            } else {
+                s.to_string()
+            }
+        };
+
+        Self {
+            canonical: Arc::<str>::from(extract_name(self.canonical())),
+            display: Arc::<str>::from(extract_name(self.display())),
+            borrow: self.borrow,
+            lifetimes: self.lifetimes.clone(),
+        }
+    }
+
     /// 检查是否为泛型类型（如 T, U 等）
     /// 泛型类型不应该创建 Place，因为它们只是约束占位符
     pub fn is_generic(&self) -> bool {

@@ -59,11 +59,14 @@ impl<'a> PetriNetBuilder<'a> {
         for item in self.crate_.index.values() {
             match &item.inner {
                 ItemEnum::Struct(_)
-                | ItemEnum::StructField(_)
                 | ItemEnum::Enum(_)
                 | ItemEnum::Union(_)
                 | ItemEnum::Variant(_) => {
                     self.create_type_place(item);
+                    type_count += 1;
+                }
+                ItemEnum::StructField(_) => {
+                    self.create_struct_field_place(item);
                     type_count += 1;
                 }
                 _ => {}
@@ -148,7 +151,24 @@ impl<'a> PetriNetBuilder<'a> {
     /// 将 impl 块中的方法注册为变迁
     /// 接收者会记录在上下文, 以便后续把参数/返回中的 Self 替换成实际类型.
     fn ingest_impl(&mut self, item: &Item, impl_block: &Impl) {
-        let receiver = TypeDescriptor::from_type(&impl_block.for_);
+        // 获取 Self 类型的完整路径
+        let receiver = if let Type::ResolvedPath(path) = &impl_block.for_ {
+            // 如果有路径信息，使用完整路径
+            if let Some(path_summary) = self.crate_.paths.get(&path.id) {
+                let full_path = path_summary.path.join("::");
+                let full_path_type = Type::ResolvedPath(rustdoc_types::Path {
+                    path: full_path.clone(),
+                    id: path.id,
+                    args: path.args.clone(),
+                });
+                TypeDescriptor::from_type(&full_path_type)
+            } else {
+                TypeDescriptor::from_type(&impl_block.for_)
+            }
+        } else {
+            TypeDescriptor::from_type(&impl_block.for_)
+        };
+        
         let context = if let Some(trait_path) = &impl_block.trait_ {
             let trait_path_str = Arc::<str>::from(TypeFormatter::path_to_string(trait_path));
             FunctionContext::TraitImplementation {
@@ -472,10 +492,16 @@ impl<'a> PetriNetBuilder<'a> {
     }
 
     /// 确保 Place 存在，但如果类型是泛型则返回 None（泛型不创建 Place）
+    /// 注意：库所应该只表示类型本身，引用信息应该记录在 arc 的 borrow_kind 中
+    /// 库所使用类型名称（去除路径）作为 key，路径信息仅作为补充
     fn ensure_place(&mut self, descriptor: TypeDescriptor) -> Option<PlaceId> {
-        // 检查是否为泛型类型
+        // 首先规范化描述符，去除引用符号（库所只表示类型本身）
         let normalized = descriptor.normalized();
-        let canonical = normalized.canonical();
+        
+        // 提取类型名称，去除路径信息（只保留最后的类型名）
+        // 例如：`base64::alphabet::ParseAlphabetError` -> `ParseAlphabetError`
+        let name_only = normalized.type_name_only();
+        let canonical = name_only.canonical();
 
         // 如果类型名是单个标识符且不是基本类型，可能是泛型参数
         // 更精确的检查：通过原始 Type 来判断
@@ -517,48 +543,41 @@ impl<'a> PetriNetBuilder<'a> {
             return None;
         }
 
-        // 检查 Place 是否已存在（通过规范化后的描述符）
-        let normalized_desc = descriptor.normalized();
-        let existing_id = self.net.place_id(&normalized_desc);
+        // 检查 Place 是否已存在（使用去除路径后的类型名称）
+        let existing_id = self.net.place_id(&name_only);
 
         if let Some(place_id) = existing_id {
             // Place 已存在，返回已有 ID
             return Some(place_id);
         }
 
-        // Place 不存在，创建新的并记录日志
-        let place_id = self.net.add_place(descriptor.clone());
+        // Place 不存在，创建新的并记录日志（使用去除路径后的类型名称）
+        let place_id = self.net.add_place(name_only.clone());
         debug!(
-            "   📍 [Place] {} (Place ID: {}) [通过 ensure_place 创建]",
-            descriptor.display(),
-            place_id.0.index()
+            "   📍 [Place] {} (Place ID: {}) [通过 ensure_place 创建] [原始路径: {}]",
+            name_only.display(),
+            place_id.0.index(),
+            normalized.display()
         );
         Some(place_id)
     }
 
     /// 为类型定义（Struct、Enum、Union）创建 Place
     /// 记录类型 Item 的 id 到 PlaceId 的映射
+    /// 库所名称使用 item.name（类型名称），path 路径仅作为补充信息
     fn create_type_place(&mut self, item: &Item) {
-        // 构建类型的 Type 表示
-        let type_path = if let Some(path_summary) = self.crate_.paths.get(&item.id) {
-            let path_str = path_summary.path.join("::");
-            rustdoc_types::Path {
-                path: path_str.clone(),
-                id: item.id,
-                args: None, // 泛型参数会在后续处理
-            }
-        } else {
-            // 如果没有路径信息，使用名称或 ID
-            let name = item
-                .name
-                .as_deref()
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| format!("Item{}", item.id.0));
-            rustdoc_types::Path {
-                path: name,
-                id: item.id,
-                args: None,
-            }
+        // 使用 item.name 作为库所的 key，path 仅作为补充信息
+        let type_name = item
+            .name
+            .as_deref()
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("Item{}", item.id.0));
+        
+        // 构建类型的 Type 表示（使用类型名称，而不是完整路径）
+        let type_path = rustdoc_types::Path {
+            path: type_name.clone(),
+            id: item.id,
+            args: None, // 泛型参数会在后续处理
         };
 
         let type_ty = Type::ResolvedPath(type_path);
@@ -572,19 +591,146 @@ impl<'a> PetriNetBuilder<'a> {
             ItemEnum::Enum(_) => "Enum",
             ItemEnum::Union(_) => "Union",
             ItemEnum::Variant(_) => "Variant",
-            ItemEnum::StructField(_) => "StructField",
             _ => "Unknown",
         };
+        
+        // 获取完整路径作为补充信息
+        let full_path = self.crate_.paths.get(&item.id)
+            .map(|summary| summary.path.join("::"))
+            .unwrap_or_else(|| type_name.clone());
+        
         info!(
-            "   🎯 [Place] {} {} (Item ID: {}, Place ID: {})",
+            "   🎯 [Place] {} {} (Item ID: {}, Place ID: {}) [路径: {}]",
             type_kind,
             descriptor.display(),
             item.id.0,
-            place_id.0.index()
+            place_id.0.index(),
+            full_path
         );
 
         // 记录类型 Item 的 id 到 PlaceId 的映射
         self.type_place_map.insert(item.id, place_id);
+    }
+
+    /// 为 StructField 创建 Place
+    /// 库所名称格式：StructName::FieldName: FieldType
+    /// 如果有泛型，需要添加约束
+    fn create_struct_field_place(&mut self, field_item: &Item) {
+        // 找到字段所属的 Struct，并提前提取所有需要的信息
+        let (struct_id, struct_name, struct_path, field_name, generics_params) = match self.find_struct_for_field(field_item.id) {
+            Some((struct_item, field_name)) => {
+                let struct_id = struct_item.id;
+                let struct_name = struct_item
+                    .name
+                    .as_deref()
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| format!("Item{}", struct_id.0));
+                let struct_path = if let Some(path_summary) = self.crate_.paths.get(&struct_id) {
+                    path_summary.path.join("::")
+                } else {
+                    struct_name.clone()
+                };
+                let generics_params = if let ItemEnum::Struct(struct_def) = &struct_item.inner {
+                    struct_def.generics.params.clone()
+                } else {
+                    Vec::new()
+                };
+                (struct_id, struct_name, struct_path, field_name, generics_params)
+            }
+            None => {
+                debug!(
+                    "   跳过 StructField (Item ID: {}): 未找到所属的 Struct",
+                    field_item.id.0
+                );
+                return;
+            }
+        };
+
+        // 获取字段的类型
+        let field_type = match &field_item.inner {
+            ItemEnum::StructField(ty) => ty,
+            _ => return,
+        };
+
+        // 获取字段类型的描述符（规范化，去除引用）
+        let field_type_descriptor = TypeDescriptor::from_type(field_type).normalized();
+        let field_type_str = field_type_descriptor.display();
+
+        // 构建库所名称：StructName::FieldName: FieldType
+        // 使用 struct 的名称（而不是完整路径）作为 key
+        let place_name = format!("{}::{}: {}", struct_name, field_name, field_type_str);
+
+        // 如果有泛型约束，添加到名称中
+        let place_name_with_bounds = if !generics_params.is_empty() {
+            let generics_str = TypeFormatter::format_generic_params(&generics_params)
+                .join(", ");
+            if !generics_str.is_empty() {
+                format!("{}<{}>", place_name, generics_str)
+            } else {
+                place_name
+            }
+        } else {
+            place_name
+        };
+
+        // 创建 TypeDescriptor（使用 Owned，因为库所只表示类型本身）
+        // 使用字段类型描述符，但库所的实际标识通过自定义名称来区分
+        // 为了正确建模，我们创建一个自定义的 Type::ResolvedPath 来表示这个字段
+        let custom_path = RustdocPath {
+            path: place_name_with_bounds.clone(),
+            id: field_item.id,
+            args: None,
+        };
+        let custom_type = Type::ResolvedPath(custom_path);
+        let descriptor = TypeDescriptor::from_type(&custom_type);
+        // add_place 内部已经检查了是否存在，直接调用即可
+        let place_id = self.net.add_place(descriptor);
+        info!(
+            "   🎯 [Place] StructField {} (Item ID: {}, Place ID: {}) [路径: {}]",
+            place_name_with_bounds,
+            field_item.id.0,
+            place_id.0.index(),
+            struct_path
+        );
+
+        // 记录字段类型映射（用于后续处理）
+        self.struct_field_type_map.insert(field_item.id, (struct_id, field_type_descriptor));
+    }
+
+    /// 查找字段所属的 Struct
+    fn find_struct_for_field(&self, field_id: Id) -> Option<(&Item, String)> {
+        // 遍历所有 Struct，查找包含该字段的 Struct
+        for item in self.crate_.index.values() {
+            if let ItemEnum::Struct(struct_def) = &item.inner {
+                match &struct_def.kind {
+                    rustdoc_types::StructKind::Plain { fields, .. } => {
+                        if fields.contains(&field_id) {
+                            let field_name = self
+                                .crate_
+                                .index
+                                .get(&field_id)
+                                .and_then(|f| f.name.as_deref())
+                                .map(|s| s.to_string())
+                                .unwrap_or_else(|| format!("field_{}", field_id.0));
+                            return Some((item, field_name));
+                        }
+                    }
+                    rustdoc_types::StructKind::Tuple(field_ids) => {
+                        if field_ids.iter().any(|id| id.as_ref() == Some(&field_id)) {
+                            // Tuple struct 字段没有名称，使用位置索引
+                            let position = field_ids
+                                .iter()
+                                .position(|id| id.as_ref() == Some(&field_id))
+                                .unwrap_or(0);
+                            let field_name = format!("{}", position);
+                            return Some((item, field_name));
+                        }
+                    }
+                    rustdoc_types::StructKind::Unit => {}
+                }
+            }
+        }
+        None
     }
 
     fn lookup_qualified_path(&self, item: &Item) -> Option<Arc<str>> {

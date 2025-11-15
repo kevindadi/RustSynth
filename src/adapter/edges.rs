@@ -500,12 +500,39 @@ pub(super) fn resolve_union_edge<'a, V: AsVertex<Vertex<'a>> + 'a>(
 pub(super) fn resolve_struct_field_edge<'a, V: AsVertex<Vertex<'a>> + 'a>(
     contexts: ContextIterator<'a, V>,
     edge_name: &str,
+    adapter: &'a RustdocAdapter<'a>,
 ) -> ContextOutcomeIterator<'a, V, VertexIterator<'a, Vertex<'a>>> {
     match edge_name {
         "raw_type" => resolve_neighbors_with(contexts, move |vertex| {
             let origin = vertex.origin;
             let field_type = vertex.as_struct_field().expect("not a StructField vertex");
             Box::new(std::iter::once(origin.make_raw_type_vertex(field_type)))
+        }),
+        "parent_struct" => resolve_neighbors_with(contexts, move |vertex| {
+            let origin = vertex.origin;
+            let item_index = &adapter.crate_at_origin(origin).own_crate.inner.index;
+            let field_item = vertex.as_item().expect("not an Item vertex");
+            let field_id = field_item.id;
+
+            // 遍历所有 Struct，查找包含该字段的 Struct
+            for item in item_index.values() {
+                if let ItemEnum::Struct(struct_def) = &item.inner {
+                    match &struct_def.kind {
+                        rustdoc_types::StructKind::Plain { fields, .. } => {
+                            if fields.contains(&field_id) {
+                                return Box::new(std::iter::once(origin.make_item_vertex(item)));
+                            }
+                        }
+                        rustdoc_types::StructKind::Tuple(field_ids) => {
+                            if field_ids.iter().any(|id| id.as_ref() == Some(&field_id)) {
+                                return Box::new(std::iter::once(origin.make_item_vertex(item)));
+                            }
+                        }
+                        rustdoc_types::StructKind::Unit => {}
+                    }
+                }
+            }
+            Box::new(std::iter::empty())
         }),
         _ => unreachable!("resolve_struct_field_edge {edge_name}"),
     }
@@ -564,6 +591,70 @@ pub(super) fn resolve_impl_edge<'a, V: AsVertex<Vertex<'a>> + 'a>(
                     None
                 }
             }))
+        }),
+        "blanket" => resolve_neighbors_with(contexts, move |vertex| {
+            let origin = vertex.origin;
+            let impl_vertex = vertex.as_impl().expect("not an Impl vertex");
+
+            // Check if this is a blanket impl by looking at blanket_impl field
+            // blanket_impl is an Option<Type> where the Type is Generic(name)
+            if let Some(blanket_type) = &impl_vertex.blanket_impl {
+                // Extract the generic parameter name from the Type::Generic variant
+                if let rustdoc_types::Type::Generic(generic_name) = blanket_type {
+                    let generics = &impl_vertex.generics;
+                    
+                    // Find the matching generic parameter
+                    struct GenericParamCounter {
+                        lifetimes: NonZeroUsize,
+                        types_and_consts: NonZeroUsize,
+                    }
+                    
+                    let mut counter = GenericParamCounter {
+                        lifetimes: NonZeroUsize::new(1).unwrap(),
+                        types_and_consts: NonZeroUsize::new(1).unwrap(),
+                    };
+                    
+                    let found_param = generics.params.iter().find_map(|param| {
+                        let position = match param.kind {
+                            GenericParamDefKind::Lifetime { .. } => {
+                                let pos = counter.lifetimes;
+                                counter.lifetimes = pos.checked_add(1).expect("param position overflow");
+                                None // Lifetimes are not type parameters
+                            }
+                            GenericParamDefKind::Type { is_synthetic, .. } => {
+                                if is_synthetic {
+                                    None
+                                } else {
+                                    let pos = counter.types_and_consts;
+                                    counter.types_and_consts = pos
+                                        .checked_add(1)
+                                        .expect("param position overflow");
+                                    Some(pos)
+                                }
+                            }
+                            GenericParamDefKind::Const { .. } => {
+                                let pos = counter.types_and_consts;
+                                counter.types_and_consts = pos.checked_add(1).expect("param position overflow");
+                                None // Const parameters are not type parameters
+                            }
+                        };
+                        
+                        if param.name.as_str() == generic_name.as_str() {
+                            Some((param, position))
+                        } else {
+                            None
+                        }
+                    });
+                    
+                    Box::new(found_param.into_iter().map(move |(param, position)| {
+                        origin.make_generic_parameter_vertex(generics, param, position)
+                    }))
+                } else {
+                    Box::new(std::iter::empty())
+                }
+            } else {
+                Box::new(std::iter::empty())
+            }
         }),
         _ => unreachable!("resolve_impl_edge {edge_name}"),
     }
@@ -837,7 +928,197 @@ pub(super) fn resolve_generic_type_parameter_edge<'a, V: AsVertex<Vertex<'a>> + 
                     }),
             )
         }),
+        "lifetime_bound" => resolve_neighbors_with(contexts, move |vertex| {
+            let origin = vertex.origin;
+
+            let (generics, param): (
+                &'a rustdoc_types::Generics,
+                &'a rustdoc_types::GenericParamDef,
+            ) = vertex
+                .as_generic_parameter()
+                .expect("vertex was not a GenericTypeParameter or GenericLifetimeParameter");
+
+            // Extract lifetime bounds from the parameter
+            let lifetime_names: Vec<&str> = match &param.kind {
+                rustdoc_types::GenericParamDefKind::Lifetime { outlives } => {
+                    // For lifetime parameters, outlives contains the lifetime bounds
+                    outlives.iter().map(|s| s.as_str()).collect()
+                }
+                rustdoc_types::GenericParamDefKind::Type { .. } => {
+                    // For type parameters, lifetime bounds are not directly available
+                    // in the current rustdoc_types format. They would need to be extracted
+                    // from where clauses, but that's complex and not currently supported.
+                    vec![]
+                }
+                _ => vec![],
+            };
+
+            // Find the corresponding GenericLifetimeParameter vertices
+            struct GenericParamCounter {
+                lifetimes: NonZeroUsize,
+                types_and_consts: NonZeroUsize,
+            }
+
+            let mut counter = GenericParamCounter {
+                lifetimes: NonZeroUsize::new(1).unwrap(),
+                types_and_consts: NonZeroUsize::new(1).unwrap(),
+            };
+
+            Box::new(
+                generics
+                    .params
+                    .iter()
+                    .filter_map(move |p| {
+                        let position = match p.kind {
+                            GenericParamDefKind::Lifetime { .. } => {
+                                let pos = counter.lifetimes;
+                                counter.lifetimes =
+                                    pos.checked_add(1).expect("param position overflow");
+                                Some(pos)
+                            }
+                            _ => {
+                                // Update counter for other types but don't return them
+                                match p.kind {
+                                    GenericParamDefKind::Type { is_synthetic, .. } => {
+                                        if !is_synthetic {
+                                            let pos = counter.types_and_consts;
+                                            counter.types_and_consts = pos
+                                                .checked_add(1)
+                                                .expect("param position overflow");
+                                        }
+                                    }
+                                    GenericParamDefKind::Const { .. } => {
+                                        let pos = counter.types_and_consts;
+                                        counter.types_and_consts =
+                                            pos.checked_add(1).expect("param position overflow");
+                                    }
+                                    _ => {}
+                                }
+                                None
+                            }
+                        };
+
+                        if lifetime_names.contains(&p.name.as_str()) {
+                            position.and_then(|pos| {
+                                Some(origin.make_generic_parameter_vertex(generics, p, Some(pos)))
+                            })
+                        } else {
+                            None
+                        }
+                    }),
+            )
+        }),
         _ => unreachable!("resolve_generic_type_parameter_edge {edge_name}"),
+    }
+}
+
+pub(super) fn resolve_generic_lifetime_parameter_edge<'a, V: AsVertex<Vertex<'a>> + 'a>(
+    contexts: ContextIterator<'a, V>,
+    edge_name: &str,
+    _adapter: &'a RustdocAdapter<'a>,
+) -> ContextOutcomeIterator<'a, V, VertexIterator<'a, Vertex<'a>>> {
+    match edge_name {
+        "lifetime_bound" => resolve_neighbors_with(contexts, move |vertex| {
+            let origin = vertex.origin;
+
+            let (generics, param): (
+                &'a rustdoc_types::Generics,
+                &'a rustdoc_types::GenericParamDef,
+            ) = vertex
+                .as_generic_parameter()
+                .expect("vertex was not a GenericLifetimeParameter");
+
+            // Extract lifetime bounds from the lifetime parameter
+            let lifetime_names: Vec<&str> = match &param.kind {
+                rustdoc_types::GenericParamDefKind::Lifetime { outlives } => {
+                    outlives.iter().map(|s| s.as_str()).collect()
+                }
+                _ => unreachable!("vertex was not a GenericLifetimeParameter: {vertex:?}"),
+            };
+
+            // Find the corresponding GenericLifetimeParameter vertices
+            struct GenericParamCounter {
+                lifetimes: NonZeroUsize,
+                types_and_consts: NonZeroUsize,
+            }
+
+            let mut counter = GenericParamCounter {
+                lifetimes: NonZeroUsize::new(1).unwrap(),
+                types_and_consts: NonZeroUsize::new(1).unwrap(),
+            };
+
+            Box::new(
+                generics
+                    .params
+                    .iter()
+                    .filter_map(move |p| {
+                        let position = match p.kind {
+                            GenericParamDefKind::Lifetime { .. } => {
+                                let pos = counter.lifetimes;
+                                counter.lifetimes =
+                                    pos.checked_add(1).expect("param position overflow");
+                                Some(pos)
+                            }
+                            _ => {
+                                // Update counter for other types but don't return them
+                                match p.kind {
+                                    GenericParamDefKind::Type { is_synthetic, .. } => {
+                                        if !is_synthetic {
+                                            let pos = counter.types_and_consts;
+                                            counter.types_and_consts = pos
+                                                .checked_add(1)
+                                                .expect("param position overflow");
+                                        }
+                                    }
+                                    GenericParamDefKind::Const { .. } => {
+                                        let pos = counter.types_and_consts;
+                                        counter.types_and_consts =
+                                            pos.checked_add(1).expect("param position overflow");
+                                    }
+                                    _ => {}
+                                }
+                                None
+                            }
+                        };
+
+                        if lifetime_names.contains(&p.name.as_str()) {
+                            position.and_then(|pos| {
+                                Some(origin.make_generic_parameter_vertex(generics, p, Some(pos)))
+                            })
+                        } else {
+                            None
+                        }
+                    }),
+            )
+        }),
+        _ => unreachable!("resolve_generic_lifetime_parameter_edge {edge_name}"),
+    }
+}
+
+pub(super) fn resolve_generic_const_parameter_edge<'a, V: AsVertex<Vertex<'a>> + 'a>(
+    contexts: ContextIterator<'a, V>,
+    edge_name: &str,
+    _adapter: &'a RustdocAdapter<'a>,
+) -> ContextOutcomeIterator<'a, V, VertexIterator<'a, Vertex<'a>>> {
+    match edge_name {
+        "type" => resolve_neighbors_with(contexts, move |vertex| {
+            let origin = vertex.origin;
+
+            let (_generics, param): (
+                &'a rustdoc_types::Generics,
+                &'a rustdoc_types::GenericParamDef,
+            ) = vertex
+                .as_generic_parameter()
+                .expect("vertex was not a GenericConstParameter");
+
+            match &param.kind {
+                rustdoc_types::GenericParamDefKind::Const { type_, .. } => {
+                    Box::new(std::iter::once(origin.make_raw_type_vertex(type_)))
+                }
+                _ => unreachable!("vertex was not a GenericConstParameter: {vertex:?}"),
+            }
+        }),
+        _ => unreachable!("resolve_generic_const_parameter_edge {edge_name}"),
     }
 }
 
