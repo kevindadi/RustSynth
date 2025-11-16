@@ -42,6 +42,12 @@ pub struct JsonPlace {
     pub fields: Vec<JsonField>,
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub attributes: HashMap<String, serde_json::Value>,
+    /// 泛型参数的所有者 ID (仅用于泛型参数 Place)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub generic_owner_id: Option<u32>,
+    /// 泛型参数的所有者类型名称 (仅用于泛型参数 Place)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub generic_owner_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -161,6 +167,8 @@ impl From<&PetriNet> for JsonPetriNet {
                 generics: Vec::new(),
                 fields: Vec::new(),
                 attributes,
+                generic_owner_id: place.generic_owner_id.map(|id| id.0),
+                generic_owner_name: place.generic_owner_name.as_ref().map(|s| s.to_string()),
             });
         }
 
@@ -311,13 +319,16 @@ impl JsonPetriNet {
                 .unwrap_or(false)
             {
                 // 泛型参数 Place
-                let bounds = json_place.attributes.get("required_trait_bounds")
+                let owner_id = rustdoc_types::Id(json_place.generic_owner_id.unwrap_or(0));
+                let bounds: Vec<std::sync::Arc<str>> = json_place.attributes.get("required_trait_bounds")
                     .and_then(|v| serde_json::from_value::<Vec<String>>(v.clone()).ok())
                     .unwrap_or_default()
                     .into_iter()
                     .map(|s| std::sync::Arc::<str>::from(s))
                     .collect();
-                net.add_generic_parameter_place(descriptor, bounds)
+                let owner_name = json_place.generic_owner_name.as_ref()
+                    .map(|s| std::sync::Arc::<str>::from(s.as_str()));
+                net.add_generic_parameter_place(owner_id, owner_name, descriptor, bounds)
             } else {
                 // 普通或基本类型 Place
                 let traits = json_place.attributes.get("implemented_traits")
@@ -426,7 +437,6 @@ impl JsonPetriNet {
     pub fn validate(&self) -> Result<(), Vec<String>> {
         let mut errors = Vec::new();
 
-        // 检查 place IDs 是否唯一
         let mut place_ids = std::collections::HashSet::new();
         for place in &self.places {
             if !place_ids.insert(&place.id) {
@@ -434,7 +444,6 @@ impl JsonPetriNet {
             }
         }
 
-        // 检查 transition IDs 是否唯一
         let mut transition_ids = std::collections::HashSet::new();
         for transition in &self.transitions {
             if !transition_ids.insert(&transition.id) {
@@ -442,14 +451,12 @@ impl JsonPetriNet {
             }
         }
 
-        // 检查 token 引用的类型是否存在
         for token in &self.tokens {
             if !place_ids.contains(&token.r#type) {
                 errors.push(format!("Token {} 引用了不存在的类型: {}", token.id, token.r#type));
             }
         }
 
-        // 检查 guard IDs 是否唯一
         let mut guard_ids = std::collections::HashSet::new();
         for guard in &self.guards {
             if !guard_ids.insert(&guard.id) {
@@ -457,7 +464,6 @@ impl JsonPetriNet {
             }
         }
 
-        // 检查 transition 引用的 guard 是否存在
         for transition in &self.transitions {
             for guard_ref in &transition.guard_refs {
                 if !guard_ids.contains(guard_ref) {
@@ -476,43 +482,35 @@ impl JsonPetriNet {
         }
     }
 
-    /// 添加一个新的 Place
     pub fn add_place(&mut self, place: JsonPlace) {
         self.places.push(place);
     }
 
-    /// 添加一个新的 Token
     pub fn add_token(&mut self, token: JsonToken) {
         self.tokens.push(token);
     }
 
-    /// 添加一个新的 Transition
     pub fn add_transition(&mut self, transition: JsonTransition) {
         self.transitions.push(transition);
     }
 
-    /// 添加一个新的 Guard
     pub fn add_guard(&mut self, guard: JsonGuard) {
         self.guards.push(guard);
     }
 
-    /// 根据 ID 查找 Place
     pub fn find_place(&self, id: &str) -> Option<&JsonPlace> {
         self.places.iter().find(|p| p.id == id)
     }
 
-    /// 根据 ID 查找 Transition
     pub fn find_transition(&self, id: &str) -> Option<&JsonTransition> {
         self.transitions.iter().find(|t| t.id == id)
     }
 
-    /// 根据 ID 查找 Guard
     pub fn find_guard(&self, id: &str) -> Option<&JsonGuard> {
         self.guards.iter().find(|g| g.id == id)
     }
 }
 
-/// 从字符串解析借用类型
 fn parse_borrow_kind(mode: Option<&str>) -> super::type_repr::BorrowKind {
     match mode {
         Some("&") => super::type_repr::BorrowKind::SharedRef,

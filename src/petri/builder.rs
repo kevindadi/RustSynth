@@ -277,39 +277,85 @@ impl<'a> PetriNetBuilder<'a> {
         impl_trait_bounds: Vec<String>,
     ) {
         let receiver_descriptor = context_receiver_descriptor(&context);
+        
+        // 提取实现类型的信息（用于泛型参数的所属者）
+        let (owner_id, owner_name) = match &context {
+            FunctionContext::InherentMethod { receiver } | 
+            FunctionContext::TraitImplementation { receiver, .. } => {
+                // 从 receiver 类型描述符中提取类型名称
+                let type_name = receiver.type_name_only().display().to_string();
+                // 尝试从 crate 中查找类型对应的 Item ID
+                let id = self.crate_.index.iter()
+                    .find(|(_, item)| {
+                        item.name.as_deref() == Some(&type_name)
+                            && matches!(&item.inner, ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Union(_))
+                    })
+                    .map(|(id, _)| *id);
+                (id, Some(type_name))
+            }
+            FunctionContext::FreeFunction => (None, None),
+        };
 
         let mut summary_inputs = Vec::new();
         let mut input_arcs = Vec::new();
         for (name, ty) in &func.sig.inputs {
             // 先检查原始类型是否为泛型
-            let is_generic = matches!(ty, Type::Generic(_));
+            let mut is_generic = matches!(ty, Type::Generic(_));
             let mut descriptor = TypeDescriptor::from_type(ty);
+            
+            // 替换 Self 类型
+            let mut was_self = false;
             if let Some(receiver) = receiver_descriptor {
                 if let Some(replaced) = descriptor.replace_self(receiver) {
                     descriptor = replaced;
+                    was_self = true;
                 }
             }
-            // 如果是泛型类型，不创建 Place，但保留参数信息（用于 guard 检查）
-            if !is_generic {
-                if let Some(place_id) = self.ensure_place(descriptor.clone()) {
-                    let parameter = ParameterSummary {
-                        name: (!name.is_empty()).then(|| Arc::<str>::from(name.as_str())),
-                        descriptor: descriptor.clone(),
-                    };
-                    summary_inputs.push(parameter.clone());
-                    input_arcs.push((
-                        place_id,
-                        ArcData {
-                            weight: 1,
-                            parameter: Some(parameter.clone()),
-                            kind: ArcKind::Normal,
-                            descriptor: None,
-                            borrow_kind: Some(descriptor.borrow_kind()),
-                        },
-                    ));
+            
+            // 如果类型是 Self 并且被替换了，就不再是泛型
+            if was_self {
+                is_generic = false;
+            }
+            
+            // 处理参数类型
+            let place_id_opt = if is_generic {
+                // 泛型参数：创建带有所属者信息的 Place
+                if let (Some(owner_id), Some(owner_name_str)) = (owner_id, owner_name.as_ref()) {
+                    let owner_name_arc: std::sync::Arc<str> = std::sync::Arc::from(owner_name_str.as_str());
+                    // 提取泛型参数的 trait bounds（从 impl_trait_bounds 或函数泛型中）
+                    let bounds: Vec<std::sync::Arc<str>> = Vec::new(); // TODO: 从泛型参数定义中提取
+                    let place_id = self.net.add_generic_parameter_place(
+                        owner_id,
+                        Some(owner_name_arc),
+                        descriptor.normalized(),
+                        bounds,
+                    );
+                    Some(place_id)
+                } else {
+                    None
                 }
             } else {
-                // 泛型参数，只记录在 summary 中，不创建边（guard 会在合成阶段检查）
+                self.ensure_place(descriptor.clone())
+            };
+            
+            if let Some(place_id) = place_id_opt {
+                let parameter = ParameterSummary {
+                    name: (!name.is_empty()).then(|| Arc::<str>::from(name.as_str())),
+                    descriptor: descriptor.clone(),
+                };
+                summary_inputs.push(parameter.clone());
+                input_arcs.push((
+                    place_id,
+                    ArcData {
+                        weight: 1,
+                        parameter: Some(parameter.clone()),
+                        kind: ArcKind::Normal,
+                        descriptor: None,
+                        borrow_kind: Some(descriptor.borrow_kind()),
+                    },
+                ));
+            } else {
+                // 无法确定所属者的泛型参数，只记录在 summary 中
                 let parameter = ParameterSummary {
                     name: (!name.is_empty()).then(|| Arc::<str>::from(name.as_str())),
                     descriptor: descriptor.clone(),
@@ -324,37 +370,62 @@ impl<'a> PetriNetBuilder<'a> {
             .as_ref()
             .map(|ty| TypeDescriptor::from_type(ty));
 
+        // 检查返回值是否为泛型类型
+        let mut is_output_generic = func
+            .sig
+            .output
+            .as_ref()
+            .map(|ty| matches!(ty, Type::Generic(_)))
+            .unwrap_or(false);
+
+        // 替换 Self 类型
+        let mut output_was_self = false;
         if let (Some(receiver), Some(descriptor)) =
             (receiver_descriptor, output_descriptor.as_mut())
         {
             if let Some(replaced) = descriptor.replace_self(receiver) {
                 *descriptor = replaced;
+                output_was_self = true;
             }
+        }
+        
+        // 如果输出是 Self 并且被替换了，就不再是泛型
+        if output_was_self {
+            is_output_generic = false;
         }
 
         let mut output_arcs = Vec::new();
         if let Some(descriptor) = output_descriptor.clone() {
-            // 检查返回值是否为泛型类型
-            let is_generic = func
-                .sig
-                .output
-                .as_ref()
-                .map(|ty| matches!(ty, Type::Generic(_)))
-                .unwrap_or(false);
-            // 如果是泛型类型，不创建 Place
-            if !is_generic {
-                if let Some(place_id) = self.ensure_place(descriptor.clone()) {
-                    output_arcs.push((
-                        place_id,
-                        ArcData {
-                            weight: 1,
-                            parameter: None,
-                            kind: ArcKind::Normal,
-                            descriptor: Some(descriptor.clone()),
-                            borrow_kind: Some(descriptor.borrow_kind()),
-                        },
-                    ));
+            let place_id_opt = if is_output_generic {
+                // 泛型返回值：创建带有所属者信息的 Place
+                if let (Some(owner_id), Some(owner_name_str)) = (owner_id, owner_name.as_ref()) {
+                    let owner_name_arc: std::sync::Arc<str> = std::sync::Arc::from(owner_name_str.as_str());
+                    let bounds: Vec<std::sync::Arc<str>> = Vec::new();
+                    let place_id = self.net.add_generic_parameter_place(
+                        owner_id,
+                        Some(owner_name_arc),
+                        descriptor.normalized(),
+                        bounds,
+                    );
+                    Some(place_id)
+                } else {
+                    None
                 }
+            } else {
+                self.ensure_place(descriptor.clone())
+            };
+            
+            if let Some(place_id) = place_id_opt {
+                output_arcs.push((
+                    place_id,
+                    ArcData {
+                        weight: 1,
+                        parameter: None,
+                        kind: ArcKind::Normal,
+                        descriptor: Some(descriptor.clone()),
+                        borrow_kind: Some(descriptor.borrow_kind()),
+                    },
+                ));
             }
         }
 
@@ -509,7 +580,7 @@ impl<'a> PetriNetBuilder<'a> {
         // 如果类型名包含 "::" 或者是已知的类型，则不是泛型参数
 
         // 简单检查：如果规范化后的类型名不包含路径分隔符且不在基本类型列表中
-        // 且不是 Self，可能是泛型参数
+        // 且不是 Self，且是单个大写字母或短的大写标识符，可能是泛型参数
         if !canonical.contains("::")
             && !matches!(
                 canonical.as_ref(),
@@ -533,13 +604,14 @@ impl<'a> PetriNetBuilder<'a> {
                     | "Self"
             )
             && canonical.chars().all(|c| c.is_alphanumeric() || c == '_')
-            && !canonical
+            && canonical.len() <= 3  // 泛型参数通常很短: T, U, E, etc.
+            && canonical
                 .chars()
                 .next()
-                .map(|c| c.is_uppercase())
+                .map(|c| c.is_uppercase())  // 修复：泛型参数首字母应该是大写
                 .unwrap_or(false)
         {
-            // 可能是泛型参数（如 T, U），不创建 Place
+            // 可能是泛型参数（如 T, U, E），不创建 Place
             return None;
         }
 

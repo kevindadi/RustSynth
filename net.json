@@ -317,195 +317,195 @@
     },
     {
       "id": "P17",
-      "name": "DecodeSliceError"
-    },
-    {
-      "id": "P18",
-      "name": "EncoderStringWriter"
-    },
-    {
-      "id": "P19",
-      "name": "DecodePaddingMode"
-    },
-    {
-      "id": "P20",
-      "name": "InvalidLength"
-    },
-    {
-      "id": "P21",
-      "name": "Alphabet"
-    },
-    {
-      "id": "P22",
-      "name": "EncoderWriter"
-    },
-    {
-      "id": "P23",
-      "name": "RequireCanonical"
-    },
-    {
-      "id": "P24",
-      "name": "Indifferent"
-    },
-    {
-      "id": "P25",
-      "name": "GeneralPurpose"
-    },
-    {
-      "id": "P26",
-      "name": "ParseAlphabetError"
-    },
-    {
-      "id": "P27",
-      "name": "InvalidByte"
-    },
-    {
-      "id": "P28",
-      "name": "GeneralPurposeConfig"
-    },
-    {
-      "id": "P29",
-      "name": "OutputSliceTooSmall"
-    },
-    {
-      "id": "P30",
-      "name": "DuplicatedByte"
-    },
-    {
-      "id": "P31",
-      "name": "DecodeMetadata"
-    },
-    {
-      "id": "P32",
-      "name": "InvalidLastSymbol"
-    },
-    {
-      "id": "P33",
-      "name": "DecodeError"
-    },
-    {
-      "id": "P34",
-      "name": "ReservedByte"
-    },
-    {
-      "id": "P35",
       "name": "UnprintableByte"
     },
     {
-      "id": "P36",
+      "id": "P18",
+      "name": "Alphabet"
+    },
+    {
+      "id": "P19",
+      "name": "InvalidLength"
+    },
+    {
+      "id": "P20",
+      "name": "OutputSliceTooSmall"
+    },
+    {
+      "id": "P21",
+      "name": "InvalidLastSymbol"
+    },
+    {
+      "id": "P22",
+      "name": "InvalidByte"
+    },
+    {
+      "id": "P23",
+      "name": "DecodeError"
+    },
+    {
+      "id": "P24",
       "name": "InvalidPadding"
     },
     {
-      "id": "P37",
-      "name": "DecoderReader"
+      "id": "P25",
+      "name": "DecodeSliceError"
     },
     {
-      "id": "P38",
-      "name": "Base64Display"
+      "id": "P26",
+      "name": "EncoderStringWriter"
     },
     {
-      "id": "P39",
+      "id": "P27",
+      "name": "DecodePaddingMode"
+    },
+    {
+      "id": "P28",
+      "name": "ReservedByte"
+    },
+    {
+      "id": "P29",
       "name": "RequireNone"
     },
     {
-      "id": "P40",
+      "id": "P30",
+      "name": "DecoderReader"
+    },
+    {
+      "id": "P31",
+      "name": "DuplicatedByte"
+    },
+    {
+      "id": "P32",
+      "name": "ParseAlphabetError"
+    },
+    {
+      "id": "P33",
+      "name": "EncoderWriter"
+    },
+    {
+      "id": "P34",
+      "name": "DecodeMetadata"
+    },
+    {
+      "id": "P35",
       "name": "EncodeSliceError"
     },
     {
+      "id": "P36",
+      "name": "Base64Display"
+    },
+    {
+      "id": "P37",
+      "name": "GeneralPurpose"
+    },
+    {
+      "id": "P38",
+      "name": "GeneralPurposeConfig"
+    },
+    {
+      "id": "P39",
+      "name": "RequireCanonical"
+    },
+    {
+      "id": "P40",
+      "name": "Indifferent"
+    },
+    {
       "id": "P41",
-      "name": "T"
-    },
-    {
-      "id": "P42",
-      "name": "Error>"
-    },
-    {
-      "id": "P43",
-      "name": "TypeId"
-    },
-    {
-      "id": "P44",
-      "name": "Formatter<'_>"
-    },
-    {
-      "id": "P45",
-      "name": "Result"
-    },
-    {
-      "id": "P46",
-      "name": "String"
-    },
-    {
-      "id": "P47",
-      "name": "Error + 'static)>"
-    },
-    {
-      "id": "P48",
-      "name": "Alphabet, ParseAlphabetError>"
-    },
-    {
-      "id": "P49",
       "name": "E"
     },
     {
-      "id": "P50",
-      "name": "EncoderWriter<'e, E, W>"
-    },
-    {
-      "id": "P51",
-      "name": "EncoderWriter<'e, E, W>"
-    },
-    {
-      "id": "P52",
-      "name": "Result<W>"
-    },
-    {
-      "id": "P53",
-      "name": "[u8]"
-    },
-    {
-      "id": "P54",
-      "name": "Result<usize>"
-    },
-    {
-      "id": "P55",
-      "name": "Result<()>"
-    },
-    {
-      "id": "P56",
-      "name": "Config"
-    },
-    {
-      "id": "P57",
-      "name": "Result<usize, EncodeSliceError>"
-    },
-    {
-      "id": "P58",
-      "name": "Result<Vec<u8>, DecodeError>"
-    },
-    {
-      "id": "P59",
-      "name": "Vec<u8>"
-    },
-    {
-      "id": "P60",
-      "name": "Result<(), DecodeError>"
-    },
-    {
-      "id": "P61",
-      "name": "Result<usize, DecodeSliceError>"
-    },
-    {
-      "id": "P62",
-      "name": "Result<usize, DecodeError>"
-    },
-    {
-      "id": "P63",
+      "id": "P42",
       "name": "EncoderStringWriter<'e, E, S>"
     },
     {
-      "id": "P64",
+      "id": "P43",
+      "name": "T"
+    },
+    {
+      "id": "P44",
+      "name": "Error>"
+    },
+    {
+      "id": "P45",
+      "name": "TypeId"
+    },
+    {
+      "id": "P46",
+      "name": "[u8]"
+    },
+    {
+      "id": "P47",
+      "name": "Result<usize>"
+    },
+    {
+      "id": "P48",
+      "name": "Result<()>"
+    },
+    {
+      "id": "P49",
       "name": "DecoderReader<'e, E, R>"
+    },
+    {
+      "id": "P50",
+      "name": "Formatter<'_>"
+    },
+    {
+      "id": "P51",
+      "name": "Result"
+    },
+    {
+      "id": "P52",
+      "name": "Config"
+    },
+    {
+      "id": "P53",
+      "name": "String"
+    },
+    {
+      "id": "P54",
+      "name": "Result<usize, EncodeSliceError>"
+    },
+    {
+      "id": "P55",
+      "name": "Result<Vec<u8>, DecodeError>"
+    },
+    {
+      "id": "P56",
+      "name": "Vec<u8>"
+    },
+    {
+      "id": "P57",
+      "name": "Result<(), DecodeError>"
+    },
+    {
+      "id": "P58",
+      "name": "Result<usize, DecodeSliceError>"
+    },
+    {
+      "id": "P59",
+      "name": "Result<usize, DecodeError>"
+    },
+    {
+      "id": "P60",
+      "name": "EncoderWriter<'e, E, W>"
+    },
+    {
+      "id": "P61",
+      "name": "EncoderWriter<'e, E, W>"
+    },
+    {
+      "id": "P62",
+      "name": "Result<W>"
+    },
+    {
+      "id": "P63",
+      "name": "Alphabet, ParseAlphabetError>"
+    },
+    {
+      "id": "P64",
+      "name": "Error + 'static)>"
     },
     {
       "id": "P65",
@@ -525,47 +525,90 @@
     },
     {
       "id": "P69",
-      "name": "Vec<u8>, DecodeError>"
-    },
-    {
-      "id": "P70",
       "name": "Option<usize>"
     },
     {
-      "id": "P71",
+      "id": "P70",
       "name": "Self"
+    },
+    {
+      "id": "P71",
+      "name": "Vec<u8>, DecodeError>"
     }
   ],
   "tokens": [],
   "transitions": [
     {
       "id": "T0",
-      "name": "borrow",
+      "name": "from_consumer",
       "kind": "method",
       "inputs": [
         {
-          "type": "&base64::engine::DecodePaddingMode",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
+          "type": "&'e E",
+          "name": "engine",
           "mode": "&"
         }
       ],
       "generic_params": [
-        "T"
+        "''e",
+        "E: Engine",
+        "S: StrConsumer"
       ]
     },
     {
       "id": "T1",
+      "name": "into_inner",
+      "kind": "method",
+      "generic_params": [
+        "''e",
+        "E: Engine",
+        "S: StrConsumer"
+      ]
+    },
+    {
+      "id": "T2",
+      "name": "new",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&'e E",
+          "name": "engine",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "''e",
+        "E: Engine"
+      ]
+    },
+    {
+      "id": "T3",
+      "name": "borrow",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::write::encoder_string_writer::EncoderStringWriter<'e, E, S>",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T4",
       "name": "borrow_mut",
       "kind": "method",
       "inputs": [
         {
-          "type": "&mut base64::engine::DecodePaddingMode",
+          "type": "&mut base64::write::encoder_string_writer::EncoderStringWriter<'e, E, S>",
           "name": "self",
           "mode": "&mut"
         }
@@ -581,27 +624,7 @@
       ]
     },
     {
-      "id": "T2",
-      "name": "clone_to_uninit",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "*mut u8",
-          "name": "dest",
-          "mode": "*mut"
-        },
-        {
-          "type": "&base64::engine::DecodePaddingMode",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T3",
+      "id": "T5",
       "name": "into",
       "kind": "method",
       "generic_params": [
@@ -610,7 +633,7 @@
       ]
     },
     {
-      "id": "T4",
+      "id": "T6",
       "name": "from",
       "kind": "method",
       "generic_params": [
@@ -618,7 +641,7 @@
       ]
     },
     {
-      "id": "T5",
+      "id": "T7",
       "name": "try_into",
       "kind": "method",
       "outputs": [
@@ -633,7 +656,7 @@
       ]
     },
     {
-      "id": "T6",
+      "id": "T8",
       "name": "try_from",
       "kind": "method",
       "outputs": [
@@ -648,12 +671,12 @@
       ]
     },
     {
-      "id": "T7",
+      "id": "T9",
       "name": "type_id",
       "kind": "method",
       "inputs": [
         {
-          "type": "&base64::engine::DecodePaddingMode",
+          "type": "&base64::write::encoder_string_writer::EncoderStringWriter<'e, E, S>",
           "name": "self",
           "mode": "&"
         }
@@ -669,140 +692,98 @@
       ]
     },
     {
-      "id": "T8",
-      "name": "to_owned",
+      "id": "T10",
+      "name": "write",
       "kind": "method",
       "inputs": [
         {
-          "type": "&base64::engine::DecodePaddingMode",
-          "name": "self",
+          "type": "&[u8]",
+          "name": "buf",
           "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T9",
-      "name": "clone_into",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut T",
-          "name": "target",
-          "mode": "&mut"
         },
         {
-          "type": "&base64::engine::DecodePaddingMode",
+          "type": "&mut base64::write::encoder_string_writer::EncoderStringWriter<'e, E, S>",
           "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T10",
-      "name": "clone",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::DecodePaddingMode",
-          "name": "self",
-          "mode": "&"
+          "mode": "&mut"
         }
       ],
       "outputs": [
         {
-          "type": "DecodePaddingMode",
+          "type": "Result<usize>",
           "mode": "value"
         }
+      ],
+      "generic_params": [
+        "''e",
+        "E: Engine",
+        "S: StrConsumer"
       ]
     },
     {
       "id": "T11",
-      "name": "fmt",
+      "name": "flush",
       "kind": "method",
       "inputs": [
         {
-          "type": "&mut $crate::fmt::Formatter<'_>",
-          "name": "f",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::engine::DecodePaddingMode",
+          "type": "&mut base64::write::encoder_string_writer::EncoderStringWriter<'e, E, S>",
           "name": "self",
-          "mode": "&"
+          "mode": "&mut"
         }
       ],
       "outputs": [
         {
-          "type": "Result",
+          "type": "Result<()>",
           "mode": "value"
         }
+      ],
+      "generic_params": [
+        "''e",
+        "E: Engine",
+        "S: StrConsumer"
       ]
     },
     {
       "id": "T12",
-      "name": "eq",
+      "name": "new",
       "kind": "method",
       "inputs": [
         {
-          "type": "&DecodePaddingMode",
-          "name": "other",
-          "mode": "&"
-        },
-        {
-          "type": "&base64::engine::DecodePaddingMode",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "bool",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T13",
-      "name": "borrow",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::decode::DecodeSliceError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
+          "type": "&'e E",
+          "name": "engine",
           "mode": "&"
         }
       ],
       "generic_params": [
-        "T"
+        "''e",
+        "E: Engine",
+        "R: io::Read"
+      ]
+    },
+    {
+      "id": "T13",
+      "name": "into_inner",
+      "kind": "method",
+      "generic_params": [
+        "''e",
+        "E: Engine",
+        "R: io::Read"
       ]
     },
     {
       "id": "T14",
-      "name": "borrow_mut",
+      "name": "borrow",
       "kind": "method",
       "inputs": [
         {
-          "type": "&mut base64::decode::DecodeSliceError",
+          "type": "&base64::read::decoder::DecoderReader<'e, E, R>",
           "name": "self",
-          "mode": "&mut"
+          "mode": "&"
         }
       ],
       "outputs": [
         {
           "type": "T",
-          "mode": "&mut"
+          "mode": "&"
         }
       ],
       "generic_params": [
@@ -811,18 +792,19 @@
     },
     {
       "id": "T15",
-      "name": "clone_to_uninit",
+      "name": "borrow_mut",
       "kind": "method",
       "inputs": [
         {
-          "type": "*mut u8",
-          "name": "dest",
-          "mode": "*mut"
-        },
-        {
-          "type": "&base64::decode::DecodeSliceError",
+          "type": "&mut base64::read::decoder::DecoderReader<'e, E, R>",
           "name": "self",
-          "mode": "&"
+          "mode": "&mut"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&mut"
         }
       ],
       "generic_params": [
@@ -882,7 +864,7 @@
       "kind": "method",
       "inputs": [
         {
-          "type": "&base64::decode::DecodeSliceError",
+          "type": "&base64::read::decoder::DecoderReader<'e, E, R>",
           "name": "self",
           "mode": "&"
         }
@@ -899,2211 +881,34 @@
     },
     {
       "id": "T21",
-      "name": "to_owned",
+      "name": "fmt",
       "kind": "method",
       "inputs": [
         {
-          "type": "&base64::decode::DecodeSliceError",
+          "type": "&mut fmt::Formatter<'_>",
+          "name": "f",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::read::decoder::DecoderReader<'e, E, R>",
           "name": "self",
           "mode": "&"
         }
       ],
+      "outputs": [
+        {
+          "type": "Result",
+          "mode": "value"
+        }
+      ],
       "generic_params": [
-        "T"
+        "''e",
+        "E: Engine",
+        "R: io::Read"
       ]
     },
     {
       "id": "T22",
-      "name": "clone_into",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut T",
-          "name": "target",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::decode::DecodeSliceError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T23",
-      "name": "to_string",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::decode::DecodeSliceError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "String",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T24",
-      "name": "clone",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::decode::DecodeSliceError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "DecodeSliceError",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T25",
-      "name": "fmt",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut $crate::fmt::Formatter<'_>",
-          "name": "f",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::decode::DecodeSliceError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T26",
-      "name": "eq",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&DecodeSliceError",
-          "name": "other",
-          "mode": "&"
-        },
-        {
-          "type": "&base64::decode::DecodeSliceError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "bool",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T27",
-      "name": "fmt",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut fmt::Formatter<'_>",
-          "name": "f",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::decode::DecodeSliceError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T28",
-      "name": "source",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::decode::DecodeSliceError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Error + 'static)>",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T29",
-      "name": "from",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "DecodeError",
-          "name": "e",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T30",
-      "name": "new",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&str",
-          "name": "alphabet",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Alphabet, ParseAlphabetError>",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T31",
-      "name": "as_str",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::alphabet::Alphabet",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "str",
-          "mode": "&"
-        }
-      ]
-    },
-    {
-      "id": "T32",
-      "name": "borrow",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::alphabet::Alphabet",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T33",
-      "name": "borrow_mut",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut base64::alphabet::Alphabet",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&mut"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T34",
-      "name": "clone_to_uninit",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "*mut u8",
-          "name": "dest",
-          "mode": "*mut"
-        },
-        {
-          "type": "&base64::alphabet::Alphabet",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T35",
-      "name": "into",
-      "kind": "method",
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T36",
-      "name": "from",
-      "kind": "method",
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T37",
-      "name": "try_into",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T38",
-      "name": "try_from",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T39",
-      "name": "type_id",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::alphabet::Alphabet",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "TypeId",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T40",
-      "name": "to_owned",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::alphabet::Alphabet",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T41",
-      "name": "clone_into",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut T",
-          "name": "target",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::alphabet::Alphabet",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T42",
-      "name": "clone",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::alphabet::Alphabet",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Alphabet",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T43",
-      "name": "fmt",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut $crate::fmt::Formatter<'_>",
-          "name": "f",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::alphabet::Alphabet",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T44",
-      "name": "eq",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&Alphabet",
-          "name": "other",
-          "mode": "&"
-        },
-        {
-          "type": "&base64::alphabet::Alphabet",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "bool",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T45",
-      "name": "try_from",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&str",
-          "name": "value",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T46",
-      "name": "new",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&'e E",
-          "name": "engine",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "EncoderWriter<'e, E, W>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "W: io::Write"
-      ]
-    },
-    {
-      "id": "T47",
-      "name": "finish",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut base64::write::encoder::EncoderWriter<'e, E, W>",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result<W>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "W: io::Write"
-      ]
-    },
-    {
-      "id": "T48",
-      "name": "into_inner",
-      "kind": "method",
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "W: io::Write"
-      ]
-    },
-    {
-      "id": "T49",
-      "name": "borrow",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::write::encoder::EncoderWriter<'e, E, W>",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T50",
-      "name": "borrow_mut",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut base64::write::encoder::EncoderWriter<'e, E, W>",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&mut"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T51",
-      "name": "into",
-      "kind": "method",
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T52",
-      "name": "from",
-      "kind": "method",
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T53",
-      "name": "try_into",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T54",
-      "name": "try_from",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T55",
-      "name": "type_id",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::write::encoder::EncoderWriter<'e, E, W>",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "TypeId",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T56",
-      "name": "fmt",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut fmt::Formatter<'_>",
-          "name": "f",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::write::encoder::EncoderWriter<'e, E, W>",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "W: io::Write"
-      ]
-    },
-    {
-      "id": "T57",
-      "name": "write",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&[u8]",
-          "name": "input",
-          "mode": "&"
-        },
-        {
-          "type": "&mut base64::write::encoder::EncoderWriter<'e, E, W>",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result<usize>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "W: io::Write"
-      ]
-    },
-    {
-      "id": "T58",
-      "name": "flush",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut base64::write::encoder::EncoderWriter<'e, E, W>",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result<()>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "W: io::Write"
-      ]
-    },
-    {
-      "id": "T59",
-      "name": "drop",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut base64::write::encoder::EncoderWriter<'e, E, W>",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "W: io::Write"
-      ]
-    },
-    {
-      "id": "T60",
-      "name": "new",
-      "kind": "method"
-    },
-    {
-      "id": "T61",
-      "name": "with_encode_padding",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "bool",
-          "name": "padding",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T62",
-      "name": "with_decode_allow_trailing_bits",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "bool",
-          "name": "allow",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T63",
-      "name": "with_decode_padding_mode",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "DecodePaddingMode",
-          "name": "mode",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T64",
-      "name": "borrow",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T65",
-      "name": "borrow_mut",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut base64::engine::general_purpose::GeneralPurposeConfig",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&mut"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T66",
-      "name": "clone_to_uninit",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "*mut u8",
-          "name": "dest",
-          "mode": "*mut"
-        },
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T67",
-      "name": "into",
-      "kind": "method",
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T68",
-      "name": "from",
-      "kind": "method",
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T69",
-      "name": "try_into",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T70",
-      "name": "try_from",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T71",
-      "name": "type_id",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "TypeId",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T72",
-      "name": "to_owned",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T73",
-      "name": "clone_into",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut T",
-          "name": "target",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T74",
-      "name": "clone",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "GeneralPurposeConfig",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T75",
-      "name": "fmt",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut $crate::fmt::Formatter<'_>",
-          "name": "f",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T76",
-      "name": "default",
-      "kind": "method"
-    },
-    {
-      "id": "T77",
-      "name": "encode_padding",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "bool",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T78",
-      "name": "borrow",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::DecodeMetadata",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T79",
-      "name": "borrow_mut",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut base64::engine::DecodeMetadata",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&mut"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T80",
-      "name": "into",
-      "kind": "method",
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T81",
-      "name": "from",
-      "kind": "method",
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T82",
-      "name": "try_into",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T83",
-      "name": "try_from",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T84",
-      "name": "type_id",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::DecodeMetadata",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "TypeId",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T85",
-      "name": "eq",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&DecodeMetadata",
-          "name": "other",
-          "mode": "&"
-        },
-        {
-          "type": "&base64::engine::DecodeMetadata",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "bool",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T86",
-      "name": "fmt",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut $crate::fmt::Formatter<'_>",
-          "name": "f",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::engine::DecodeMetadata",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T87",
-      "name": "new",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "GeneralPurposeConfig",
-          "name": "config",
-          "mode": "value"
-        },
-        {
-          "type": "&Alphabet",
-          "name": "alphabet",
-          "mode": "&"
-        }
-      ]
-    },
-    {
-      "id": "T88",
-      "name": "borrow",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T89",
-      "name": "borrow_mut",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&mut"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T90",
-      "name": "clone_to_uninit",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "*mut u8",
-          "name": "dest",
-          "mode": "*mut"
-        },
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T91",
-      "name": "into",
-      "kind": "method",
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T92",
-      "name": "from",
-      "kind": "method",
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T93",
-      "name": "try_into",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T94",
-      "name": "try_from",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T95",
-      "name": "type_id",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "TypeId",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T96",
-      "name": "to_owned",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T97",
-      "name": "clone_into",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut T",
-          "name": "target",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T98",
-      "name": "fmt",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut $crate::fmt::Formatter<'_>",
-          "name": "f",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T99",
-      "name": "clone",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "GeneralPurpose",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T100",
-      "name": "config",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Config",
-          "mode": "&"
-        }
-      ]
-    },
-    {
-      "id": "T101",
-      "name": "encode",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "String",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T: AsRef<[u8]>"
-      ]
-    },
-    {
-      "id": "T102",
-      "name": "encode_string",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut String",
-          "name": "output_buf",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T: AsRef<[u8]>"
-      ]
-    },
-    {
-      "id": "T103",
-      "name": "encode_slice",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut [u8]",
-          "name": "output_buf",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result<usize, EncodeSliceError>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T: AsRef<[u8]>"
-      ]
-    },
-    {
-      "id": "T104",
-      "name": "decode",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result<Vec<u8>, DecodeError>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T: AsRef<[u8]>"
-      ]
-    },
-    {
-      "id": "T105",
-      "name": "decode_vec",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut Vec<u8>",
-          "name": "buffer",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result<(), DecodeError>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T: AsRef<[u8]>"
-      ]
-    },
-    {
-      "id": "T106",
-      "name": "decode_slice",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut [u8]",
-          "name": "output",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result<usize, DecodeSliceError>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T: AsRef<[u8]>"
-      ]
-    },
-    {
-      "id": "T107",
-      "name": "decode_slice_unchecked",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut [u8]",
-          "name": "output",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::engine::general_purpose::GeneralPurpose",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result<usize, DecodeError>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T: AsRef<[u8]>"
-      ]
-    },
-    {
-      "id": "T108",
-      "name": "borrow",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::decode::DecodeError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T109",
-      "name": "borrow_mut",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut base64::decode::DecodeError",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&mut"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T110",
-      "name": "clone_to_uninit",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "*mut u8",
-          "name": "dest",
-          "mode": "*mut"
-        },
-        {
-          "type": "&base64::decode::DecodeError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T111",
-      "name": "into",
-      "kind": "method",
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T112",
-      "name": "from",
-      "kind": "method",
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T113",
-      "name": "try_into",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T114",
-      "name": "try_from",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T115",
-      "name": "type_id",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::decode::DecodeError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "TypeId",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T116",
-      "name": "to_owned",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::decode::DecodeError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T117",
-      "name": "clone_into",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut T",
-          "name": "target",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::decode::DecodeError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T118",
-      "name": "to_string",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::decode::DecodeError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "String",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T119",
-      "name": "clone",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::decode::DecodeError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "DecodeError",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T120",
-      "name": "fmt",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut $crate::fmt::Formatter<'_>",
-          "name": "f",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::decode::DecodeError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T121",
-      "name": "eq",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&DecodeError",
-          "name": "other",
-          "mode": "&"
-        },
-        {
-          "type": "&base64::decode::DecodeError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "bool",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T122",
-      "name": "fmt",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut fmt::Formatter<'_>",
-          "name": "f",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::decode::DecodeError",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T123",
-      "name": "from",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "DecodeError",
-          "name": "e",
-          "mode": "value"
-        }
-      ]
-    },
-    {
-      "id": "T124",
-      "name": "from_consumer",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&'e E",
-          "name": "engine",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "S: StrConsumer"
-      ]
-    },
-    {
-      "id": "T125",
-      "name": "into_inner",
-      "kind": "method",
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "S: StrConsumer"
-      ]
-    },
-    {
-      "id": "T126",
-      "name": "new",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&'e E",
-          "name": "engine",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "''e",
-        "E: Engine"
-      ]
-    },
-    {
-      "id": "T127",
-      "name": "borrow",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::write::encoder_string_writer::EncoderStringWriter<'e, E, S>",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T128",
-      "name": "borrow_mut",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut base64::write::encoder_string_writer::EncoderStringWriter<'e, E, S>",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&mut"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T129",
-      "name": "into",
-      "kind": "method",
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T130",
-      "name": "from",
-      "kind": "method",
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T131",
-      "name": "try_into",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T132",
-      "name": "try_from",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T133",
-      "name": "type_id",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::write::encoder_string_writer::EncoderStringWriter<'e, E, S>",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "TypeId",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T134",
-      "name": "write",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&[u8]",
-          "name": "buf",
-          "mode": "&"
-        },
-        {
-          "type": "&mut base64::write::encoder_string_writer::EncoderStringWriter<'e, E, S>",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result<usize>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "S: StrConsumer"
-      ]
-    },
-    {
-      "id": "T135",
-      "name": "flush",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut base64::write::encoder_string_writer::EncoderStringWriter<'e, E, S>",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result<()>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "S: StrConsumer"
-      ]
-    },
-    {
-      "id": "T136",
-      "name": "new",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&'e E",
-          "name": "engine",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "R: io::Read"
-      ]
-    },
-    {
-      "id": "T137",
-      "name": "into_inner",
-      "kind": "method",
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "R: io::Read"
-      ]
-    },
-    {
-      "id": "T138",
-      "name": "borrow",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::read::decoder::DecoderReader<'e, E, R>",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T139",
-      "name": "borrow_mut",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut base64::read::decoder::DecoderReader<'e, E, R>",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "T",
-          "mode": "&mut"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T140",
-      "name": "into",
-      "kind": "method",
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T141",
-      "name": "from",
-      "kind": "method",
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T142",
-      "name": "try_into",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T143",
-      "name": "try_from",
-      "kind": "method",
-      "outputs": [
-        {
-          "type": "Error>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T",
-        "U"
-      ]
-    },
-    {
-      "id": "T144",
-      "name": "type_id",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&base64::read::decoder::DecoderReader<'e, E, R>",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "TypeId",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T"
-      ]
-    },
-    {
-      "id": "T145",
-      "name": "fmt",
-      "kind": "method",
-      "inputs": [
-        {
-          "type": "&mut fmt::Formatter<'_>",
-          "name": "f",
-          "mode": "&mut"
-        },
-        {
-          "type": "&base64::read::decoder::DecoderReader<'e, E, R>",
-          "name": "self",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "''e",
-        "E: Engine",
-        "R: io::Read"
-      ]
-    },
-    {
-      "id": "T146",
       "name": "read",
       "kind": "method",
       "inputs": [
@@ -3131,7 +936,1084 @@
       ]
     },
     {
-      "id": "T147",
+      "id": "T23",
+      "name": "borrow",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::DecodeMetadata",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T24",
+      "name": "borrow_mut",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut base64::engine::DecodeMetadata",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&mut"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T25",
+      "name": "into",
+      "kind": "method",
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T26",
+      "name": "from",
+      "kind": "method",
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T27",
+      "name": "try_into",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T28",
+      "name": "try_from",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T29",
+      "name": "type_id",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::DecodeMetadata",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "TypeId",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T30",
+      "name": "eq",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&DecodeMetadata",
+          "name": "other",
+          "mode": "&"
+        },
+        {
+          "type": "&base64::engine::DecodeMetadata",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T31",
+      "name": "fmt",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "name": "f",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::engine::DecodeMetadata",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T32",
+      "name": "new",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "GeneralPurposeConfig",
+          "name": "config",
+          "mode": "value"
+        },
+        {
+          "type": "&Alphabet",
+          "name": "alphabet",
+          "mode": "&"
+        }
+      ]
+    },
+    {
+      "id": "T33",
+      "name": "borrow",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T34",
+      "name": "borrow_mut",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&mut"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T35",
+      "name": "clone_to_uninit",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "*mut u8",
+          "name": "dest",
+          "mode": "*mut"
+        },
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T36",
+      "name": "into",
+      "kind": "method",
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T37",
+      "name": "from",
+      "kind": "method",
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T38",
+      "name": "try_into",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T39",
+      "name": "try_from",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T40",
+      "name": "type_id",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "TypeId",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T41",
+      "name": "to_owned",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T42",
+      "name": "clone_into",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut T",
+          "name": "target",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T43",
+      "name": "fmt",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "name": "f",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T44",
+      "name": "clone",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "GeneralPurpose",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T45",
+      "name": "config",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Config",
+          "mode": "&"
+        }
+      ]
+    },
+    {
+      "id": "T46",
+      "name": "encode",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "String",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T: AsRef<[u8]>"
+      ]
+    },
+    {
+      "id": "T47",
+      "name": "encode_string",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut String",
+          "name": "output_buf",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T: AsRef<[u8]>"
+      ]
+    },
+    {
+      "id": "T48",
+      "name": "encode_slice",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut [u8]",
+          "name": "output_buf",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result<usize, EncodeSliceError>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T: AsRef<[u8]>"
+      ]
+    },
+    {
+      "id": "T49",
+      "name": "decode",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result<Vec<u8>, DecodeError>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T: AsRef<[u8]>"
+      ]
+    },
+    {
+      "id": "T50",
+      "name": "decode_vec",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut Vec<u8>",
+          "name": "buffer",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result<(), DecodeError>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T: AsRef<[u8]>"
+      ]
+    },
+    {
+      "id": "T51",
+      "name": "decode_slice",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut [u8]",
+          "name": "output",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result<usize, DecodeSliceError>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T: AsRef<[u8]>"
+      ]
+    },
+    {
+      "id": "T52",
+      "name": "decode_slice_unchecked",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut [u8]",
+          "name": "output",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurpose",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result<usize, DecodeError>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T: AsRef<[u8]>"
+      ]
+    },
+    {
+      "id": "T53",
+      "name": "borrow",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::DecodePaddingMode",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T54",
+      "name": "borrow_mut",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut base64::engine::DecodePaddingMode",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&mut"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T55",
+      "name": "clone_to_uninit",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "*mut u8",
+          "name": "dest",
+          "mode": "*mut"
+        },
+        {
+          "type": "&base64::engine::DecodePaddingMode",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T56",
+      "name": "into",
+      "kind": "method",
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T57",
+      "name": "from",
+      "kind": "method",
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T58",
+      "name": "try_into",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T59",
+      "name": "try_from",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T60",
+      "name": "type_id",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::DecodePaddingMode",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "TypeId",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T61",
+      "name": "to_owned",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::DecodePaddingMode",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T62",
+      "name": "clone_into",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut T",
+          "name": "target",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::engine::DecodePaddingMode",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T63",
+      "name": "clone",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::DecodePaddingMode",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "DecodePaddingMode",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T64",
+      "name": "fmt",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "name": "f",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::engine::DecodePaddingMode",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T65",
+      "name": "eq",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&DecodePaddingMode",
+          "name": "other",
+          "mode": "&"
+        },
+        {
+          "type": "&base64::engine::DecodePaddingMode",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T66",
+      "name": "borrow",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::decode::DecodeError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T67",
+      "name": "borrow_mut",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut base64::decode::DecodeError",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&mut"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T68",
+      "name": "clone_to_uninit",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "*mut u8",
+          "name": "dest",
+          "mode": "*mut"
+        },
+        {
+          "type": "&base64::decode::DecodeError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T69",
+      "name": "into",
+      "kind": "method",
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T70",
+      "name": "from",
+      "kind": "method",
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T71",
+      "name": "try_into",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T72",
+      "name": "try_from",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T73",
+      "name": "type_id",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::decode::DecodeError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "TypeId",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T74",
+      "name": "to_owned",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::decode::DecodeError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T75",
+      "name": "clone_into",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut T",
+          "name": "target",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::decode::DecodeError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T76",
+      "name": "to_string",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::decode::DecodeError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "String",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T77",
+      "name": "clone",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::decode::DecodeError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "DecodeError",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T78",
+      "name": "fmt",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "name": "f",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::decode::DecodeError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T79",
+      "name": "eq",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&DecodeError",
+          "name": "other",
+          "mode": "&"
+        },
+        {
+          "type": "&base64::decode::DecodeError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T80",
+      "name": "fmt",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut fmt::Formatter<'_>",
+          "name": "f",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::decode::DecodeError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T81",
+      "name": "from",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "DecodeError",
+          "name": "e",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T82",
       "name": "borrow",
       "kind": "method",
       "inputs": [
@@ -3152,7 +2034,7 @@
       ]
     },
     {
-      "id": "T148",
+      "id": "T83",
       "name": "borrow_mut",
       "kind": "method",
       "inputs": [
@@ -3173,7 +2055,7 @@
       ]
     },
     {
-      "id": "T149",
+      "id": "T84",
       "name": "into",
       "kind": "method",
       "generic_params": [
@@ -3182,7 +2064,7 @@
       ]
     },
     {
-      "id": "T150",
+      "id": "T85",
       "name": "from",
       "kind": "method",
       "generic_params": [
@@ -3190,7 +2072,7 @@
       ]
     },
     {
-      "id": "T151",
+      "id": "T86",
       "name": "try_into",
       "kind": "method",
       "outputs": [
@@ -3205,7 +2087,7 @@
       ]
     },
     {
-      "id": "T152",
+      "id": "T87",
       "name": "try_from",
       "kind": "method",
       "outputs": [
@@ -3220,7 +2102,7 @@
       ]
     },
     {
-      "id": "T153",
+      "id": "T88",
       "name": "type_id",
       "kind": "method",
       "inputs": [
@@ -3241,7 +2123,7 @@
       ]
     },
     {
-      "id": "T154",
+      "id": "T89",
       "name": "to_string",
       "kind": "method",
       "inputs": [
@@ -3262,7 +2144,7 @@
       ]
     },
     {
-      "id": "T155",
+      "id": "T90",
       "name": "fmt",
       "kind": "method",
       "inputs": [
@@ -3285,7 +2167,7 @@
       ]
     },
     {
-      "id": "T156",
+      "id": "T91",
       "name": "eq",
       "kind": "method",
       "inputs": [
@@ -3308,7 +2190,7 @@
       ]
     },
     {
-      "id": "T157",
+      "id": "T92",
       "name": "fmt",
       "kind": "method",
       "inputs": [
@@ -3326,6 +2208,1124 @@
       "outputs": [
         {
           "type": "Result",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T93",
+      "name": "new",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&'e E",
+          "name": "engine",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "EncoderWriter<'e, E, W>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "''e",
+        "E: Engine",
+        "W: io::Write"
+      ]
+    },
+    {
+      "id": "T94",
+      "name": "finish",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut base64::write::encoder::EncoderWriter<'e, E, W>",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result<W>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "''e",
+        "E: Engine",
+        "W: io::Write"
+      ]
+    },
+    {
+      "id": "T95",
+      "name": "into_inner",
+      "kind": "method",
+      "generic_params": [
+        "''e",
+        "E: Engine",
+        "W: io::Write"
+      ]
+    },
+    {
+      "id": "T96",
+      "name": "borrow",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::write::encoder::EncoderWriter<'e, E, W>",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T97",
+      "name": "borrow_mut",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut base64::write::encoder::EncoderWriter<'e, E, W>",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&mut"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T98",
+      "name": "into",
+      "kind": "method",
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T99",
+      "name": "from",
+      "kind": "method",
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T100",
+      "name": "try_into",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T101",
+      "name": "try_from",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T102",
+      "name": "type_id",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::write::encoder::EncoderWriter<'e, E, W>",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "TypeId",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T103",
+      "name": "fmt",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut fmt::Formatter<'_>",
+          "name": "f",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::write::encoder::EncoderWriter<'e, E, W>",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "''e",
+        "E: Engine",
+        "W: io::Write"
+      ]
+    },
+    {
+      "id": "T104",
+      "name": "write",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&[u8]",
+          "name": "input",
+          "mode": "&"
+        },
+        {
+          "type": "&mut base64::write::encoder::EncoderWriter<'e, E, W>",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result<usize>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "''e",
+        "E: Engine",
+        "W: io::Write"
+      ]
+    },
+    {
+      "id": "T105",
+      "name": "flush",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut base64::write::encoder::EncoderWriter<'e, E, W>",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result<()>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "''e",
+        "E: Engine",
+        "W: io::Write"
+      ]
+    },
+    {
+      "id": "T106",
+      "name": "drop",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut base64::write::encoder::EncoderWriter<'e, E, W>",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ],
+      "generic_params": [
+        "''e",
+        "E: Engine",
+        "W: io::Write"
+      ]
+    },
+    {
+      "id": "T107",
+      "name": "new",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&str",
+          "name": "alphabet",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Alphabet, ParseAlphabetError>",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T108",
+      "name": "as_str",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::alphabet::Alphabet",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "str",
+          "mode": "&"
+        }
+      ]
+    },
+    {
+      "id": "T109",
+      "name": "borrow",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::alphabet::Alphabet",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T110",
+      "name": "borrow_mut",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut base64::alphabet::Alphabet",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&mut"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T111",
+      "name": "clone_to_uninit",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "*mut u8",
+          "name": "dest",
+          "mode": "*mut"
+        },
+        {
+          "type": "&base64::alphabet::Alphabet",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T112",
+      "name": "into",
+      "kind": "method",
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T113",
+      "name": "from",
+      "kind": "method",
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T114",
+      "name": "try_into",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T115",
+      "name": "try_from",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T116",
+      "name": "type_id",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::alphabet::Alphabet",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "TypeId",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T117",
+      "name": "to_owned",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::alphabet::Alphabet",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T118",
+      "name": "clone_into",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut T",
+          "name": "target",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::alphabet::Alphabet",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T119",
+      "name": "clone",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::alphabet::Alphabet",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Alphabet",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T120",
+      "name": "fmt",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "name": "f",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::alphabet::Alphabet",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T121",
+      "name": "eq",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&Alphabet",
+          "name": "other",
+          "mode": "&"
+        },
+        {
+          "type": "&base64::alphabet::Alphabet",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T122",
+      "name": "try_from",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&str",
+          "name": "value",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T123",
+      "name": "new",
+      "kind": "method"
+    },
+    {
+      "id": "T124",
+      "name": "with_encode_padding",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "bool",
+          "name": "padding",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T125",
+      "name": "with_decode_allow_trailing_bits",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "bool",
+          "name": "allow",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T126",
+      "name": "with_decode_padding_mode",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "DecodePaddingMode",
+          "name": "mode",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T127",
+      "name": "borrow",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T128",
+      "name": "borrow_mut",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut base64::engine::general_purpose::GeneralPurposeConfig",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&mut"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T129",
+      "name": "clone_to_uninit",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "*mut u8",
+          "name": "dest",
+          "mode": "*mut"
+        },
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T130",
+      "name": "into",
+      "kind": "method",
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T131",
+      "name": "from",
+      "kind": "method",
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T132",
+      "name": "try_into",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T133",
+      "name": "try_from",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T134",
+      "name": "type_id",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "TypeId",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T135",
+      "name": "to_owned",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T136",
+      "name": "clone_into",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut T",
+          "name": "target",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T137",
+      "name": "clone",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "GeneralPurposeConfig",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T138",
+      "name": "fmt",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "name": "f",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T139",
+      "name": "default",
+      "kind": "method"
+    },
+    {
+      "id": "T140",
+      "name": "encode_padding",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::engine::general_purpose::GeneralPurposeConfig",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T141",
+      "name": "borrow",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::decode::DecodeSliceError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T142",
+      "name": "borrow_mut",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut base64::decode::DecodeSliceError",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "T",
+          "mode": "&mut"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T143",
+      "name": "clone_to_uninit",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "*mut u8",
+          "name": "dest",
+          "mode": "*mut"
+        },
+        {
+          "type": "&base64::decode::DecodeSliceError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T144",
+      "name": "into",
+      "kind": "method",
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T145",
+      "name": "from",
+      "kind": "method",
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T146",
+      "name": "try_into",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T147",
+      "name": "try_from",
+      "kind": "method",
+      "outputs": [
+        {
+          "type": "Error>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T",
+        "U"
+      ]
+    },
+    {
+      "id": "T148",
+      "name": "type_id",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::decode::DecodeSliceError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "TypeId",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T149",
+      "name": "to_owned",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::decode::DecodeSliceError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T150",
+      "name": "clone_into",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut T",
+          "name": "target",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::decode::DecodeSliceError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T151",
+      "name": "to_string",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::decode::DecodeSliceError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "String",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T"
+      ]
+    },
+    {
+      "id": "T152",
+      "name": "clone",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::decode::DecodeSliceError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "DecodeSliceError",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T153",
+      "name": "fmt",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "name": "f",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::decode::DecodeSliceError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T154",
+      "name": "eq",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&DecodeSliceError",
+          "name": "other",
+          "mode": "&"
+        },
+        {
+          "type": "&base64::decode::DecodeSliceError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T155",
+      "name": "fmt",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&mut fmt::Formatter<'_>",
+          "name": "f",
+          "mode": "&mut"
+        },
+        {
+          "type": "&base64::decode::DecodeSliceError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T156",
+      "name": "source",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "&base64::decode::DecodeSliceError",
+          "name": "self",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Error + 'static)>",
+          "mode": "value"
+        }
+      ]
+    },
+    {
+      "id": "T157",
+      "name": "from",
+      "kind": "method",
+      "inputs": [
+        {
+          "type": "DecodeError",
+          "name": "e",
           "mode": "value"
         }
       ]
@@ -3822,166 +3822,6 @@
     },
     {
       "id": "T184",
-      "name": "decode_engine",
-      "kind": "function",
-      "inputs": [
-        {
-          "type": "&E",
-          "name": "engine",
-          "mode": "&"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Vec<u8>, DecodeError>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "E: Engine",
-        "T: AsRef<[u8]>"
-      ],
-      "origin": {
-        "def_location": "base64::decode::decode_engine"
-      }
-    },
-    {
-      "id": "T185",
-      "name": "decoded_len_estimate",
-      "kind": "function",
-      "inputs": [
-        {
-          "type": "usize",
-          "name": "encoded_len",
-          "mode": "value"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "usize",
-          "mode": "value"
-        }
-      ],
-      "origin": {
-        "def_location": "base64::decode::decoded_len_estimate"
-      }
-    },
-    {
-      "id": "T186",
-      "name": "encode_engine_string",
-      "kind": "function",
-      "inputs": [
-        {
-          "type": "&E",
-          "name": "engine",
-          "mode": "&"
-        },
-        {
-          "type": "&mut alloc::string::String",
-          "name": "output_buf",
-          "mode": "&mut"
-        }
-      ],
-      "generic_params": [
-        "E: Engine",
-        "T: AsRef<[u8]>"
-      ],
-      "origin": {
-        "def_location": "base64::encode::encode_engine_string"
-      }
-    },
-    {
-      "id": "T187",
-      "name": "decode",
-      "kind": "function",
-      "outputs": [
-        {
-          "type": "Vec<u8>, DecodeError>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T: AsRef<[u8]>"
-      ],
-      "origin": {
-        "def_location": "base64::decode::decode"
-      }
-    },
-    {
-      "id": "T188",
-      "name": "encode_engine_slice",
-      "kind": "function",
-      "inputs": [
-        {
-          "type": "&E",
-          "name": "engine",
-          "mode": "&"
-        },
-        {
-          "type": "&mut [u8]",
-          "name": "output_buf",
-          "mode": "&mut"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Result<usize, EncodeSliceError>",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "E: Engine",
-        "T: AsRef<[u8]>"
-      ],
-      "origin": {
-        "def_location": "base64::encode::encode_engine_slice"
-      }
-    },
-    {
-      "id": "T189",
-      "name": "encode",
-      "kind": "function",
-      "outputs": [
-        {
-          "type": "String",
-          "mode": "value"
-        }
-      ],
-      "generic_params": [
-        "T: AsRef<[u8]>"
-      ],
-      "origin": {
-        "def_location": "base64::encode::encode"
-      }
-    },
-    {
-      "id": "T190",
-      "name": "encoded_len",
-      "kind": "function",
-      "inputs": [
-        {
-          "type": "bool",
-          "name": "padding",
-          "mode": "value"
-        },
-        {
-          "type": "usize",
-          "name": "bytes_len",
-          "mode": "value"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Option<usize>",
-          "mode": "value"
-        }
-      ],
-      "origin": {
-        "def_location": "base64::encode::encoded_len"
-      }
-    },
-    {
-      "id": "T191",
       "name": "decode_engine_slice",
       "kind": "function",
       "inputs": [
@@ -4011,41 +3851,33 @@
       }
     },
     {
-      "id": "T192",
-      "name": "consume",
+      "id": "T185",
+      "name": "encoded_len",
       "kind": "function",
       "inputs": [
         {
-          "type": "&str",
-          "name": "buf",
-          "mode": "&"
+          "type": "bool",
+          "name": "padding",
+          "mode": "value"
         },
         {
-          "type": "&mut Self",
-          "name": "self",
-          "mode": "&mut"
+          "type": "usize",
+          "name": "bytes_len",
+          "mode": "value"
         }
-      ]
+      ],
+      "outputs": [
+        {
+          "type": "Option<usize>",
+          "mode": "value"
+        }
+      ],
+      "origin": {
+        "def_location": "base64::encode::encoded_len"
+      }
     },
     {
-      "id": "T193",
-      "name": "consume",
-      "kind": "function",
-      "inputs": [
-        {
-          "type": "&str",
-          "name": "buf",
-          "mode": "&"
-        },
-        {
-          "type": "&mut Self",
-          "name": "self",
-          "mode": "&mut"
-        }
-      ]
-    },
-    {
-      "id": "T194",
+      "id": "T186",
       "name": "encode_engine",
       "kind": "function",
       "inputs": [
@@ -4067,6 +3899,174 @@
       ],
       "origin": {
         "def_location": "base64::encode::encode_engine"
+      }
+    },
+    {
+      "id": "T187",
+      "name": "decoded_len_estimate",
+      "kind": "function",
+      "inputs": [
+        {
+          "type": "usize",
+          "name": "encoded_len",
+          "mode": "value"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "usize",
+          "mode": "value"
+        }
+      ],
+      "origin": {
+        "def_location": "base64::decode::decoded_len_estimate"
+      }
+    },
+    {
+      "id": "T188",
+      "name": "encode_engine_string",
+      "kind": "function",
+      "inputs": [
+        {
+          "type": "&E",
+          "name": "engine",
+          "mode": "&"
+        },
+        {
+          "type": "&mut alloc::string::String",
+          "name": "output_buf",
+          "mode": "&mut"
+        }
+      ],
+      "generic_params": [
+        "E: Engine",
+        "T: AsRef<[u8]>"
+      ],
+      "origin": {
+        "def_location": "base64::encode::encode_engine_string"
+      }
+    },
+    {
+      "id": "T189",
+      "name": "consume",
+      "kind": "function",
+      "inputs": [
+        {
+          "type": "&str",
+          "name": "buf",
+          "mode": "&"
+        },
+        {
+          "type": "&mut Self",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ]
+    },
+    {
+      "id": "T190",
+      "name": "encode_engine_slice",
+      "kind": "function",
+      "inputs": [
+        {
+          "type": "&E",
+          "name": "engine",
+          "mode": "&"
+        },
+        {
+          "type": "&mut [u8]",
+          "name": "output_buf",
+          "mode": "&mut"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Result<usize, EncodeSliceError>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "E: Engine",
+        "T: AsRef<[u8]>"
+      ],
+      "origin": {
+        "def_location": "base64::encode::encode_engine_slice"
+      }
+    },
+    {
+      "id": "T191",
+      "name": "consume",
+      "kind": "function",
+      "inputs": [
+        {
+          "type": "&str",
+          "name": "buf",
+          "mode": "&"
+        },
+        {
+          "type": "&mut Self",
+          "name": "self",
+          "mode": "&mut"
+        }
+      ]
+    },
+    {
+      "id": "T192",
+      "name": "encode",
+      "kind": "function",
+      "outputs": [
+        {
+          "type": "String",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T: AsRef<[u8]>"
+      ],
+      "origin": {
+        "def_location": "base64::encode::encode"
+      }
+    },
+    {
+      "id": "T193",
+      "name": "decode",
+      "kind": "function",
+      "outputs": [
+        {
+          "type": "Vec<u8>, DecodeError>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "T: AsRef<[u8]>"
+      ],
+      "origin": {
+        "def_location": "base64::decode::decode"
+      }
+    },
+    {
+      "id": "T194",
+      "name": "decode_engine",
+      "kind": "function",
+      "inputs": [
+        {
+          "type": "&E",
+          "name": "engine",
+          "mode": "&"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "Vec<u8>, DecodeError>",
+          "mode": "value"
+        }
+      ],
+      "generic_params": [
+        "E: Engine",
+        "T: AsRef<[u8]>"
+      ],
+      "origin": {
+        "def_location": "base64::decode::decode_engine"
       }
     }
   ],
