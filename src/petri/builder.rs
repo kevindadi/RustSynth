@@ -574,6 +574,12 @@ impl<'a> PetriNetBuilder<'a> {
         let name_only = normalized.type_name_only();
         let canonical = name_only.canonical();
 
+        // 如果仍然是 Self，说明上下文推断失败，此时不要为 Self 创建单独的 Place
+        // 这些 Self 通常应该在更高一层被替换为具体类型
+        if matches!(canonical.as_ref(), "Self") {
+            return None;
+        }
+
         // 如果类型名是单个标识符且不是基本类型，可能是泛型参数
         // 更精确的检查：通过原始 Type 来判断
         // 但这里我们只能根据字符串来判断，保守处理
