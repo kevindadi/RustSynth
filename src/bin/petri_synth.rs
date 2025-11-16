@@ -65,7 +65,9 @@ fn main() -> Result<()> {
                 println!("Petri 网 DOT 文件已写入:{}", output_path.display());
             }
             _ => {
-                serde_json::to_writer_pretty(&mut file, &petri_net)
+                let json_net: trustfall_rustdoc_adapter::petri::schema::JsonPetriNet =
+                    (&petri_net).into();
+                serde_json::to_writer_pretty(&mut file, &json_net)
                     .context("写出 Petri 网 JSON 失败")?;
                 println!("Petri 网 JSON 文件已写入:{}", output_path.display());
             }

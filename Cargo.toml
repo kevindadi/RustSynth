@@ -33,6 +33,7 @@ petgraph = { version = "0.8.3", features = ["serde-1"] }
 # and we'd like to avoid merge conflicts.
 #
 rustdoc-types = "0.56.0"
+chrono = "0.4.42"
 #
 # No dependencies after this point. Put all dependencies above this section.
 #

@@ -1,6 +1,12 @@
 use std::{fmt::Write, sync::Arc};
 
-use petgraph::{Direction, graph::NodeIndex, stable_graph::StableGraph, visit::EdgeRef};
+use petgraph::{
+    Direction, 
+    graph::NodeIndex, 
+    stable_graph::StableGraph, 
+    visit::EdgeRef,
+    algo::{dijkstra, is_cyclic_directed},
+};
 use rustdoc_types::Id;
 use serde::{Deserialize, Serialize};
 
@@ -213,6 +219,14 @@ impl Default for PetriNet {
 impl PetriNet {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn to_json(&self) -> super::schema::JsonPetriNet {
+        super::schema::JsonPetriNet::from(self)
+    }
+
+    pub fn from_json(json: super::schema::JsonPetriNet) -> Result<Self, String> {
+        json.to_petri_net()
     }
 
     pub fn add_place(&mut self, descriptor: TypeDescriptor) -> PlaceId {
@@ -755,6 +769,202 @@ impl PetriNet {
             place_id.0.index(),
             attr
         );
+    }
+
+    /// 检查图中是否存在环路（用于检测类型依赖循环）
+    pub fn has_cycles(&self) -> bool {
+        is_cyclic_directed(&self.graph)
+    }
+
+    /// 计算从一个 Place 到另一个 Place 的最短路径
+    /// 返回路径上经过的 transitions 数量，如果不可达则返回 None
+    pub fn shortest_path_length(&self, from: PlaceId, to: PlaceId) -> Option<usize> {
+        let distances = dijkstra(
+            &self.graph,
+            from.0,
+            Some(to.0),
+            |_| 1, // 统一权重为 1
+        );
+        
+        distances.get(&to.0).copied()
+    }
+
+    /// 查找从 source Place 可以通过一次转换到达的所有 target Places
+    /// 返回 (target_place, transition, arc_data) 的列表
+    pub fn reachable_in_one_step(&self, source: PlaceId) -> Vec<(PlaceId, TransitionId, &ArcData)> {
+        let mut reachable = Vec::new();
+        
+        // 找到所有从 source place 出发的边（到 transition）
+        for edge_ref in self.graph.edges_directed(source.0, Direction::Outgoing) {
+            let transition_node = edge_ref.target();
+            
+            // 检查这个节点是否是 transition
+            if let Node::Transition(_) = &self.graph[transition_node] {
+                let transition_id = TransitionId(transition_node);
+                
+                // 找到这个 transition 的所有输出
+                for output_edge in self.graph.edges_directed(transition_node, Direction::Outgoing) {
+                    let target_node = output_edge.target();
+                    if let Node::Place(_) = &self.graph[target_node] {
+                        reachable.push((
+                            PlaceId(target_node),
+                            transition_id,
+                            output_edge.weight(),
+                        ));
+                    }
+                }
+            }
+        }
+        
+        reachable
+    }
+
+    /// 查找能够产生指定 Place 的所有 Transitions
+    pub fn find_producers(&self, place: PlaceId) -> Vec<(TransitionId, &ArcData)> {
+        self.graph
+            .edges_directed(place.0, Direction::Incoming)
+            .filter_map(|edge| {
+                let source = edge.source();
+                if let Node::Transition(_) = &self.graph[source] {
+                    Some((TransitionId(source), edge.weight()))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    /// 查找需要指定 Place 作为输入的所有 Transitions
+    pub fn find_consumers(&self, place: PlaceId) -> Vec<(TransitionId, &ArcData)> {
+        self.graph
+            .edges_directed(place.0, Direction::Outgoing)
+            .filter_map(|edge| {
+                let target = edge.target();
+                if let Node::Transition(_) = &self.graph[target] {
+                    Some((TransitionId(target), edge.weight()))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    /// 获取图的统计信息
+    pub fn statistics(&self) -> PetriNetStatistics {
+        let mut stats = PetriNetStatistics {
+            place_count: 0,
+            transition_count: 0,
+            arc_count: self.graph.edge_count(),
+            has_cycles: self.has_cycles(),
+            max_place_in_degree: 0,
+            max_place_out_degree: 0,
+            max_transition_in_degree: 0,
+            max_transition_out_degree: 0,
+        };
+
+        for node_idx in self.graph.node_indices() {
+            match &self.graph[node_idx] {
+                Node::Place(_) => {
+                    stats.place_count += 1;
+                    let in_deg = self.graph.edges_directed(node_idx, Direction::Incoming).count();
+                    let out_deg = self.graph.edges_directed(node_idx, Direction::Outgoing).count();
+                    stats.max_place_in_degree = stats.max_place_in_degree.max(in_deg);
+                    stats.max_place_out_degree = stats.max_place_out_degree.max(out_deg);
+                }
+                Node::Transition(_) => {
+                    stats.transition_count += 1;
+                    let in_deg = self.graph.edges_directed(node_idx, Direction::Incoming).count();
+                    let out_deg = self.graph.edges_directed(node_idx, Direction::Outgoing).count();
+                    stats.max_transition_in_degree = stats.max_transition_in_degree.max(in_deg);
+                    stats.max_transition_out_degree = stats.max_transition_out_degree.max(out_deg);
+                }
+            }
+        }
+
+        stats
+    }
+
+    /// 获取底层的 petgraph StableGraph 的不可变引用
+    /// 这允许用户使用 petgraph 的所有算法
+    pub fn graph(&self) -> &StableGraph<Node, ArcData> {
+        &self.graph
+    }
+
+    /// 查找类型转换链：从 source 类型到 target 类型的所有可能路径
+    /// 返回路径列表，每条路径是一系列 transition IDs
+    pub fn find_type_conversion_paths(
+        &self,
+        source: PlaceId,
+        target: PlaceId,
+        max_depth: usize,
+    ) -> Vec<Vec<TransitionId>> {
+        let mut paths = Vec::new();
+        let mut current_path = Vec::new();
+        let mut visited = std::collections::HashSet::new();
+        
+        self.dfs_find_paths(source, target, &mut current_path, &mut visited, &mut paths, max_depth);
+        
+        paths
+    }
+
+    /// 深度优先搜索辅助函数
+    fn dfs_find_paths(
+        &self,
+        current: PlaceId,
+        target: PlaceId,
+        current_path: &mut Vec<TransitionId>,
+        visited: &mut std::collections::HashSet<PlaceId>,
+        paths: &mut Vec<Vec<TransitionId>>,
+        max_depth: usize,
+    ) {
+        if current == target {
+            paths.push(current_path.clone());
+            return;
+        }
+
+        if current_path.len() >= max_depth {
+            return;
+        }
+
+        visited.insert(current);
+
+        for (next_place, transition_id, _arc) in self.reachable_in_one_step(current) {
+            if !visited.contains(&next_place) {
+                current_path.push(transition_id);
+                self.dfs_find_paths(next_place, target, current_path, visited, paths, max_depth);
+                current_path.pop();
+            }
+        }
+
+        visited.remove(&current);
+    }
+}
+
+/// Petri 网的统计信息
+#[derive(Debug, Clone)]
+pub struct PetriNetStatistics {
+    pub place_count: usize,
+    pub transition_count: usize,
+    pub arc_count: usize,
+    pub has_cycles: bool,
+    pub max_place_in_degree: usize,
+    pub max_place_out_degree: usize,
+    pub max_transition_in_degree: usize,
+    pub max_transition_out_degree: usize,
+}
+
+impl std::fmt::Display for PetriNetStatistics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Petri 网统计信息:")?;
+        writeln!(f, "  Places: {}", self.place_count)?;
+        writeln!(f, "  Transitions: {}", self.transition_count)?;
+        writeln!(f, "  Arcs: {}", self.arc_count)?;
+        writeln!(f, "  Has Cycles: {}", self.has_cycles)?;
+        writeln!(f, "  Max Place In-Degree: {}", self.max_place_in_degree)?;
+        writeln!(f, "  Max Place Out-Degree: {}", self.max_place_out_degree)?;
+        writeln!(f, "  Max Transition In-Degree: {}", self.max_transition_in_degree)?;
+        writeln!(f, "  Max Transition Out-Degree: {}", self.max_transition_out_degree)?;
+        Ok(())
     }
 }
 

@@ -64,6 +64,51 @@ impl TypeDescriptor {
         }
     }
 
+    /// 从字符串创建 TypeDescriptor
+    /// 自动检测借用类型（&, &mut, *const, *mut）
+    pub fn from_string(s: &str) -> Self {
+        let s = s.trim();
+        
+        let (borrow, type_str) = if let Some(rest) = s.strip_prefix("*mut ") {
+            (BorrowKind::RawMutPtr, rest)
+        } else if let Some(rest) = s.strip_prefix("*const ") {
+            (BorrowKind::RawConstPtr, rest)
+        } else if let Some(rest) = s.strip_prefix("&mut ") {
+            (BorrowKind::MutRef, rest)
+        } else if let Some(rest) = s.strip_prefix('&') {
+            // 可能有 lifetime
+            let rest = rest.trim_start();
+            if rest.starts_with('\'') {
+                // 跳过 lifetime
+                let mut end = 1;
+                while end < rest.len() && (rest.as_bytes()[end] as char).is_alphanumeric() {
+                    end += 1;
+                }
+                let rest = rest[end..].trim_start();
+                if let Some(rest) = rest.strip_prefix("mut ") {
+                    (BorrowKind::MutRef, rest)
+                } else {
+                    (BorrowKind::SharedRef, rest)
+                }
+            } else if let Some(rest) = rest.strip_prefix("mut ") {
+                (BorrowKind::MutRef, rest)
+            } else {
+                (BorrowKind::SharedRef, rest)
+            }
+        } else {
+            (BorrowKind::Owned, s)
+        };
+
+        let canonical = Arc::<str>::from(type_str);
+        
+        Self {
+            display: canonical.clone(),
+            canonical,
+            borrow,
+            lifetimes: Vec::new(), // 从字符串创建时暂时不解析 lifetime
+        }
+    }
+
     pub fn canonical(&self) -> &str {
         &self.canonical
     }
