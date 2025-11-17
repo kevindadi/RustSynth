@@ -45,7 +45,7 @@ impl<'a> PetriNetBuilder<'a> {
     /// 遍历 rustdoc 索引, 将所有ItemEnum::Function | ItemEnum::Impl 注册为变迁
     /// ItemEnum::Trait 注册为 Guard
     ///
-    /// 1. 首先对 Item 中的 Struct、Enum、Union、Variant 等类型进行建模，创建 Place
+    /// 1. 首先对 Item 中的 Struct、Enum(Variant)、Union、Primitive 等类型进行建模，创建 Place
     /// 2. 根据已创建的类型 Place 的 id，从 index 中查找对应的 impl 块，为方法创建变迁
     /// 3. 泛型约束作为变迁的 guard，不需要为泛型参数创建 Place
     /// 4. 输入边带上 borrow_kind 约束，输出边带上返回类型的 borrow_kind
@@ -467,6 +467,9 @@ impl<'a> PetriNetBuilder<'a> {
             );
         }
 
+        // 检查是否有完全由泛型参数组成的变迁（孤立节点）
+        let is_isolated = input_arcs.is_empty() && output_arcs.is_empty();
+        
         for (place_id, arc_data) in input_arcs {
             self.net
                 .add_input_arc_from_place(place_id, transition_id, arc_data);
@@ -475,6 +478,13 @@ impl<'a> PetriNetBuilder<'a> {
         for (place_id, arc_data) in output_arcs {
             self.net
                 .add_output_arc_to_place(transition_id, place_id, arc_data);
+        }
+        
+        if is_isolated {
+            debug!(
+                "       ⚠️  警告: 变迁 {} 是孤立节点（所有参数和返回值都是泛型参数）",
+                function_summary.signature
+            );
         }
     }
 
@@ -527,10 +537,21 @@ impl<'a> PetriNetBuilder<'a> {
         // 首先规范化描述符，去除引用符号（库所只表示类型本身）
         let normalized = descriptor.normalized();
         
-        // 提取类型名称，去除路径信息（只保留最后的类型名）
-        let name_only = normalized.type_name_only();
-        let base_name = name_only.base_type_name();
+        // 检查是否是 Result 类型，需要特殊处理
+        let display_str = normalized.display();
         let generic_args = descriptor.generic_arguments();
+        
+        // 先尝试从规范化后的完整字符串中提取基础类型名
+        // 这样可以正确处理 Result<T, E> 和 Option<T> 的情况，即使 T 或 E 包含路径
+        let base_name = if display_str.starts_with("Result<") {
+            "Result".to_string()
+        } else if display_str.starts_with("Option<") {
+            "Option".to_string()
+        } else {
+            // 对于其他类型，使用原来的逻辑
+            let name_only = normalized.type_name_only();
+            name_only.base_type_name()
+        };
 
         // 如果仍然是 Self，说明上下文推断失败，此时不要为 Self 创建单独的 Place
         // 这些 Self 通常应该在更高一层被替换为具体类型
@@ -586,11 +607,37 @@ impl<'a> PetriNetBuilder<'a> {
 
         if let Some(place_id) = existing_id {
             self.record_wrapper_instantiations(&base_name, place_id, &generic_args);
-            // Place 已存在，返回已有 ID
+            
+            // 对于 Result 类型，需要为 Ok 和 Err 类型分别创建 Place
+            if base_name == "Result" && generic_args.len() >= 2 {
+                let ok_type = &generic_args[0];
+                let err_type = &generic_args[1];
+                
+                // 为 Ok 类型创建 Place
+                let ok_desc = TypeDescriptor::from_string(ok_type);
+                if let Some(_ok_place) = self.ensure_place(ok_desc) {
+                    // Ok 类型 Place 已创建或已存在
+                }
+                
+                // 为 Err 类型创建 Place
+                let err_desc = TypeDescriptor::from_string(err_type);
+                if let Some(_err_place) = self.ensure_place(err_desc) {
+                    // Err 类型 Place 已创建或已存在
+                }
+            }
+            
+            // 对于 Option 类型，需要为内部类型创建 Place
+            if base_name == "Option" && !generic_args.is_empty() {
+                let inner_type = &generic_args[0];
+                let inner_desc = TypeDescriptor::from_string(inner_type);
+                if let Some(_inner_place) = self.ensure_place(inner_desc) {
+                    // 内部类型 Place 已创建或已存在
+                }
+            }
+            
             return Some(place_id);
         }
 
-        // Place 不存在，创建新的并记录日志（使用去除路径后的类型名称）
         let place_id = self.net.add_place(base_descriptor.clone());
         debug!(
             "   📍 [Place] {} (Place ID: {}) [通过 ensure_place 创建] [原始路径: {}]",
@@ -599,6 +646,30 @@ impl<'a> PetriNetBuilder<'a> {
             normalized.display()
         );
         self.record_wrapper_instantiations(&base_name, place_id, &generic_args);
+        
+        // 对于 Result 类型，需要为 Ok 和 Err 类型分别创建 Place
+        if base_name == "Result" && generic_args.len() >= 2 {
+            let ok_type = &generic_args[0];
+            let err_type = &generic_args[1];
+            
+            let ok_desc = TypeDescriptor::from_string(ok_type);
+            if let Some(_ok_place) = self.ensure_place(ok_desc) {
+                // Ok 类型 Place 已创建或已存在
+            }
+            
+            let err_desc = TypeDescriptor::from_string(err_type);
+            if let Some(_err_place) = self.ensure_place(err_desc) {
+                // Err 类型 Place 已创建或已存在
+            }
+        }
+        
+        if base_name == "Option" && !generic_args.is_empty() {
+            let inner_type = &generic_args[0];
+            let inner_desc = TypeDescriptor::from_string(inner_type);
+            if let Some(_inner_place) = self.ensure_place(inner_desc) {
+            }
+        }
+        
         Some(place_id)
     }
 
