@@ -1,0 +1,5180 @@
+{
+  "crate_name": "base64",
+  "crate_version": "0.22.1",
+  "items": [
+    {
+      "kind": "method",
+      "path": "base64::DecodeError::clone",
+      "visibility": "pub",
+      "signature": "fn clone(self: &Self) -> DecodeError",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "DecodeError"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          9,
+          9
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::DecodeError::eq",
+      "visibility": "pub",
+      "signature": "fn eq(self: &Self, other: &DecodeError) -> bool",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "other",
+          "type": "&DecodeError",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "bool"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `other`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          9,
+          9
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::DecodeError::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          33,
+          44
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::DecodeError::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "$crate::fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          9,
+          9
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::DecodeSliceError::clone",
+      "visibility": "pub",
+      "signature": "fn clone(self: &Self) -> DecodeSliceError",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "DecodeSliceError"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          51,
+          51
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::DecodeSliceError::eq",
+      "visibility": "pub",
+      "signature": "fn eq(self: &Self, other: &DecodeSliceError) -> bool",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "other",
+          "type": "&DecodeSliceError",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "bool"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `other`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          51,
+          51
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::DecodeSliceError::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "$crate::fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          51,
+          51
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::DecodeSliceError::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          60,
+          65
+        ]
+      }
+    },
+    {
+      "kind": "assoc_fn",
+      "path": "base64::DecodeSliceError::from",
+      "visibility": "pub",
+      "signature": "fn from(e: DecodeError) -> Self",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "e",
+          "type": "DecodeError",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Self"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `e`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          79,
+          81
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::DecodeSliceError::source",
+      "visibility": "pub",
+      "signature": "fn source(self: &Self) -> Option<&(dyn error::Error + 'static)>",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Option<&(dyn error::Error + 'static)>"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          70,
+          75
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::EncodeSliceError::clone",
+      "visibility": "pub",
+      "signature": "fn clone(self: &Self) -> EncodeSliceError",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "EncodeSliceError"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/encode.rs",
+        "line_span": [
+          145,
+          145
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::EncodeSliceError::eq",
+      "visibility": "pub",
+      "signature": "fn eq(self: &Self, other: &EncodeSliceError) -> bool",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "other",
+          "type": "&EncodeSliceError",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "bool"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `other`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/encode.rs",
+        "line_span": [
+          145,
+          145
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::EncodeSliceError::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/encode.rs",
+        "line_span": [
+          152,
+          156
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::EncodeSliceError::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "$crate::fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/encode.rs",
+        "line_span": [
+          145,
+          145
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::alphabet::Alphabet::as_str",
+      "visibility": "pub",
+      "signature": "fn as_str(self: &Self) -> &str",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "&str"
+      },
+      "docs": {
+        "summary": "Create a `&str` from the symbols in the `Alphabet`",
+        "details": "Create a `&str` from the symbols in the `Alphabet`",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/alphabet.rs",
+        "line_span": [
+          128,
+          130
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::alphabet::Alphabet::clone",
+      "visibility": "pub",
+      "signature": "fn clone(self: &Self) -> Alphabet",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Alphabet"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/alphabet.rs",
+        "line_span": [
+          54,
+          54
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::alphabet::Alphabet::eq",
+      "visibility": "pub",
+      "signature": "fn eq(self: &Self, other: &Alphabet) -> bool",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "other",
+          "type": "&Alphabet",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "bool"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `other`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/alphabet.rs",
+        "line_span": [
+          54,
+          54
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::alphabet::Alphabet::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "$crate::fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/alphabet.rs",
+        "line_span": [
+          54,
+          54
+        ]
+      }
+    },
+    {
+      "kind": "ctor",
+      "path": "base64::alphabet::Alphabet::new",
+      "visibility": "pub",
+      "signature": "const fn new(alphabet: &str) -> Result<Self, ParseAlphabetError>",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "alphabet",
+          "type": "&str",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Result<Self, ParseAlphabetError>"
+      },
+      "docs": {
+        "summary": "Create an `Alphabet` from a string of 64 unique printable ASCII bytes.",
+        "details": "Create an `Alphabet` from a string of 64 unique printable ASCII bytes. The `=` byte is not allowed as it is used for padding.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "DuplicatedByte",
+        "InvalidLength",
+        "ReservedByte",
+        "UnprintableByte"
+      ],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {
+          "ParseAlphabetError": [
+            "InvalidLength",
+            "DuplicatedByte",
+            "UnprintableByte",
+            "ReservedByte"
+          ]
+        },
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [
+          "`alphabet` as string: empty vs unicode vs long"
+        ],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `alphabet`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/alphabet.rs",
+        "line_span": [
+          79,
+          125
+        ]
+      }
+    },
+    {
+      "kind": "assoc_fn",
+      "path": "base64::alphabet::Alphabet::try_from",
+      "visibility": "pub",
+      "signature": "fn try_from(value: &str) -> Result<Self, Self::Error>",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "value",
+          "type": "&str",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Result<Self, Self::Error>"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [
+          "`value` as string: empty vs unicode vs long"
+        ],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `value`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/alphabet.rs",
+        "line_span": [
+          136,
+          138
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::alphabet::ParseAlphabetError::eq",
+      "visibility": "pub",
+      "signature": "fn eq(self: &Self, other: &ParseAlphabetError) -> bool",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "other",
+          "type": "&ParseAlphabetError",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "bool"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `other`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/alphabet.rs",
+        "line_span": [
+          142,
+          142
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::alphabet::ParseAlphabetError::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "$crate::fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/alphabet.rs",
+        "line_span": [
+          142,
+          142
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::alphabet::ParseAlphabetError::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/alphabet.rs",
+        "line_span": [
+          155,
+          162
+        ]
+      }
+    },
+    {
+      "kind": "function",
+      "path": "base64::decode",
+      "visibility": "pub",
+      "signature": "fn decode<T: AsRef<[u8]>>(input: T) -> Result<alloc::vec::Vec<u8>, DecodeError>",
+      "generics": {
+        "params": [
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Result<alloc::vec::Vec<u8>, DecodeError>"
+      },
+      "docs": {
+        "summary": "Decode base64 using the [`STANDARD` engine](STANDARD).",
+        "details": "Decode base64 using the [`STANDARD` engine](STANDARD). See [Engine::decode].",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "InvalidByte",
+        "InvalidLastSymbol",
+        "InvalidLength",
+        "InvalidPadding"
+      ],
+      "may_panic": [],
+      "traits_bound": [
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {
+          "DecodeError": [
+            "InvalidByte",
+            "InvalidLength",
+            "InvalidLastSymbol",
+            "InvalidPadding"
+          ]
+        },
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `input`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          89,
+          91
+        ]
+      }
+    },
+    {
+      "kind": "function",
+      "path": "base64::decode_engine",
+      "visibility": "pub",
+      "signature": "fn decode_engine<E: Engine, T: AsRef<[u8]>>(input: T, engine: &E) -> Result<alloc::vec::Vec<u8>, DecodeError>",
+      "generics": {
+        "params": [
+          "E",
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "engine",
+          "type": "&E",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Result<alloc::vec::Vec<u8>, DecodeError>"
+      },
+      "docs": {
+        "summary": "Decode from string reference as octets using the specified [Engine].",
+        "details": "Decode from string reference as octets using the specified [Engine]. See [Engine::decode]. Returns a `Result` containing a `Vec`.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "InvalidByte",
+        "InvalidLastSymbol",
+        "InvalidLength",
+        "InvalidPadding"
+      ],
+      "may_panic": [],
+      "traits_bound": [
+        "E: Engine",
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {
+          "DecodeError": [
+            "InvalidByte",
+            "InvalidLength",
+            "InvalidLastSymbol",
+            "InvalidPadding"
+          ]
+        },
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `engine`",
+          "mutate parameter `input`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          99,
+          104
+        ]
+      }
+    },
+    {
+      "kind": "function",
+      "path": "base64::decode_engine_slice",
+      "visibility": "pub",
+      "signature": "fn decode_engine_slice<E: Engine, T: AsRef<[u8]>>(input: T, output: &mut [u8], engine: &E) -> Result<usize, DecodeSliceError>",
+      "generics": {
+        "params": [
+          "E",
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "output",
+          "type": "&mut [u8]",
+          "by_ref": true,
+          "mut": true
+        },
+        {
+          "name": "engine",
+          "type": "&E",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Result<usize, DecodeSliceError>"
+      },
+      "docs": {
+        "summary": "Decode the input into the provided output slice.",
+        "details": "Decode the input into the provided output slice. See [Engine::decode_slice].",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "DecodeError",
+        "OutputSliceTooSmall"
+      ],
+      "may_panic": [],
+      "traits_bound": [
+        "E: Engine",
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {
+          "DecodeSliceError": [
+            "DecodeError",
+            "OutputSliceTooSmall"
+          ]
+        },
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [
+          "`output` collection length edge cases"
+        ],
+        "mutation_hotspots": [
+          "mutate parameter `engine`",
+          "mutate parameter `input`",
+          "mutate parameter `output`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          123,
+          129
+        ]
+      }
+    },
+    {
+      "kind": "function",
+      "path": "base64::decode_engine_vec",
+      "visibility": "pub",
+      "signature": "fn decode_engine_vec<E: Engine, T: AsRef<[u8]>>(input: T, buffer: &mut alloc::vec::Vec<u8>, engine: &E) -> Result<(), DecodeError>",
+      "generics": {
+        "params": [
+          "E",
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "buffer",
+          "type": "&mut alloc::vec::Vec<u8>",
+          "by_ref": true,
+          "mut": true
+        },
+        {
+          "name": "engine",
+          "type": "&E",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Result<(), DecodeError>"
+      },
+      "docs": {
+        "summary": "Decode from string reference as octets.",
+        "details": "Decode from string reference as octets. See [Engine::decode_vec].",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "InvalidByte",
+        "InvalidLastSymbol",
+        "InvalidLength",
+        "InvalidPadding"
+      ],
+      "may_panic": [],
+      "traits_bound": [
+        "E: Engine",
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {
+          "DecodeError": [
+            "InvalidByte",
+            "InvalidLength",
+            "InvalidLastSymbol",
+            "InvalidPadding"
+          ]
+        },
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [
+          "`buffer` vector length: 0 vs large"
+        ],
+        "mutation_hotspots": [
+          "mutate parameter `buffer`",
+          "mutate parameter `engine`",
+          "mutate parameter `input`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          111,
+          117
+        ]
+      }
+    },
+    {
+      "kind": "function",
+      "path": "base64::decoded_len_estimate",
+      "visibility": "pub",
+      "signature": "fn decoded_len_estimate(encoded_len: usize) -> usize",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "encoded_len",
+          "type": "usize",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "usize"
+      },
+      "docs": {
+        "summary": "Returns a conservative estimate of the decoded size of `encoded_len` base64 symbols (rounded up to the next group of 3 decoded bytes).",
+        "details": "Returns a conservative estimate of the decoded size of `encoded_len` base64 symbols (rounded up to the next group of 3 decoded bytes). The resulting length will be a safe choice for the size of a decode buffer, but may have up to 2 trailing bytes that won't end up being needed.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": [
+            {
+              "ok": "use base64::decoded_len_estimate;\n\nassert_eq!(3, decoded_len_estimate(1));\nassert_eq!(3, decoded_len_estimate(2));\nassert_eq!(3, decoded_len_estimate(3));\nassert_eq!(3, decoded_len_estimate(4));\n// start of the next quad of encoded symbols\nassert_eq!(6, decoded_len_estimate(5));",
+              "notes": "example without explicit outcome label"
+            }
+          ]
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {
+          "encoded_len": "platform usize range",
+          "return": "platform usize range"
+        }
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [
+          "`encoded_len` near numeric min / max"
+        ],
+        "mutation_hotspots": [
+          "mutate parameter `encoded_len`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/decode.rs",
+        "line_span": [
+          149,
+          153
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::display::Base64Display::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, formatter: &mut Formatter<'_>) -> Result<(), fmt::Error>",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "formatter",
+          "type": "&mut Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "Result<(), fmt::Error>"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `formatter`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/display.rs",
+        "line_span": [
+          34,
+          37
+        ]
+      }
+    },
+    {
+      "kind": "ctor",
+      "path": "base64::display::Base64Display::new",
+      "visibility": "pub",
+      "signature": "fn new(bytes: &'a [u8], engine: &'e E) -> Base64Display<'a, 'e, E>",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "bytes",
+          "type": "&'a [u8]",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "engine",
+          "type": "&'e E",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Base64Display<'a, 'e, E>"
+      },
+      "docs": {
+        "summary": "Create a `Base64Display` with the provided engine.",
+        "details": "Create a `Base64Display` with the provided engine.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [
+          "`bytes` collection length edge cases"
+        ],
+        "mutation_hotspots": [
+          "mutate parameter `bytes`",
+          "mutate parameter `engine`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/display.rs",
+        "line_span": [
+          25,
+          30
+        ]
+      }
+    },
+    {
+      "kind": "function",
+      "path": "base64::encode",
+      "visibility": "pub",
+      "signature": "fn encode<T: AsRef<[u8]>>(input: T) -> alloc::string::String",
+      "generics": {
+        "params": [
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "alloc::string::String"
+      },
+      "docs": {
+        "summary": "Encode arbitrary octets as base64 using the [`STANDARD` engine](STANDARD).",
+        "details": "Encode arbitrary octets as base64 using the [`STANDARD` engine](STANDARD). See [Engine::encode].",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `input`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/encode.rs",
+        "line_span": [
+          18,
+          20
+        ]
+      }
+    },
+    {
+      "kind": "function",
+      "path": "base64::encode_engine",
+      "visibility": "pub",
+      "signature": "fn encode_engine<E: Engine, T: AsRef<[u8]>>(input: T, engine: &E) -> alloc::string::String",
+      "generics": {
+        "params": [
+          "E",
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "engine",
+          "type": "&E",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "alloc::string::String"
+      },
+      "docs": {
+        "summary": "Encode arbitrary octets as base64 using the provided `Engine` into a new `String`.",
+        "details": "Encode arbitrary octets as base64 using the provided `Engine` into a new `String`. See [Engine::encode].",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [
+        "E: Engine",
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `engine`",
+          "mutate parameter `input`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/encode.rs",
+        "line_span": [
+          28,
+          30
+        ]
+      }
+    },
+    {
+      "kind": "function",
+      "path": "base64::encode_engine_slice",
+      "visibility": "pub",
+      "signature": "fn encode_engine_slice<E: Engine, T: AsRef<[u8]>>(input: T, output_buf: &mut [u8], engine: &E) -> Result<usize, EncodeSliceError>",
+      "generics": {
+        "params": [
+          "E",
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "output_buf",
+          "type": "&mut [u8]",
+          "by_ref": true,
+          "mut": true
+        },
+        {
+          "name": "engine",
+          "type": "&E",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Result<usize, EncodeSliceError>"
+      },
+      "docs": {
+        "summary": "Encode arbitrary octets as base64 into a supplied slice.",
+        "details": "Encode arbitrary octets as base64 into a supplied slice. See [Engine::encode_slice].",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "OutputSliceTooSmall"
+      ],
+      "may_panic": [],
+      "traits_bound": [
+        "E: Engine",
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {
+          "EncodeSliceError": [
+            "OutputSliceTooSmall"
+          ]
+        },
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [
+          "`output_buf` collection length edge cases"
+        ],
+        "mutation_hotspots": [
+          "mutate parameter `engine`",
+          "mutate parameter `input`",
+          "mutate parameter `output_buf`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/encode.rs",
+        "line_span": [
+          51,
+          57
+        ]
+      }
+    },
+    {
+      "kind": "function",
+      "path": "base64::encode_engine_string",
+      "visibility": "pub",
+      "signature": "fn encode_engine_string<E: Engine, T: AsRef<[u8]>>(input: T, output_buf: &mut alloc::string::String, engine: &E)",
+      "generics": {
+        "params": [
+          "E",
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "output_buf",
+          "type": "&mut alloc::string::String",
+          "by_ref": true,
+          "mut": true
+        },
+        {
+          "name": "engine",
+          "type": "&E",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "()"
+      },
+      "docs": {
+        "summary": "Encode arbitrary octets as base64 into a supplied `String`.",
+        "details": "Encode arbitrary octets as base64 into a supplied `String`. See [Engine::encode_string].",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [
+        "E: Engine",
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `engine`",
+          "mutate parameter `input`",
+          "mutate parameter `output_buf`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/encode.rs",
+        "line_span": [
+          38,
+          44
+        ]
+      }
+    },
+    {
+      "kind": "function",
+      "path": "base64::encoded_len",
+      "visibility": "pub",
+      "signature": "const fn encoded_len(bytes_len: usize, padding: bool) -> Option<usize>",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "bytes_len",
+          "type": "usize",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "padding",
+          "type": "bool",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Option<usize>"
+      },
+      "docs": {
+        "summary": "Calculate the base64 encoded length for a given input length, optionally including any appropriate padding bytes.",
+        "details": "Calculate the base64 encoded length for a given input length, optionally including any appropriate padding bytes. Returns `None` if the encoded length can't be represented in `usize`. This will happen for input lengths in approximately the top quarter of the range of `usize`.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {
+          "bytes_len": "platform usize range"
+        }
+      },
+      "llm_hints": {
+        "equivalence_classes": [
+          "`padding` ∈ {true, false}"
+        ],
+        "boundary_values": [
+          "`bytes_len` near numeric min / max"
+        ],
+        "mutation_hotspots": [
+          "mutate parameter `bytes_len`",
+          "mutate parameter `padding`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/encode.rs",
+        "line_span": [
+          97,
+          125
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::Config::encode_padding",
+      "visibility": "pub",
+      "signature": "fn encode_padding(self: &Self) -> bool",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "bool"
+      },
+      "docs": {
+        "summary": "Returns `true` if padding should be added after the encoded output.",
+        "details": "Returns `true` if padding should be added after the encoded output. Padding is added outside the engine's encode() since the engine may be used to encode only a chunk of the overall output, so it can't always know when the output is \"done\" and would therefore need padding (if configured).",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          431,
+          431
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::DecodeEstimate::decoded_len_estimate",
+      "visibility": "pub",
+      "signature": "fn decoded_len_estimate(self: &Self) -> usize",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "usize"
+      },
+      "docs": {
+        "summary": "Returns a conservative (err on the side of too big) estimate of the decoded length to use for pre-allocating buffers, etc.",
+        "details": "Returns a conservative (err on the side of too big) estimate of the decoded length to use for pre-allocating buffers, etc. The estimate must be no larger than the next largest complete triple of decoded bytes. That is, the final quad of tokens to decode may be assumed to be complete with no padding.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {
+          "return": "platform usize range"
+        }
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          445,
+          445
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::DecodeMetadata::eq",
+      "visibility": "pub",
+      "signature": "fn eq(self: &Self, other: &DecodeMetadata) -> bool",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "other",
+          "type": "&DecodeMetadata",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "bool"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `other`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          463,
+          463
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::DecodeMetadata::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "$crate::fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          463,
+          463
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::DecodePaddingMode::clone",
+      "visibility": "pub",
+      "signature": "fn clone(self: &Self) -> DecodePaddingMode",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "DecodePaddingMode"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          452,
+          452
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::DecodePaddingMode::eq",
+      "visibility": "pub",
+      "signature": "fn eq(self: &Self, other: &DecodePaddingMode) -> bool",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "other",
+          "type": "&DecodePaddingMode",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "bool"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `other`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          452,
+          452
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::DecodePaddingMode::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "$crate::fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          452,
+          452
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::Engine::config",
+      "visibility": "pub",
+      "signature": "fn config(self: &Self) -> &Self::Config",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "&Self::Config"
+      },
+      "docs": {
+        "summary": "Returns the config for this engine.",
+        "details": "Returns the config for this engine.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          95,
+          95
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::Engine::decode",
+      "visibility": "pub",
+      "signature": "fn decode<T: AsRef<[u8]>>(self: &Self, input: T) -> Result<Vec<u8>, DecodeError>",
+      "generics": {
+        "params": [
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Result<Vec<u8>, DecodeError>"
+      },
+      "docs": {
+        "summary": "Decode the input into a new `Vec`.",
+        "details": "Decode the input into a new `Vec`.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": [
+            {
+              "ok": "use base64::{Engine as _, alphabet, engine::{self, general_purpose }};\n\nlet bytes = general_purpose::STANDARD\n    .decode(\"aGVsbG8gd29ybGR+Cg==\").unwrap();\nprintln!(\"{:?}\", bytes);\n\n// custom engine setup\nlet bytes_url = engine::GeneralPurpose::new(\n             &alphabet::URL_SAFE,\n             general_purpose::NO_PAD)\n    .decode(\"aGVsbG8gaW50ZXJuZXR-Cg\").unwrap();\nprintln!(\"{:?}\", bytes_url);",
+              "notes": "example without explicit outcome label"
+            }
+          ]
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "InvalidByte",
+        "InvalidLastSymbol",
+        "InvalidLength",
+        "InvalidPadding"
+      ],
+      "may_panic": [],
+      "traits_bound": [
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {
+          "DecodeError": [
+            "InvalidByte",
+            "InvalidLength",
+            "InvalidLastSymbol",
+            "InvalidPadding"
+          ]
+        },
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `input`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          244,
+          268
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::Engine::decode_slice",
+      "visibility": "pub",
+      "signature": "fn decode_slice<T: AsRef<[u8]>>(self: &Self, input: T, output: &mut [u8]) -> Result<usize, DecodeSliceError>",
+      "generics": {
+        "params": [
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "output",
+          "type": "&mut [u8]",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "Result<usize, DecodeSliceError>"
+      },
+      "docs": {
+        "summary": "Decode the input into the provided output slice.",
+        "details": "Decode the input into the provided output slice. Returns the number of bytes written to the slice, or an error if `output` is smaller than the estimated decoded length. This will not write any bytes past exactly what is decoded (no stray garbage bytes at the end). See [crate::decoded_len_estimate] for calculating buffer sizes. See [Engine::decode_slice_unchecked] for a version that panics instead of returning an error if the output buffer is too small.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "DecodeError",
+        "OutputSliceTooSmall"
+      ],
+      "may_panic": [
+        "Documentation mentions potential panic behavior"
+      ],
+      "traits_bound": [
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {
+          "DecodeSliceError": [
+            "DecodeError",
+            "OutputSliceTooSmall"
+          ]
+        },
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [
+          "`output` collection length edge cases"
+        ],
+        "mutation_hotspots": [
+          "mutate parameter `input`",
+          "mutate parameter `output`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          353,
+          376
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::Engine::decode_slice_unchecked",
+      "visibility": "pub",
+      "signature": "fn decode_slice_unchecked<T: AsRef<[u8]>>(self: &Self, input: T, output: &mut [u8]) -> Result<usize, DecodeError>",
+      "generics": {
+        "params": [
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "output",
+          "type": "&mut [u8]",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "Result<usize, DecodeError>"
+      },
+      "docs": {
+        "summary": "Decode the input into the provided output slice.",
+        "details": "Decode the input into the provided output slice. Returns the number of bytes written to the slice. This will not write any bytes past exactly what is decoded (no stray garbage bytes at the end). See [crate::decoded_len_estimate] for calculating buffer sizes. See [Engine::decode_slice] for a version that returns an error instead of panicking if the output buffer is too small. Panics if the provided output buffer is too small for the decoded data.",
+        "sections": {
+          "errors": [],
+          "panics": [
+            "Panics if the provided output buffer is too small for the decoded data."
+          ],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "InvalidByte",
+        "InvalidLastSymbol",
+        "InvalidLength",
+        "InvalidPadding"
+      ],
+      "may_panic": [
+        "Panics if the provided output buffer is too small for the decoded data."
+      ],
+      "traits_bound": [
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {
+          "DecodeError": [
+            "InvalidByte",
+            "InvalidLength",
+            "InvalidLastSymbol",
+            "InvalidPadding"
+          ]
+        },
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [
+          "`output` collection length edge cases"
+        ],
+        "mutation_hotspots": [
+          "mutate parameter `input`",
+          "mutate parameter `output`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          393,
+          418
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::Engine::decode_vec",
+      "visibility": "pub",
+      "signature": "fn decode_vec<T: AsRef<[u8]>>(self: &Self, input: T, buffer: &mut Vec<u8>) -> Result<(), DecodeError>",
+      "generics": {
+        "params": [
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "buffer",
+          "type": "&mut Vec<u8>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "Result<(), DecodeError>"
+      },
+      "docs": {
+        "summary": "Decode the `input` into the supplied `buffer`.",
+        "details": "Decode the `input` into the supplied `buffer`. Writes into the supplied `Vec`, which may allocate if its internal buffer isn't big enough. Returns a `Result` containing an empty tuple, aka `()`.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": [
+            {
+              "ok": "use base64::{Engine as _, alphabet, engine::{self, general_purpose }};\nconst CUSTOM_ENGINE: engine::GeneralPurpose =\n    engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::PAD);\n\nfn main() {\n    use base64::Engine;\n    let mut buffer = Vec::<u8>::new();\n    // with the default engine\n    general_purpose::STANDARD\n        .decode_vec(\"aGVsbG8gd29ybGR+Cg==\", &mut buffer,).unwrap();\n    println!(\"{:?}\", buffer);\n\n    buffer.clear();\n\n    // with a custom engine\n    CUSTOM_ENGINE.decode_vec(\n        \"aGVsbG8gaW50ZXJuZXR-Cg==\",\n        &mut buffer,\n    ).unwrap();\n    println!(\"{:?}\", buffer);\n}",
+              "notes": "example without explicit outcome label"
+            }
+          ]
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "InvalidByte",
+        "InvalidLastSymbol",
+        "InvalidLength",
+        "InvalidPadding"
+      ],
+      "may_panic": [],
+      "traits_bound": [
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {
+          "DecodeError": [
+            "InvalidByte",
+            "InvalidLength",
+            "InvalidLastSymbol",
+            "InvalidPadding"
+          ]
+        },
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [
+          "`buffer` vector length: 0 vs large"
+        ],
+        "mutation_hotspots": [
+          "mutate parameter `buffer`",
+          "mutate parameter `input`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          302,
+          339
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::Engine::encode",
+      "visibility": "pub",
+      "signature": "fn encode<T: AsRef<[u8]>>(self: &Self, input: T) -> String",
+      "generics": {
+        "params": [
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "String"
+      },
+      "docs": {
+        "summary": "Encode arbitrary octets as base64 using the provided `Engine`. Returns a `String`.",
+        "details": "Encode arbitrary octets as base64 using the provided `Engine`. Returns a `String`.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": [
+            {
+              "ok": "use base64::{Engine as _, engine::{self, general_purpose}, alphabet};\n\nlet b64 = general_purpose::STANDARD.encode(b\"hello world~\");\nprintln!(\"{}\", b64);\n\nconst CUSTOM_ENGINE: engine::GeneralPurpose =\n    engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);\n\nlet b64_url = CUSTOM_ENGINE.encode(b\"hello internet~\");",
+              "notes": "example without explicit outcome label"
+            }
+          ]
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `input`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          115,
+          131
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::Engine::encode_slice",
+      "visibility": "pub",
+      "signature": "fn encode_slice<T: AsRef<[u8]>>(self: &Self, input: T, output_buf: &mut [u8]) -> Result<usize, EncodeSliceError>",
+      "generics": {
+        "params": [
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "output_buf",
+          "type": "&mut [u8]",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "Result<usize, EncodeSliceError>"
+      },
+      "docs": {
+        "summary": "Encode arbitrary octets as base64 into a supplied slice. Writes into the supplied output buffer.",
+        "details": "Encode arbitrary octets as base64 into a supplied slice. Writes into the supplied output buffer. This is useful if you wish to avoid allocation entirely (e.g. encoding into a stack-resident or statically-allocated buffer).",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": [
+            {
+              "ok": "use base64::{Engine as _, engine::general_purpose};\nlet s = b\"hello internet!\";\nlet mut buf = Vec::new();\n// make sure we'll have a slice big enough for base64 + padding\nbuf.resize(s.len() * 4 / 3 + 4, 0);\n\nlet bytes_written = general_purpose::STANDARD.encode_slice(s, &mut buf).unwrap();\n\n// shorten our vec down to just what was written\nbuf.truncate(bytes_written);\n\nassert_eq!(s, general_purpose::STANDARD.decode(&buf).unwrap().as_slice());",
+              "notes": "example without explicit outcome label"
+            }
+          ]
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "OutputSliceTooSmall"
+      ],
+      "may_panic": [],
+      "traits_bound": [
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {
+          "EncodeSliceError": [
+            "OutputSliceTooSmall"
+          ]
+        },
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [
+          "`output_buf` collection length edge cases"
+        ],
+        "mutation_hotspots": [
+          "mutate parameter `input`",
+          "mutate parameter `output_buf`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          194,
+          222
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::Engine::encode_string",
+      "visibility": "pub",
+      "signature": "fn encode_string<T: AsRef<[u8]>>(self: &Self, input: T, output_buf: &mut String)",
+      "generics": {
+        "params": [
+          "T"
+        ],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "input",
+          "type": "T",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "output_buf",
+          "type": "&mut String",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "()"
+      },
+      "docs": {
+        "summary": "Encode arbitrary octets as base64 into a supplied `String`. Writes into the supplied `String`, which may allocate if its internal buffer isn't big enough.",
+        "details": "Encode arbitrary octets as base64 into a supplied `String`. Writes into the supplied `String`, which may allocate if its internal buffer isn't big enough.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": [
+            {
+              "ok": "use base64::{Engine as _, engine::{self, general_purpose}, alphabet};\nconst CUSTOM_ENGINE: engine::GeneralPurpose =\n    engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);\n\nfn main() {\n    let mut buf = String::new();\n    general_purpose::STANDARD.encode_string(b\"hello world~\", &mut buf);\n    println!(\"{}\", buf);\n\n    buf.clear();\n    CUSTOM_ENGINE.encode_string(b\"hello internet~\", &mut buf);\n    println!(\"{}\", buf);\n}",
+              "notes": "example without explicit outcome label"
+            }
+          ]
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [
+        "T: AsRef<[u8]>"
+      ],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `input`",
+          "mutate parameter `output_buf`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/mod.rs",
+        "line_span": [
+          155,
+          168
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::general_purpose::GeneralPurpose::clone",
+      "visibility": "pub",
+      "signature": "fn clone(self: &Self) -> GeneralPurpose",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "GeneralPurpose"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/general_purpose/mod.rs",
+        "line_span": [
+          23,
+          23
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::general_purpose::GeneralPurpose::config",
+      "visibility": "pub",
+      "signature": "fn config(self: &Self) -> &Self::Config",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "&Self::Config"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/general_purpose/mod.rs",
+        "line_span": [
+          187,
+          189
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::general_purpose::GeneralPurpose::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "$crate::fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/general_purpose/mod.rs",
+        "line_span": [
+          23,
+          23
+        ]
+      }
+    },
+    {
+      "kind": "ctor",
+      "path": "base64::engine::general_purpose::GeneralPurpose::new",
+      "visibility": "pub",
+      "signature": "const fn new(alphabet: &Alphabet, config: GeneralPurposeConfig) -> Self",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "alphabet",
+          "type": "&Alphabet",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "config",
+          "type": "GeneralPurposeConfig",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Self"
+      },
+      "docs": {
+        "summary": "Create a `GeneralPurpose` engine from an [Alphabet].",
+        "details": "Create a `GeneralPurpose` engine from an [Alphabet]. While not very expensive to initialize, ideally these should be cached if the engine will be used repeatedly.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `alphabet`",
+          "mutate parameter `config`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/general_purpose/mod.rs",
+        "line_span": [
+          35,
+          41
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::general_purpose::GeneralPurposeConfig::clone",
+      "visibility": "pub",
+      "signature": "fn clone(self: &Self) -> GeneralPurposeConfig",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "GeneralPurposeConfig"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/general_purpose/mod.rs",
+        "line_span": [
+          244,
+          244
+        ]
+      }
+    },
+    {
+      "kind": "assoc_fn",
+      "path": "base64::engine::general_purpose::GeneralPurposeConfig::default",
+      "visibility": "pub",
+      "signature": "fn default() -> Self",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [],
+      "output": {
+        "type": "Self"
+      },
+      "docs": {
+        "summary": "Delegates to [GeneralPurposeConfig::new].",
+        "details": "Delegates to [GeneralPurposeConfig::new].",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": []
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/general_purpose/mod.rs",
+        "line_span": [
+          320,
+          322
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::general_purpose::GeneralPurposeConfig::encode_padding",
+      "visibility": "pub",
+      "signature": "fn encode_padding(self: &Self) -> bool",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "bool"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/general_purpose/mod.rs",
+        "line_span": [
+          326,
+          328
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::general_purpose::GeneralPurposeConfig::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut $crate::fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "$crate::fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/general_purpose/mod.rs",
+        "line_span": [
+          244,
+          244
+        ]
+      }
+    },
+    {
+      "kind": "ctor",
+      "path": "base64::engine::general_purpose::GeneralPurposeConfig::new",
+      "visibility": "pub",
+      "signature": "const fn new() -> Self",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [],
+      "output": {
+        "type": "Self"
+      },
+      "docs": {
+        "summary": "Create a new config with `padding` = `true`, `decode_allow_trailing_bits` = `false`, and `decode_padding_mode = DecodePaddingMode::RequireCanonicalPadding`.",
+        "details": "Create a new config with `padding` = `true`, `decode_allow_trailing_bits` = `false`, and `decode_padding_mode = DecodePaddingMode::RequireCanonicalPadding`. This probably matches most people's expectations, but consider disabling padding to save a few bytes unless you specifically need it for compatibility with some legacy system.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": []
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/general_purpose/mod.rs",
+        "line_span": [
+          257,
+          264
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::general_purpose::GeneralPurposeConfig::with_decode_allow_trailing_bits",
+      "visibility": "pub",
+      "signature": "const fn with_decode_allow_trailing_bits(self: Self, allow: bool) -> Self",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "Self",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "allow",
+          "type": "bool",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Self"
+      },
+      "docs": {
+        "summary": "Create a new config based on `self` with an updated `decode_allow_trailing_bits` setting.",
+        "details": "Create a new config based on `self` with an updated `decode_allow_trailing_bits` setting. Most users will not need to configure this. It's useful if you need to decode base64 produced by a buggy encoder that has bits set in the unused space on the last base64 character as per [forgiving-base64 decode](https://infra.spec.whatwg.org/#forgiving-base64-decode). If invalid trailing bits are present and this is `true`, those bits will be silently ignored, else `DecodeError::InvalidLastSymbol` will be emitted.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [
+          "`allow` ∈ {true, false}"
+        ],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `allow`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/general_purpose/mod.rs",
+        "line_span": [
+          290,
+          295
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::general_purpose::GeneralPurposeConfig::with_decode_padding_mode",
+      "visibility": "pub",
+      "signature": "const fn with_decode_padding_mode(self: Self, mode: DecodePaddingMode) -> Self",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "Self",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "mode",
+          "type": "DecodePaddingMode",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Self"
+      },
+      "docs": {
+        "summary": "Create a new config based on `self` with an updated `decode_padding_mode` setting.",
+        "details": "Create a new config based on `self` with an updated `decode_padding_mode` setting. Padding is not useful in terms of representing encoded data -- it makes no difference to the decoder if padding is present or not, so if you have some un-padded input to decode, it is perfectly fine to use `DecodePaddingMode::Indifferent` to prevent errors from being emitted. However, since in practice [people who learned nothing from BER vs DER seem to expect base64 to have one canonical encoding](https://eprint.iacr.org/2022/361), the default setting is the stricter `DecodePaddingMode::RequireCanonicalPadding`. Or, if \"canonical\" in your circumstance means _no_ padding rather than padding to the next multiple of four, there's `DecodePaddingMode::RequireNoPadding`.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `mode`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/general_purpose/mod.rs",
+        "line_span": [
+          310,
+          315
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::engine::general_purpose::GeneralPurposeConfig::with_encode_padding",
+      "visibility": "pub",
+      "signature": "const fn with_encode_padding(self: Self, padding: bool) -> Self",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "Self",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "padding",
+          "type": "bool",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Self"
+      },
+      "docs": {
+        "summary": "Create a new config based on `self` with an updated `padding` setting.",
+        "details": "Create a new config based on `self` with an updated `padding` setting. If `padding` is `true`, encoding will append either 1 or 2 `=` padding characters as needed to produce an output whose length is a multiple of 4. Padding is not needed for correct decoding and only serves to waste bytes, but it's in the [spec](https://datatracker.ietf.org/doc/html/rfc4648#section-3.2). For new applications, consider not using padding if the decoders you're using don't require padding to be present.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [
+          "`padding` ∈ {true, false}"
+        ],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `padding`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/engine/general_purpose/mod.rs",
+        "line_span": [
+          276,
+          281
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::read::DecoderReader::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/read/decoder.rs",
+        "line_span": [
+          63,
+          73
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::read::DecoderReader::into_inner",
+      "visibility": "pub",
+      "signature": "fn into_inner(self: Self) -> R",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "Self",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "R"
+      },
+      "docs": {
+        "summary": "Unwraps this `DecoderReader`, returning the base reader which it reads base64 encoded input from.",
+        "details": "Unwraps this `DecoderReader`, returning the base reader which it reads base64 encoded input from. Because `DecoderReader` performs internal buffering, the state of the inner reader is unspecified. This function is mainly provided because the inner reader type may provide additional functionality beyond the `Read` implementation which may still be useful.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/read/decoder.rs",
+        "line_span": [
+          214,
+          216
+        ]
+      }
+    },
+    {
+      "kind": "ctor",
+      "path": "base64::read::DecoderReader::new",
+      "visibility": "pub",
+      "signature": "fn new(reader: R, engine: &'e E) -> Self",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "reader",
+          "type": "R",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "engine",
+          "type": "&'e E",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Self"
+      },
+      "docs": {
+        "summary": "Create a new decoder that will read from the provided reader `r`.",
+        "details": "Create a new decoder that will read from the provided reader `r`.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `engine`",
+          "mutate parameter `reader`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/read/decoder.rs",
+        "line_span": [
+          78,
+          91
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::read::DecoderReader::read",
+      "visibility": "pub",
+      "signature": "fn read(self: &mut Self, buf: &mut [u8]) -> io::Result<usize>",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&mut Self",
+          "by_ref": true,
+          "mut": true
+        },
+        {
+          "name": "buf",
+          "type": "&mut [u8]",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "io::Result<usize>"
+      },
+      "docs": {
+        "summary": "Decode input from the wrapped reader.",
+        "details": "Decode input from the wrapped reader. Under non-error circumstances, this returns `Ok` with the value being the number of bytes written in `buf`. Where possible, this function buffers base64 to minimize the number of read() calls to the delegate reader. Any errors emitted by the delegate reader are returned. Decoding errors due to invalid base64 are also possible, and will have `io::ErrorKind::InvalidData`.",
+        "sections": {
+          "errors": [
+            "Any errors emitted by the delegate reader are returned. Decoding errors due to invalid base64 are also possible, and will have `io::ErrorKind::InvalidData`."
+          ],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "Any errors emitted by the delegate reader are returned. Decoding errors due to invalid base64 are also possible, and will have `io::ErrorKind::InvalidData`."
+      ],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [
+          "`buf` collection length edge cases"
+        ],
+        "mutation_hotspots": [
+          "mutate parameter `buf`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/read/decoder.rs",
+        "line_span": [
+          232,
+          334
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::write::EncoderStringWriter::flush",
+      "visibility": "pub",
+      "signature": "fn flush(self: &mut Self) -> io::Result<()>",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&mut Self",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "io::Result<()>"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/write/encoder_string_writer.rs",
+        "line_span": [
+          87,
+          89
+        ]
+      }
+    },
+    {
+      "kind": "assoc_fn",
+      "path": "base64::write::EncoderStringWriter::from_consumer",
+      "visibility": "pub",
+      "signature": "fn from_consumer(str_consumer: S, engine: &'e E) -> Self",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "str_consumer",
+          "type": "S",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "engine",
+          "type": "&'e E",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Self"
+      },
+      "docs": {
+        "summary": "Create a EncoderStringWriter that will append to the provided `StrConsumer`.",
+        "details": "Create a EncoderStringWriter that will append to the provided `StrConsumer`.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `engine`",
+          "mutate parameter `str_consumer`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/write/encoder_string_writer.rs",
+        "line_span": [
+          57,
+          61
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::write::EncoderStringWriter::into_inner",
+      "visibility": "pub",
+      "signature": "fn into_inner(self: Self) -> S",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "Self",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "S"
+      },
+      "docs": {
+        "summary": "Encode all remaining buffered data, including any trailing incomplete input triples and associated padding.",
+        "details": "Encode all remaining buffered data, including any trailing incomplete input triples and associated padding. Returns the base64-encoded form of the accumulated written data.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/write/encoder_string_writer.rs",
+        "line_span": [
+          67,
+          72
+        ]
+      }
+    },
+    {
+      "kind": "ctor",
+      "path": "base64::write::EncoderStringWriter::new",
+      "visibility": "pub",
+      "signature": "fn new(engine: &'e E) -> Self",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "engine",
+          "type": "&'e E",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Self"
+      },
+      "docs": {
+        "summary": "Create a EncoderStringWriter that will encode into a new `String` with the provided config.",
+        "details": "Create a EncoderStringWriter that will encode into a new `String` with the provided config.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `engine`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/write/encoder_string_writer.rs",
+        "line_span": [
+          77,
+          79
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::write::EncoderStringWriter::write",
+      "visibility": "pub",
+      "signature": "fn write(self: &mut Self, buf: &[u8]) -> io::Result<usize>",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&mut Self",
+          "by_ref": true,
+          "mut": true
+        },
+        {
+          "name": "buf",
+          "type": "&[u8]",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "io::Result<usize>"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [
+          "`buf` collection length edge cases"
+        ],
+        "mutation_hotspots": [
+          "mutate parameter `buf`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/write/encoder_string_writer.rs",
+        "line_span": [
+          83,
+          85
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::write::EncoderWriter::drop",
+      "visibility": "pub",
+      "signature": "fn drop(self: &mut Self)",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&mut Self",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "()"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/write/encoder.rs",
+        "line_span": [
+          401,
+          406
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::write::EncoderWriter::finish",
+      "visibility": "pub",
+      "signature": "fn finish(self: &mut Self) -> Result<W>",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&mut Self",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "Result<W>"
+      },
+      "docs": {
+        "summary": "Encode all remaining buffered data and write it, including any trailing incomplete input triples and associated padding.",
+        "details": "Encode all remaining buffered data and write it, including any trailing incomplete input triples and associated padding. Once this succeeds, no further writes or calls to this method are allowed. This may write to the delegate writer multiple times if the delegate writer does not accept all input provided to its `write` each invocation. If you don't care about error handling, it is not necessary to call this function, as the equivalent finalization is done by the Drop impl. Returns the writer that this was constructed around. The first error that is not of `ErrorKind::Interrupted` will be returned.",
+        "sections": {
+          "errors": [
+            "The first error that is not of `ErrorKind::Interrupted` will be returned."
+          ],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "The first error that is not of `ErrorKind::Interrupted` will be returned."
+      ],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/write/encoder.rs",
+        "line_span": [
+          126,
+          138
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::write::EncoderWriter::flush",
+      "visibility": "pub",
+      "signature": "fn flush(self: &mut Self) -> Result<()>",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&mut Self",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "Result<()>"
+      },
+      "docs": {
+        "summary": "Because this is usually treated as OK to call multiple times, it will *not* flush any incomplete chunks of input or write padding.",
+        "details": "Because this is usually treated as OK to call multiple times, it will *not* flush any incomplete chunks of input or write padding. The first error that is not of [`ErrorKind::Interrupted`] will be returned.",
+        "sections": {
+          "errors": [
+            "The first error that is not of [`ErrorKind::Interrupted`] will be returned."
+          ],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "The first error that is not of [`ErrorKind::Interrupted`] will be returned."
+      ],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/write/encoder.rs",
+        "line_span": [
+          391,
+          397
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::write::EncoderWriter::fmt",
+      "visibility": "pub",
+      "signature": "fn fmt(self: &Self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&Self",
+          "by_ref": true,
+          "mut": false
+        },
+        {
+          "name": "f",
+          "type": "&mut fmt::Formatter<'_>",
+          "by_ref": true,
+          "mut": true
+        }
+      ],
+      "output": {
+        "type": "fmt::Result"
+      },
+      "docs": {
+        "summary": "",
+        "details": "",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `f`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/write/encoder.rs",
+        "line_span": [
+          84,
+          93
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::write::EncoderWriter::into_inner",
+      "visibility": "pub",
+      "signature": "fn into_inner(self: Self) -> W",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "Self",
+          "by_ref": false,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "W"
+      },
+      "docs": {
+        "summary": "Unwraps this `EncoderWriter`, returning the base writer it writes base64 encoded output to.",
+        "details": "Unwraps this `EncoderWriter`, returning the base writer it writes base64 encoded output to. Normally this method should not be needed, since `finish()` returns the inner writer if it completes successfully. That will also ensure all data has been flushed, which the `into_inner()` function does *not* do. Calling this method after `finish()` has completed successfully will panic, since the writer has already been returned. This method may be useful if the writer implements additional APIs beyond the `Write` trait. Note that the inner writer might be in an error state or have an incomplete base64 string written to it.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [
+        "Documentation mentions potential panic behavior"
+      ],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/write/encoder.rs",
+        "line_span": [
+          241,
+          245
+        ]
+      }
+    },
+    {
+      "kind": "ctor",
+      "path": "base64::write::EncoderWriter::new",
+      "visibility": "pub",
+      "signature": "fn new(delegate: W, engine: &'e E) -> EncoderWriter<'e, E, W>",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "delegate",
+          "type": "W",
+          "by_ref": false,
+          "mut": false
+        },
+        {
+          "name": "engine",
+          "type": "&'e E",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "EncoderWriter<'e, E, W>"
+      },
+      "docs": {
+        "summary": "Create a new encoder that will write to the provided delegate writer.",
+        "details": "Create a new encoder that will write to the provided delegate writer.",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `delegate`",
+          "mutate parameter `engine`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/write/encoder.rs",
+        "line_span": [
+          98,
+          108
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::write::EncoderWriter::write",
+      "visibility": "pub",
+      "signature": "fn write(self: &mut Self, input: &[u8]) -> Result<usize>",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&mut Self",
+          "by_ref": true,
+          "mut": true
+        },
+        {
+          "name": "input",
+          "type": "&[u8]",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "Result<usize>"
+      },
+      "docs": {
+        "summary": "Encode input and then write to the delegate writer.",
+        "details": "Encode input and then write to the delegate writer. Under non-error circumstances, this returns `Ok` with the value being the number of bytes of `input` consumed. The value may be `0`, which interacts poorly with `write_all`, which interprets `Ok(0)` as an error, despite it being allowed by the contract of `write`. See for more on that. If the previous call to `write` provided more (encoded) data than the delegate writer could accept in a single call to its `write`, the remaining data is buffered. As long as buffered data is present, subsequent calls to `write` will try to write the remaining buffered data to the delegate and return either `Ok(0)` -- and therefore not consume any of `input` -- or an error. Any errors emitted by the delegate writer are returned.",
+        "sections": {
+          "errors": [
+            "Any errors emitted by the delegate writer are returned."
+          ],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [
+        "Any errors emitted by the delegate writer are returned."
+      ],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [],
+        "boundary_values": [
+          "`input` collection length edge cases"
+        ],
+        "mutation_hotspots": [
+          "mutate parameter `input`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/write/encoder.rs",
+        "line_span": [
+          265,
+          384
+        ]
+      }
+    },
+    {
+      "kind": "method",
+      "path": "base64::write::StrConsumer::consume",
+      "visibility": "pub",
+      "signature": "fn consume(self: &mut Self, buf: &str)",
+      "generics": {
+        "params": [],
+        "where_clauses": []
+      },
+      "inputs": [
+        {
+          "name": "self",
+          "type": "&mut Self",
+          "by_ref": true,
+          "mut": true
+        },
+        {
+          "name": "buf",
+          "type": "&str",
+          "by_ref": true,
+          "mut": false
+        }
+      ],
+      "output": {
+        "type": "()"
+      },
+      "docs": {
+        "summary": "Consume the base64 encoded data in `buf`",
+        "details": "Consume the base64 encoded data in `buf`",
+        "sections": {
+          "errors": [],
+          "panics": [],
+          "safety": [],
+          "returns": [],
+          "examples": []
+        }
+      },
+      "invariants": {
+        "preconditions": [],
+        "postconditions": []
+      },
+      "error_cases": [],
+      "may_panic": [],
+      "traits_bound": [],
+      "type_hints": {
+        "enums": {},
+        "value_ranges": {}
+      },
+      "llm_hints": {
+        "equivalence_classes": [
+          "`buf` as string: empty vs unicode vs long"
+        ],
+        "boundary_values": [],
+        "mutation_hotspots": [
+          "mutate parameter `buf`",
+          "mutate parameter `self`"
+        ]
+      },
+      "source": {
+        "file": "/home/cym/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/base64-0.22.1/src/write/encoder_string_writer.rs",
+        "line_span": [
+          95,
+          95
+        ]
+      }
+    }
+  ]
+}

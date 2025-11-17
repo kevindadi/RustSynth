@@ -1,10 +1,34 @@
 use std::{fmt::Write, sync::Arc};
 
-use petgraph::{Direction, graph::NodeIndex, stable_graph::StableGraph, visit::EdgeRef};
-use rustdoc_types::Id;
+use petgraph::{
+    Direction, 
+    graph::NodeIndex, 
+    stable_graph::StableGraph, 
+    visit::EdgeRef,
+    algo::{dijkstra, is_cyclic_directed},
+};
+use rustdoc_types::{Id, Variant};
 use serde::{Deserialize, Serialize};
 
-use super::type_repr::TypeDescriptor;
+use super::type_repr::{BorrowKind, TypeDescriptor};
+
+/// 类型化 Petri 网中，token 包含类型信息和借用信息
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Token {
+    /// 令牌的类型描述符（规范化后的类型，不考虑借用）
+    pub descriptor: TypeDescriptor,
+    /// 令牌的借用类型（Owned、SharedRef、MutRef 等）
+    pub borrow_kind: BorrowKind,
+}
+
+impl Token {
+    pub fn new(descriptor: TypeDescriptor, borrow_kind: BorrowKind) -> Self {
+        Self {
+            descriptor,
+            borrow_kind,
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PlaceId(pub(crate) NodeIndex);
@@ -20,18 +44,66 @@ pub enum Node {
     Transition(Transition),
 }
 
+/// 泛型参数需要保存所属类型的 PlaceId 和描述符
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct GenericParameter {
+    /// 泛型参数名称（如 "T", "E", "W"）
+    pub name: Arc<str>,
+    /// 该泛型参数需要的 trait 约束
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub trait_bounds: Vec<Arc<str>>,
+    /// 所属类型的 PlaceId
+    pub owner_place_id: PlaceId,
+    /// 所属类型的描述符
+    pub owner_descriptor: TypeDescriptor,
+}
+
+/// Struct、Enum、Union 类型的共同信息
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Place {
-    pub descriptor: TypeDescriptor,
-    /// 该类型实现的 trait 列表（用于基本类型）
+pub struct CompositeTypeInfo {
+    /// 该类型实现的 trait 列表
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub implemented_traits: Vec<Arc<str>>,
-    /// 该泛型参数需要的 trait 约束（用于泛型参数）
+    /// 该类型定义的泛型参数列表
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub required_trait_bounds: Vec<Arc<str>>,
-    /// 是否为泛型参数类型
-    #[serde(default)]
-    pub is_generic_parameter: bool,
+    pub generic_parameters: Vec<GenericParameter>,
+    /// Enum 的 Variant 列表（仅当类型为 Enum 时使用）
+    /// 直接使用 rustdoc-types 中的 Variant 定义
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub variants: Vec<Variant>,
+}
+
+/// 库所（Place）代表一个类型定义
+/// 使用枚举区分不同类型的 Place，每种类型有对应的数据结构
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum Place {
+    /// 基本类型（Primitive）
+    Primitive {
+        descriptor: TypeDescriptor,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        implemented_traits: Vec<Arc<str>>,
+    },
+    /// Struct、Enum、Union 类型
+    Composite {
+        descriptor: TypeDescriptor,
+        kind: CompositeTypeKind,
+        info: CompositeTypeInfo,
+    },
+    /// 泛型参数类型
+    Generic {
+        descriptor: TypeDescriptor,
+        generic_param: GenericParameter,
+    },
+}
+
+/// Struct、Enum、Union 的类型种类
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "snake_case")]
+pub enum CompositeTypeKind {
+    Struct,
+    Enum,
+    Union,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -62,8 +134,6 @@ pub enum FunctionContext {
     },
 }
 
-/// 类型被建模为 Place, 可函数被建模为 Transition.
-/// 调用时会消耗参数类型的令牌, 若有返回值则产生返回类型的令牌.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FunctionSummary {
     pub item_id: Id,
@@ -116,12 +186,23 @@ pub struct Transition {
     pub summary: FunctionSummary,
 }
 
+/// 用于查找 Place 的 key
+/// 对于普通类型，只用 TypeDescriptor
+/// 对于泛型参数，需要同时指定所有者 ID 和类型名称
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+/// Place 查找键
+/// 只使用类型描述符，因为泛型参数不再单独创建库所
+enum PlaceLookupKey {
+    /// 类型描述符（规范化后的类型名，去掉泛型参数部分）
+    Type(TypeDescriptor),
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PetriNet {
     #[serde(with = "petgraph_serde")]
     graph: StableGraph<Node, ArcData>,
     #[serde(skip)]
-    place_lookup: indexmap::IndexMap<TypeDescriptor, PlaceId>,
+    place_lookup: indexmap::IndexMap<PlaceLookupKey, PlaceId>,
 }
 
 mod petgraph_serde {
@@ -183,29 +264,49 @@ impl Default for PetriNet {
     }
 }
 
+impl Place {
+    pub fn descriptor(&self) -> &TypeDescriptor {
+        match self {
+            Place::Primitive { descriptor, .. } => descriptor,
+            Place::Composite { descriptor, .. } => descriptor,
+            Place::Generic { descriptor, .. } => descriptor,
+        }
+    }
+
+    /// 获取实现的 trait 列表
+    pub fn implemented_traits(&self) -> &[Arc<str>] {
+        match self {
+            Place::Primitive { implemented_traits, .. } => implemented_traits,
+            Place::Composite { info, .. } => &info.implemented_traits,
+            Place::Generic { .. } => &[],
+        }
+    }
+
+    pub fn generic_parameters(&self) -> &[GenericParameter] {
+        match self {
+            Place::Primitive { .. } => &[],
+            Place::Composite { info, .. } => &info.generic_parameters,
+            Place::Generic { generic_param, .. } => std::slice::from_ref(generic_param),
+        }
+    }
+}
+
 impl PetriNet {
     pub fn new() -> Self {
         Self::default()
     }
 
+    pub fn to_json(&self) -> super::schema::JsonPetriNet {
+        super::schema::JsonPetriNet::from(self)
+    }
+
+    pub fn from_json(json: super::schema::JsonPetriNet) -> Result<Self, String> {
+        json.to_petri_net()
+    }
+
     pub fn add_place(&mut self, descriptor: TypeDescriptor) -> PlaceId {
-        // 使用规范化版本进行查找和存储，这样 T、&T、&mut T 都映射到同一个库所
-        let normalized = descriptor.normalized();
-        if let Some(&id) = self.place_lookup.get(&normalized) {
-            return id;
-        }
-
-        let place = Place {
-            descriptor: normalized.clone(),
-            implemented_traits: Vec::new(),
-            required_trait_bounds: Vec::new(),
-            is_generic_parameter: false,
-        };
-        let node_idx = self.graph.add_node(Node::Place(place));
-        let id = PlaceId(node_idx);
-
-        self.place_lookup.insert(normalized, id);
-        id
+        // 默认创建为 Primitive 类型
+        self.add_primitive_place(descriptor, Vec::new())
     }
 
     /// 添加基本类型库所，并记录其实现的 trait
@@ -215,17 +316,19 @@ impl PetriNet {
         implemented_traits: Vec<Arc<str>>,
     ) -> PlaceId {
         let normalized = descriptor.normalized();
-        if let Some(&id) = self.place_lookup.get(&normalized) {
+        let lookup_key = PlaceLookupKey::Type(normalized.clone());
+        
+        if let Some(&id) = self.place_lookup.get(&lookup_key) {
             // 如果已存在，更新实现的 trait
             if let Some(place) = self.graph.node_weight_mut(id.0) {
-                if let Node::Place(place) = place {
+                if let Node::Place(Place::Primitive { implemented_traits: traits, .. }) = place {
                     let mut existing_traits: std::collections::HashSet<_> =
-                        place.implemented_traits.iter().cloned().collect();
+                        traits.iter().cloned().collect();
                     for trait_ in implemented_traits {
                         existing_traits.insert(trait_);
                     }
-                    place.implemented_traits = existing_traits.into_iter().collect();
-                    place.implemented_traits.sort();
+                    *traits = existing_traits.into_iter().collect();
+                    traits.sort();
                 }
             }
             return id;
@@ -233,56 +336,125 @@ impl PetriNet {
 
         let mut traits = implemented_traits;
         traits.sort();
-        let place = Place {
+        let place = Place::Primitive {
             descriptor: normalized.clone(),
             implemented_traits: traits,
-            required_trait_bounds: Vec::new(),
-            is_generic_parameter: false,
         };
         let node_idx = self.graph.add_node(Node::Place(place));
         let id = PlaceId(node_idx);
 
-        self.place_lookup.insert(normalized, id);
+        self.place_lookup.insert(lookup_key, id);
         id
     }
 
-    /// 添加泛型参数库所，并记录其需要的 trait 约束
-    pub fn add_generic_parameter_place(
+    /// 添加 Composite 类型（Struct、Enum、Union）的 Place
+    pub fn add_composite_place(
         &mut self,
         descriptor: TypeDescriptor,
-        required_bounds: Vec<Arc<str>>,
+        kind: CompositeTypeKind,
+        implemented_traits: Vec<Arc<str>>,
     ) -> PlaceId {
         let normalized = descriptor.normalized();
-        if let Some(&id) = self.place_lookup.get(&normalized) {
-            // 如果已存在，更新 trait 约束
+        let lookup_key = PlaceLookupKey::Type(normalized.clone());
+        
+        if let Some(&id) = self.place_lookup.get(&lookup_key) {
+            // 如果已存在，更新实现的 trait
             if let Some(place) = self.graph.node_weight_mut(id.0) {
-                if let Node::Place(place) = place {
-                    let mut existing_bounds: std::collections::HashSet<_> =
-                        place.required_trait_bounds.iter().cloned().collect();
-                    for bound in required_bounds {
-                        existing_bounds.insert(bound);
+                if let Node::Place(Place::Composite { info, .. }) = place {
+                    let mut existing_traits: std::collections::HashSet<_> =
+                        info.implemented_traits.iter().cloned().collect();
+                    for trait_ in implemented_traits {
+                        existing_traits.insert(trait_);
                     }
-                    place.required_trait_bounds = existing_bounds.into_iter().collect();
-                    place.required_trait_bounds.sort();
-                    place.is_generic_parameter = true;
+                    info.implemented_traits = existing_traits.into_iter().collect();
+                    info.implemented_traits.sort();
                 }
             }
             return id;
         }
 
-        let mut bounds = required_bounds;
-        bounds.sort();
-        let place = Place {
+        let mut traits = implemented_traits;
+        traits.sort();
+        let place = Place::Composite {
             descriptor: normalized.clone(),
-            implemented_traits: Vec::new(),
-            required_trait_bounds: bounds,
-            is_generic_parameter: true,
+            kind,
+            info: CompositeTypeInfo {
+                implemented_traits: traits,
+                generic_parameters: Vec::new(),
+                variants: Vec::new(),
+            },
         };
         let node_idx = self.graph.add_node(Node::Place(place));
         let id = PlaceId(node_idx);
 
-        self.place_lookup.insert(normalized, id);
+        self.place_lookup.insert(lookup_key, id);
         id
+    }
+
+    /// 为 Enum Place 添加 Variant
+    /// Variant 的所有字段映射到 Enum 的 PlaceId
+    pub fn add_variant_to_enum(
+        &mut self,
+        enum_place_id: PlaceId,
+        variant: Variant,
+    ) {
+        if let Some(place) = self.graph.node_weight_mut(enum_place_id.0) {
+            if let Node::Place(Place::Composite { kind, info, .. }) = place {
+                if matches!(kind, CompositeTypeKind::Enum) {
+                    info.variants.push(variant);
+                }
+            }
+        }
+    }
+
+    /// 为已有的 Place 注册一个别名，使多个类型描述符指向同一个 Place
+    pub fn alias_place(&mut self, descriptor: TypeDescriptor, place_id: PlaceId) {
+        let normalized = descriptor.normalized();
+        let lookup_key = PlaceLookupKey::Type(normalized);
+        self.place_lookup.insert(lookup_key, place_id);
+    }
+
+    /// 为类型 Place 添加泛型参数
+    /// 
+    /// 泛型参数作为类型定义的属性，存储在 Composite Place 的 generic_parameters 字段中
+    /// 
+    /// # 参数
+    /// 
+    /// * `place_id` - 类型 Place 的 ID（必须是 Composite 类型）
+    /// * `generic_name` - 泛型参数名称（如 "T", "E", "W"）
+    /// * `trait_bounds` - trait 约束列表
+    pub fn add_generic_parameter_to_place(
+        &mut self,
+        place_id: PlaceId,
+        generic_name: Arc<str>,
+        trait_bounds: Vec<Arc<str>>,
+    ) {
+        if let Some(place) = self.graph.node_weight_mut(place_id.0) {
+            if let Node::Place(Place::Composite { info, descriptor, .. }) = place {
+                // 检查是否已存在同名泛型参数
+                if let Some(existing) = info.generic_parameters.iter_mut()
+                    .find(|p| p.name == generic_name) {
+                    // 合并 trait bounds
+                    let mut existing_bounds: std::collections::HashSet<_> =
+                        existing.trait_bounds.iter().cloned().collect();
+                    for bound in trait_bounds {
+                        existing_bounds.insert(bound);
+                    }
+                    existing.trait_bounds = existing_bounds.into_iter().collect();
+                    existing.trait_bounds.sort();
+                } else {
+                    // 添加新的泛型参数，包含所属类型的 PlaceId 和描述符
+                    let mut bounds = trait_bounds;
+                    bounds.sort();
+                    info.generic_parameters.push(GenericParameter {
+                        name: generic_name,
+                        trait_bounds: bounds,
+                        owner_place_id: place_id,
+                        owner_descriptor: descriptor.clone(),
+                    });
+                }
+            }
+        }
     }
 
     /// 在基本类型和泛型参数之间添加约束变迁
@@ -297,11 +469,11 @@ impl PetriNet {
             let primitive_place = self
                 .place(from_primitive)
                 .expect("primitive place should exist");
-            primitive_place.descriptor.clone()
+            primitive_place.descriptor().clone()
         };
         let generic_descriptor = {
             let generic_place = self.place(to_generic).expect("generic place should exist");
-            generic_place.descriptor.clone()
+            generic_place.descriptor().clone()
         };
 
         let signature = if constraints.is_empty() {
@@ -434,9 +606,17 @@ impl PetriNet {
     }
 
     pub fn place_id(&self, descriptor: &TypeDescriptor) -> Option<PlaceId> {
-        // 使用规范化版本进行查找
         let normalized = descriptor.normalized();
-        self.place_lookup.get(&normalized).copied()
+        let lookup_key = PlaceLookupKey::Type(normalized);
+        self.place_lookup.get(&lookup_key).copied()
+    }
+    
+    pub fn place_id_with_owner(&self, _owner_id: Option<Id>, descriptor: &TypeDescriptor) -> Option<PlaceId> {
+        let normalized = descriptor.normalized();
+        
+        // 泛型参数不再单独创建库所，直接查找类型
+        let type_key = PlaceLookupKey::Type(normalized);
+        self.place_lookup.get(&type_key).copied()
     }
 
     pub fn place_count(&self) -> usize {
@@ -502,18 +682,133 @@ impl PetriNet {
     }
 
     fn write_places(&self, dot: &mut String) {
+        let mut primitive_places = Vec::new();
+        let mut generic_type_places = Vec::new();
+        let mut variant_places = Vec::new();
+        let mut other_places = Vec::new();
+
         for (id, place) in self.places() {
-            let text = format!("p{}: {}", id.0.index(), place.descriptor.display());
-            let label = html_label(&[text.as_str()]);
-            let _ = writeln!(dot, "  p{} [shape=circle,label=<{}>];", id.0.index(), label);
+            let type_name = place.descriptor().display();
+            
+            match place {
+                Place::Primitive { .. } => {
+                    if matches!(
+                        type_name,
+                        "i8" | "i16"
+                            | "i32"
+                            | "i64"
+                            | "i128"
+                            | "isize"
+                            | "u8"
+                            | "u16"
+                            | "u32"
+                            | "u64"
+                            | "u128"
+                            | "usize"
+                            | "f32"
+                            | "f64"
+                            | "bool"
+                            | "char"
+                            | "str"
+                    ) {
+                        primitive_places.push((id, place));
+                    } else {
+                        other_places.push((id, place));
+                    }
+                }
+                Place::Composite { kind, info, .. } => {
+                    if matches!(kind, CompositeTypeKind::Enum) && !info.variants.is_empty() {
+                        // Enum 类型如果有 Variant，用特殊样式
+                        variant_places.push((id, place));
+                    } else if !info.generic_parameters.is_empty() {
+                        // 有泛型参数的类型用特殊样式
+                        generic_type_places.push((id, place));
+                    } else {
+                        other_places.push((id, place));
+                    }
+                }
+                Place::Generic { .. } => {
+                    other_places.push((id, place));
+                }
+            }
+        }
+
+        for (id, place) in primitive_places {
+            let label = simplify_type_name(place.descriptor().display());
+            let _ = writeln!(
+                dot,
+                "  p{} [shape=circle,style=filled,fillcolor=lightblue,label=\"{}\"];",
+                id.0.index(),
+                label
+            );
+        }
+
+        for (id, place) in generic_type_places {
+            let base_label = simplify_type_name(place.descriptor().display());
+            
+            // 构建泛型参数列表：T, E: Error, W: Write
+            let generic_params: Vec<String> = match place {
+                Place::Composite { info, .. } => info.generic_parameters.iter()
+                    .map(|param| {
+                        if param.trait_bounds.is_empty() {
+                            param.name.to_string()
+                        } else {
+                            format!("{}: {}", param.name, param.trait_bounds.join(" + "))
+                        }
+                    })
+                    .collect(),
+                _ => Vec::new(),
+            };
+            
+            let generic_part = if generic_params.is_empty() {
+                String::new()
+            } else {
+                format!("<{}>", generic_params.join(", "))
+            };
+            
+            let full_label = format!("{}{}", base_label, generic_part);
+            let _ = writeln!(
+                dot,
+                "  p{} [shape=circle,style=filled,fillcolor=orange,label=\"{}\"];",
+                id.0.index(),
+                full_label
+            );
+        }
+
+        for (id, place) in variant_places {
+            let label = simplify_type_name(place.descriptor().display());
+            let _ = writeln!(
+                dot,
+                "  p{} [shape=circle,style=filled,fillcolor=yellow,label=\"{}\"];",
+                id.0.index(),
+                label
+            );
+        }
+
+        for (id, place) in other_places {
+            let label = simplify_type_name(place.descriptor().display());
+            let _ = writeln!(
+                dot,
+                "  p{} [shape=circle,label=\"{}\"];",
+                id.0.index(),
+                label
+            );
         }
     }
 
     fn write_transitions(&self, dot: &mut String) {
         for (id, transition) in self.transitions() {
             let summary = &transition.summary;
-            let label = html_label(&[summary.display_name(), summary.signature.as_ref()]);
-            let _ = writeln!(dot, "  t{} [shape=box,label=<{}>];", id.0.index(), label);
+            
+            let sig = summary.signature.as_ref();  
+            let simplified_sig = simplify_signature(sig);
+            
+            let _ = writeln!(
+                dot,
+                "  t{} [shape=box,style=rounded,label=\"{}\"];",
+                id.0.index(),
+                simplified_sig
+            );
         }
     }
 
@@ -538,22 +833,25 @@ impl PetriNet {
         transition_id: TransitionId,
         arc: &ArcData,
     ) {
-        let name_ref = arc
-            .parameter
-            .as_ref()
-            .and_then(|param| param.name.as_deref());
-        let descriptor_ref = arc
-            .parameter
-            .as_ref()
-            .map(|param| &param.descriptor)
-            .or_else(|| self.place(place_id).map(|place| &place.descriptor));
+        // 简化边标签：只显示借用模式
+        let label = if let Some(borrow_kind) = arc.borrow_kind {
+            let borrow_mark = match borrow_kind {
+                BorrowKind::Owned => "",
+                BorrowKind::SharedRef => "&",
+                BorrowKind::MutRef => "&mut",
+                BorrowKind::RawConstPtr => "*const",
+                BorrowKind::RawMutPtr => "*mut",
+            };
+            if borrow_mark.is_empty() {
+                None
+            } else {
+                Some(borrow_mark.to_string())
+            }
+        } else {
+            None
+        };
 
-        let label =
-            descriptor_ref.and_then(|descriptor| edge_label_from_parameter(name_ref, descriptor));
-        let attr = edge_attr(
-            arc.kind,
-            combine_edge_parts(label, weight_suffix(arc.weight)),
-        );
+        let attr = edge_attr(arc.kind, label);
         let _ = writeln!(
             dot,
             "  p{} -> t{}{};",
@@ -570,15 +868,24 @@ impl PetriNet {
         place_id: PlaceId,
         arc: &ArcData,
     ) {
-        let label = arc
-            .descriptor
-            .as_ref()
-            .or_else(|| self.place(place_id).map(|place| &place.descriptor))
-            .map(|d| d.display().to_string());
-        let attr = edge_attr(
-            arc.kind,
-            combine_edge_parts(label, weight_suffix(arc.weight)),
-        );
+        let label = if let Some(borrow_kind) = arc.borrow_kind {
+            let borrow_mark = match borrow_kind {
+                BorrowKind::Owned => "",
+                BorrowKind::SharedRef => "&",
+                BorrowKind::MutRef => "&mut",
+                BorrowKind::RawConstPtr => "*const",
+                BorrowKind::RawMutPtr => "*mut",
+            };
+            if borrow_mark.is_empty() {
+                None
+            } else {
+                Some(borrow_mark.to_string())
+            }
+        } else {
+            None
+        };
+
+        let attr = edge_attr(arc.kind, label);
         let _ = writeln!(
             dot,
             "  t{} -> p{}{};",
@@ -587,76 +894,447 @@ impl PetriNet {
             attr
         );
     }
-}
 
-fn html_escape(text: &str) -> String {
-    let mut escaped = String::with_capacity(text.len());
-    for ch in text.chars() {
-        match ch {
-            '&' => escaped.push_str("&amp;"),
-            '<' => escaped.push_str("&lt;"),
-            '>' => escaped.push_str("&gt;"),
-            '"' => escaped.push_str("&quot;"),
-            '\'' => escaped.push_str("&#39;"),
-            '\n' => escaped.push_str("<BR ALIGN=\"LEFT\"/>"),
-            '\r' => {}
-            _ => escaped.push(ch),
-        }
+    /// 检查图中是否存在环路（用于检测类型依赖循环）
+    pub fn has_cycles(&self) -> bool {
+        is_cyclic_directed(&self.graph)
     }
-    escaped
-}
 
-fn html_label(parts: &[&str]) -> String {
-    let mut label = String::new();
-    for (idx, part) in parts.iter().enumerate() {
-        if idx > 0 {
-            label.push_str("<BR ALIGN=\"LEFT\"/>");
-        }
-        label.push_str(&html_escape(part));
+    /// 计算从一个 Place 到另一个 Place 的最短路径
+    /// 返回路径上经过的 transitions 数量，如果不可达则返回 None
+    pub fn shortest_path_length(&self, from: PlaceId, to: PlaceId) -> Option<usize> {
+        let distances = dijkstra(
+            &self.graph,
+            from.0,
+            Some(to.0),
+            |_| 1, // 统一权重为 1
+        );
+        
+        distances.get(&to.0).copied()
     }
-    label
-}
 
-fn weight_suffix(weight: ArcWeight) -> Option<String> {
-    if weight == 1 {
-        None
-    } else {
-        Some(format!("×{}", weight))
-    }
-}
-
-fn edge_label_from_parameter(name: Option<&str>, descriptor: &TypeDescriptor) -> Option<String> {
-    let mut label = String::new();
-    if let Some(name) = name {
-        if !name.trim().is_empty() {
-            label.push_str(name);
-            label.push_str(": ");
-        }
-    }
-    label.push_str(descriptor.display());
-    if label.is_empty() { None } else { Some(label) }
-}
-
-fn combine_edge_parts(main: Option<String>, weight: Option<String>) -> Option<String> {
-    match (main, weight) {
-        (None, None) => None,
-        (Some(label), None) => Some(label),
-        (None, Some(w)) => Some(w),
-        (Some(mut label), Some(w)) => {
-            if !label.is_empty() {
-                label.push(' ');
+    /// 查找从 source Place 可以通过一次转换到达的所有 target Places
+    /// 返回 (target_place, transition, arc_data) 的列表
+    pub fn reachable_in_one_step(&self, source: PlaceId) -> Vec<(PlaceId, TransitionId, &ArcData)> {
+        let mut reachable = Vec::new();
+        
+        // 找到所有从 source place 出发的边（到 transition）
+        for edge_ref in self.graph.edges_directed(source.0, Direction::Outgoing) {
+            let transition_node = edge_ref.target();
+            
+            // 检查这个节点是否是 transition
+            if let Node::Transition(_) = &self.graph[transition_node] {
+                let transition_id = TransitionId(transition_node);
+                
+                // 找到这个 transition 的所有输出
+                for output_edge in self.graph.edges_directed(transition_node, Direction::Outgoing) {
+                    let target_node = output_edge.target();
+                    if let Node::Place(_) = &self.graph[target_node] {
+                        reachable.push((
+                            PlaceId(target_node),
+                            transition_id,
+                            output_edge.weight(),
+                        ));
+                    }
+                }
             }
-            label.push_str(&w);
-            Some(label)
+        }
+        
+        reachable
+    }
+
+
+    pub fn statistics(&self) -> PetriNetStatistics {
+        let mut stats = PetriNetStatistics {
+            place_count: 0,
+            transition_count: 0,
+            arc_count: self.graph.edge_count(),
+            has_cycles: self.has_cycles(),
+            max_place_in_degree: 0,
+            max_place_out_degree: 0,
+            max_transition_in_degree: 0,
+            max_transition_out_degree: 0,
+        };
+
+        for node_idx in self.graph.node_indices() {
+            match &self.graph[node_idx] {
+                Node::Place(_) => {
+                    stats.place_count += 1;
+                    let in_deg = self.graph.edges_directed(node_idx, Direction::Incoming).count();
+                    let out_deg = self.graph.edges_directed(node_idx, Direction::Outgoing).count();
+                    stats.max_place_in_degree = stats.max_place_in_degree.max(in_deg);
+                    stats.max_place_out_degree = stats.max_place_out_degree.max(out_deg);
+                }
+                Node::Transition(_) => {
+                    stats.transition_count += 1;
+                    let in_deg = self.graph.edges_directed(node_idx, Direction::Incoming).count();
+                    let out_deg = self.graph.edges_directed(node_idx, Direction::Outgoing).count();
+                    stats.max_transition_in_degree = stats.max_transition_in_degree.max(in_deg);
+                    stats.max_transition_out_degree = stats.max_transition_out_degree.max(out_deg);
+                }
+            }
+        }
+
+        stats
+    }
+
+    pub fn graph(&self) -> &StableGraph<Node, ArcData> {
+        &self.graph
+    }
+
+    /// 查找类型转换链：从 source 类型到 target 类型的所有可能路径
+    /// 返回路径列表，每条路径是一系列 transition IDs
+    pub fn find_type_conversion_paths(
+        &self,
+        source: PlaceId,
+        target: PlaceId,
+        max_depth: usize,
+    ) -> Vec<Vec<TransitionId>> {
+        let mut paths = Vec::new();
+        let mut current_path = Vec::new();
+        let mut visited = std::collections::HashSet::new();
+        
+        self.dfs_find_paths(source, target, &mut current_path, &mut visited, &mut paths, max_depth);
+        
+        paths
+    }
+
+    /// 深度优先搜索辅助函数
+    fn dfs_find_paths(
+        &self,
+        current: PlaceId,
+        target: PlaceId,
+        current_path: &mut Vec<TransitionId>,
+        visited: &mut std::collections::HashSet<PlaceId>,
+        paths: &mut Vec<Vec<TransitionId>>,
+        max_depth: usize,
+    ) {
+        if current == target {
+            paths.push(current_path.clone());
+            return;
+        }
+
+        if current_path.len() >= max_depth {
+            return;
+        }
+
+        visited.insert(current);
+
+        for (next_place, transition_id, _arc) in self.reachable_in_one_step(current) {
+            if !visited.contains(&next_place) {
+                current_path.push(transition_id);
+                self.dfs_find_paths(next_place, target, current_path, visited, paths, max_depth);
+                current_path.pop();
+            }
+        }
+
+        visited.remove(&current);
+    }
+}
+
+/// Petri 网的统计信息
+#[derive(Debug, Clone)]
+pub struct PetriNetStatistics {
+    pub place_count: usize,
+    pub transition_count: usize,
+    pub arc_count: usize,
+    pub has_cycles: bool,
+    pub max_place_in_degree: usize,
+    pub max_place_out_degree: usize,
+    pub max_transition_in_degree: usize,
+    pub max_transition_out_degree: usize,
+}
+
+impl std::fmt::Display for PetriNetStatistics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Petri 网统计信息:")?;
+        writeln!(f, "  Places: {}", self.place_count)?;
+        writeln!(f, "  Transitions: {}", self.transition_count)?;
+        writeln!(f, "  Arcs: {}", self.arc_count)?;
+        writeln!(f, "  Has Cycles: {}", self.has_cycles)?;
+        writeln!(f, "  Max Place In-Degree: {}", self.max_place_in_degree)?;
+        writeln!(f, "  Max Place Out-Degree: {}", self.max_place_out_degree)?;
+        writeln!(f, "  Max Transition In-Degree: {}", self.max_transition_in_degree)?;
+        writeln!(f, "  Max Transition Out-Degree: {}", self.max_transition_out_degree)?;
+        Ok(())
+    }
+}
+
+fn simplify_type_name(type_name: &str) -> String {
+    let simplified = if let Some(last_colon) = type_name.rfind("::") {
+        &type_name[last_colon + 2..]
+    } else {
+        type_name
+    };
+    
+    // 移除生命周期参数
+    let mut without_lifetimes = remove_lifetimes(simplified);
+    
+    // 清理孤立的括号和多余的尖括号
+    // 例如: "Error)>" -> "Error", "Error>" -> "Error"
+    while without_lifetimes.contains(")>") && !without_lifetimes.contains("(") {
+        without_lifetimes = without_lifetimes.replace(")>", ">");
+    }
+    
+    // 清理结尾的孤立 >
+    if without_lifetimes.ends_with('>') && without_lifetimes.matches('<').count() < without_lifetimes.matches('>').count() {
+        // 移除多余的 >
+        let open_count = without_lifetimes.matches('<').count();
+        let close_count = without_lifetimes.matches('>').count();
+        for _ in 0..(close_count - open_count) {
+            if let Some(pos) = without_lifetimes.rfind('>') {
+                without_lifetimes.remove(pos);
+            }
         }
     }
+    
+    if without_lifetimes.len() > 60 {
+        format!("{}...", &without_lifetimes[..57])
+    } else {
+        without_lifetimes
+    }
+}
+
+/// 移除生命周期参数
+/// Base64Display<'a, 'e, E> -> Base64Display<E>
+/// Option<&(dyn Error + 'static)> -> Option<&(dyn Error)>
+fn remove_lifetimes(type_name: &str) -> String {
+    let mut result = String::with_capacity(type_name.len());
+    let mut chars = type_name.chars().peekable();
+    
+    while let Some(ch) = chars.next() {
+        if ch == '\'' {
+            // 跳过生命周期名称
+            while let Some(&next_ch) = chars.peek() {
+                if next_ch.is_alphanumeric() || next_ch == '_' {
+                    chars.next();
+                } else {
+                    break;
+                }
+            }
+            
+            // 跳过 'static 后的空格和 +
+            while let Some(&' ') = chars.peek() {
+                chars.next();
+            }
+            
+            // 如果后面是 + 号，也要跳过（因为这是 trait bound 的一部分）
+            if let Some(&'+') = chars.peek() {
+                chars.next();
+                // 跳过 + 后的空格
+                while let Some(&' ') = chars.peek() {
+                    chars.next();
+                }
+                
+                // 如果 + 后面没有其他内容了（只有括号或 >），需要移除前面的空格和 +
+                // 这个会在后面的 replace 中处理
+            }
+            
+            // 如果是逗号，也跳过它和后续空格
+            if let Some(&',') = chars.peek() {
+                chars.next();
+                while let Some(&' ') = chars.peek() {
+                    chars.next();
+                }
+            }
+        } else {
+            result.push(ch);
+        }
+    }
+    
+    // 清理可能的多余字符
+    result = result.replace("<, ", "<");
+    result = result.replace(", >", ">");
+    result = result.replace("< ", "<");
+    result = result.replace(" >", ">");
+    result = result.replace("<>", "");
+    result = result.replace("  ", " ");
+    result = result.replace(" +)", ")");  // 移除 trait bounds 结尾的 +
+    result = result.replace("+ )", ")");
+    result = result.replace("+)", ")");
+    result = result.replace(" )", ")");   // 移除括号前的空格
+    result = result.replace("( ", "(");   // 移除括号后的空格
+    result = result.replace("dyn  ", "dyn ");
+    
+    result
+}
+
+/// 简化函数签名显示
+/// 移除路径前缀、生命周期、简化泛型约束
+/// 例如: fn encode<T: AsRef<[u8]>>(self: &Self, input: T) -> String
+///   -> fn encode(self: &Self, input: T) -> String
+fn simplify_signature(sig: &str) -> String {
+    let sig = sig.trim();
+    
+    // 移除 const、unsafe 等修饰符（保留位置但简化）
+    let mut result = sig.to_string();
+    
+    // 移除泛型约束（保留泛型参数但移除约束）
+    // fn foo<T: Trait>(x: T) -> fn foo<T>(x: T)
+    result = simplify_generic_bounds(&result);
+    
+    // 移除生命周期
+    result = remove_lifetimes(&result);
+    
+    // 移除路径前缀 (std::string::String -> String)
+    result = remove_type_paths(&result);
+    
+    // 限制长度
+    if result.len() > 80 {
+        if let Some(arrow_pos) = result[..80].rfind("->") {
+            format!("{} -> ...", &result[..arrow_pos].trim())
+        } else if let Some(paren_pos) = result[..80].rfind(')') {
+            format!("{})", &result[..paren_pos])
+        } else {
+            format!("{}...", &result[..77])
+        }
+    } else {
+        result
+    }
+}
+
+/// 简化泛型约束
+/// fn foo<T: Clone + Debug, U: Display>(x: T) -> fn foo<T, U>(x: T)
+fn simplify_generic_bounds(sig: &str) -> String {
+    let mut result = String::new();
+    let mut chars = sig.chars().peekable();
+    
+    while let Some(ch) = chars.next() {
+        match ch {
+            '<' if result.ends_with("fn ") || result.chars().rev().take(10).any(|c| c.is_alphanumeric()) => {
+                // 可能是泛型参数开始
+                result.push(ch);
+                
+                // 跳过约束部分
+                let mut generic_content = String::new();
+                let mut bracket_level = 1;
+                
+                while let Some(&next_ch) = chars.peek() {
+                    chars.next();
+                    if next_ch == '<' {
+                        bracket_level += 1;
+                        generic_content.push(next_ch);
+                    } else if next_ch == '>' {
+                        bracket_level -= 1;
+                        if bracket_level == 0 {
+                            // 处理泛型内容，移除约束
+                            let params: Vec<&str> = generic_content.split(',').collect();
+                            let simplified_params: Vec<String> = params.iter().map(|p| {
+                                // 提取参数名（在 : 之前的部分）
+                                if let Some(colon_pos) = p.find(':') {
+                                    p[..colon_pos].trim().to_string()
+                                } else {
+                                    p.trim().to_string()
+                                }
+                            }).collect();
+                            result.push_str(&simplified_params.join(", "));
+                            result.push('>');
+                            break;
+                        }
+                        generic_content.push(next_ch);
+                    } else {
+                        generic_content.push(next_ch);
+                    }
+                }
+            }
+            _ => {
+                result.push(ch);
+            }
+        }
+    }
+    
+    result
+}
+
+/// 移除类型路径前缀
+/// std::string::String -> String
+/// <U as TryFrom<T>>::Error -> Error (不带尖括号)
+fn remove_type_paths(sig: &str) -> String {
+    let mut result = String::new();
+    let mut current_word = String::new();
+    let mut in_angle_brackets: i32 = 0;
+    let mut bracket_start = 0;
+    
+    for ch in sig.chars() {
+        match ch {
+            '<' => {
+                if in_angle_brackets == 0 {
+                    bracket_start = result.len();
+                }
+                in_angle_brackets += 1;
+                
+                // 先处理当前的word
+                if !current_word.is_empty() {
+                    if let Some(last_colon) = current_word.rfind("::") {
+                        result.push_str(&current_word[last_colon + 2..]);
+                    } else {
+                        result.push_str(&current_word);
+                    }
+                    current_word.clear();
+                }
+                result.push(ch);
+            }
+            '>' => {
+                in_angle_brackets = in_angle_brackets.saturating_sub(1);
+                
+                // 先处理当前的word
+                if !current_word.is_empty() {
+                    // 检查是否是 qualified path (e.g. <T as Trait>::Type)
+                    // 如果在尖括号内且有 ::，这可能是 associated type
+                    if let Some(last_colon) = current_word.rfind("::") {
+                        let type_name = &current_word[last_colon + 2..];
+                        // 如果这是 qualified path 的最后一部分，移除前面的尖括号
+                        if in_angle_brackets == 0 && result[bracket_start..].starts_with('<') {
+                            // 这是类似 <T as Trait>::Error 的情况
+                            // 移除整个 qualified path 的尖括号部分
+                            result.truncate(bracket_start);
+                            result.push_str(type_name);
+                            current_word.clear();
+                            // 不添加 >
+                            continue;
+                        } else {
+                            result.push_str(type_name);
+                        }
+                    } else {
+                        result.push_str(&current_word);
+                    }
+                    current_word.clear();
+                }
+                result.push(ch);
+            }
+            _ if ch.is_alphanumeric() || ch == '_' || ch == ':' => {
+                current_word.push(ch);
+            }
+            _ => {
+                if !current_word.is_empty() {
+                    if let Some(last_colon) = current_word.rfind("::") {
+                        result.push_str(&current_word[last_colon + 2..]);
+                    } else {
+                        result.push_str(&current_word);
+                    }
+                    current_word.clear();
+                }
+                result.push(ch);
+            }
+        }
+    }
+    
+    if !current_word.is_empty() {
+        if let Some(last_colon) = current_word.rfind("::") {
+            result.push_str(&current_word[last_colon + 2..]);
+        } else {
+            result.push_str(&current_word);
+        }
+    }
+    
+    result
 }
 
 fn edge_attr(kind: ArcKind, label: Option<String>) -> String {
     let mut parts = Vec::new();
 
     if let Some(label) = label {
-        parts.push(format!("label=<{}>", html_escape(&label)));
+        parts.push(format!("label=\"{}\"", label));
     }
 
     match kind {

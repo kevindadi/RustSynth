@@ -337,7 +337,7 @@ impl<'a> Adapter<'a> for &'a RustdocAdapter<'a> {
             }
             "Enum" => edges::resolve_enum_edge(contexts, edge_name, self, resolve_info),
             "Union" => edges::resolve_union_edge(contexts, edge_name, self),
-            "StructField" => edges::resolve_struct_field_edge(contexts, edge_name),
+            "StructField" => edges::resolve_struct_field_edge(contexts, edge_name, self),
             "Impl" => edges::resolve_impl_edge(self, contexts, edge_name, resolve_info),
             "Trait" => edges::resolve_trait_edge(contexts, edge_name, self),
             "ImplementedTrait" => edges::resolve_implemented_trait_edge(contexts, edge_name),
@@ -347,6 +347,12 @@ impl<'a> Adapter<'a> for &'a RustdocAdapter<'a> {
             "DeriveProcMacro" => edges::resolve_derive_proc_macro_edge(contexts, edge_name),
             "GenericTypeParameter" => {
                 edges::resolve_generic_type_parameter_edge(contexts, edge_name, self)
+            }
+            "GenericLifetimeParameter" => {
+                edges::resolve_generic_lifetime_parameter_edge(contexts, edge_name, self)
+            }
+            "GenericConstParameter" => {
+                edges::resolve_generic_const_parameter_edge(contexts, edge_name, self)
             }
             _ => unreachable!("resolve_neighbors {type_name} {edge_name} {parameters:?}"),
         }

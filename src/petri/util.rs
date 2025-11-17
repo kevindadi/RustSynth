@@ -35,7 +35,11 @@ impl TypeFormatter {
                     format!(
                         "'{}: {}",
                         param.name,
-                        outlives.iter().map(|s| format!("'{}", s)).collect::<Vec<_>>().join(" + ")
+                        outlives
+                            .iter()
+                            .map(|s| format!("'{}", s))
+                            .collect::<Vec<_>>()
+                            .join(" + ")
                     )
                 }
             }
@@ -76,7 +80,15 @@ impl TypeFormatter {
     pub(crate) fn format_generic_params(params: &[GenericParamDef]) -> Vec<String> {
         params
             .iter()
-            .filter(|param| !matches!(param.kind, GenericParamDefKind::Type { is_synthetic: true, .. }))
+            .filter(|param| {
+                !matches!(
+                    param.kind,
+                    GenericParamDefKind::Type {
+                        is_synthetic: true,
+                        ..
+                    }
+                )
+            })
             .map(Self::format_generic_param)
             .collect()
     }
@@ -120,7 +132,11 @@ impl TypeFormatter {
                     format!(
                         "'{}: {}",
                         lifetime,
-                        outlives.iter().map(|s| format!("'{}", s)).collect::<Vec<_>>().join(" + ")
+                        outlives
+                            .iter()
+                            .map(|s| format!("'{}", s))
+                            .collect::<Vec<_>>()
+                            .join(" + ")
                     )
                 }
             }
@@ -131,7 +147,10 @@ impl TypeFormatter {
     }
 
     pub(crate) fn format_where_predicates(predicates: &[WherePredicate]) -> Vec<String> {
-        predicates.iter().map(Self::format_where_predicate).collect()
+        predicates
+            .iter()
+            .map(Self::format_where_predicate)
+            .collect()
     }
 
     pub(crate) fn format_generic_bound(bound: &GenericBound) -> String {
@@ -277,9 +296,7 @@ impl TypeFormatter {
     fn collect_lifetimes_inner(ty: &Type, lifetimes: &mut BTreeSet<String>) {
         match ty {
             Type::BorrowedRef {
-                lifetime,
-                type_,
-                ..
+                lifetime, type_, ..
             } => {
                 if let Some(lifetime) = lifetime {
                     lifetimes.insert(lifetime.clone());
@@ -319,7 +336,11 @@ impl TypeFormatter {
                 }
             }
             Type::FunctionPointer(pointer) => {
-                let FunctionPointer { sig, generic_params, .. } = pointer.as_ref();
+                let FunctionPointer {
+                    sig,
+                    generic_params,
+                    ..
+                } = pointer.as_ref();
                 for gp in generic_params {
                     Self::collect_lifetimes_from_generic_param(gp, lifetimes);
                 }
@@ -448,4 +469,3 @@ impl TypeFormatter {
         }
     }
 }
-

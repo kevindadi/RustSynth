@@ -1,35 +1,38 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
+use log::{debug, info};
 use rustdoc_types::{
-    Crate, Function, GenericParamDefKind, Id, Impl, Item, ItemEnum, Path as RustdocPath, Type,
-    WherePredicate,
+    Crate, Function, GenericParamDefKind, Id, Impl, Item, ItemEnum, Path as RustdocPath, Type
 };
 
 use super::net::{
     ArcData, ArcKind, FunctionContext, FunctionSummary, ParameterSummary, PetriNet, PlaceId,
 };
-use super::type_repr::TypeDescriptor;
+use super::type_repr::{BorrowKind, TypeDescriptor};
 use super::util::TypeFormatter;
 
 pub struct PetriNetBuilder<'a> {
     crate_: &'a Crate,
     net: PetriNet,
     impl_function_ids: HashSet<Id>,
-    // 记录泛型参数及其约束
-    generic_parameters: HashMap<String, Vec<Arc<str>>>,
+    // 记录类型 Item 的 id 到 PlaceId 的映射
+    type_place_map: HashMap<Id, PlaceId>,
+    option_wrappers: HashMap<PlaceId, BTreeSet<String>>,
+    result_wrappers: HashMap<PlaceId, BTreeSet<(String, String)>>,
+    synthetic_id_counter: u32,
 }
 
 impl<'a> PetriNetBuilder<'a> {
-    /// 基于 rustdoc JSON 构造新的 Petri 网构建器
-    ///
-    /// 构建器会遍历 rustdoc 的 index , 将公开函数/方法映射为在类型之间移动令牌的变迁
     pub fn new(crate_: &'a Crate) -> Self {
         Self {
             crate_,
             net: PetriNet::new(),
             impl_function_ids: HashSet::new(),
-            generic_parameters: HashMap::new(),
+            type_place_map: HashMap::new(),
+            option_wrappers: HashMap::new(),
+            result_wrappers: HashMap::new(),
+            synthetic_id_counter: 0,
         }
     }
 
@@ -39,77 +42,132 @@ impl<'a> PetriNetBuilder<'a> {
         builder.finish()
     }
 
-    /// 遍历 rustdoc 索引, 将所有函数类条目注册为变迁
+    /// 遍历 rustdoc 索引, 将所有ItemEnum::Function | ItemEnum::Impl 注册为变迁
+    /// ItemEnum::Trait 注册为 Guard
     ///
-    /// 无约束函数直接记入; impl块中的方法在上下文里携带 Self, 便于后续替换关联类型.
+    /// 1. 首先对 Item 中的 Struct、Enum、Union、Variant 等类型进行建模，创建 Place
+    /// 2. 根据已创建的类型 Place 的 id，从 index 中查找对应的 impl 块，为方法创建变迁
+    /// 3. 泛型约束作为变迁的 guard，不需要为泛型参数创建 Place
+    /// 4. 输入边带上 borrow_kind 约束，输出边带上返回类型的 borrow_kind
     pub fn ingest(&mut self) {
-        // 第一步：创建所有基本类型的库所（使用先验知识预填 trait 实现）
+        info!("🔨 开始构建 Petri Net...");
+
+        // Step 1: 创建所有基本类型的库所
+        info!("📦 步骤 1/4: 创建基本类型的 Place");
         self.create_primitive_places();
 
-        // 第二步：处理 impl 块，收集方法
+        // Step 2: 遍历所有 Struct、Enum、Union 等类型定义，为它们创建 Place
+        info!("📦 步骤 2/4: 创建类型定义的 Place (Struct/Enum/Union)");
+        let mut type_count = 0;
         for item in self.crate_.index.values() {
-            if let ItemEnum::Impl(impl_block) = &item.inner {
-                self.ingest_impl(item, impl_block);
+            match &item.inner {
+                ItemEnum::Struct(_)
+                | ItemEnum::Enum(_)
+                | ItemEnum::Union(_) => {
+                    self.create_type_place(item);
+                    type_count += 1;
+                }
+                _ => {}
+            }
+        }
+        debug!("   创建了 {} 个类型定义的 Place", type_count);
+
+        // Step 3: 根据已创建的类型 Place 的 id，查找对应的 impl 块，为方法创建变迁
+        info!("⚙️  步骤 3/4: 处理 impl 块，为方法创建 Transition");
+        let mut impl_items_to_process: Vec<(Id, &Impl)> = Vec::new();
+        for (type_id, _place_id) in &self.type_place_map {
+            if let Some(type_item) = self.crate_.index.get(type_id) {
+                match &type_item.inner {
+                    ItemEnum::Struct(struct_def) => {
+                        for impl_id in &struct_def.impls {
+                            if let Some(impl_item) = self.crate_.index.get(impl_id) {
+                                if let ItemEnum::Impl(impl_block) = &impl_item.inner {
+                                    impl_items_to_process.push((impl_item.id, impl_block));
+                                }
+                            }
+                        }
+                    }
+                    ItemEnum::Enum(enum_def) => {
+                        for impl_id in &enum_def.impls {
+                            if let Some(impl_item) = self.crate_.index.get(impl_id) {
+                                if let ItemEnum::Impl(impl_block) = &impl_item.inner {
+                                    impl_items_to_process.push((impl_item.id, impl_block));
+                                }
+                            }
+                        }
+                    }
+                    ItemEnum::Union(union_def) => {
+                        for impl_id in &union_def.impls {
+                            if let Some(impl_item) = self.crate_.index.get(impl_id) {
+                                if let ItemEnum::Impl(impl_block) = &impl_item.inner {
+                                    impl_items_to_process.push((impl_item.id, impl_block));
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                }
             }
         }
 
-        // 第三步：处理无约束函数，并收集泛型参数
+        let impl_count = impl_items_to_process.len();
+        debug!("   找到 {} 个 impl 块需要处理", impl_count);
+        for (impl_id, impl_block) in impl_items_to_process {
+            if let Some(impl_item) = self.crate_.index.get(&impl_id) {
+                self.ingest_impl(impl_item, impl_block);
+            }
+        }
+
+        // Step 4: 处理无约束函数
+        info!("⚙️  步骤 4/4: 处理无约束函数");
+        let mut free_func_count = 0;
         for item in self.crate_.index.values() {
             if let ItemEnum::Function(func) = &item.inner {
                 if self.impl_function_ids.contains(&item.id) {
                     continue;
                 }
-                // 使用函数名作为上下文，如果没有名称则使用 ID
-                let context = if let Some(name) = item.name.as_deref() {
-                    name.to_string()
-                } else if let Some(path) = self.lookup_qualified_path(item) {
-                    path.to_string()
-                } else {
-                    "<anonymous>".to_string()
-                };
-                self.collect_generic_parameters(&func.generics, &context);
                 if !func.has_body {
                     continue;
                 }
                 self.ingest_function(item, func, FunctionContext::FreeFunction);
+                free_func_count += 1;
             }
         }
-
-        // 第四步：创建泛型参数库所
-        self.create_generic_parameter_places();
-
-        // 第五步：创建从基本类型到符合约束的泛型参数的变迁
-        self.create_constraint_transitions();
+        debug!("   处理了 {} 个无约束函数", free_func_count);
     }
 
-    pub fn finish(self) -> PetriNet {
+    pub fn finish(mut self) -> PetriNet {
+        self.create_wrapper_transitions();
+        info!("📊 Petri Net 构建完成");
+        info!("   ✅ 总共创建了 {} 个 Place", self.net.place_count());
+        info!(
+            "   ✅ 总共创建了 {} 个 Transition",
+            self.net.transition_count()
+        );
         self.net
     }
 
-    /// 处理单个 impl 块, 将其中的方法映射为变迁
-    ///
-    /// impl 的接收者会记录在上下文, 以便后续把参数/返回中的 Self 替换成实际类型.
+    /// 将 impl 块中的方法注册为变迁
+    /// 接收者会记录在上下文, 以便后续把参数/返回中的 Self 替换成实际类型.
     fn ingest_impl(&mut self, item: &Item, impl_block: &Impl) {
-        // 获取 impl 目标的类型名称作为上下文
-        let impl_context = {
-            let receiver_type = TypeFormatter::type_name(&impl_block.for_);
-            // 如果有 trait，使用 trait 名称
-            if let Some(trait_path) = &impl_block.trait_ {
-                format!(
-                    "impl<{}> {} for {}",
-                    TypeFormatter::format_generic_params(&impl_block.generics.params).join(", "),
-                    TypeFormatter::path_to_string(trait_path),
-                    receiver_type
-                )
+        // 获取 Self 类型的完整路径
+        let receiver = if let Type::ResolvedPath(path) = &impl_block.for_ {
+            // 如果有路径信息，使用完整路径
+            if let Some(path_summary) = self.crate_.paths.get(&path.id) {
+                let full_path = path_summary.path.join("::");
+                let full_path_type = Type::ResolvedPath(rustdoc_types::Path {
+                    path: full_path.clone(),
+                    id: path.id,
+                    args: path.args.clone(),
+                });
+                TypeDescriptor::from_type(&full_path_type)
             } else {
-                format!("impl {}", receiver_type)
+                TypeDescriptor::from_type(&impl_block.for_)
             }
+        } else {
+            TypeDescriptor::from_type(&impl_block.for_)
         };
-
-        // 收集 impl 块中的泛型参数
-        self.collect_generic_parameters(&impl_block.generics, &impl_context);
-
-        let receiver = TypeDescriptor::from_type(&impl_block.for_);
+        
         let context = if let Some(trait_path) = &impl_block.trait_ {
             let trait_path_str = Arc::<str>::from(TypeFormatter::path_to_string(trait_path));
             FunctionContext::TraitImplementation {
@@ -158,18 +216,7 @@ impl<'a> PetriNetBuilder<'a> {
         for item_id in &impl_block.items {
             if let Some(inner_item) = self.crate_.index.get(item_id) {
                 if let ItemEnum::Function(func) = &inner_item.inner {
-                    // 使用方法名作为上下文，如果没有名称则使用 ID
-                    let method_context = if let Some(name) = inner_item.name.as_deref() {
-                        name.to_string()
-                    } else if let Some(path) = self.lookup_qualified_path(inner_item) {
-                        path.to_string()
-                    } else {
-                        "<anonymous_method>".to_string()
-                    };
-
-                    // 收集函数中的泛型参数
-                    self.collect_generic_parameters(&func.generics, &method_context);
-
+                    // 泛型约束会记录在 FunctionSummary 的 trait_bounds 中
                     self.impl_function_ids.insert(inner_item.id);
                     self.ingest_function_with_context(
                         inner_item,
@@ -189,18 +236,6 @@ impl<'a> PetriNetBuilder<'a> {
                 if let Some(method_id) = method_lookup.get(method_name) {
                     if let Some(item) = self.crate_.index.get(method_id) {
                         if let ItemEnum::Function(func) = &item.inner {
-                            // 使用 trait 方法名作为上下文
-                            let method_context = if let Some(name) = item.name.as_deref() {
-                                name.to_string()
-                            } else if let Some(path) = self.lookup_qualified_path(item) {
-                                path.to_string()
-                            } else {
-                                "<anonymous_trait_method>".to_string()
-                            };
-
-                            // 收集函数中的泛型参数
-                            self.collect_generic_parameters(&func.generics, &method_context);
-
                             self.impl_function_ids.insert(item.id);
                             self.ingest_function_with_context(
                                 item,
@@ -245,28 +280,57 @@ impl<'a> PetriNetBuilder<'a> {
         let mut summary_inputs = Vec::new();
         let mut input_arcs = Vec::new();
         for (name, ty) in &func.sig.inputs {
+            // 先检查原始类型是否为泛型
+            let mut is_generic = matches!(ty, Type::Generic(_));
             let mut descriptor = TypeDescriptor::from_type(ty);
+            
+            // 替换 Self 类型
+            let mut was_self = false;
             if let Some(receiver) = receiver_descriptor {
                 if let Some(replaced) = descriptor.replace_self(receiver) {
                     descriptor = replaced;
+                    was_self = true;
                 }
             }
-            let place_id = self.ensure_place(descriptor.clone());
-            let parameter = ParameterSummary {
-                name: (!name.is_empty()).then(|| Arc::<str>::from(name.as_str())),
-                descriptor: descriptor.clone(),
+            
+            // 如果类型是 Self 并且被替换了，就不再是泛型
+            if was_self {
+                is_generic = false;
+            }
+            
+            // 处理参数类型
+            // 泛型参数不再单独创建库所，它们只是类型定义的属性
+            // 当遇到泛型参数时，返回 None（不创建库所）
+            let place_id_opt = if is_generic {
+                None
+            } else {
+                self.ensure_place(descriptor.clone())
             };
-            summary_inputs.push(parameter.clone());
-            input_arcs.push((
-                place_id,
-                ArcData {
-                    weight: 1,
-                    parameter: Some(parameter.clone()),
-                    kind: ArcKind::Normal,
-                    descriptor: None,
-                    borrow_kind: Some(descriptor.borrow_kind()),
-                },
-            ));
+            
+            if let Some(place_id) = place_id_opt {
+                let parameter = ParameterSummary {
+                    name: (!name.is_empty()).then(|| Arc::<str>::from(name.as_str())),
+                    descriptor: descriptor.clone(),
+                };
+                summary_inputs.push(parameter.clone());
+                input_arcs.push((
+                    place_id,
+                    ArcData {
+                        weight: 1,
+                        parameter: Some(parameter.clone()),
+                        kind: ArcKind::Normal,
+                        descriptor: None,
+                        borrow_kind: Some(descriptor.borrow_kind()),
+                    },
+                ));
+            } else {
+                // 无法确定所属者的泛型参数，只记录在 summary 中
+                let parameter = ParameterSummary {
+                    name: (!name.is_empty()).then(|| Arc::<str>::from(name.as_str())),
+                    descriptor: descriptor.clone(),
+                };
+                summary_inputs.push(parameter);
+            }
         }
 
         let mut output_descriptor = func
@@ -275,27 +339,52 @@ impl<'a> PetriNetBuilder<'a> {
             .as_ref()
             .map(|ty| TypeDescriptor::from_type(ty));
 
+        // 检查返回值是否为泛型类型
+        let mut is_output_generic = func
+            .sig
+            .output
+            .as_ref()
+            .map(|ty| matches!(ty, Type::Generic(_)))
+            .unwrap_or(false);
+
+        // 替换 Self 类型
+        let mut output_was_self = false;
         if let (Some(receiver), Some(descriptor)) =
             (receiver_descriptor, output_descriptor.as_mut())
         {
             if let Some(replaced) = descriptor.replace_self(receiver) {
                 *descriptor = replaced;
+                output_was_self = true;
             }
+        }
+        
+        // 如果输出是 Self 并且被替换了，就不再是泛型
+        if output_was_self {
+            is_output_generic = false;
         }
 
         let mut output_arcs = Vec::new();
         if let Some(descriptor) = output_descriptor.clone() {
-            let place_id = self.ensure_place(descriptor.clone());
-            output_arcs.push((
-                place_id,
-                ArcData {
-                    weight: 1,
-                    parameter: None,
-                    kind: ArcKind::Normal,
-                    descriptor: Some(descriptor.clone()),
-                    borrow_kind: Some(descriptor.borrow_kind()),
-                },
-            ));
+            // 泛型返回值不再单独创建库所，它们只是类型定义的属性
+            // 当遇到泛型返回值时，返回 None（不创建库所）
+            let place_id_opt = if is_output_generic {
+                None
+            } else {
+                self.ensure_place(descriptor.clone())
+            };
+            
+            if let Some(place_id) = place_id_opt {
+                output_arcs.push((
+                    place_id,
+                    ArcData {
+                        weight: 1,
+                        parameter: None,
+                        kind: ArcKind::Normal,
+                        descriptor: Some(descriptor.clone()),
+                        borrow_kind: Some(descriptor.borrow_kind()),
+                    },
+                ));
+            }
         }
 
         let mut generics = impl_generics
@@ -343,7 +432,40 @@ impl<'a> PetriNetBuilder<'a> {
             output: output_descriptor,
         };
 
-        let transition_id = self.net.add_transition(function_summary);
+        let transition_id = self.net.add_transition(function_summary.clone());
+
+        let context_str = match &function_summary.context {
+            FunctionContext::FreeFunction => "FreeFunction".to_string(),
+            FunctionContext::InherentMethod { receiver } => {
+                format!("InherentMethod({})", receiver.display())
+            }
+            FunctionContext::TraitImplementation {
+                receiver,
+                trait_path,
+            } => {
+                format!(
+                    "TraitImplementation({}, {})",
+                    receiver.display(),
+                    trait_path
+                )
+            }
+        };
+        info!(
+            "   🔄 [Transition] {} (Item ID: {}, Transition ID: {})",
+            function_summary.signature,
+            function_summary.item_id.0,
+            transition_id.0.index()
+        );
+        debug!("       Context: {}", context_str);
+        if !function_summary.generics.is_empty() {
+            debug!("       Generics: {}", function_summary.generics.join(", "));
+        }
+        if !function_summary.trait_bounds.is_empty() {
+            debug!(
+                "       Trait Bounds: {}",
+                function_summary.trait_bounds.join(", ")
+            );
+        }
 
         for (place_id, arc_data) in input_arcs {
             self.net
@@ -375,7 +497,7 @@ impl<'a> PetriNetBuilder<'a> {
         let descriptor = TypeDescriptor::from_type(&resolved_type);
 
         match &owner_item.inner {
-            ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Union(_) => {
+            ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Union(_) | ItemEnum::Variant(_) => {
                 Some(FunctionContext::InherentMethod {
                     receiver: descriptor,
                 })
@@ -398,8 +520,609 @@ impl<'a> PetriNetBuilder<'a> {
         })
     }
 
-    fn ensure_place(&mut self, descriptor: TypeDescriptor) -> PlaceId {
-        self.net.add_place(descriptor)
+    /// 确保 Place 存在，但如果类型是泛型则返回 None（泛型不创建 Place）
+    /// 注意：库所应该只表示类型本身，引用信息应该记录在 arc 的 borrow_kind 中
+    /// 库所使用类型名称（去除路径）作为 key，路径信息仅作为补充
+    fn ensure_place(&mut self, descriptor: TypeDescriptor) -> Option<PlaceId> {
+        // 首先规范化描述符，去除引用符号（库所只表示类型本身）
+        let normalized = descriptor.normalized();
+        
+        // 提取类型名称，去除路径信息（只保留最后的类型名）
+        let name_only = normalized.type_name_only();
+        let base_name = name_only.base_type_name();
+        let generic_args = descriptor.generic_arguments();
+
+        // 如果仍然是 Self，说明上下文推断失败，此时不要为 Self 创建单独的 Place
+        // 这些 Self 通常应该在更高一层被替换为具体类型
+        if base_name == "Self" {
+            return None;
+        }
+
+        // 如果类型名是单个标识符且不是基本类型，可能是泛型参数
+        // 更精确的检查：通过原始 Type 来判断
+        // 但这里我们只能根据字符串来判断，保守处理
+        // 如果类型名包含 "::" 或者是已知的类型，则不是泛型参数
+
+        // 简单检查：如果规范化后的类型名不包含路径分隔符且不在基本类型列表中
+        // 且不是 Self，且是单个大写字母或短的大写标识符，可能是泛型参数
+        if !base_name.contains("::")
+            && !matches!(
+                base_name.as_str(),
+                "i8" | "i16"
+                    | "i32"
+                    | "i64"
+                    | "i128"
+                    | "isize"
+                    | "u8"
+                    | "u16"
+                    | "u32"
+                    | "u64"
+                    | "u128"
+                    | "usize"
+                    | "f32"
+                    | "f64"
+                    | "bool"
+                    | "char"
+                    | "str"
+                    | "String"
+                    | "Self"
+            )
+            && base_name.chars().all(|c| c.is_alphanumeric() || c == '_')
+            && base_name.len() <= 3  // 泛型参数通常很短: T, U, E, etc.
+            && base_name
+                .chars()
+                .next()
+                .map(|c| c.is_uppercase())
+                .unwrap_or(false)
+        {
+            // 可能是泛型参数（如 T, U, E），不创建 Place
+            return None;
+        }
+
+        let base_descriptor = TypeDescriptor::from_string(&base_name).normalized();
+
+        // 检查 Place 是否已存在（使用去除路径后的类型名称）
+        let existing_id = self.net.place_id(&base_descriptor);
+
+        if let Some(place_id) = existing_id {
+            self.record_wrapper_instantiations(&base_name, place_id, &generic_args);
+            // Place 已存在，返回已有 ID
+            return Some(place_id);
+        }
+
+        // Place 不存在，创建新的并记录日志（使用去除路径后的类型名称）
+        let place_id = self.net.add_place(base_descriptor.clone());
+        debug!(
+            "   📍 [Place] {} (Place ID: {}) [通过 ensure_place 创建] [原始路径: {}]",
+            base_descriptor.display(),
+            place_id.0.index(),
+            normalized.display()
+        );
+        self.record_wrapper_instantiations(&base_name, place_id, &generic_args);
+        Some(place_id)
+    }
+
+    fn record_wrapper_instantiations(
+        &mut self,
+        base_name: &str,
+        place_id: PlaceId,
+        generic_args: &[String],
+    ) {
+        match base_name {
+            "Option" => {
+                if let Some(inner) = generic_args.first() {
+                    self.option_wrappers
+                        .entry(place_id)
+                        .or_default()
+                        .insert(inner.clone());
+                }
+            }
+            "Result" => {
+                if generic_args.len() >= 2 {
+                    self.result_wrappers
+                        .entry(place_id)
+                        .or_default()
+                        .insert((generic_args[0].clone(), generic_args[1].clone()));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// 为类型定义（Struct、Enum、Union、Variant）创建 Place
+    /// 记录类型 Item 的 id 到 PlaceId 的映射
+    /// 库所名称使用 item.name（类型名称），path 路径仅作为补充信息
+    fn create_type_place(&mut self, item: &Item) {
+        // 使用 item.name 作为库所的 key，path 仅作为补充信息
+        let type_name = item
+            .name
+            .as_deref()
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("Item{}", item.id.0));
+        
+        // 构建类型的 Type 表示（使用类型名称，而不是完整路径）
+        let type_path = rustdoc_types::Path {
+            path: type_name.clone(),
+            id: item.id,
+            args: None, 
+        };
+
+        let type_ty = Type::ResolvedPath(type_path);
+        let descriptor = TypeDescriptor::from_type(&type_ty);
+
+        // 确定类型种类并创建对应的 Place
+        let place_id = match &item.inner {
+            ItemEnum::Struct(_) => {
+                self.net.add_composite_place(
+                    descriptor.clone(),
+                    super::net::CompositeTypeKind::Struct,
+                    Vec::new(),
+                )
+            }
+            ItemEnum::Enum(enum_def) => {
+                let enum_place_id = self.net.add_composite_place(
+                    descriptor.clone(),
+                    super::net::CompositeTypeKind::Enum,
+                    Vec::new(),
+                );
+                
+                // 收集所有 Variant 并添加到 Enum Place
+                for variant_id in &enum_def.variants {
+                    if let Some(variant_item) = self.crate_.index.get(variant_id) {
+                        if let ItemEnum::Variant(variant) = &variant_item.inner {
+                            // 添加 Variant 到 Enum Place
+                            self.net.add_variant_to_enum(enum_place_id, variant.clone());
+                            
+                            // 将 Variant 的字段映射到 Enum 的 PlaceId
+                            self.register_variant_field_aliases(variant_item, variant, enum_place_id);
+                        }
+                    }
+                }
+                
+                enum_place_id
+            }
+            ItemEnum::Union(_) => {
+                self.net.add_composite_place(
+                    descriptor.clone(),
+                    super::net::CompositeTypeKind::Union,
+                    Vec::new(),
+                )
+            }
+            _ => {
+                // 其他类型默认创建为 Primitive
+                self.net.add_place(descriptor.clone())
+            }
+        };
+
+        // 从类型定义中提取泛型参数并添加到 Place
+        let generics = match &item.inner {
+            ItemEnum::Struct(struct_def) => Some(&struct_def.generics),
+            ItemEnum::Enum(enum_def) => Some(&enum_def.generics),
+            ItemEnum::Union(union_def) => Some(&union_def.generics),
+            _ => None,
+        };
+
+        // 提取泛型参数并添加到 Place
+        match generics {
+            Some(generics) => {
+                for param in &generics.params {
+                    if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
+                        let param_name = Arc::<str>::from(param.name.as_str());
+                        let trait_bounds: Vec<Arc<str>> = bounds
+                            .iter()
+                            .map(|bound| {
+                                Arc::<str>::from(TypeFormatter::format_generic_bound(bound).as_str())
+                            })
+                            .collect();
+                        self.net.add_generic_parameter_to_place(place_id, param_name, trait_bounds);
+                    }
+                }
+            }
+            None => {}
+        }
+
+        let type_kind = match &item.inner {
+            ItemEnum::Struct(_) => "Struct",
+            ItemEnum::Enum(_) => "Enum",
+            ItemEnum::Union(_) => "Union",
+            ItemEnum::Variant(_) => "Variant",
+            _ => "Unknown",
+        };
+        
+        // 获取完整路径作为补充信息
+        let full_path = self.crate_.paths.get(&item.id)
+            .map(|summary| summary.path.join("::"))
+            .unwrap_or_else(|| type_name.clone());
+        
+        info!(
+            "   🎯 [Place] {} {} (Item ID: {}, Place ID: {}) [路径: {}]",
+            type_kind,
+            descriptor.display(),
+            item.id.0,
+            place_id.0.index(),
+            full_path
+        );
+
+        // 记录类型 Item 的 id 到 PlaceId 的映射
+        self.type_place_map.insert(item.id, place_id);
+    }
+
+    /// 将 Variant 的字段映射到 Enum 的 PlaceId
+    /// Variant 的所有字段都映射到同一个 Enum Place
+    fn register_variant_field_aliases(
+        &mut self,
+        variant_item: &Item,
+        variant: &rustdoc_types::Variant,
+        enum_place_id: PlaceId,
+    ) {
+        use rustdoc_types::VariantKind;
+        
+        let variant_path = self
+            .crate_
+            .paths
+            .get(&variant_item.id)
+            .map(|summary| summary.path.join("::"))
+            .or_else(|| variant_item.name.as_ref().map(|s| s.to_string()))
+            .unwrap_or_else(|| format!("Variant{}", variant_item.id.0));
+
+        let mut process_field = |field_id: &Option<Id>, index: usize| {
+            let field_id = match field_id {
+                Some(id) => id,
+                None => return,
+            };
+
+            let field_item = match self.crate_.index.get(field_id) {
+                Some(item) => item,
+                None => return,
+            };
+
+            let field_type = match &field_item.inner {
+                ItemEnum::StructField(ty) => ty,
+                _ => return,
+            };
+
+            let field_type_desc = TypeDescriptor::from_type(field_type).normalized();
+            let field_label = field_item
+                .name
+                .clone()
+                .unwrap_or_else(|| index.to_string());
+
+            // 创建字段类型的别名，映射到 Enum 的 PlaceId
+            let alias_name = format!(
+                "{}::{}: {}",
+                variant_path,
+                field_label,
+                field_type_desc.display()
+            );
+
+            let custom_path = RustdocPath {
+                path: alias_name,
+                id: *field_id,
+                args: None,
+            };
+            let custom_type = Type::ResolvedPath(custom_path);
+            let alias_descriptor = TypeDescriptor::from_type(&custom_type);
+            
+            // 将字段类型映射到 Enum 的 PlaceId
+            self.net.alias_place(alias_descriptor, enum_place_id);
+        };
+
+        match &variant.kind {
+            VariantKind::Plain => {}
+            VariantKind::Tuple(fields) => {
+                for (index, field_id) in fields.iter().enumerate() {
+                    process_field(field_id, index);
+                }
+            }
+            VariantKind::Struct { fields, .. } => {
+                for (index, field_id) in fields.iter().enumerate() {
+                    process_field(&Some(*field_id), index);
+                }
+            }
+        }
+    }
+
+    fn create_wrapper_transitions(&mut self) {
+        self.create_option_wrapper_transitions();
+        self.create_result_wrapper_transitions();
+    }
+
+    fn create_option_wrapper_transitions(&mut self) {
+        let entries: Vec<(PlaceId, BTreeSet<String>)> = self
+            .option_wrappers
+            .iter()
+            .map(|(id, set)| (*id, set.clone()))
+            .collect();
+
+        for (place_id, inner_types) in entries {
+            for inner in &inner_types {
+                self.add_option_some_transition(place_id, inner);
+            }
+            self.add_option_none_transition(place_id);
+        }
+    }
+
+    fn add_option_some_transition(&mut self, option_place: PlaceId, inner_type: &str) {
+        let option_place_ref = match self.net.place(option_place) {
+            Some(place) => place,
+            None => return,
+        };
+
+        let option_label = option_place_ref.descriptor().display().to_string();
+        let option_type = format!("{}<{}>", option_label, inner_type);
+        let option_desc = TypeDescriptor::from_string(&option_type);
+        let inner_desc = TypeDescriptor::from_string(inner_type);
+
+        let Some(inner_place) = self.ensure_place(inner_desc.clone()) else {
+            return;
+        };
+
+        let summary = FunctionSummary {
+            item_id: self.next_synthetic_id(),
+            name: Arc::<str>::from(format!("{}::unwrap_some({})", option_label, inner_type)),
+            qualified_path: None,
+            signature: Arc::<str>::from(format!(
+                "fn unwrap_some(option: {}) -> {}",
+                option_type, inner_type
+            )),
+            generics: Vec::new(),
+            where_clauses: Vec::new(),
+            trait_bounds: Vec::new(),
+            context: FunctionContext::FreeFunction,
+            inputs: vec![ParameterSummary {
+                name: Some(Arc::<str>::from("option")),
+                descriptor: option_desc.clone(),
+            }],
+            output: Some(inner_desc.clone()),
+        };
+
+        let transition_id = self.net.add_transition(summary);
+
+        self.net.add_input_arc_from_place(
+            option_place,
+            transition_id,
+            ArcData {
+                weight: 1,
+                parameter: Some(ParameterSummary {
+                    name: Some(Arc::<str>::from("option")),
+                    descriptor: option_desc.clone(),
+                }),
+                kind: ArcKind::Normal,
+                descriptor: None,
+                borrow_kind: Some(BorrowKind::Owned),
+            },
+        );
+
+        self.net.add_output_arc_to_place(
+            transition_id,
+            inner_place,
+            ArcData {
+                weight: 1,
+                parameter: None,
+                kind: ArcKind::Normal,
+                descriptor: Some(inner_desc.clone()),
+                borrow_kind: Some(inner_desc.borrow_kind()),
+            },
+        );
+    }
+
+    fn add_option_none_transition(&mut self, option_place: PlaceId) {
+        let option_place_ref = match self.net.place(option_place) {
+            Some(place) => place,
+            None => return,
+        };
+        let option_label = option_place_ref.descriptor().display().to_string();
+        let option_type = format!("{}<T>", option_label);
+        let option_desc = TypeDescriptor::from_string(&option_type);
+        let unit_desc = TypeDescriptor::from_string("()");
+        let Some(unit_place) = self.ensure_place(unit_desc.clone()) else {
+            return;
+        };
+
+        let summary = FunctionSummary {
+            item_id: self.next_synthetic_id(),
+            name: Arc::<str>::from(format!("{}::unwrap_none()", option_label)),
+            qualified_path: None,
+            signature: Arc::<str>::from(format!(
+                "fn unwrap_none(option: {}) -> ()",
+                option_type
+            )),
+            generics: Vec::new(),
+            where_clauses: Vec::new(),
+            trait_bounds: Vec::new(),
+            context: FunctionContext::FreeFunction,
+            inputs: vec![ParameterSummary {
+                name: Some(Arc::<str>::from("option")),
+                descriptor: option_desc.clone(),
+            }],
+            output: Some(unit_desc.clone()),
+        };
+
+        let transition_id = self.net.add_transition(summary);
+
+        self.net.add_input_arc_from_place(
+            option_place,
+            transition_id,
+            ArcData {
+                weight: 1,
+                parameter: Some(ParameterSummary {
+                    name: Some(Arc::<str>::from("option")),
+                    descriptor: option_desc.clone(),
+                }),
+                kind: ArcKind::Normal,
+                descriptor: None,
+                borrow_kind: Some(BorrowKind::Owned),
+            },
+        );
+
+        self.net.add_output_arc_to_place(
+            transition_id,
+            unit_place,
+            ArcData {
+                weight: 1,
+                parameter: None,
+                kind: ArcKind::Normal,
+                descriptor: Some(unit_desc.clone()),
+                borrow_kind: Some(unit_desc.borrow_kind()),
+            },
+        );
+    }
+
+    fn create_result_wrapper_transitions(&mut self) {
+        let entries: Vec<(PlaceId, BTreeSet<(String, String)>)> = self
+            .result_wrappers
+            .iter()
+            .map(|(id, set)| (*id, set.clone()))
+            .collect();
+
+        for (place_id, variants) in entries {
+            for (ok_ty, err_ty) in &variants {
+                self.add_result_ok_transition(place_id, ok_ty, err_ty);
+                self.add_result_err_transition(place_id, ok_ty, err_ty);
+            }
+        }
+    }
+
+    fn add_result_ok_transition(
+        &mut self,
+        result_place: PlaceId,
+        ok_type: &str,
+        err_type: &str,
+    ) {
+        let result_place_ref = match self.net.place(result_place) {
+            Some(place) => place,
+            None => return,
+        };
+
+        let result_label = result_place_ref.descriptor().display().to_string();
+        let result_type = format!("{}<{}, {}>", result_label, ok_type, err_type);
+        let result_desc = TypeDescriptor::from_string(&result_type);
+        let ok_desc = TypeDescriptor::from_string(ok_type);
+        let Some(ok_place) = self.ensure_place(ok_desc.clone()) else {
+            return;
+        };
+
+        let summary = FunctionSummary {
+            item_id: self.next_synthetic_id(),
+            name: Arc::<str>::from(format!("{}::unwrap_ok()", result_label)),
+            qualified_path: None,
+            signature: Arc::<str>::from(format!(
+                "fn unwrap_ok(result: {}) -> {}",
+                result_type, ok_type
+            )),
+            generics: Vec::new(),
+            where_clauses: Vec::new(),
+            trait_bounds: Vec::new(),
+            context: FunctionContext::FreeFunction,
+            inputs: vec![ParameterSummary {
+                name: Some(Arc::<str>::from("result")),
+                descriptor: result_desc.clone(),
+            }],
+            output: Some(ok_desc.clone()),
+        };
+
+        let transition_id = self.net.add_transition(summary);
+
+        self.net.add_input_arc_from_place(
+            result_place,
+            transition_id,
+            ArcData {
+                weight: 1,
+                parameter: Some(ParameterSummary {
+                    name: Some(Arc::<str>::from("result")),
+                    descriptor: result_desc.clone(),
+                }),
+                kind: ArcKind::Normal,
+                descriptor: None,
+                borrow_kind: Some(BorrowKind::Owned),
+            },
+        );
+
+        self.net.add_output_arc_to_place(
+            transition_id,
+            ok_place,
+            ArcData {
+                weight: 1,
+                parameter: None,
+                kind: ArcKind::Normal,
+                descriptor: Some(ok_desc.clone()),
+                borrow_kind: Some(ok_desc.borrow_kind()),
+            },
+        );
+    }
+
+    fn add_result_err_transition(
+        &mut self,
+        result_place: PlaceId,
+        ok_type: &str,
+        err_type: &str,
+    ) {
+        let result_place_ref = match self.net.place(result_place) {
+            Some(place) => place,
+            None => return,
+        };
+
+        let result_label = result_place_ref.descriptor().display().to_string();
+        let result_type = format!("{}<{}, {}>", result_label, ok_type, err_type);
+        let result_desc = TypeDescriptor::from_string(&result_type);
+        let err_desc = TypeDescriptor::from_string(err_type);
+        let Some(err_place) = self.ensure_place(err_desc.clone()) else {
+            return;
+        };
+
+        let summary = FunctionSummary {
+            item_id: self.next_synthetic_id(),
+            name: Arc::<str>::from(format!("{}::unwrap_err()", result_label)),
+            qualified_path: None,
+            signature: Arc::<str>::from(format!(
+                "fn unwrap_err(result: {}) -> {}",
+                result_type, err_type
+            )),
+            generics: Vec::new(),
+            where_clauses: Vec::new(),
+            trait_bounds: Vec::new(),
+            context: FunctionContext::FreeFunction,
+            inputs: vec![ParameterSummary {
+                name: Some(Arc::<str>::from("result")),
+                descriptor: result_desc.clone(),
+            }],
+            output: Some(err_desc.clone()),
+        };
+
+        let transition_id = self.net.add_transition(summary);
+
+        self.net.add_input_arc_from_place(
+            result_place,
+            transition_id,
+            ArcData {
+                weight: 1,
+                parameter: Some(ParameterSummary {
+                    name: Some(Arc::<str>::from("result")),
+                    descriptor: result_desc.clone(),
+                }),
+                kind: ArcKind::Normal,
+                descriptor: None,
+                borrow_kind: Some(BorrowKind::Owned),
+            },
+        );
+
+        self.net.add_output_arc_to_place(
+            transition_id,
+            err_place,
+            ArcData {
+                weight: 1,
+                parameter: None,
+                kind: ArcKind::Normal,
+                descriptor: Some(err_desc.clone()),
+                borrow_kind: Some(err_desc.borrow_kind()),
+            },
+        );
+    }
+
+    fn next_synthetic_id(&mut self) -> Id {
+        let id = Id(u32::MAX.saturating_sub(self.synthetic_id_counter));
+        self.synthetic_id_counter = self.synthetic_id_counter.wrapping_add(1);
+        id
     }
 
     fn lookup_qualified_path(&self, item: &Item) -> Option<Arc<str>> {
@@ -533,279 +1256,25 @@ impl<'a> PetriNetBuilder<'a> {
 
         for primitive_name in primitives {
             let descriptor = TypeDescriptor::from_type(&Type::Primitive(primitive_name.into()));
-
-            // 获取预定义的 trait 实现（先验知识）
             let mut implemented_traits = Self::get_primitive_traits(primitive_name);
 
-            // 从 rustdoc JSON 中查询额外的 trait 实现
             let additional_traits = self.query_primitive_impls_from_rustdoc(primitive_name);
             implemented_traits.extend(additional_traits);
 
-            // 去重并排序
             let unique_traits: std::collections::HashSet<_> =
                 implemented_traits.into_iter().collect();
             let mut implemented_traits: Vec<_> = unique_traits.into_iter().collect();
             implemented_traits.sort();
 
-            self.net.add_primitive_place(descriptor, implemented_traits);
-        }
-    }
-
-    /// 收集泛型参数及其约束
-    ///
-    /// `context` 参数用于绑定泛型参数的上下文，格式如 "foo::T" 或 "Vec::T"
-    /// 这样可以区分不同上下文中的同名泛型参数
-    fn collect_generic_parameters(&mut self, generics: &rustdoc_types::Generics, context: &str) {
-        for param in &generics.params {
-            if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
-                // 使用带上下文的名称：context::param_name
-                let scoped_param_name = format!("{}::{}", context, param.name);
-                let trait_bounds: Vec<Arc<str>> = bounds
-                    .iter()
-                    .map(|bound| Arc::<str>::from(TypeFormatter::format_generic_bound(bound)))
-                    .collect();
-
-                // 合并已有的约束
-                let existing_bounds = self
-                    .generic_parameters
-                    .entry(scoped_param_name)
-                    .or_insert_with(Vec::new);
-
-                for bound in trait_bounds {
-                    if !existing_bounds.iter().any(|b| b.as_ref() == bound.as_ref()) {
-                        existing_bounds.push(bound);
-                    }
-                }
-            }
-        }
-
-        // 处理 where 子句中的约束
-        for predicate in &generics.where_predicates {
-            if let WherePredicate::BoundPredicate {
-                type_,
-                bounds,
-                generic_params,
-            } = predicate
-            {
-                if generic_params.is_empty() {
-                    if let Type::Generic(param_name) = type_ {
-                        // 使用带上下文的名称
-                        let scoped_param_name = format!("{}::{}", context, param_name);
-                        let existing_bounds = self
-                            .generic_parameters
-                            .entry(scoped_param_name)
-                            .or_insert_with(Vec::new);
-
-                        for bound in bounds {
-                            let bound_str =
-                                Arc::<str>::from(TypeFormatter::format_generic_bound(bound));
-                            if !existing_bounds
-                                .iter()
-                                .any(|b| b.as_ref() == bound_str.as_ref())
-                            {
-                                existing_bounds.push(bound_str);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /// 创建泛型参数库所
-    fn create_generic_parameter_places(&mut self) {
-        for (param_name, bounds) in &self.generic_parameters {
-            let descriptor = TypeDescriptor::from_type(&Type::Generic(param_name.clone()));
-            self.net
-                .add_generic_parameter_place(descriptor, bounds.clone());
-        }
-    }
-
-    /// 检查基本类型是否满足给定的 trait bound
-    ///
-    /// 对于简单的 trait bound（如 Clone），检查基本类型是否实现了该 trait
-    /// 对于关联类型约束（如 Iterator<Item = u8>），需要更精确的检查
-    fn check_trait_bound_satisfied(
-        &self,
-        primitive_name: &str,
-        primitive_traits: &std::collections::HashSet<&str>,
-        bound: &str,
-    ) -> bool {
-        // 解析 trait bound
-        // 可能的格式：
-        // - "core::clone::Clone" (简单 trait)
-        // - "core::iter::Iterator" (简单 trait，可能有泛型参数)
-        // - "core::iter::Iterator<Item = u8>" (有关联类型约束)
-
-        // 提取 trait 路径（去掉可能的关联类型约束）
-        let trait_path = if let Some(lt_pos) = bound.find('<') {
-            &bound[..lt_pos]
-        } else {
-            bound
-        };
-
-        // 规范化 trait 路径（移除可能的 '?' 修饰符等）
-        let trait_path = trait_path.trim_start_matches('?').trim();
-
-        // 检查基本类型是否实现了该 trait
-        // 支持多种路径格式：
-        // - 完整路径：core::clone::Clone
-        // - 短路径：Clone
-        let trait_simple_name = trait_path.split("::").last().unwrap_or(trait_path);
-
-        // 检查完整路径或简单名称是否匹配
-        let is_implemented = primitive_traits.iter().any(|&t| {
-            t == trait_path
-                || t.ends_with(&format!("::{}", trait_simple_name))
-                || t == trait_simple_name
-        });
-
-        if !is_implemented {
-            return false;
-        }
-
-        // 如果有关联类型约束，需要更精确的检查
-        // 例如：Iterator<Item = u8> 需要检查 Item 类型是否匹配
-        if bound.contains('<') && bound.contains('=') {
-            // 对于关联类型约束，我们需要查询 rustdoc JSON 中的 impl
-            // 这里采用保守策略：如果没有找到精确匹配，返回 false
-            // TODO: 可以扩展为查询 rustdoc JSON 中的 impl 条目来精确匹配
-            return self.check_associated_type_bound(primitive_name, bound);
-        }
-
-        true
-    }
-
-    /// 检查关联类型约束（如 Iterator<Item = u8>）
-    ///
-    /// 对于复杂约束，查询 rustdoc JSON 中的 impl 条目
-    fn check_associated_type_bound(&self, primitive_name: &str, bound: &str) -> bool {
-        // 简化处理：如果 rustdoc JSON 中有对应的 impl，则认为满足
-        // 否则保守地返回 false
-
-        // 解析 trait 名称
-        let trait_name = if let Some(lt_pos) = bound.find('<') {
-            &bound[..lt_pos]
-        } else {
-            bound
-        };
-        let trait_name = trait_name.trim_start_matches('?').trim();
-
-        // 查询 rustdoc JSON 中的 impl
-        for item in self.crate_.index.values() {
-            if let ItemEnum::Impl(impl_block) = &item.inner {
-                // 检查是否为该基本类型的 impl
-                if let Type::Primitive(ref name) = impl_block.for_ {
-                    if name == primitive_name {
-                        if let Some(trait_path) = &impl_block.trait_ {
-                            let impl_trait_name = TypeFormatter::path_to_string(trait_path);
-
-                            // 检查 trait 名称是否匹配
-                            let impl_simple_name = impl_trait_name
-                                .split("::")
-                                .last()
-                                .unwrap_or(&impl_trait_name);
-                            let bound_simple_name =
-                                trait_name.split("::").last().unwrap_or(trait_name);
-
-                            if impl_trait_name == trait_name
-                                || impl_simple_name == bound_simple_name
-                            {
-                                // 找到了对应的 impl，但还需要检查关联类型是否匹配
-                                // 这里简化处理：如果找到了 impl 就认为可能满足
-                                // TODO: 更精确地检查关联类型约束
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 如果没有找到对应的 impl，保守地返回 false
-        false
-    }
-
-    /// 创建从基本类型到符合约束的泛型参数的变迁
-    fn create_constraint_transitions(&mut self) {
-        // 遍历所有基本类型
-        let primitives = vec![
-            "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize",
-            "f32", "f64", "bool", "char", "str",
-        ];
-
-        for primitive_name in primitives {
-            let primitive_descriptor =
-                TypeDescriptor::from_type(&Type::Primitive(primitive_name.into()));
-            let primitive_place_id =
-                if let Some(place_id) = self.net.place_id(&primitive_descriptor) {
-                    place_id
-                } else {
-                    continue;
-                };
-
-            // 先获取基本类型实现的 trait（避免后续借用冲突）
-            let primitive_traits: std::collections::HashSet<_> = {
-                let primitive_place = self
-                    .net
-                    .place(primitive_place_id)
-                    .expect("primitive place should exist");
-                primitive_place
-                    .implemented_traits
-                    .iter()
-                    .map(|t| t.as_ref())
-                    .collect()
-            };
-
-            // 收集所有需要创建的变迁（避免在循环中借用冲突）
-            let mut transitions_to_create = Vec::new();
-
-            // 遍历所有泛型参数
-            for (generic_name, required_bounds) in &self.generic_parameters {
-                let generic_descriptor =
-                    TypeDescriptor::from_type(&Type::Generic(generic_name.clone()));
-                let generic_place_id =
-                    if let Some(place_id) = self.net.place_id(&generic_descriptor) {
-                        place_id
-                    } else {
-                        continue;
-                    };
-
-                // 检查基本类型是否满足泛型参数的所有约束
-                let mut satisfied_constraints = Vec::new();
-                let mut all_satisfied = true;
-
-                for bound in required_bounds {
-                    if self.check_trait_bound_satisfied(
-                        primitive_name,
-                        &primitive_traits,
-                        bound.as_ref(),
-                    ) {
-                        satisfied_constraints.push(bound.clone());
-                    } else {
-                        all_satisfied = false;
-                        break; // 如果有一个约束不满足，就不需要检查其他的了
-                    }
-                }
-
-                // 记录需要创建的变迁
-                if all_satisfied && !required_bounds.is_empty() {
-                    transitions_to_create.push((
-                        primitive_place_id,
-                        generic_place_id,
-                        satisfied_constraints,
-                    ));
-                } else if required_bounds.is_empty() {
-                    // 如果泛型参数没有约束，所有基本类型都可以连接
-                    transitions_to_create.push((primitive_place_id, generic_place_id, Vec::new()));
-                }
-            }
-
-            // 现在创建所有变迁（此时已经没有不可变借用了）
-            for (from_place, to_place, constraints) in transitions_to_create {
-                self.net
-                    .add_constraint_transition(from_place, to_place, constraints);
-            }
+            let place_id = self
+                .net
+                .add_primitive_place(descriptor.clone(), implemented_traits.clone());
+            debug!(
+                "   📍 [Place] {} (Place ID: {}, Traits: [{}])",
+                descriptor.display(),
+                place_id.0.index(),
+                implemented_traits.join(", ")
+            );
         }
     }
 }
@@ -862,7 +1331,7 @@ mod tests {
 
         for (_place_id, place) in net.places() {
             assert!(
-                !place.descriptor.display().contains("Self"),
+                !place.descriptor().display().contains("Self"),
                 "unexpected Self in place {:?}",
                 place
             );

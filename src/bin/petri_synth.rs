@@ -4,6 +4,7 @@ use std::io::{self, BufReader, Write};
 use std::path::PathBuf;
 
 use anyhow::{Context, Result, anyhow, bail};
+use log::LevelFilter;
 use trustfall_rustdoc_adapter::Crate;
 use trustfall_rustdoc_adapter::petri::{
     BorrowKind, FunctionSummary, PetriNetBuilder, PlaceId, SynthesisConfig, SynthesisOutcome,
@@ -12,6 +13,28 @@ use trustfall_rustdoc_adapter::petri::{
 
 fn main() -> Result<()> {
     let args = parse_args()?;
+    let log_level = if args.verbose {
+        LevelFilter::Debug
+    } else {
+        LevelFilter::Info
+    };
+
+    if let Some(log_file) = &args.log_file {
+        let log_file_path = log_file.clone();
+        pretty_env_logger::formatted_timed_builder()
+            .filter_level(log_level)
+            .target(pretty_env_logger::env_logger::Target::Pipe(Box::new(
+                File::create(&log_file_path)
+                    .with_context(|| format!("无法创建日志文件: {}", log_file_path.display()))?,
+            )))
+            .init();
+        eprintln!("📝 日志将保存到: {}", log_file_path.display());
+    } else {
+        pretty_env_logger::formatted_timed_builder()
+            .filter_level(log_level)
+            .init();
+    }
+
     let reader = BufReader::new(
         File::open(&args.json_path)
             .with_context(|| format!("无法打开 rustdoc JSON 文件:{}", args.json_path.display()))?,
@@ -39,12 +62,14 @@ fn main() -> Result<()> {
             Some("dot") | Some("gv") => {
                 file.write_all(petri_net.to_dot().as_bytes())
                     .context("写出 Petri 网 DOT 失败")?;
-                println!("Petri 网 DOT 拓扑已写入:{}", output_path.display());
+                println!("Petri 网 DOT 文件已写入:{}", output_path.display());
             }
             _ => {
-                serde_json::to_writer_pretty(&mut file, &petri_net)
+                let json_net: trustfall_rustdoc_adapter::petri::schema::JsonPetriNet =
+                    (&petri_net).into();
+                serde_json::to_writer_pretty(&mut file, &json_net)
                     .context("写出 Petri 网 JSON 失败")?;
-                println!("Petri 网 JSON 拓扑已写入:{}", output_path.display());
+                println!("Petri 网 JSON 文件已写入:{}", output_path.display());
             }
         }
     }
@@ -146,7 +171,7 @@ fn print_state(
             writeln!(
                 stdout,
                 "  {}: {} 个令牌, 借用类型: {}",
-                place.descriptor.display(),
+                place.descriptor().display(),
                 count,
                 borrow_str
             )?;
@@ -247,7 +272,7 @@ fn find_descriptor(
 
     // 查找基础类型（规范化版本）
     let base_descriptor = net.places().find_map(|place| {
-        let descriptor = &place.1.descriptor;
+        let descriptor = place.1.descriptor();
         let normalized = descriptor.normalized();
         if normalized.display() == base_name || normalized.canonical() == base_name {
             Some(normalized)
@@ -263,15 +288,12 @@ fn find_descriptor(
 fn parse_borrow_prefix(name: &str) -> (&str, BorrowKind) {
     let name = name.trim();
 
-    // 检查原始指针
     if name.starts_with("*const ") {
         return (&name[7..].trim(), BorrowKind::RawConstPtr);
     }
     if name.starts_with("*mut ") {
         return (&name[5..].trim(), BorrowKind::RawMutPtr);
     }
-
-    // 检查引用
     if name.starts_with('&') {
         let mut rest = &name[1..];
         // 跳过生命周期
@@ -296,7 +318,6 @@ fn parse_borrow_prefix(name: &str) -> (&str, BorrowKind) {
         }
     }
 
-    // 没有借用前缀，是 Owned
     (name, BorrowKind::Owned)
 }
 
@@ -307,6 +328,8 @@ struct CliArgs {
     emit_net: Option<PathBuf>,
     max_depth: Option<usize>,
     max_states: Option<usize>,
+    log_file: Option<PathBuf>,
+    verbose: bool,
 }
 
 fn parse_args() -> Result<CliArgs> {
@@ -317,6 +340,8 @@ fn parse_args() -> Result<CliArgs> {
     let mut emit_net = None;
     let mut max_depth = None;
     let mut max_states = None;
+    let mut log_file = None;
+    let mut verbose = false;
 
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -344,6 +369,13 @@ fn parse_args() -> Result<CliArgs> {
                 let value = args.next().context("`--max-states` 需要最大状态数量")?;
                 max_states = Some(value.parse().context("无法解析 --max-states 为数字")?);
             }
+            "--log" => {
+                let value = args.next().context("`--log` 需要日志文件路径")?;
+                log_file = Some(PathBuf::from(value));
+            }
+            "--verbose" | "-v" => {
+                verbose = true;
+            }
             "--help" | "-h" => {
                 print_usage();
                 std::process::exit(0);
@@ -363,6 +395,8 @@ fn parse_args() -> Result<CliArgs> {
         emit_net,
         max_depth,
         max_states,
+        log_file,
+        verbose,
     })
 }
 

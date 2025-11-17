@@ -24,5 +24,4 @@ perf.data
 perf.data.old
 
 
-**/*.json
-**/*.dot
+.cursor
