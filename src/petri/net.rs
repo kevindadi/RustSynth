@@ -7,12 +7,11 @@ use petgraph::{
     visit::EdgeRef,
     algo::{dijkstra, is_cyclic_directed},
 };
-use rustdoc_types::Id;
+use rustdoc_types::{Id, Variant};
 use serde::{Deserialize, Serialize};
 
 use super::type_repr::{BorrowKind, TypeDescriptor};
 
-/// Token 表示 Petri 网中的令牌
 /// 类型化 Petri 网中，token 包含类型信息和借用信息
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Token {
@@ -27,14 +26,6 @@ impl Token {
         Self {
             descriptor,
             borrow_kind,
-        }
-    }
-
-    /// 从类型描述符创建 token（使用描述符本身的借用类型）
-    pub fn from_descriptor(descriptor: TypeDescriptor) -> Self {
-        Self {
-            borrow_kind: descriptor.borrow_kind(),
-            descriptor: descriptor.normalized(),
         }
     }
 }
@@ -53,28 +44,66 @@ pub enum Node {
     Transition(Transition),
 }
 
+/// 泛型参数需要保存所属类型的 PlaceId 和描述符
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct GenericParameter {
+    /// 泛型参数名称（如 "T", "E", "W"）
+    pub name: Arc<str>,
+    /// 该泛型参数需要的 trait 约束
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub trait_bounds: Vec<Arc<str>>,
+    /// 所属类型的 PlaceId
+    pub owner_place_id: PlaceId,
+    /// 所属类型的描述符
+    pub owner_descriptor: TypeDescriptor,
+}
+
+/// Struct、Enum、Union 类型的共同信息
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Place {
-    pub descriptor: TypeDescriptor,
-    /// 该类型实现的 trait 列表（用于基本类型）
+pub struct CompositeTypeInfo {
+    /// 该类型实现的 trait 列表
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub implemented_traits: Vec<Arc<str>>,
-    /// 该泛型参数需要的 trait 约束（用于泛型参数）
+    /// 该类型定义的泛型参数列表
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub required_trait_bounds: Vec<Arc<str>>,
-    /// 是否为泛型参数类型
-    #[serde(default)]
-    pub is_generic_parameter: bool,
-    /// 泛型参数的所有者 (struct/enum/trait 的 ID)
-    /// 用于区分不同类型的同名泛型参数，例如 Vec<T> 的 T 和 Option<T> 的 T
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub generic_owner_id: Option<Id>,
-    /// 泛型参数的所有者类型名称（用于显示）
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub generic_owner_name: Option<Arc<str>>,
-    /// 类型使用的泛型参数列表
+    pub generic_parameters: Vec<GenericParameter>,
+    /// Enum 的 Variant 列表（仅当类型为 Enum 时使用）
+    /// 直接使用 rustdoc-types 中的 Variant 定义
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub generic_arguments: Vec<Arc<str>>,
+    pub variants: Vec<Variant>,
+}
+
+/// 库所（Place）代表一个类型定义
+/// 使用枚举区分不同类型的 Place，每种类型有对应的数据结构
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum Place {
+    /// 基本类型（Primitive）
+    Primitive {
+        descriptor: TypeDescriptor,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        implemented_traits: Vec<Arc<str>>,
+    },
+    /// Struct、Enum、Union 类型
+    Composite {
+        descriptor: TypeDescriptor,
+        kind: CompositeTypeKind,
+        info: CompositeTypeInfo,
+    },
+    /// 泛型参数类型
+    Generic {
+        descriptor: TypeDescriptor,
+        generic_param: GenericParameter,
+    },
+}
+
+/// Struct、Enum、Union 的类型种类
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "snake_case")]
+pub enum CompositeTypeKind {
+    Struct,
+    Enum,
+    Union,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -105,8 +134,6 @@ pub enum FunctionContext {
     },
 }
 
-/// 类型被建模为 Place, 可函数被建模为 Transition.
-/// 调用时会消耗参数类型的令牌, 若有返回值则产生返回类型的令牌.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FunctionSummary {
     pub item_id: Id,
@@ -163,12 +190,11 @@ pub struct Transition {
 /// 对于普通类型，只用 TypeDescriptor
 /// 对于泛型参数，需要同时指定所有者 ID 和类型名称
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+/// Place 查找键
+/// 只使用类型描述符，因为泛型参数不再单独创建库所
 enum PlaceLookupKey {
-    /// 普通类型或具体化的泛型类型
-    Concrete(TypeDescriptor),
-    /// 泛型参数：(所有者ID, 泛型名称)
-    /// 例如：Vec<T> 的 T -> Generic(Vec的ID, "T")
-    Generic(Id, TypeDescriptor),
+    /// 类型描述符（规范化后的类型名，去掉泛型参数部分）
+    Type(TypeDescriptor),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -238,6 +264,33 @@ impl Default for PetriNet {
     }
 }
 
+impl Place {
+    pub fn descriptor(&self) -> &TypeDescriptor {
+        match self {
+            Place::Primitive { descriptor, .. } => descriptor,
+            Place::Composite { descriptor, .. } => descriptor,
+            Place::Generic { descriptor, .. } => descriptor,
+        }
+    }
+
+    /// 获取实现的 trait 列表
+    pub fn implemented_traits(&self) -> &[Arc<str>] {
+        match self {
+            Place::Primitive { implemented_traits, .. } => implemented_traits,
+            Place::Composite { info, .. } => &info.implemented_traits,
+            Place::Generic { .. } => &[],
+        }
+    }
+
+    pub fn generic_parameters(&self) -> &[GenericParameter] {
+        match self {
+            Place::Primitive { .. } => &[],
+            Place::Composite { info, .. } => &info.generic_parameters,
+            Place::Generic { generic_param, .. } => std::slice::from_ref(generic_param),
+        }
+    }
+}
+
 impl PetriNet {
     pub fn new() -> Self {
         Self::default()
@@ -252,35 +305,8 @@ impl PetriNet {
     }
 
     pub fn add_place(&mut self, descriptor: TypeDescriptor) -> PlaceId {
-        // 使用规范化版本进行查找和存储，这样 T、&T、&mut T 都映射到同一个库所
-        let normalized = descriptor.normalized();
-        let lookup_key = PlaceLookupKey::Concrete(normalized.clone());
-        
-        if let Some(&id) = self.place_lookup.get(&lookup_key) {
-            return id;
-        }
-
-        let place = Place {
-            descriptor: normalized.clone(),
-            implemented_traits: Vec::new(),
-            required_trait_bounds: Vec::new(),
-            is_generic_parameter: false,
-            generic_owner_id: None,
-            generic_owner_name: None,
-            generic_arguments: Vec::new(),
-        };
-        let node_idx = self.graph.add_node(Node::Place(place));
-        let id = PlaceId(node_idx);
-
-        self.place_lookup.insert(lookup_key, id);
-        id
-    }
-    
-    /// 为已有的 Place 注册一个别名，使多个类型描述符指向同一个 Place
-    pub fn alias_place(&mut self, descriptor: TypeDescriptor, place_id: PlaceId) {
-        let normalized = descriptor.normalized();
-        let lookup_key = PlaceLookupKey::Concrete(normalized);
-        self.place_lookup.insert(lookup_key, place_id);
+        // 默认创建为 Primitive 类型
+        self.add_primitive_place(descriptor, Vec::new())
     }
 
     /// 添加基本类型库所，并记录其实现的 trait
@@ -290,19 +316,19 @@ impl PetriNet {
         implemented_traits: Vec<Arc<str>>,
     ) -> PlaceId {
         let normalized = descriptor.normalized();
-        let lookup_key = PlaceLookupKey::Concrete(normalized.clone());
+        let lookup_key = PlaceLookupKey::Type(normalized.clone());
         
         if let Some(&id) = self.place_lookup.get(&lookup_key) {
             // 如果已存在，更新实现的 trait
             if let Some(place) = self.graph.node_weight_mut(id.0) {
-                if let Node::Place(place) = place {
+                if let Node::Place(Place::Primitive { implemented_traits: traits, .. }) = place {
                     let mut existing_traits: std::collections::HashSet<_> =
-                        place.implemented_traits.iter().cloned().collect();
+                        traits.iter().cloned().collect();
                     for trait_ in implemented_traits {
                         existing_traits.insert(trait_);
                     }
-                    place.implemented_traits = existing_traits.into_iter().collect();
-                    place.implemented_traits.sort();
+                    *traits = existing_traits.into_iter().collect();
+                    traits.sort();
                 }
             }
             return id;
@@ -310,14 +336,9 @@ impl PetriNet {
 
         let mut traits = implemented_traits;
         traits.sort();
-        let place = Place {
+        let place = Place::Primitive {
             descriptor: normalized.clone(),
             implemented_traits: traits,
-            required_trait_bounds: Vec::new(),
-            is_generic_parameter: false,
-            generic_owner_id: None,
-            generic_owner_name: None,
-            generic_arguments: Vec::new(),
         };
         let node_idx = self.graph.add_node(Node::Place(place));
         let id = PlaceId(node_idx);
@@ -326,61 +347,42 @@ impl PetriNet {
         id
     }
 
-    /// 添加泛型参数库所，并记录其需要的 trait 约束
-    /// 
-    /// # 参数
-    /// 
-    /// * `owner_id` - 泛型参数所属的 struct/enum/trait 的 ID
-    /// * `descriptor` - 泛型参数的类型描述符 (如 "T", "U")
-    /// * `required_bounds` - trait 约束列表
-    /// 
-    /// # 示例
-    /// 
-    /// ```ignore
-    /// // 对于 struct Vec<T: Clone> { ... }
-    /// net.add_generic_parameter_place(
-    ///     vec_id,  // Vec 的 ID
-    ///     TypeDescriptor::from_string("T"),
-    ///     vec!["Clone".into()]
-    /// );
-    /// ```
-    pub fn add_generic_parameter_place(
+    /// 添加 Composite 类型（Struct、Enum、Union）的 Place
+    pub fn add_composite_place(
         &mut self,
-        owner_id: Id,
-        owner_name: Option<Arc<str>>,
         descriptor: TypeDescriptor,
-        required_bounds: Vec<Arc<str>>,
+        kind: CompositeTypeKind,
+        implemented_traits: Vec<Arc<str>>,
     ) -> PlaceId {
         let normalized = descriptor.normalized();
-        let lookup_key = PlaceLookupKey::Generic(owner_id, normalized.clone());
+        let lookup_key = PlaceLookupKey::Type(normalized.clone());
         
         if let Some(&id) = self.place_lookup.get(&lookup_key) {
-            // 如果已存在，更新 trait 约束
+            // 如果已存在，更新实现的 trait
             if let Some(place) = self.graph.node_weight_mut(id.0) {
-                if let Node::Place(place) = place {
-                    let mut existing_bounds: std::collections::HashSet<_> =
-                        place.required_trait_bounds.iter().cloned().collect();
-                    for bound in required_bounds {
-                        existing_bounds.insert(bound);
+                if let Node::Place(Place::Composite { info, .. }) = place {
+                    let mut existing_traits: std::collections::HashSet<_> =
+                        info.implemented_traits.iter().cloned().collect();
+                    for trait_ in implemented_traits {
+                        existing_traits.insert(trait_);
                     }
-                    place.required_trait_bounds = existing_bounds.into_iter().collect();
-                    place.required_trait_bounds.sort();
-                    place.is_generic_parameter = true;
+                    info.implemented_traits = existing_traits.into_iter().collect();
+                    info.implemented_traits.sort();
                 }
             }
             return id;
         }
 
-        let mut bounds = required_bounds;
-        bounds.sort();
-        let place = Place {
+        let mut traits = implemented_traits;
+        traits.sort();
+        let place = Place::Composite {
             descriptor: normalized.clone(),
-            implemented_traits: Vec::new(),
-            required_trait_bounds: bounds,
-            is_generic_parameter: true,
-            generic_owner_id: Some(owner_id),
-            generic_owner_name: owner_name,
-            generic_arguments: Vec::new(),
+            kind,
+            info: CompositeTypeInfo {
+                implemented_traits: traits,
+                generic_parameters: Vec::new(),
+                variants: Vec::new(),
+            },
         };
         let node_idx = self.graph.add_node(Node::Place(place));
         let id = PlaceId(node_idx);
@@ -388,15 +390,71 @@ impl PetriNet {
         self.place_lookup.insert(lookup_key, id);
         id
     }
-    
-    /// 查找泛型参数 Place
-    /// 
-    /// 用于在函数签名中查找泛型参数对应的 Place
-    pub fn find_generic_place(&self, owner_id: Id, generic_name: &str) -> Option<PlaceId> {
-        let descriptor = TypeDescriptor::from_string(generic_name);
+
+    /// 为 Enum Place 添加 Variant
+    /// Variant 的所有字段映射到 Enum 的 PlaceId
+    pub fn add_variant_to_enum(
+        &mut self,
+        enum_place_id: PlaceId,
+        variant: Variant,
+    ) {
+        if let Some(place) = self.graph.node_weight_mut(enum_place_id.0) {
+            if let Node::Place(Place::Composite { kind, info, .. }) = place {
+                if matches!(kind, CompositeTypeKind::Enum) {
+                    info.variants.push(variant);
+                }
+            }
+        }
+    }
+
+    /// 为已有的 Place 注册一个别名，使多个类型描述符指向同一个 Place
+    pub fn alias_place(&mut self, descriptor: TypeDescriptor, place_id: PlaceId) {
         let normalized = descriptor.normalized();
-        let lookup_key = PlaceLookupKey::Generic(owner_id, normalized);
-        self.place_lookup.get(&lookup_key).copied()
+        let lookup_key = PlaceLookupKey::Type(normalized);
+        self.place_lookup.insert(lookup_key, place_id);
+    }
+
+    /// 为类型 Place 添加泛型参数
+    /// 
+    /// 泛型参数作为类型定义的属性，存储在 Composite Place 的 generic_parameters 字段中
+    /// 
+    /// # 参数
+    /// 
+    /// * `place_id` - 类型 Place 的 ID（必须是 Composite 类型）
+    /// * `generic_name` - 泛型参数名称（如 "T", "E", "W"）
+    /// * `trait_bounds` - trait 约束列表
+    pub fn add_generic_parameter_to_place(
+        &mut self,
+        place_id: PlaceId,
+        generic_name: Arc<str>,
+        trait_bounds: Vec<Arc<str>>,
+    ) {
+        if let Some(place) = self.graph.node_weight_mut(place_id.0) {
+            if let Node::Place(Place::Composite { info, descriptor, .. }) = place {
+                // 检查是否已存在同名泛型参数
+                if let Some(existing) = info.generic_parameters.iter_mut()
+                    .find(|p| p.name == generic_name) {
+                    // 合并 trait bounds
+                    let mut existing_bounds: std::collections::HashSet<_> =
+                        existing.trait_bounds.iter().cloned().collect();
+                    for bound in trait_bounds {
+                        existing_bounds.insert(bound);
+                    }
+                    existing.trait_bounds = existing_bounds.into_iter().collect();
+                    existing.trait_bounds.sort();
+                } else {
+                    // 添加新的泛型参数，包含所属类型的 PlaceId 和描述符
+                    let mut bounds = trait_bounds;
+                    bounds.sort();
+                    info.generic_parameters.push(GenericParameter {
+                        name: generic_name,
+                        trait_bounds: bounds,
+                        owner_place_id: place_id,
+                        owner_descriptor: descriptor.clone(),
+                    });
+                }
+            }
+        }
     }
 
     /// 在基本类型和泛型参数之间添加约束变迁
@@ -411,11 +469,11 @@ impl PetriNet {
             let primitive_place = self
                 .place(from_primitive)
                 .expect("primitive place should exist");
-            primitive_place.descriptor.clone()
+            primitive_place.descriptor().clone()
         };
         let generic_descriptor = {
             let generic_place = self.place(to_generic).expect("generic place should exist");
-            generic_place.descriptor.clone()
+            generic_place.descriptor().clone()
         };
 
         let signature = if constraints.is_empty() {
@@ -549,22 +607,16 @@ impl PetriNet {
 
     pub fn place_id(&self, descriptor: &TypeDescriptor) -> Option<PlaceId> {
         let normalized = descriptor.normalized();
-        let lookup_key = PlaceLookupKey::Concrete(normalized);
+        let lookup_key = PlaceLookupKey::Type(normalized);
         self.place_lookup.get(&lookup_key).copied()
     }
     
-    pub fn place_id_with_owner(&self, owner_id: Option<Id>, descriptor: &TypeDescriptor) -> Option<PlaceId> {
+    pub fn place_id_with_owner(&self, _owner_id: Option<Id>, descriptor: &TypeDescriptor) -> Option<PlaceId> {
         let normalized = descriptor.normalized();
         
-        if let Some(owner) = owner_id {
-            let generic_key = PlaceLookupKey::Generic(owner, normalized.clone());
-            if let Some(&id) = self.place_lookup.get(&generic_key) {
-                return Some(id);
-            }
-        }
-        
-        let concrete_key = PlaceLookupKey::Concrete(normalized);
-        self.place_lookup.get(&concrete_key).copied()
+        // 泛型参数不再单独创建库所，直接查找类型
+        let type_key = PlaceLookupKey::Type(normalized);
+        self.place_lookup.get(&type_key).copied()
     }
 
     pub fn place_count(&self) -> usize {
@@ -631,42 +683,58 @@ impl PetriNet {
 
     fn write_places(&self, dot: &mut String) {
         let mut primitive_places = Vec::new();
-        let mut generic_places = Vec::new();
+        let mut generic_type_places = Vec::new();
+        let mut variant_places = Vec::new();
         let mut other_places = Vec::new();
 
         for (id, place) in self.places() {
-            let type_name = place.descriptor.display();
+            let type_name = place.descriptor().display();
             
-            if place.is_generic_parameter {
-                // 泛型参数用特殊样式
-                generic_places.push((id, place));
-            } else if matches!(
-                type_name,
-                "i8" | "i16"
-                    | "i32"
-                    | "i64"
-                    | "i128"
-                    | "isize"
-                    | "u8"
-                    | "u16"
-                    | "u32"
-                    | "u64"
-                    | "u128"
-                    | "usize"
-                    | "f32"
-                    | "f64"
-                    | "bool"
-                    | "char"
-                    | "str"
-            ) {
-                primitive_places.push((id, place));
-            } else {
-                other_places.push((id, place));
+            match place {
+                Place::Primitive { .. } => {
+                    if matches!(
+                        type_name,
+                        "i8" | "i16"
+                            | "i32"
+                            | "i64"
+                            | "i128"
+                            | "isize"
+                            | "u8"
+                            | "u16"
+                            | "u32"
+                            | "u64"
+                            | "u128"
+                            | "usize"
+                            | "f32"
+                            | "f64"
+                            | "bool"
+                            | "char"
+                            | "str"
+                    ) {
+                        primitive_places.push((id, place));
+                    } else {
+                        other_places.push((id, place));
+                    }
+                }
+                Place::Composite { kind, info, .. } => {
+                    if matches!(kind, CompositeTypeKind::Enum) && !info.variants.is_empty() {
+                        // Enum 类型如果有 Variant，用特殊样式
+                        variant_places.push((id, place));
+                    } else if !info.generic_parameters.is_empty() {
+                        // 有泛型参数的类型用特殊样式
+                        generic_type_places.push((id, place));
+                    } else {
+                        other_places.push((id, place));
+                    }
+                }
+                Place::Generic { .. } => {
+                    other_places.push((id, place));
+                }
             }
         }
 
         for (id, place) in primitive_places {
-            let label = simplify_type_name(place.descriptor.display());
+            let label = simplify_type_name(place.descriptor().display());
             let _ = writeln!(
                 dot,
                 "  p{} [shape=circle,style=filled,fillcolor=lightblue,label=\"{}\"];",
@@ -675,21 +743,30 @@ impl PetriNet {
             );
         }
 
-        for (id, place) in generic_places {
-            let label = simplify_type_name(place.descriptor.display());
+        for (id, place) in generic_type_places {
+            let base_label = simplify_type_name(place.descriptor().display());
             
-            // 获取所属类型名称
-            let owner_name = place.generic_owner_name.as_ref()
-                .map(|name| format!("<{}>", simplify_type_name(name)))
-                .unwrap_or_default();
-            
-            let trait_bounds = if !place.required_trait_bounds.is_empty() {
-                format!(": {}", place.required_trait_bounds.join("+"))
-            } else {
-                String::new()
+            // 构建泛型参数列表：T, E: Error, W: Write
+            let generic_params: Vec<String> = match place {
+                Place::Composite { info, .. } => info.generic_parameters.iter()
+                    .map(|param| {
+                        if param.trait_bounds.is_empty() {
+                            param.name.to_string()
+                        } else {
+                            format!("{}: {}", param.name, param.trait_bounds.join(" + "))
+                        }
+                    })
+                    .collect(),
+                _ => Vec::new(),
             };
             
-            let full_label = format!("{}{}{}", label, owner_name, trait_bounds);
+            let generic_part = if generic_params.is_empty() {
+                String::new()
+            } else {
+                format!("<{}>", generic_params.join(", "))
+            };
+            
+            let full_label = format!("{}{}", base_label, generic_part);
             let _ = writeln!(
                 dot,
                 "  p{} [shape=circle,style=filled,fillcolor=orange,label=\"{}\"];",
@@ -698,8 +775,18 @@ impl PetriNet {
             );
         }
 
+        for (id, place) in variant_places {
+            let label = simplify_type_name(place.descriptor().display());
+            let _ = writeln!(
+                dot,
+                "  p{} [shape=circle,style=filled,fillcolor=yellow,label=\"{}\"];",
+                id.0.index(),
+                label
+            );
+        }
+
         for (id, place) in other_places {
-            let label = simplify_type_name(place.descriptor.display());
+            let label = simplify_type_name(place.descriptor().display());
             let _ = writeln!(
                 dot,
                 "  p{} [shape=circle,label=\"{}\"];",
@@ -856,35 +943,6 @@ impl PetriNet {
         reachable
     }
 
-    /// 查找能够产生指定 Place 的所有 Transitions
-    pub fn find_producers(&self, place: PlaceId) -> Vec<(TransitionId, &ArcData)> {
-        self.graph
-            .edges_directed(place.0, Direction::Incoming)
-            .filter_map(|edge| {
-                let source = edge.source();
-                if let Node::Transition(_) = &self.graph[source] {
-                    Some((TransitionId(source), edge.weight()))
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    /// 查找需要指定 Place 作为输入的所有 Transitions
-    pub fn find_consumers(&self, place: PlaceId) -> Vec<(TransitionId, &ArcData)> {
-        self.graph
-            .edges_directed(place.0, Direction::Outgoing)
-            .filter_map(|edge| {
-                let target = edge.target();
-                if let Node::Transition(_) = &self.graph[target] {
-                    Some((TransitionId(target), edge.weight()))
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
 
     pub fn statistics(&self) -> PetriNetStatistics {
         let mut stats = PetriNetStatistics {

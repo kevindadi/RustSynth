@@ -328,7 +328,7 @@ fn is_enabled(
         // 收集所有有 Place 的输入参数
         let place_input_descriptors: HashSet<_> = net
             .transition_inputs(transition_id)
-            .filter_map(|(place_id, _)| net.place(place_id).map(|place| place.descriptor.clone()))
+            .filter_map(|(place_id, _)| net.place(place_id).map(|place| place.descriptor().clone()))
             .collect();
 
         // 检查所有输入参数（包括泛型参数）
@@ -388,7 +388,7 @@ fn check_generic_guard(
 fn trait_bounds_satisfied(place: &super::net::Place, trait_bounds: &[std::sync::Arc<str>]) -> bool {
     // 获取 Place 实现的 trait 列表
     let implemented_traits: HashSet<&str> = place
-        .implemented_traits
+        .implemented_traits()
         .iter()
         .map(|t| t.as_ref())
         .collect();

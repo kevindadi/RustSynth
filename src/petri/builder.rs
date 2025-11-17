@@ -3,8 +3,7 @@ use std::sync::Arc;
 
 use log::{debug, info};
 use rustdoc_types::{
-    Crate, Function, GenericParamDefKind, Id, Impl, Item, ItemEnum, Path as RustdocPath, Type,
-    Variant, VariantKind,
+    Crate, Function, GenericParamDefKind, Id, Impl, Item, ItemEnum, Path as RustdocPath, Type
 };
 
 use super::net::{
@@ -64,8 +63,7 @@ impl<'a> PetriNetBuilder<'a> {
             match &item.inner {
                 ItemEnum::Struct(_)
                 | ItemEnum::Enum(_)
-                | ItemEnum::Union(_)
-                | ItemEnum::Variant(_) => {
+                | ItemEnum::Union(_) => {
                     self.create_type_place(item);
                     type_count += 1;
                 }
@@ -278,24 +276,6 @@ impl<'a> PetriNetBuilder<'a> {
         impl_trait_bounds: Vec<String>,
     ) {
         let receiver_descriptor = context_receiver_descriptor(&context);
-        
-        // 提取实现类型的信息（用于泛型参数的所属者）
-        let (owner_id, owner_name) = match &context {
-            FunctionContext::InherentMethod { receiver } | 
-            FunctionContext::TraitImplementation { receiver, .. } => {
-                // 从 receiver 类型描述符中提取类型名称
-                let type_name = receiver.type_name_only().display().to_string();
-                // 尝试从 crate 中查找类型对应的 Item ID
-                let id = self.crate_.index.iter()
-                    .find(|(_, item)| {
-                        item.name.as_deref() == Some(&type_name)
-                            && matches!(&item.inner, ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Union(_))
-                    })
-                    .map(|(id, _)| *id);
-                (id, Some(type_name))
-            }
-            FunctionContext::FreeFunction => (None, None),
-        };
 
         let mut summary_inputs = Vec::new();
         let mut input_arcs = Vec::new();
@@ -319,22 +299,10 @@ impl<'a> PetriNetBuilder<'a> {
             }
             
             // 处理参数类型
+            // 泛型参数不再单独创建库所，它们只是类型定义的属性
+            // 当遇到泛型参数时，返回 None（不创建库所）
             let place_id_opt = if is_generic {
-                // 泛型参数：创建带有所属者信息的 Place
-                if let (Some(owner_id), Some(owner_name_str)) = (owner_id, owner_name.as_ref()) {
-                    let owner_name_arc: std::sync::Arc<str> = std::sync::Arc::from(owner_name_str.as_str());
-                    // 提取泛型参数的 trait bounds（从 impl_trait_bounds 或函数泛型中）
-                    let bounds: Vec<std::sync::Arc<str>> = Vec::new(); // TODO: 从泛型参数定义中提取
-                    let place_id = self.net.add_generic_parameter_place(
-                        owner_id,
-                        Some(owner_name_arc),
-                        descriptor.normalized(),
-                        bounds,
-                    );
-                    Some(place_id)
-                } else {
-                    None
-                }
+                None
             } else {
                 self.ensure_place(descriptor.clone())
             };
@@ -397,21 +365,10 @@ impl<'a> PetriNetBuilder<'a> {
 
         let mut output_arcs = Vec::new();
         if let Some(descriptor) = output_descriptor.clone() {
+            // 泛型返回值不再单独创建库所，它们只是类型定义的属性
+            // 当遇到泛型返回值时，返回 None（不创建库所）
             let place_id_opt = if is_output_generic {
-                // 泛型返回值：创建带有所属者信息的 Place
-                if let (Some(owner_id), Some(owner_name_str)) = (owner_id, owner_name.as_ref()) {
-                    let owner_name_arc: std::sync::Arc<str> = std::sync::Arc::from(owner_name_str.as_str());
-                    let bounds: Vec<std::sync::Arc<str>> = Vec::new();
-                    let place_id = self.net.add_generic_parameter_place(
-                        owner_id,
-                        Some(owner_name_arc),
-                        descriptor.normalized(),
-                        bounds,
-                    );
-                    Some(place_id)
-                } else {
-                    None
-                }
+                None
             } else {
                 self.ensure_place(descriptor.clone())
             };
@@ -672,7 +629,7 @@ impl<'a> PetriNetBuilder<'a> {
         }
     }
 
-    /// 为类型定义（Struct、Enum、Union）创建 Place
+    /// 为类型定义（Struct、Enum、Union、Variant）创建 Place
     /// 记录类型 Item 的 id 到 PlaceId 的映射
     /// 库所名称使用 item.name（类型名称），path 路径仅作为补充信息
     fn create_type_place(&mut self, item: &Item) {
@@ -687,14 +644,82 @@ impl<'a> PetriNetBuilder<'a> {
         let type_path = rustdoc_types::Path {
             path: type_name.clone(),
             id: item.id,
-            args: None, // 泛型参数会在后续处理
+            args: None, 
         };
 
         let type_ty = Type::ResolvedPath(type_path);
         let descriptor = TypeDescriptor::from_type(&type_ty);
 
-        // 创建类型定义的 Place（使用 Owned 作为默认借用类型）
-        let place_id = self.net.add_place(descriptor.clone());
+        // 确定类型种类并创建对应的 Place
+        let place_id = match &item.inner {
+            ItemEnum::Struct(_) => {
+                self.net.add_composite_place(
+                    descriptor.clone(),
+                    super::net::CompositeTypeKind::Struct,
+                    Vec::new(),
+                )
+            }
+            ItemEnum::Enum(enum_def) => {
+                let enum_place_id = self.net.add_composite_place(
+                    descriptor.clone(),
+                    super::net::CompositeTypeKind::Enum,
+                    Vec::new(),
+                );
+                
+                // 收集所有 Variant 并添加到 Enum Place
+                for variant_id in &enum_def.variants {
+                    if let Some(variant_item) = self.crate_.index.get(variant_id) {
+                        if let ItemEnum::Variant(variant) = &variant_item.inner {
+                            // 添加 Variant 到 Enum Place
+                            self.net.add_variant_to_enum(enum_place_id, variant.clone());
+                            
+                            // 将 Variant 的字段映射到 Enum 的 PlaceId
+                            self.register_variant_field_aliases(variant_item, variant, enum_place_id);
+                        }
+                    }
+                }
+                
+                enum_place_id
+            }
+            ItemEnum::Union(_) => {
+                self.net.add_composite_place(
+                    descriptor.clone(),
+                    super::net::CompositeTypeKind::Union,
+                    Vec::new(),
+                )
+            }
+            _ => {
+                // 其他类型默认创建为 Primitive
+                self.net.add_place(descriptor.clone())
+            }
+        };
+
+        // 从类型定义中提取泛型参数并添加到 Place
+        let generics = match &item.inner {
+            ItemEnum::Struct(struct_def) => Some(&struct_def.generics),
+            ItemEnum::Enum(enum_def) => Some(&enum_def.generics),
+            ItemEnum::Union(union_def) => Some(&union_def.generics),
+            _ => None,
+        };
+
+        // 提取泛型参数并添加到 Place
+        match generics {
+            Some(generics) => {
+                for param in &generics.params {
+                    if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
+                        let param_name = Arc::<str>::from(param.name.as_str());
+                        let trait_bounds: Vec<Arc<str>> = bounds
+                            .iter()
+                            .map(|bound| {
+                                Arc::<str>::from(TypeFormatter::format_generic_bound(bound).as_str())
+                            })
+                            .collect();
+                        self.net.add_generic_parameter_to_place(place_id, param_name, trait_bounds);
+                    }
+                }
+            }
+            None => {}
+        }
 
         let type_kind = match &item.inner {
             ItemEnum::Struct(_) => "Struct",
@@ -720,19 +745,18 @@ impl<'a> PetriNetBuilder<'a> {
 
         // 记录类型 Item 的 id 到 PlaceId 的映射
         self.type_place_map.insert(item.id, place_id);
-
-        // 如果是 Variant，将其子类型的字符串形式也映射到同一个 Place
-        if let ItemEnum::Variant(variant) = &item.inner {
-            self.register_variant_field_aliases(item, variant, place_id);
-        }
     }
 
+    /// 将 Variant 的字段映射到 Enum 的 PlaceId
+    /// Variant 的所有字段都映射到同一个 Enum Place
     fn register_variant_field_aliases(
         &mut self,
         variant_item: &Item,
-        variant: &Variant,
-        place_id: PlaceId,
+        variant: &rustdoc_types::Variant,
+        enum_place_id: PlaceId,
     ) {
+        use rustdoc_types::VariantKind;
+        
         let variant_path = self
             .crate_
             .paths
@@ -763,6 +787,7 @@ impl<'a> PetriNetBuilder<'a> {
                 .clone()
                 .unwrap_or_else(|| index.to_string());
 
+            // 创建字段类型的别名，映射到 Enum 的 PlaceId
             let alias_name = format!(
                 "{}::{}: {}",
                 variant_path,
@@ -777,7 +802,9 @@ impl<'a> PetriNetBuilder<'a> {
             };
             let custom_type = Type::ResolvedPath(custom_path);
             let alias_descriptor = TypeDescriptor::from_type(&custom_type);
-            self.net.alias_place(alias_descriptor, place_id);
+            
+            // 将字段类型映射到 Enum 的 PlaceId
+            self.net.alias_place(alias_descriptor, enum_place_id);
         };
 
         match &variant.kind {
@@ -821,7 +848,7 @@ impl<'a> PetriNetBuilder<'a> {
             None => return,
         };
 
-        let option_label = option_place_ref.descriptor.display().to_string();
+        let option_label = option_place_ref.descriptor().display().to_string();
         let option_type = format!("{}<{}>", option_label, inner_type);
         let option_desc = TypeDescriptor::from_string(&option_type);
         let inner_desc = TypeDescriptor::from_string(inner_type);
@@ -884,7 +911,7 @@ impl<'a> PetriNetBuilder<'a> {
             Some(place) => place,
             None => return,
         };
-        let option_label = option_place_ref.descriptor.display().to_string();
+        let option_label = option_place_ref.descriptor().display().to_string();
         let option_type = format!("{}<T>", option_label);
         let option_desc = TypeDescriptor::from_string(&option_type);
         let unit_desc = TypeDescriptor::from_string("()");
@@ -967,7 +994,7 @@ impl<'a> PetriNetBuilder<'a> {
             None => return,
         };
 
-        let result_label = result_place_ref.descriptor.display().to_string();
+        let result_label = result_place_ref.descriptor().display().to_string();
         let result_type = format!("{}<{}, {}>", result_label, ok_type, err_type);
         let result_desc = TypeDescriptor::from_string(&result_type);
         let ok_desc = TypeDescriptor::from_string(ok_type);
@@ -1035,7 +1062,7 @@ impl<'a> PetriNetBuilder<'a> {
             None => return,
         };
 
-        let result_label = result_place_ref.descriptor.display().to_string();
+        let result_label = result_place_ref.descriptor().display().to_string();
         let result_type = format!("{}<{}, {}>", result_label, ok_type, err_type);
         let result_desc = TypeDescriptor::from_string(&result_type);
         let err_desc = TypeDescriptor::from_string(err_type);
@@ -1229,15 +1256,11 @@ impl<'a> PetriNetBuilder<'a> {
 
         for primitive_name in primitives {
             let descriptor = TypeDescriptor::from_type(&Type::Primitive(primitive_name.into()));
-
-            // 获取预定义的 trait 实现（先验知识）
             let mut implemented_traits = Self::get_primitive_traits(primitive_name);
 
-            // 从 rustdoc JSON 中查询额外的 trait 实现
             let additional_traits = self.query_primitive_impls_from_rustdoc(primitive_name);
             implemented_traits.extend(additional_traits);
 
-            // 去重并排序
             let unique_traits: std::collections::HashSet<_> =
                 implemented_traits.into_iter().collect();
             let mut implemented_traits: Vec<_> = unique_traits.into_iter().collect();
@@ -1308,7 +1331,7 @@ mod tests {
 
         for (_place_id, place) in net.places() {
             assert!(
-                !place.descriptor.display().contains("Self"),
+                !place.descriptor().display().contains("Self"),
                 "unexpected Self in place {:?}",
                 place
             );

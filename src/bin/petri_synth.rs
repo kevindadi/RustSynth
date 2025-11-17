@@ -171,7 +171,7 @@ fn print_state(
             writeln!(
                 stdout,
                 "  {}: {} 个令牌, 借用类型: {}",
-                place.descriptor.display(),
+                place.descriptor().display(),
                 count,
                 borrow_str
             )?;
@@ -272,7 +272,7 @@ fn find_descriptor(
 
     // 查找基础类型（规范化版本）
     let base_descriptor = net.places().find_map(|place| {
-        let descriptor = &place.1.descriptor;
+        let descriptor = place.1.descriptor();
         let normalized = descriptor.normalized();
         if normalized.display() == base_name || normalized.canonical() == base_name {
             Some(normalized)

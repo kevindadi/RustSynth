@@ -144,35 +144,35 @@ impl From<&PetriNet> for JsonPetriNet {
             let id = format!("P{}", idx);
             place_id_map.insert(place_id, id.clone());
             let mut attributes = HashMap::new();
-            if !place.implemented_traits.is_empty() {
+            let implemented_traits = place.implemented_traits();
+            if !implemented_traits.is_empty() {
                 attributes.insert(
                     "implemented_traits".to_string(),
-                    serde_json::to_value(&place.implemented_traits).unwrap_or_default(),
+                    serde_json::to_value(implemented_traits).unwrap_or_default(),
                 );
             }
-            if !place.required_trait_bounds.is_empty() {
-                attributes.insert(
-                    "required_trait_bounds".to_string(),
-                    serde_json::to_value(&place.required_trait_bounds).unwrap_or_default(),
-                );
-            }
-            if place.is_generic_parameter {
-                attributes.insert("is_generic_parameter".to_string(), serde_json::Value::Bool(true));
-            }
+
+            // 将泛型参数列表序列化为 generics 字段
+            let generics: Vec<String> = place.generic_parameters()
+                .iter()
+                .map(|param| {
+                    if param.trait_bounds.is_empty() {
+                        param.name.to_string()
+                    } else {
+                        format!("{}: {}", param.name, param.trait_bounds.join(" + "))
+                    }
+                })
+                .collect();
 
             places.push(JsonPlace {
                 id,
-                name: place.descriptor.display().to_string(),
+                name: place.descriptor().display().to_string(),
                 kind: None,
-                generics: place
-                    .generic_arguments
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                generics,
                 fields: Vec::new(),
                 attributes,
-                generic_owner_id: place.generic_owner_id.map(|id| id.0),
-                generic_owner_name: place.generic_owner_name.as_ref().map(|s| s.to_string()),
+                generic_owner_id: None, // 泛型参数不再单独创建库所
+                generic_owner_name: None, // 泛型参数不再单独创建库所
             });
         }
 
@@ -253,7 +253,7 @@ fn collect_edges_for_transition(
         let type_name = if let Some(param) = &arc.parameter {
             param.descriptor.display().to_string()
         } else if let Some(place) = net.place(place_id) {
-            place.descriptor.display().to_string()
+            place.descriptor().display().to_string()
         } else {
             return None;
         };
@@ -316,37 +316,36 @@ impl JsonPetriNet {
 
         // 1. 创建所有的 Place
         for json_place in &self.places {
-            let mut type_name = json_place.name.clone();
-            if !json_place.generics.is_empty() {
-                type_name = format!("{}<{}>", type_name, json_place.generics.join(", "));
-            }
-            let descriptor = super::type_repr::TypeDescriptor::from_string(&type_name);
+            let descriptor = super::type_repr::TypeDescriptor::from_string(&json_place.name);
             
-            let place_id = if json_place.attributes.get("is_generic_parameter")
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false)
-            {
-                // 泛型参数 Place
-                let owner_id = rustdoc_types::Id(json_place.generic_owner_id.unwrap_or(0));
-                let bounds: Vec<std::sync::Arc<str>> = json_place.attributes.get("required_trait_bounds")
-                    .and_then(|v| serde_json::from_value::<Vec<String>>(v.clone()).ok())
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(|s| std::sync::Arc::<str>::from(s))
-                    .collect();
-                let owner_name = json_place.generic_owner_name.as_ref()
-                    .map(|s| std::sync::Arc::<str>::from(s.as_str()));
-                net.add_generic_parameter_place(owner_id, owner_name, descriptor, bounds)
-            } else {
-                // 普通或基本类型 Place
-                let traits = json_place.attributes.get("implemented_traits")
-                    .and_then(|v| serde_json::from_value::<Vec<String>>(v.clone()).ok())
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(|s| std::sync::Arc::<str>::from(s))
-                    .collect();
-                net.add_primitive_place(descriptor, traits)
-            };
+            // 普通或基本类型 Place
+            let traits = json_place.attributes.get("implemented_traits")
+                .and_then(|v| serde_json::from_value::<Vec<String>>(v.clone()).ok())
+                .unwrap_or_default()
+                .into_iter()
+                .map(|s| std::sync::Arc::<str>::from(s))
+                .collect();
+            let place_id = net.add_primitive_place(descriptor, traits);
+
+            // 解析并添加泛型参数
+            for generic_str in &json_place.generics {
+                // 解析泛型参数字符串，格式可能是 "T" 或 "T: Trait1 + Trait2"
+                let parts: Vec<&str> = generic_str.splitn(2, ':').collect();
+                let param_name = parts[0].trim();
+                let trait_bounds = if parts.len() > 1 {
+                    parts[1].split('+')
+                        .map(|s| s.trim())
+                        .map(|s| std::sync::Arc::<str>::from(s))
+                        .collect()
+                } else {
+                    Vec::new()
+                };
+                net.add_generic_parameter_to_place(
+                    place_id,
+                    std::sync::Arc::<str>::from(param_name),
+                    trait_bounds,
+                );
+            }
 
             place_map.insert(json_place.id.clone(), place_id);
         }
