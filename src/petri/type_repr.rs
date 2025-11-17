@@ -229,6 +229,16 @@ impl TypeDescriptor {
         }
     }
 
+    /// 获取去除泛型后的基础类型名称
+    pub fn base_type_name(&self) -> String {
+        strip_generics(self.type_name_only().display())
+    }
+
+    /// 获取类型使用的泛型参数（按出现顺序）
+    pub fn generic_arguments(&self) -> Vec<String> {
+        parse_generic_arguments(self.display())
+    }
+
     /// 检查是否为泛型类型（如 T, U 等）
     /// 泛型类型不应该创建 Place，因为它们只是约束占位符
     pub fn is_generic(&self) -> bool {
@@ -282,6 +292,53 @@ impl TypeDescriptor {
         // 这里先保守处理：只在明确知道是泛型时才返回 true
         false // 暂时返回 false，让调用方通过其他方式检查
     }
+}
+
+fn strip_generics(input: &str) -> String {
+    if let Some(idx) = input.find('<') {
+        input[..idx].trim().to_string()
+    } else {
+        input.trim().to_string()
+    }
+}
+
+fn parse_generic_arguments(input: &str) -> Vec<String> {
+    let mut args = Vec::new();
+    let trimmed = input.trim();
+    let start = match trimmed.find('<') {
+        Some(idx) => idx + 1,
+        None => return args,
+    };
+
+    let mut depth = 0;
+    let mut current = String::new();
+    for ch in trimmed[start..].chars() {
+        match ch {
+            '<' => {
+                depth += 1;
+                current.push(ch);
+            }
+            '>' => {
+                if depth == 0 {
+                    if !current.trim().is_empty() {
+                        args.push(current.trim().to_string());
+                    }
+                    break;
+                } else {
+                    depth -= 1;
+                    current.push(ch);
+                }
+            }
+            ',' if depth == 0 => {
+                if !current.trim().is_empty() {
+                    args.push(current.trim().to_string());
+                }
+                current.clear();
+            }
+            _ => current.push(ch),
+        }
+    }
+    args
 }
 
 #[cfg(test)]

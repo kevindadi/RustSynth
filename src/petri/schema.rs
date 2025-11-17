@@ -164,7 +164,11 @@ impl From<&PetriNet> for JsonPetriNet {
                 id,
                 name: place.descriptor.display().to_string(),
                 kind: None,
-                generics: Vec::new(),
+                generics: place
+                    .generic_arguments
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
                 fields: Vec::new(),
                 attributes,
                 generic_owner_id: place.generic_owner_id.map(|id| id.0),
@@ -312,7 +316,11 @@ impl JsonPetriNet {
 
         // 1. 创建所有的 Place
         for json_place in &self.places {
-            let descriptor = super::type_repr::TypeDescriptor::from_string(&json_place.name);
+            let mut type_name = json_place.name.clone();
+            if !json_place.generics.is_empty() {
+                type_name = format!("{}<{}>", type_name, json_place.generics.join(", "));
+            }
+            let descriptor = super::type_repr::TypeDescriptor::from_string(&type_name);
             
             let place_id = if json_place.attributes.get("is_generic_parameter")
                 .and_then(|v| v.as_bool())

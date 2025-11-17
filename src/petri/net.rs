@@ -72,6 +72,9 @@ pub struct Place {
     /// 泛型参数的所有者类型名称（用于显示）
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub generic_owner_name: Option<Arc<str>>,
+    /// 类型使用的泛型参数列表
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub generic_arguments: Vec<Arc<str>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -264,12 +267,20 @@ impl PetriNet {
             is_generic_parameter: false,
             generic_owner_id: None,
             generic_owner_name: None,
+            generic_arguments: Vec::new(),
         };
         let node_idx = self.graph.add_node(Node::Place(place));
         let id = PlaceId(node_idx);
 
         self.place_lookup.insert(lookup_key, id);
         id
+    }
+    
+    /// 为已有的 Place 注册一个别名，使多个类型描述符指向同一个 Place
+    pub fn alias_place(&mut self, descriptor: TypeDescriptor, place_id: PlaceId) {
+        let normalized = descriptor.normalized();
+        let lookup_key = PlaceLookupKey::Concrete(normalized);
+        self.place_lookup.insert(lookup_key, place_id);
     }
 
     /// 添加基本类型库所，并记录其实现的 trait
@@ -306,6 +317,7 @@ impl PetriNet {
             is_generic_parameter: false,
             generic_owner_id: None,
             generic_owner_name: None,
+            generic_arguments: Vec::new(),
         };
         let node_idx = self.graph.add_node(Node::Place(place));
         let id = PlaceId(node_idx);
@@ -368,6 +380,7 @@ impl PetriNet {
             is_generic_parameter: true,
             generic_owner_id: Some(owner_id),
             generic_owner_name: owner_name,
+            generic_arguments: Vec::new(),
         };
         let node_idx = self.graph.add_node(Node::Place(place));
         let id = PlaceId(node_idx);

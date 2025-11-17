@@ -9,7 +9,7 @@ pub(crate) mod util;
 
 pub use builder::PetriNetBuilder;
 pub use net::{
-    ArcData, ArcWeight, FunctionContext, FunctionSummary, ParameterSummary, 
+    ArcData, ArcWeight, FunctionContext, FunctionSummary, ParameterSummary,
     PetriNet, PetriNetStatistics, Place, PlaceId, Token, Transition, TransitionId,
 };
 pub use synthesis::{StepState, SynthesisConfig, SynthesisOutcome, SynthesisPlan, Synthesizer};
