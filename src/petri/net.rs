@@ -1175,15 +1175,13 @@ impl std::fmt::Display for PetriNetStatistics {
     }
 }
 
-/// 清理类型标签，去掉特殊符号但保留路径信息
+/// 清理类型标签，去掉特殊符号但保留路径信息和泛型参数
 fn clean_type_label(label: &str) -> String {
     let mut result = label.to_string();
 
-    // 去掉特殊符号：< > ( ) [ ] { } * & mut
-    // 但保留 :: 路径分隔符
+    // 去掉特殊符号：( ) [ ] { } * & mut
+    // 但保留 :: 路径分隔符和 <> 泛型参数符号
     result = result
-        .replace('<', "")
-        .replace('>', "")
         .replace('(', "")
         .replace(')', "")
         .replace('[', "")
@@ -1207,21 +1205,25 @@ fn clean_type_label(label: &str) -> String {
 }
 
 fn simplify_type_name(type_name: &str) -> String {
-    // 对于 Result 和 Option 类型，保留完整的泛型参数信息
-    if type_name.starts_with("Result<") || type_name.starts_with("Option<") {
-        // 提取基础类型名和泛型参数
-        let base_name = if type_name.starts_with("Result<") {
-            "Result"
+    // 如果类型包含泛型参数（<>），需要特殊处理
+    // 例如: Result<base64::alphabet::Alphabet, ParseAlphabetError>
+    // 应该简化为: Result<Alphabet, ParseAlphabetError>
+    if let Some(angle_start) = type_name.find('<') {
+        // 提取基础类型名（在 < 之前的部分）
+        let base_part = &type_name[..angle_start];
+        let base_simplified = if let Some(last_colon) = base_part.rfind("::") {
+            &base_part[last_colon + 2..]
         } else {
-            "Option"
+            base_part
         };
 
-        // 使用 parse_generic_arguments 来正确解析嵌套的泛型参数
-        use super::type_repr::TypeDescriptor;
-        let desc = TypeDescriptor::from_string(type_name);
-        let generic_args = desc.generic_arguments();
+        // 提取泛型参数部分（<...> 之间的内容）
+        if type_name.rfind('>').is_some() {
+            // 使用 parse_generic_arguments 来正确解析嵌套的泛型参数
+            use super::type_repr::TypeDescriptor;
+            let full_type = TypeDescriptor::from_string(type_name);
+            let generic_args = full_type.generic_arguments();
 
-        if !generic_args.is_empty() {
             // 简化每个泛型参数的类型名
             let simplified_args: Vec<String> = generic_args
                 .iter()
@@ -1236,10 +1238,18 @@ fn simplify_type_name(type_name: &str) -> String {
                 })
                 .collect();
 
-            return format!("{}<{}>", base_name, simplified_args.join(", "));
+            let simplified_generic = simplified_args.join(", ");
+            let result = format!("{}<{}>", base_simplified, simplified_generic);
+
+            // 移除生命周期参数
+            let without_lifetimes = remove_lifetimes(&result);
+
+            // 继续后续处理
+            return process_simplified_type(without_lifetimes);
         }
     }
 
+    // 对于不包含泛型参数的类型，使用原来的逻辑
     let simplified = if let Some(last_colon) = type_name.rfind("::") {
         &type_name[last_colon + 2..]
     } else {
@@ -1267,13 +1277,34 @@ fn simplify_type_name(type_name: &str) -> String {
         }
     }
 
-    // 清理结尾的孤立 >
-    if without_lifetimes.ends_with('>')
-        && without_lifetimes.matches('<').count() < without_lifetimes.matches('>').count()
-    {
+    process_simplified_type(without_lifetimes)
+}
+
+fn process_simplified_type(mut without_lifetimes: String) -> String {
+    // 清理孤立的括号和多余的尖括号
+    // 例如: "Error)>" -> "Error", "Error>" -> "Error"
+    while without_lifetimes.contains(")>") && !without_lifetimes.contains("(") {
+        without_lifetimes = without_lifetimes.replace(")>", ">");
+    }
+
+    // 清理结尾的孤立右括号 (例如: "Error)" -> "Error")
+    let open_paren_count = without_lifetimes.matches('(').count();
+    let close_paren_count = without_lifetimes.matches(')').count();
+    if close_paren_count > open_paren_count {
+        // 移除多余的右括号
+        for _ in 0..(close_paren_count - open_paren_count) {
+            if let Some(pos) = without_lifetimes.rfind(')') {
+                without_lifetimes.remove(pos);
+            }
+        }
+    }
+
+    // 清理结尾的孤立 >（但要保留泛型参数的 <>）
+    // 只有当 > 的数量多于 < 的数量时才清理
+    let open_count = without_lifetimes.matches('<').count();
+    let close_count = without_lifetimes.matches('>').count();
+    if close_count > open_count && without_lifetimes.ends_with('>') {
         // 移除多余的 >
-        let open_count = without_lifetimes.matches('<').count();
-        let close_count = without_lifetimes.matches('>').count();
         for _ in 0..(close_count - open_count) {
             if let Some(pos) = without_lifetimes.rfind('>') {
                 without_lifetimes.remove(pos);
