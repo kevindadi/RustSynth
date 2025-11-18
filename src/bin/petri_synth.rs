@@ -5,10 +5,10 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result, anyhow, bail};
 use log::LevelFilter;
+use rustdoc_types::Id;
 use trustfall_rustdoc_adapter::Crate;
 use trustfall_rustdoc_adapter::petri::{
-    BorrowKind, FunctionSummary, PetriNetBuilder, PlaceId, SynthesisConfig, SynthesisOutcome,
-    Synthesizer, TypeDescriptor,
+    PetriNetBuilder, PlaceId, SynthesisConfig, SynthesisOutcome, Synthesizer, Transition,
 };
 
 fn main() -> Result<()> {
@@ -53,25 +53,11 @@ fn main() -> Result<()> {
     if let Some(output_path) = args.emit_net {
         let mut file = File::create(&output_path)
             .with_context(|| format!("无法创建输出文件:{}", output_path.display()))?;
-        let extension = output_path
-            .extension()
-            .and_then(|ext| ext.to_str())
-            .map(|ext| ext.to_ascii_lowercase());
 
-        match extension.as_deref() {
-            Some("dot") | Some("gv") => {
-                file.write_all(petri_net.to_dot().as_bytes())
-                    .context("写出 Petri 网 DOT 失败")?;
-                println!("Petri 网 DOT 文件已写入:{}", output_path.display());
-            }
-            _ => {
-                let json_net: trustfall_rustdoc_adapter::petri::schema::JsonPetriNet =
-                    (&petri_net).into();
-                serde_json::to_writer_pretty(&mut file, &json_net)
-                    .context("写出 Petri 网 JSON 失败")?;
-                println!("Petri 网 JSON 文件已写入:{}", output_path.display());
-            }
-        }
+        // 只支持 DOT 格式输出
+        file.write_all(petri_net.to_dot(&crate_data).as_bytes())
+            .context("写出 Petri 网 DOT 失败")?;
+        println!("Petri 网 DOT 文件已写入:{}", output_path.display());
     }
 
     if args.goal_types.is_empty() {
@@ -79,8 +65,8 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let initial_tokens = resolve_descriptors(&petri_net, &args.input_types)?;
-    let goal_tokens = resolve_descriptors(&petri_net, &args.goal_types)?;
+    let initial_tokens = resolve_item_ids(&petri_net, &crate_data, &args.input_types)?;
+    let goal_tokens = resolve_item_ids(&petri_net, &crate_data, &args.goal_types)?;
 
     let config = SynthesisConfig {
         max_depth: args.max_depth.unwrap_or(6),
@@ -92,16 +78,23 @@ fn main() -> Result<()> {
             println!("合成成功,调用序列长度:{}", plan.transitions.len());
             for (idx, transition_id) in plan.transitions.iter().enumerate() {
                 if idx < plan.states.len() {
-                    print_state(&petri_net, idx, &plan.states[idx], &plan.place_indices)?;
+                    print_state(
+                        &petri_net,
+                        &crate_data,
+                        idx,
+                        &plan.states[idx],
+                        &plan.place_indices,
+                    )?;
                 }
 
                 if let Some(transition) = petri_net.transition(*transition_id) {
-                    print_transition(idx, &transition.summary)?;
+                    print_transition(&crate_data, idx, transition)?;
                 }
             }
             if let Some(final_state) = plan.states.last() {
                 print_state(
                     &petri_net,
+                    &crate_data,
                     plan.transitions.len(),
                     final_state,
                     &plan.place_indices,
@@ -130,6 +123,7 @@ fn main() -> Result<()> {
 
 fn print_state(
     net: &trustfall_rustdoc_adapter::petri::PetriNet,
+    crate_: &Crate,
     step: usize,
     state: &trustfall_rustdoc_adapter::petri::StepState,
     place_indices: &std::collections::HashMap<PlaceId, usize>,
@@ -150,152 +144,139 @@ fn print_state(
     if places_with_tokens.is_empty() {
         writeln!(stdout, "  (无令牌)")?;
     } else {
-        for (place_id, place, count) in places_with_tokens {
-            let borrow_kinds = state.available_borrows.get(&place_id);
-            let borrow_str = if let Some(borrows) = borrow_kinds {
-                let mut kinds: Vec<String> = borrows
-                    .iter()
-                    .map(|b| match *b {
-                        BorrowKind::Owned => "Owned".to_string(),
-                        BorrowKind::SharedRef => "&".to_string(),
-                        BorrowKind::MutRef => "&mut".to_string(),
-                        BorrowKind::RawConstPtr => "*const".to_string(),
-                        BorrowKind::RawMutPtr => "*mut".to_string(),
-                    })
-                    .collect();
-                kinds.sort();
-                format!("[{}]", kinds.join(", "))
+        for (_place_id, place, count) in places_with_tokens {
+            // 获取类型名称
+            let type_name = if let Some(item_id) = place.item_id() {
+                crate_
+                    .index
+                    .get(&item_id)
+                    .and_then(|item| item.name.as_deref())
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| format!("Item ID: {}", item_id.0))
             } else {
-                "[Unknown]".to_string()
+                "Unknown".to_string()
             };
-            writeln!(
-                stdout,
-                "  {}: {} 个令牌, 借用类型: {}",
-                place.descriptor().display(),
-                count,
-                borrow_str
-            )?;
+            writeln!(stdout, "  {}: {} 个令牌", type_name, count)?;
         }
     }
     writeln!(stdout)?;
     Ok(())
 }
 
-fn print_transition(index: usize, summary: &FunctionSummary) -> io::Result<()> {
+fn print_transition(crate_: &Crate, index: usize, transition: &Transition) -> io::Result<()> {
     let mut stdout = io::stdout().lock();
-    writeln!(stdout, "步骤 {index}: {}", summary.signature)?;
-    if let Some(path) = &summary.qualified_path {
-        writeln!(stdout, "  定位:{path}")?;
+
+    // 获取函数名称
+    let function_name = crate_
+        .index
+        .get(&transition.item_id)
+        .and_then(|item| item.name.as_deref())
+        .unwrap_or("Unknown");
+
+    // 构建简化的函数签名：类型名 + 函数名
+    let sig = format!("{}::{}", function_name, transition.name.as_ref());
+    writeln!(stdout, "步骤 {index}: {}", sig)?;
+
+    // 获取完整路径
+    if let Some(path_summary) = crate_.paths.get(&transition.item_id) {
+        let path = path_summary.path.join("::");
+        writeln!(stdout, "  定位:{}", path)?;
     }
-    writeln!(stdout, "  上下文:{}", describe_context(&summary.context))?;
-    if !summary.generics.is_empty() {
-        writeln!(
-            stdout,
-            "  泛型:{}",
-            summary
-                .generics
-                .iter()
-                .map(|s| s.as_ref())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )?;
+
+    writeln!(
+        stdout,
+        "  上下文:{}",
+        describe_context(&transition.context, crate_)
+    )?;
+
+    if let Some(input_types) = &transition.input_types {
+        let input_names: Vec<String> = input_types
+            .iter()
+            .filter_map(|id| {
+                crate_
+                    .index
+                    .get(id)
+                    .and_then(|item| item.name.as_deref())
+                    .map(|s| s.to_string())
+            })
+            .collect();
     }
-    if !summary.where_clauses.is_empty() {
-        writeln!(
-            stdout,
-            "  where 子句:{}",
-            summary
-                .where_clauses
-                .iter()
-                .map(|s| s.as_ref())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )?;
+
+    if let Some(output_id) = transition.output_type {
+        if let Some(output_item) = crate_.index.get(&output_id) {
+            if let Some(output_name) = output_item.name.as_deref() {
+                writeln!(stdout, "  返回类型:{}", output_name)?;
+            }
+        }
     }
-    if !summary.trait_bounds.is_empty() {
-        writeln!(
-            stdout,
-            "  Trait 约束:{}",
-            summary
-                .trait_bounds
-                .iter()
-                .map(|s| s.as_ref())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )?;
-    }
+
     Ok(())
 }
 
-fn describe_context(context: &trustfall_rustdoc_adapter::petri::FunctionContext) -> String {
+fn describe_context(
+    context: &trustfall_rustdoc_adapter::petri::FunctionContext,
+    crate_: &Crate,
+) -> String {
     match context {
         trustfall_rustdoc_adapter::petri::FunctionContext::FreeFunction => "无约束函数".to_string(),
-        trustfall_rustdoc_adapter::petri::FunctionContext::InherentMethod { receiver } => {
-            format!("固有方法,接收者:{}", receiver.display())
+        trustfall_rustdoc_adapter::petri::FunctionContext::InherentMethod { receiver_id } => {
+            let receiver_name = crate_
+                .index
+                .get(receiver_id)
+                .and_then(|item| item.name.as_deref())
+                .unwrap_or("Unknown");
+            format!("固有方法,接收者:{}", receiver_name)
         }
         trustfall_rustdoc_adapter::petri::FunctionContext::TraitImplementation {
-            receiver,
+            receiver_id,
             trait_path,
-        } => format!(
-            "Trait 实现方法,接收者:{},Trait:{}",
-            receiver.display(),
-            trait_path
-        ),
+        } => {
+            let receiver_name = crate_
+                .index
+                .get(receiver_id)
+                .and_then(|item| item.name.as_deref())
+                .unwrap_or("Unknown");
+            format!(
+                "Trait 实现方法,接收者:{},Trait:{}",
+                receiver_name, trait_path
+            )
+        }
     }
 }
 
-fn resolve_descriptors(
+fn resolve_item_ids(
     net: &trustfall_rustdoc_adapter::petri::PetriNet,
+    crate_: &Crate,
     names: &[String],
-) -> Result<Vec<TypeDescriptor>> {
-    let mut descriptors = Vec::new();
+) -> Result<Vec<Id>> {
+    let mut item_ids = Vec::new();
     let mut missing = Vec::new();
     for name in names {
-        match find_descriptor(net, name) {
-            Some(descriptor) => descriptors.push(descriptor),
+        match find_item_id(net, crate_, name) {
+            Some(id) => item_ids.push(id),
             None => missing.push(name.clone()),
         }
     }
     if missing.is_empty() {
-        Ok(descriptors)
+        Ok(item_ids)
     } else {
         Err(anyhow!("以下类型未匹配:{}", missing.join(", ")))
     }
 }
 
-fn find_descriptor(
+fn find_item_id(
     net: &trustfall_rustdoc_adapter::petri::PetriNet,
+    crate_: &Crate,
     name: &str,
-) -> Option<TypeDescriptor> {
-    // 解析借用类型前缀
-    let (base_name, borrow_kind) = parse_borrow_prefix(name);
-
-    // 查找基础类型(规范化版本)
-    let base_descriptor = net.places().find_map(|place| {
-        let descriptor = place.1.descriptor();
-        let normalized = descriptor.normalized();
-        if normalized.display() == base_name || normalized.canonical() == base_name {
-            Some(normalized)
-        } else {
-            None
-        }
-    })?;
-
-    Some(base_descriptor.with_borrow_kind(borrow_kind))
-}
-
-/// 解析类型名中的借用前缀,返回基础类型名和借用类型
-fn parse_borrow_prefix(name: &str) -> (&str, BorrowKind) {
-    let name = name.trim();
-
-    if name.starts_with("*const ") {
-        return (&name[7..].trim(), BorrowKind::RawConstPtr);
-    }
-    if name.starts_with("*mut ") {
-        return (&name[5..].trim(), BorrowKind::RawMutPtr);
-    }
-    if name.starts_with('&') {
-        let mut rest = &name[1..];
+) -> Option<Id> {
+    // 移除借用前缀（&, &mut, *const, *mut）
+    let base_name = name.trim();
+    let base_name = if base_name.starts_with("*const ") {
+        &base_name[7..].trim()
+    } else if base_name.starts_with("*mut ") {
+        &base_name[5..].trim()
+    } else if base_name.starts_with('&') {
+        let mut rest = &base_name[1..];
         // 跳过生命周期
         while rest.starts_with('\'') {
             let mut end = 1;
@@ -308,17 +289,43 @@ fn parse_borrow_prefix(name: &str) -> (&str, BorrowKind) {
         }
         // 检查 mut
         if rest.starts_with("mut ") {
-            return (&rest[4..].trim(), BorrowKind::MutRef);
+            &rest[4..].trim()
         } else if rest.starts_with("mut")
             && (rest.len() == 3 || !(rest.as_bytes()[3] as char).is_alphabetic())
         {
-            return (&rest[3..].trim(), BorrowKind::MutRef);
+            &rest[3..].trim()
         } else {
-            return (rest.trim(), BorrowKind::SharedRef);
+            rest.trim()
+        }
+    } else {
+        base_name
+    };
+
+    // 在 crate 的 index 中查找匹配的 Item
+    for (item_id, item) in crate_.index.iter() {
+        // 检查完整路径或简单名称
+        if let Some(item_name) = item.name.as_deref() {
+            // 检查简单名称匹配
+            if item_name == base_name {
+                // 验证该类型在 Petri 网中有对应的 Place
+                if net.place_id(*item_id).is_some() {
+                    return Some(*item_id);
+                }
+            }
+
+            // 检查完整路径匹配
+            if let Some(path_summary) = crate_.paths.get(item_id) {
+                let full_path = path_summary.path.join("::");
+                if full_path == base_name || full_path.ends_with(&format!("::{}", base_name)) {
+                    if net.place_id(*item_id).is_some() {
+                        return Some(*item_id);
+                    }
+                }
+            }
         }
     }
 
-    (name, BorrowKind::Owned)
+    None
 }
 
 struct CliArgs {
@@ -403,8 +410,8 @@ fn parse_args() -> Result<CliArgs> {
 fn print_usage() {
     eprintln!(
         "用法:
-  petri_synth <rustdoc.json> [--input <类型>]... [--goal <类型>]...
-               [--emit-net <输出.json>] [--max-depth N] [--max-states N]
+  petri_synth --rustdoc <rustdoc.json> [--input <类型>]... [--goal <类型>]...
+               [--emit-net <输出.dot>] [--max-depth N] [--max-states N]
 
 示例:
   petri_synth --rustdoc target/doc/my_crate.json --input \"&str\" --goal \"String\"
@@ -413,7 +420,7 @@ fn print_usage() {
   --rustdoc <path>     rustdoc JSON 输入文件路径 (required)
   --input <类型>             设定初始可用的类型,可多次指定.
   --goal <类型>              指定目标类型,可多次指定.
-  --emit-net <输出.json>     将构建好的 Petri 网拓扑写入 JSON 文件.
+  --emit-net <输出.dot>      将构建好的 Petri 网拓扑写入 DOT 文件.
   --max-depth <N>           搜索调用序列的最大深度(默认 6).
   --max-states <N>          搜索过程中允许的最大状态数量(默认 10000)."
     );
