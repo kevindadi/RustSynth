@@ -18,8 +18,12 @@ pub struct PetriNetBuilder<'a> {
     impl_function_ids: HashSet<Id>,
     // 记录类型 Item 的 id 到 PlaceId 的映射
     type_place_map: HashMap<Id, PlaceId>,
-    option_wrappers: HashMap<PlaceId, BTreeSet<String>>,
-    result_wrappers: HashMap<PlaceId, BTreeSet<(String, String)>>,
+    // 记录每个 Option<T> 实例的完整类型描述符到内部类型的映射
+    option_wrappers: HashMap<Arc<str>, String>,
+    // 记录每个 Result<T, E> 实例的完整类型描述符到 (Ok类型, Err类型) 的映射
+    result_wrappers: HashMap<Arc<str>, (String, String)>,
+    // 记录结构泛型参数占位库所: (结构PlaceId, 泛型参数名) -> 占位库所PlaceId
+    generic_placeholder_places: HashMap<(PlaceId, Arc<str>), PlaceId>,
     synthetic_id_counter: u32,
 }
 
@@ -32,6 +36,7 @@ impl<'a> PetriNetBuilder<'a> {
             type_place_map: HashMap::new(),
             option_wrappers: HashMap::new(),
             result_wrappers: HashMap::new(),
+            generic_placeholder_places: HashMap::new(),
             synthetic_id_counter: 0,
         }
     }
@@ -280,6 +285,11 @@ impl<'a> PetriNetBuilder<'a> {
         for (name, ty) in &func.sig.inputs {
             // 先检查原始类型是否为泛型
             let mut is_generic = matches!(ty, Type::Generic(_));
+            let generic_param_name = if let Type::Generic(name) = ty {
+                Some(name.clone())
+            } else {
+                None
+            };
             let mut descriptor = TypeDescriptor::from_type(ty);
 
             // 替换 Self 类型
@@ -297,10 +307,44 @@ impl<'a> PetriNetBuilder<'a> {
             }
 
             // 处理参数类型
-            // 泛型参数不再单独创建库所,它们只是类型定义的属性
-            // 当遇到泛型参数时,返回 None(不创建库所)
+            // 如果遇到泛型参数，检查是否是结构内部的泛型参数
             let place_id_opt = if is_generic {
-                None
+                // 检查是否是结构内部的泛型参数
+                if let (Some(receiver), Some(generic_name)) =
+                    (receiver_descriptor, generic_param_name.as_ref())
+                {
+                    // 获取 receiver 的 PlaceId
+                    let receiver_place_id_opt = self.net.place_id(receiver);
+                    if let Some(receiver_place_id) = receiver_place_id_opt {
+                        // 检查 receiver 是否是 Composite 类型，并且包含这个泛型参数
+                        if let Some(receiver_place) = self.net.place(receiver_place_id) {
+                            let generic_name_arc = Arc::<str>::from(generic_name.as_str());
+                            if receiver_place
+                                .generic_parameters()
+                                .iter()
+                                .any(|p| p.name == generic_name_arc)
+                            {
+                                // 找到结构内部的泛型参数，链接到占位库所
+                                if let Some(&placeholder_place_id) = self
+                                    .generic_placeholder_places
+                                    .get(&(receiver_place_id, generic_name_arc))
+                                {
+                                    Some(placeholder_place_id)
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
             } else {
                 self.ensure_place(descriptor.clone())
             };
@@ -330,6 +374,14 @@ impl<'a> PetriNetBuilder<'a> {
                 summary_inputs.push(parameter);
             }
         }
+
+        let output_generic_param_name = func.sig.output.as_ref().and_then(|ty| {
+            if let Type::Generic(name) = ty {
+                Some(name.clone())
+            } else {
+                None
+            }
+        });
 
         let mut output_descriptor = func
             .sig
@@ -363,10 +415,44 @@ impl<'a> PetriNetBuilder<'a> {
 
         let mut output_arcs = Vec::new();
         if let Some(descriptor) = output_descriptor.clone() {
-            // 泛型返回值不再单独创建库所,它们只是类型定义的属性
-            // 当遇到泛型返回值时,返回 None(不创建库所)
+            // 如果返回值是泛型参数，检查是否是结构内部的泛型参数
             let place_id_opt = if is_output_generic {
-                None
+                // 检查是否是结构内部的泛型参数
+                if let (Some(receiver), Some(generic_name)) =
+                    (receiver_descriptor, output_generic_param_name.as_ref())
+                {
+                    // 获取 receiver 的 PlaceId
+                    let receiver_place_id_opt = self.net.place_id(receiver);
+                    if let Some(receiver_place_id) = receiver_place_id_opt {
+                        // 检查 receiver 是否是 Composite 类型，并且包含这个泛型参数
+                        if let Some(receiver_place) = self.net.place(receiver_place_id) {
+                            let generic_name_arc = Arc::<str>::from(generic_name.as_str());
+                            if receiver_place
+                                .generic_parameters()
+                                .iter()
+                                .any(|p| p.name == generic_name_arc)
+                            {
+                                // 找到结构内部的泛型参数，链接到占位库所
+                                if let Some(&placeholder_place_id) = self
+                                    .generic_placeholder_places
+                                    .get(&(receiver_place_id, generic_name_arc))
+                                {
+                                    Some(placeholder_place_id)
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
             } else {
                 self.ensure_place(descriptor.clone())
             };
@@ -529,26 +615,115 @@ impl<'a> PetriNetBuilder<'a> {
 
     /// 确保 Place 存在,但如果类型是泛型则返回 None(泛型不创建 Place)
     /// 注意:库所应该只表示类型本身,引用信息应该记录在 arc 的 borrow_kind 中
-    /// 库所使用类型名称(去除路径)作为 key,路径信息仅作为补充
+    /// 对于 Result 和 Option 类型,使用完整的类型描述符(包括泛型参数)来创建独立的 Place
     fn ensure_place(&mut self, descriptor: TypeDescriptor) -> Option<PlaceId> {
         // 首先规范化描述符,去除引用符号(库所只表示类型本身)
         let normalized = descriptor.normalized();
 
         // 检查是否是 Result 类型,需要特殊处理
         let display_str = normalized.display();
-        let generic_args = descriptor.generic_arguments();
+        let generic_args = normalized.generic_arguments();
 
-        // 先尝试从规范化后的完整字符串中提取基础类型名
-        // 这样可以正确处理 Result<T, E> 和 Option<T> 的情况,即使 T 或 E 包含路径
-        let base_name = if display_str.starts_with("Result<") {
-            "Result".to_string()
-        } else if display_str.starts_with("Option<") {
-            "Option".to_string()
-        } else {
-            // 对于其他类型,使用原来的逻辑
-            let name_only = normalized.type_name_only();
-            name_only.base_type_name()
-        };
+        // 对于 Result 和 Option 类型,使用完整的类型描述符(包括泛型参数)来创建独立的 Place
+        let is_result = display_str.starts_with("Result<");
+        let is_option = display_str.starts_with("Option<");
+
+        if is_result || is_option {
+            // 对于 Result 和 Option,使用完整的类型描述符作为 key
+            let full_type_key = Arc::<str>::from(display_str);
+
+            // 检查 Place 是否已存在
+            let existing_id = self.net.place_id(&normalized);
+
+            if let Some(place_id) = existing_id {
+                // 记录 wrapper 实例化信息
+                if is_result {
+                    if generic_args.len() >= 2 {
+                        // Result<T, E> - 有两个类型参数
+                        self.result_wrappers.insert(
+                            full_type_key.clone(),
+                            (generic_args[0].clone(), generic_args[1].clone()),
+                        );
+                        // 为 Ok 和 Err 类型分别创建 Place
+                        let ok_desc = TypeDescriptor::from_string(&generic_args[0]);
+                        let err_desc = TypeDescriptor::from_string(&generic_args[1]);
+                        self.ensure_place(ok_desc);
+                        self.ensure_place(err_desc);
+                    } else if generic_args.len() == 1 {
+                        // Result<T> - 只有一个类型参数，只创建 Ok 类型的 Place
+                        self.result_wrappers.insert(
+                            full_type_key.clone(),
+                            (generic_args[0].clone(), "()".to_string()),
+                        );
+                        let ok_desc = TypeDescriptor::from_string(&generic_args[0]);
+                        self.ensure_place(ok_desc);
+                    }
+                    // Result<()> 或 Result<> - 空数据，不创建后继
+                } else if is_option && !generic_args.is_empty() {
+                    self.option_wrappers
+                        .insert(full_type_key.clone(), generic_args[0].clone());
+                    // 为内部类型创建 Place
+                    let inner_desc = TypeDescriptor::from_string(&generic_args[0]);
+                    self.ensure_place(inner_desc);
+                }
+                return Some(place_id);
+            }
+
+            // 创建新的 Place
+            let place_id = self.net.add_place(normalized.clone());
+            debug!(
+                "   📍 [Place] {} (Place ID: {}) [通过 ensure_place 创建] [Result/Option 实例]",
+                normalized.display(),
+                place_id.0.index()
+            );
+
+            // 记录 wrapper 实例化信息
+            if is_result {
+                if generic_args.len() >= 2 {
+                    // Result<T, E> - 有两个类型参数
+                    self.result_wrappers.insert(
+                        full_type_key.clone(),
+                        (generic_args[0].clone(), generic_args[1].clone()),
+                    );
+                    // 为 Ok 和 Err 类型分别创建 Place
+                    let ok_desc = TypeDescriptor::from_string(&generic_args[0]);
+                    let err_desc = TypeDescriptor::from_string(&generic_args[1]);
+                    self.ensure_place(ok_desc);
+                    self.ensure_place(err_desc);
+                } else if generic_args.len() == 1 {
+                    // Result<T> - 只有一个类型参数，只创建 Ok 类型的 Place
+                    self.result_wrappers.insert(
+                        full_type_key.clone(),
+                        (generic_args[0].clone(), "()".to_string()),
+                    );
+                    let ok_desc = TypeDescriptor::from_string(&generic_args[0]);
+                    self.ensure_place(ok_desc);
+                }
+                // Result<()> 或 Result<> - 空数据，不创建后继
+            } else if is_option && !generic_args.is_empty() {
+                self.option_wrappers
+                    .insert(full_type_key.clone(), generic_args[0].clone());
+                // 为内部类型创建 Place
+                let inner_desc = TypeDescriptor::from_string(&generic_args[0]);
+                self.ensure_place(inner_desc);
+            }
+
+            return Some(place_id);
+        }
+
+        // 对于其他类型,使用原来的逻辑
+        let name_only = normalized.type_name_only();
+        let base_name = name_only.base_type_name();
+
+        // Error trait 应该映射到全局的 Error Place
+        if base_name == "Error" {
+            let error_desc = TypeDescriptor::from_string("Error").normalized();
+            if let Some(place_id) = self.net.place_id(&error_desc) {
+                return Some(place_id);
+            }
+            let place_id = self.net.add_place(error_desc);
+            return Some(place_id);
+        }
 
         // 如果仍然是 Self,说明上下文推断失败,此时不要为 Self 创建单独的 Place
         // 这些 Self 通常应该在更高一层被替换为具体类型
@@ -603,35 +778,6 @@ impl<'a> PetriNetBuilder<'a> {
         let existing_id = self.net.place_id(&base_descriptor);
 
         if let Some(place_id) = existing_id {
-            self.record_wrapper_instantiations(&base_name, place_id, &generic_args);
-
-            // 对于 Result 类型,需要为 Ok 和 Err 类型分别创建 Place
-            if base_name == "Result" && generic_args.len() >= 2 {
-                let ok_type = &generic_args[0];
-                let err_type = &generic_args[1];
-
-                // 为 Ok 类型创建 Place
-                let ok_desc = TypeDescriptor::from_string(ok_type);
-                if let Some(_ok_place) = self.ensure_place(ok_desc) {
-                    // Ok 类型 Place 已创建或已存在
-                }
-
-                // 为 Err 类型创建 Place
-                let err_desc = TypeDescriptor::from_string(err_type);
-                if let Some(_err_place) = self.ensure_place(err_desc) {
-                    // Err 类型 Place 已创建或已存在
-                }
-            }
-
-            // 对于 Option 类型,需要为内部类型创建 Place
-            if base_name == "Option" && !generic_args.is_empty() {
-                let inner_type = &generic_args[0];
-                let inner_desc = TypeDescriptor::from_string(inner_type);
-                if let Some(_inner_place) = self.ensure_place(inner_desc) {
-                    // 内部类型 Place 已创建或已存在
-                }
-            }
-
             return Some(place_id);
         }
 
@@ -642,58 +788,8 @@ impl<'a> PetriNetBuilder<'a> {
             place_id.0.index(),
             normalized.display()
         );
-        self.record_wrapper_instantiations(&base_name, place_id, &generic_args);
-
-        // 对于 Result 类型,需要为 Ok 和 Err 类型分别创建 Place
-        if base_name == "Result" && generic_args.len() >= 2 {
-            let ok_type = &generic_args[0];
-            let err_type = &generic_args[1];
-
-            let ok_desc = TypeDescriptor::from_string(ok_type);
-            if let Some(_ok_place) = self.ensure_place(ok_desc) {
-                // Ok 类型 Place 已创建或已存在
-            }
-
-            let err_desc = TypeDescriptor::from_string(err_type);
-            if let Some(_err_place) = self.ensure_place(err_desc) {
-                // Err 类型 Place 已创建或已存在
-            }
-        }
-
-        if base_name == "Option" && !generic_args.is_empty() {
-            let inner_type = &generic_args[0];
-            let inner_desc = TypeDescriptor::from_string(inner_type);
-            if let Some(_inner_place) = self.ensure_place(inner_desc) {}
-        }
 
         Some(place_id)
-    }
-
-    fn record_wrapper_instantiations(
-        &mut self,
-        base_name: &str,
-        place_id: PlaceId,
-        generic_args: &[String],
-    ) {
-        match base_name {
-            "Option" => {
-                if let Some(inner) = generic_args.first() {
-                    self.option_wrappers
-                        .entry(place_id)
-                        .or_default()
-                        .insert(inner.clone());
-                }
-            }
-            "Result" => {
-                if generic_args.len() >= 2 {
-                    self.result_wrappers
-                        .entry(place_id)
-                        .or_default()
-                        .insert((generic_args[0].clone(), generic_args[1].clone()));
-                }
-            }
-            _ => {}
-        }
     }
 
     /// 为类型定义(Struct、Enum、Union、Variant)创建 Place
@@ -731,7 +827,6 @@ impl<'a> PetriNetBuilder<'a> {
                     Vec::new(),
                 );
 
-                // 收集所有 Variant 并添加到 Enum Place
                 for variant_id in &enum_def.variants {
                     if let Some(variant_item) = self.crate_.index.get(variant_id) {
                         if let ItemEnum::Variant(variant) = &variant_item.inner {
@@ -769,7 +864,7 @@ impl<'a> PetriNetBuilder<'a> {
             _ => None,
         };
 
-        // 提取泛型参数并添加到 Place
+        // 提取泛型参数并添加到 Place，同时创建占位库所和变迁
         match generics {
             Some(generics) => {
                 for param in &generics.params {
@@ -783,8 +878,80 @@ impl<'a> PetriNetBuilder<'a> {
                                 )
                             })
                             .collect();
-                        self.net
-                            .add_generic_parameter_to_place(place_id, param_name, trait_bounds);
+                        self.net.add_generic_parameter_to_place(
+                            place_id,
+                            param_name.clone(),
+                            trait_bounds.clone(),
+                        );
+
+                        // 为泛型参数创建占位库所
+                        // 占位库所的类型名是泛型参数名（如 T），但名字是 "结构名::泛型名"（如 "MyStruct::T"）
+                        let placeholder_name = format!("{}::{}", type_name, param.name);
+                        let placeholder_desc = TypeDescriptor::from_string(&placeholder_name);
+                        let generic_param = super::net::GenericParameter {
+                            name: param_name.clone(),
+                            trait_bounds: trait_bounds.clone(),
+                            owner_place_id: place_id,
+                            owner_descriptor: descriptor.clone(),
+                        };
+                        let placeholder_place_id =
+                            self.net.add_generic_place(placeholder_desc, generic_param);
+
+                        // 记录映射
+                        self.generic_placeholder_places
+                            .insert((place_id, param_name.clone()), placeholder_place_id);
+
+                        // 创建变迁：从结构 Place 链接到泛型参数的占位库所
+                        // 变迁名称是 "结构名+泛型名"（如 "MyStruct+T"）
+                        let transition_name = format!("{}+{}", type_name, param.name);
+                        let summary = FunctionSummary {
+                            item_id: self.next_synthetic_id(),
+                            name: Arc::<str>::from(transition_name.clone()),
+                            qualified_path: None,
+                            signature: Arc::<str>::from(format!(
+                                "fn {}({}: {}) -> {}",
+                                transition_name, type_name, type_name, param.name
+                            )),
+                            generics: Vec::new(),
+                            where_clauses: Vec::new(),
+                            trait_bounds: trait_bounds.iter().map(|b| b.clone()).collect(),
+                            context: FunctionContext::FreeFunction,
+                            inputs: vec![ParameterSummary {
+                                name: Some(Arc::<str>::from(type_name.clone())),
+                                descriptor: descriptor.clone(),
+                            }],
+                            output: Some(TypeDescriptor::from_string(&param.name)),
+                        };
+                        let transition_id = self.net.add_transition(summary);
+
+                        // 输入：结构 Place
+                        self.net.add_input_arc_from_place(
+                            place_id,
+                            transition_id,
+                            ArcData {
+                                weight: 1,
+                                parameter: Some(ParameterSummary {
+                                    name: Some(Arc::<str>::from(type_name.clone())),
+                                    descriptor: descriptor.clone(),
+                                }),
+                                kind: ArcKind::Normal,
+                                descriptor: None,
+                                borrow_kind: Some(BorrowKind::Owned),
+                            },
+                        );
+
+                        // 输出：泛型参数占位库所
+                        self.net.add_output_arc_to_place(
+                            transition_id,
+                            placeholder_place_id,
+                            ArcData {
+                                weight: 1,
+                                parameter: None,
+                                kind: ArcKind::Normal,
+                                descriptor: Some(TypeDescriptor::from_string(&param.name)),
+                                borrow_kind: Some(BorrowKind::Owned),
+                            },
+                        );
                     }
                 }
             }
@@ -898,29 +1065,32 @@ impl<'a> PetriNetBuilder<'a> {
     }
 
     fn create_option_wrapper_transitions(&mut self) {
-        let entries: Vec<(PlaceId, BTreeSet<String>)> = self
+        // 为每个 Option<T> 实例创建对应的变迁
+        let entries: Vec<(Arc<str>, String)> = self
             .option_wrappers
             .iter()
-            .map(|(id, set)| (*id, set.clone()))
+            .map(|(key, inner)| (key.clone(), inner.clone()))
             .collect();
 
-        for (place_id, inner_types) in entries {
-            for inner in &inner_types {
-                self.add_option_some_transition(place_id, inner);
-            }
-            self.add_option_none_transition(place_id);
+        for (option_type_key, inner_type) in entries {
+            // 获取 Option 的 PlaceId
+            let option_desc = TypeDescriptor::from_string(&option_type_key);
+            let Some(option_place) = self.net.place_id(&option_desc) else {
+                continue;
+            };
+
+            self.add_option_some_transition(option_place, &option_type_key, &inner_type);
+            self.add_option_none_transition(option_place, &option_type_key);
         }
     }
 
-    fn add_option_some_transition(&mut self, option_place: PlaceId, inner_type: &str) {
-        let option_place_ref = match self.net.place(option_place) {
-            Some(place) => place,
-            None => return,
-        };
-
-        let option_label = option_place_ref.descriptor().display().to_string();
-        let option_type = format!("{}<{}>", option_label, inner_type);
-        let option_desc = TypeDescriptor::from_string(&option_type);
+    fn add_option_some_transition(
+        &mut self,
+        option_place: PlaceId,
+        option_type_key: &str,
+        inner_type: &str,
+    ) {
+        let option_desc = TypeDescriptor::from_string(option_type_key);
         let inner_desc = TypeDescriptor::from_string(inner_type);
 
         let Some(inner_place) = self.ensure_place(inner_desc.clone()) else {
@@ -929,11 +1099,11 @@ impl<'a> PetriNetBuilder<'a> {
 
         let summary = FunctionSummary {
             item_id: self.next_synthetic_id(),
-            name: Arc::<str>::from(format!("{}::unwrap_some({})", option_label, inner_type)),
+            name: Arc::<str>::from(format!("{}::some", option_type_key)),
             qualified_path: None,
             signature: Arc::<str>::from(format!(
-                "fn unwrap_some(option: {}) -> {}",
-                option_type, inner_type
+                "fn some(option: {}) -> {}",
+                option_type_key, inner_type
             )),
             generics: Vec::new(),
             where_clauses: Vec::new(),
@@ -976,24 +1146,26 @@ impl<'a> PetriNetBuilder<'a> {
         );
     }
 
-    fn add_option_none_transition(&mut self, option_place: PlaceId) {
-        let option_place_ref = match self.net.place(option_place) {
-            Some(place) => place,
-            None => return,
-        };
-        let option_label = option_place_ref.descriptor().display().to_string();
-        let option_type = format!("{}<T>", option_label);
-        let option_desc = TypeDescriptor::from_string(&option_type);
+    fn add_option_none_transition(&mut self, option_place: PlaceId, option_type_key: &str) {
+        let option_desc = TypeDescriptor::from_string(option_type_key);
         let unit_desc = TypeDescriptor::from_string("()");
-        let Some(unit_place) = self.ensure_place(unit_desc.clone()) else {
-            return;
+
+        // none 可以是全局的,因为其不含任何结构
+        // 尝试获取全局的 unit place,如果不存在则创建
+        let unit_place = if let Some(place_id) = self.net.place_id(&unit_desc) {
+            place_id
+        } else {
+            self.ensure_place(unit_desc.clone()).unwrap_or_else(|| {
+                let place_id = self.net.add_place(unit_desc.clone());
+                place_id
+            })
         };
 
         let summary = FunctionSummary {
             item_id: self.next_synthetic_id(),
-            name: Arc::<str>::from(format!("{}::unwrap_none()", option_label)),
+            name: Arc::<str>::from(format!("{}::none", option_type_key)),
             qualified_path: None,
-            signature: Arc::<str>::from(format!("fn unwrap_none(option: {}) -> ()", option_type)),
+            signature: Arc::<str>::from(format!("fn none(option: {}) -> ()", option_type_key)),
             generics: Vec::new(),
             where_clauses: Vec::new(),
             trait_bounds: Vec::new(),
@@ -1036,41 +1208,144 @@ impl<'a> PetriNetBuilder<'a> {
     }
 
     fn create_result_wrapper_transitions(&mut self) {
-        let entries: Vec<(PlaceId, BTreeSet<(String, String)>)> = self
+        // 为每个 Result<T, E> 实例创建对应的变迁
+        let entries: Vec<(Arc<str>, (String, String))> = self
             .result_wrappers
             .iter()
-            .map(|(id, set)| (*id, set.clone()))
+            .map(|(key, (ok, err))| (key.clone(), (ok.clone(), err.clone())))
             .collect();
 
-        for (place_id, variants) in entries {
-            for (ok_ty, err_ty) in &variants {
-                self.add_result_ok_transition(place_id, ok_ty, err_ty);
-                self.add_result_err_transition(place_id, ok_ty, err_ty);
+        for (result_type_key, (ok_type, err_type)) in entries {
+            // 获取 Result 的 PlaceId
+            let result_desc = TypeDescriptor::from_string(&result_type_key);
+            let Some(result_place) = self.net.place_id(&result_desc) else {
+                continue;
+            };
+
+            // 检查是否有两个有效的类型参数
+            let has_ok = ok_type != "()" && !ok_type.is_empty();
+            let has_err = err_type != "()" && !err_type.is_empty();
+
+            if has_ok && has_err {
+                // Result<T, E> - 有两个类型参数，创建 unwrap 变迁链接到两个后继库所
+                self.add_result_unwrap_transition(
+                    result_place,
+                    &result_type_key,
+                    &ok_type,
+                    &err_type,
+                );
+            } else if has_ok {
+                // Result<T> - 只有一个类型参数，只创建到 Ok 类型的 unwrap 变迁
+                self.add_result_unwrap_single_transition(result_place, &result_type_key, &ok_type);
             }
+            // Result<()> 或 Result<> - 空数据，不创建 unwrap 变迁
         }
     }
 
-    fn add_result_ok_transition(&mut self, result_place: PlaceId, ok_type: &str, err_type: &str) {
-        let result_place_ref = match self.net.place(result_place) {
-            Some(place) => place,
-            None => return,
+    fn add_result_unwrap_transition(
+        &mut self,
+        result_place: PlaceId,
+        result_type_key: &str,
+        ok_type: &str,
+        err_type: &str,
+    ) {
+        let result_desc = TypeDescriptor::from_string(result_type_key);
+        let ok_desc = TypeDescriptor::from_string(ok_type);
+        let err_desc = TypeDescriptor::from_string(err_type);
+
+        let Some(ok_place) = self.ensure_place(ok_desc.clone()) else {
+            return;
+        };
+        let Some(err_place) = self.ensure_place(err_desc.clone()) else {
+            return;
         };
 
-        let result_label = result_place_ref.descriptor().display().to_string();
-        let result_type = format!("{}<{}, {}>", result_label, ok_type, err_type);
-        let result_desc = TypeDescriptor::from_string(&result_type);
+        // 创建一个 unwrap 变迁,链接到 Ok 和 Err 两个后继库所
+        let summary = FunctionSummary {
+            item_id: self.next_synthetic_id(),
+            name: Arc::<str>::from(format!("{}::unwrap", result_type_key)),
+            qualified_path: None,
+            signature: Arc::<str>::from(format!(
+                "fn unwrap(result: {}) -> ({}, {})",
+                result_type_key, ok_type, err_type
+            )),
+            generics: Vec::new(),
+            where_clauses: Vec::new(),
+            trait_bounds: Vec::new(),
+            context: FunctionContext::FreeFunction,
+            inputs: vec![ParameterSummary {
+                name: Some(Arc::<str>::from("result")),
+                descriptor: result_desc.clone(),
+            }],
+            output: None, // unwrap 有两个输出,所以 output 为 None
+        };
+
+        let transition_id = self.net.add_transition(summary);
+
+        // 输入: Result<T, E>
+        self.net.add_input_arc_from_place(
+            result_place,
+            transition_id,
+            ArcData {
+                weight: 1,
+                parameter: Some(ParameterSummary {
+                    name: Some(Arc::<str>::from("result")),
+                    descriptor: result_desc.clone(),
+                }),
+                kind: ArcKind::Normal,
+                descriptor: None,
+                borrow_kind: Some(BorrowKind::Owned),
+            },
+        );
+
+        // 输出1: Ok 类型
+        self.net.add_output_arc_to_place(
+            transition_id,
+            ok_place,
+            ArcData {
+                weight: 1,
+                parameter: None,
+                kind: ArcKind::Normal,
+                descriptor: Some(ok_desc.clone()),
+                borrow_kind: Some(ok_desc.borrow_kind()),
+            },
+        );
+
+        // 输出2: Err 类型
+        self.net.add_output_arc_to_place(
+            transition_id,
+            err_place,
+            ArcData {
+                weight: 1,
+                parameter: None,
+                kind: ArcKind::Normal,
+                descriptor: Some(err_desc.clone()),
+                borrow_kind: Some(err_desc.borrow_kind()),
+            },
+        );
+    }
+
+    fn add_result_unwrap_single_transition(
+        &mut self,
+        result_place: PlaceId,
+        result_type_key: &str,
+        ok_type: &str,
+    ) {
+        let result_desc = TypeDescriptor::from_string(result_type_key);
         let ok_desc = TypeDescriptor::from_string(ok_type);
+
         let Some(ok_place) = self.ensure_place(ok_desc.clone()) else {
             return;
         };
 
+        // 创建一个 unwrap 变迁,只链接到 Ok 类型
         let summary = FunctionSummary {
             item_id: self.next_synthetic_id(),
-            name: Arc::<str>::from(format!("{}::unwrap_ok()", result_label)),
+            name: Arc::<str>::from(format!("{}::unwrap", result_type_key)),
             qualified_path: None,
             signature: Arc::<str>::from(format!(
-                "fn unwrap_ok(result: {}) -> {}",
-                result_type, ok_type
+                "fn unwrap(result: {}) -> {}",
+                result_type_key, ok_type
             )),
             generics: Vec::new(),
             where_clauses: Vec::new(),
@@ -1085,6 +1360,7 @@ impl<'a> PetriNetBuilder<'a> {
 
         let transition_id = self.net.add_transition(summary);
 
+        // 输入: Result<T>
         self.net.add_input_arc_from_place(
             result_place,
             transition_id,
@@ -1100,6 +1376,7 @@ impl<'a> PetriNetBuilder<'a> {
             },
         );
 
+        // 输出: Ok 类型
         self.net.add_output_arc_to_place(
             transition_id,
             ok_place,
@@ -1109,69 +1386,6 @@ impl<'a> PetriNetBuilder<'a> {
                 kind: ArcKind::Normal,
                 descriptor: Some(ok_desc.clone()),
                 borrow_kind: Some(ok_desc.borrow_kind()),
-            },
-        );
-    }
-
-    fn add_result_err_transition(&mut self, result_place: PlaceId, ok_type: &str, err_type: &str) {
-        let result_place_ref = match self.net.place(result_place) {
-            Some(place) => place,
-            None => return,
-        };
-
-        let result_label = result_place_ref.descriptor().display().to_string();
-        let result_type = format!("{}<{}, {}>", result_label, ok_type, err_type);
-        let result_desc = TypeDescriptor::from_string(&result_type);
-        let err_desc = TypeDescriptor::from_string(err_type);
-        let Some(err_place) = self.ensure_place(err_desc.clone()) else {
-            return;
-        };
-
-        let summary = FunctionSummary {
-            item_id: self.next_synthetic_id(),
-            name: Arc::<str>::from(format!("{}::unwrap_err()", result_label)),
-            qualified_path: None,
-            signature: Arc::<str>::from(format!(
-                "fn unwrap_err(result: {}) -> {}",
-                result_type, err_type
-            )),
-            generics: Vec::new(),
-            where_clauses: Vec::new(),
-            trait_bounds: Vec::new(),
-            context: FunctionContext::FreeFunction,
-            inputs: vec![ParameterSummary {
-                name: Some(Arc::<str>::from("result")),
-                descriptor: result_desc.clone(),
-            }],
-            output: Some(err_desc.clone()),
-        };
-
-        let transition_id = self.net.add_transition(summary);
-
-        self.net.add_input_arc_from_place(
-            result_place,
-            transition_id,
-            ArcData {
-                weight: 1,
-                parameter: Some(ParameterSummary {
-                    name: Some(Arc::<str>::from("result")),
-                    descriptor: result_desc.clone(),
-                }),
-                kind: ArcKind::Normal,
-                descriptor: None,
-                borrow_kind: Some(BorrowKind::Owned),
-            },
-        );
-
-        self.net.add_output_arc_to_place(
-            transition_id,
-            err_place,
-            ArcData {
-                weight: 1,
-                parameter: None,
-                kind: ArcKind::Normal,
-                descriptor: Some(err_desc.clone()),
-                borrow_kind: Some(err_desc.borrow_kind()),
             },
         );
     }

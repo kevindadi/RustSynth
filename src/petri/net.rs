@@ -416,6 +416,30 @@ impl PetriNet {
         self.place_lookup.insert(lookup_key, place_id);
     }
 
+    /// 添加泛型参数占位库所
+    pub fn add_generic_place(
+        &mut self,
+        descriptor: TypeDescriptor,
+        generic_param: GenericParameter,
+    ) -> PlaceId {
+        let normalized = descriptor.normalized();
+        let lookup_key = PlaceLookupKey::Type(normalized.clone());
+
+        if let Some(&id) = self.place_lookup.get(&lookup_key) {
+            return id;
+        }
+
+        let place = Place::Generic {
+            descriptor: normalized.clone(),
+            generic_param: generic_param.clone(),
+        };
+        let node_idx = self.graph.add_node(Node::Place(place));
+        let id = PlaceId(node_idx);
+
+        self.place_lookup.insert(lookup_key, id);
+        id
+    }
+
     /// 为类型 Place 添加泛型参数
     ///
     /// 泛型参数作为类型定义的属性,存储在 Composite Place 的 generic_parameters 字段中
@@ -739,7 +763,9 @@ impl PetriNet {
                         other_places.push((id, place));
                     }
                 }
+
                 Place::Generic { .. } => {
+                    // 泛型参数占位库所单独处理
                     other_places.push((id, place));
                 }
             }
@@ -800,7 +826,57 @@ impl PetriNet {
         }
 
         for (id, place) in other_places {
-            let label = simplify_type_name(place.descriptor().display());
+            let label = match place {
+                Place::Generic { generic_param, .. } => {
+                    // 泛型参数占位库所：显示为 "struct A:T" 格式
+                    let owner_desc = &generic_param.owner_descriptor;
+                    let owner_display = owner_desc.display();
+
+                    // 确定类型种类
+                    let type_kind =
+                        if let Some(owner_place) = self.place(generic_param.owner_place_id) {
+                            match owner_place {
+                                Place::Composite { kind, .. } => match kind {
+                                    CompositeTypeKind::Struct => "struct",
+                                    CompositeTypeKind::Enum => "enum",
+                                    CompositeTypeKind::Union => "union",
+                                },
+                                _ => "type",
+                            }
+                        } else {
+                            "type"
+                        };
+
+                    // 获取类型名（去掉路径）
+                    let owner_name = simplify_type_name(owner_display);
+                    let generic_name = generic_param.name.as_ref();
+
+                    format!("{} {}:{}", type_kind, owner_name, generic_name)
+                }
+                _ => {
+                    // 对于其他类型，保留更多信息以区分同名类型
+                    let display = place.descriptor().display();
+                    let simplified = simplify_type_name(display);
+
+                    // 如果简化后的名字相同，保留部分路径信息
+                    // 去掉特殊符号但保留路径信息
+                    let with_path = if display.contains("::") && !simplified.contains("::") {
+                        // 提取最后两级路径
+                        let path_parts: Vec<&str> = display.split("::").collect();
+                        if path_parts.len() >= 2 {
+                            format!("{}::{}", path_parts[path_parts.len() - 2], simplified)
+                        } else {
+                            simplified
+                        }
+                    } else {
+                        simplified
+                    };
+
+                    // 清理特殊符号但保留其他信息
+                    clean_type_label(&with_path)
+                }
+            };
+
             let _ = writeln!(
                 dot,
                 "  p{} [shape=circle,label=\"{}\"];",
@@ -1099,7 +1175,71 @@ impl std::fmt::Display for PetriNetStatistics {
     }
 }
 
+/// 清理类型标签，去掉特殊符号但保留路径信息
+fn clean_type_label(label: &str) -> String {
+    let mut result = label.to_string();
+
+    // 去掉特殊符号：< > ( ) [ ] { } * & mut
+    // 但保留 :: 路径分隔符
+    result = result
+        .replace('<', "")
+        .replace('>', "")
+        .replace('(', "")
+        .replace(')', "")
+        .replace('[', "")
+        .replace(']', "")
+        .replace('{', "")
+        .replace('}', "")
+        .replace('*', "")
+        .replace("&mut ", "")
+        .replace("&", "")
+        .replace("mut ", "");
+
+    // 清理多余的空格和逗号
+    result = result
+        .replace(", ", ",")
+        .replace(" ,", ",")
+        .replace("  ", " ")
+        .trim()
+        .to_string();
+
+    result
+}
+
 fn simplify_type_name(type_name: &str) -> String {
+    // 对于 Result 和 Option 类型，保留完整的泛型参数信息
+    if type_name.starts_with("Result<") || type_name.starts_with("Option<") {
+        // 提取基础类型名和泛型参数
+        let base_name = if type_name.starts_with("Result<") {
+            "Result"
+        } else {
+            "Option"
+        };
+
+        // 使用 parse_generic_arguments 来正确解析嵌套的泛型参数
+        use super::type_repr::TypeDescriptor;
+        let desc = TypeDescriptor::from_string(type_name);
+        let generic_args = desc.generic_arguments();
+
+        if !generic_args.is_empty() {
+            // 简化每个泛型参数的类型名
+            let simplified_args: Vec<String> = generic_args
+                .iter()
+                .map(|arg| {
+                    let trimmed = arg.trim();
+                    // 简化每个参数的类型名（去掉路径前缀）
+                    if let Some(last_colon) = trimmed.rfind("::") {
+                        trimmed[last_colon + 2..].trim().to_string()
+                    } else {
+                        trimmed.to_string()
+                    }
+                })
+                .collect();
+
+            return format!("{}<{}>", base_name, simplified_args.join(", "));
+        }
+    }
+
     let simplified = if let Some(last_colon) = type_name.rfind("::") {
         &type_name[last_colon + 2..]
     } else {
