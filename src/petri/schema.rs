@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::Path;
 use std::fs;
+use std::path::Path;
 
 use crate::petri::net::{ArcData, FunctionContext, FunctionSummary, PetriNet, PlaceId};
 
-/// RepairPetriNet - 与 JSON Schema 对应的 Petri 网顶层结构。
+/// RepairPetriNet - 与 JSON Schema 对应的 Petri 网顶层结构.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonPetriNet {
     pub places: Vec<JsonPlace>,
@@ -153,7 +153,8 @@ impl From<&PetriNet> for JsonPetriNet {
             }
 
             // 将泛型参数列表序列化为 generics 字段
-            let generics: Vec<String> = place.generic_parameters()
+            let generics: Vec<String> = place
+                .generic_parameters()
                 .iter()
                 .map(|param| {
                     if param.trait_bounds.is_empty() {
@@ -171,7 +172,7 @@ impl From<&PetriNet> for JsonPetriNet {
                 generics,
                 fields: Vec::new(),
                 attributes,
-                generic_owner_id: None, // 泛型参数不再单独创建库所
+                generic_owner_id: None,   // 泛型参数不再单独创建库所
                 generic_owner_name: None, // 泛型参数不再单独创建库所
             });
         }
@@ -187,18 +188,8 @@ impl From<&PetriNet> for JsonPetriNet {
                 FunctionContext::TraitImplementation { .. } => "method".to_string(),
             });
 
-            let inputs = collect_edges_for_transition(
-                net,
-                transition_id,
-                &place_id_map,
-                true,
-            );
-            let outputs = collect_edges_for_transition(
-                net,
-                transition_id,
-                &place_id_map,
-                false,
-            );
+            let inputs = collect_edges_for_transition(net, transition_id, &place_id_map, true);
+            let outputs = collect_edges_for_transition(net, transition_id, &place_id_map, false);
 
             let mut origin = HashMap::new();
             if let Some(path) = &summary.qualified_path {
@@ -317,9 +308,11 @@ impl JsonPetriNet {
         // 1. 创建所有的 Place
         for json_place in &self.places {
             let descriptor = super::type_repr::TypeDescriptor::from_string(&json_place.name);
-            
+
             // 普通或基本类型 Place
-            let traits = json_place.attributes.get("implemented_traits")
+            let traits = json_place
+                .attributes
+                .get("implemented_traits")
                 .and_then(|v| serde_json::from_value::<Vec<String>>(v.clone()).ok())
                 .unwrap_or_default()
                 .into_iter()
@@ -329,11 +322,12 @@ impl JsonPetriNet {
 
             // 解析并添加泛型参数
             for generic_str in &json_place.generics {
-                // 解析泛型参数字符串，格式可能是 "T" 或 "T: Trait1 + Trait2"
+                // 解析泛型参数字符串,格式可能是 "T" 或 "T: Trait1 + Trait2"
                 let parts: Vec<&str> = generic_str.splitn(2, ':').collect();
                 let param_name = parts[0].trim();
                 let trait_bounds = if parts.len() > 1 {
-                    parts[1].split('+')
+                    parts[1]
+                        .split('+')
                         .map(|s| s.trim())
                         .map(|s| std::sync::Arc::<str>::from(s))
                         .collect()
@@ -365,26 +359,32 @@ impl JsonPetriNet {
                 _ => FunctionContext::FreeFunction,
             };
 
-            let inputs: Vec<super::net::ParameterSummary> = json_transition.inputs.iter()
+            let inputs: Vec<super::net::ParameterSummary> = json_transition
+                .inputs
+                .iter()
                 .map(|edge| super::net::ParameterSummary {
                     name: edge.name.clone().map(|s| std::sync::Arc::<str>::from(s)),
                     descriptor: super::type_repr::TypeDescriptor::from_string(&edge.r#type),
                 })
                 .collect();
 
-            let output = json_transition.outputs.first()
+            let output = json_transition
+                .outputs
+                .first()
                 .map(|edge| super::type_repr::TypeDescriptor::from_string(&edge.r#type));
 
             let summary = FunctionSummary {
                 item_id: rustdoc_types::Id(0), // 从 JSON 加载时使用虚拟 ID
                 name: std::sync::Arc::<str>::from(json_transition.name.clone()),
-                qualified_path: json_transition.origin.get("def_location")
+                qualified_path: json_transition
+                    .origin
+                    .get("def_location")
                     .and_then(|v| v.as_str())
                     .map(|s| std::sync::Arc::<str>::from(s)),
-                signature: std::sync::Arc::<str>::from(
-                    format!("{}(...)", json_transition.name)
-                ),
-                generics: json_transition.generic_params.iter()
+                signature: std::sync::Arc::<str>::from(format!("{}(...)", json_transition.name)),
+                generics: json_transition
+                    .generic_params
+                    .iter()
                     .map(|s| std::sync::Arc::<str>::from(s.clone()))
                     .collect(),
                 where_clauses: Vec::new(),
@@ -407,9 +407,13 @@ impl JsonPetriNet {
                             weight: 1,
                             kind: super::net::ArcKind::Normal,
                             parameter: Some(super::net::ParameterSummary {
-                                name: input_edge.name.clone()
+                                name: input_edge
+                                    .name
+                                    .clone()
                                     .map(|s| std::sync::Arc::<str>::from(s)),
-                                descriptor: super::type_repr::TypeDescriptor::from_string(&input_edge.r#type),
+                                descriptor: super::type_repr::TypeDescriptor::from_string(
+                                    &input_edge.r#type,
+                                ),
                             }),
                             descriptor: None,
                             borrow_kind: Some(borrow_kind),
@@ -429,7 +433,9 @@ impl JsonPetriNet {
                             weight: 1,
                             kind: super::net::ArcKind::Normal,
                             parameter: None,
-                            descriptor: Some(super::type_repr::TypeDescriptor::from_string(&output_edge.r#type)),
+                            descriptor: Some(super::type_repr::TypeDescriptor::from_string(
+                                &output_edge.r#type,
+                            )),
                             borrow_kind: Some(borrow_kind),
                         },
                     );
@@ -460,7 +466,10 @@ impl JsonPetriNet {
 
         for token in &self.tokens {
             if !place_ids.contains(&token.r#type) {
-                errors.push(format!("Token {} 引用了不存在的类型: {}", token.id, token.r#type));
+                errors.push(format!(
+                    "Token {} 引用了不存在的类型: {}",
+                    token.id, token.r#type
+                ));
             }
         }
 
@@ -528,5 +537,3 @@ fn parse_borrow_kind(mode: Option<&str>) -> super::type_repr::BorrowKind {
         _ => super::type_repr::BorrowKind::Owned,
     }
 }
-
-

@@ -514,7 +514,7 @@ pub(super) fn resolve_struct_field_edge<'a, V: AsVertex<Vertex<'a>> + 'a>(
             let field_item = vertex.as_item().expect("not an Item vertex");
             let field_id = field_item.id;
 
-            // 遍历所有 Struct，查找包含该字段的 Struct
+            // 遍历所有 Struct,查找包含该字段的 Struct
             for item in item_index.values() {
                 if let ItemEnum::Struct(struct_def) = &item.inner {
                     match &struct_def.kind {
@@ -602,23 +602,24 @@ pub(super) fn resolve_impl_edge<'a, V: AsVertex<Vertex<'a>> + 'a>(
                 // Extract the generic parameter name from the Type::Generic variant
                 if let rustdoc_types::Type::Generic(generic_name) = blanket_type {
                     let generics = &impl_vertex.generics;
-                    
+
                     // Find the matching generic parameter
                     struct GenericParamCounter {
                         lifetimes: NonZeroUsize,
                         types_and_consts: NonZeroUsize,
                     }
-                    
+
                     let mut counter = GenericParamCounter {
                         lifetimes: NonZeroUsize::new(1).unwrap(),
                         types_and_consts: NonZeroUsize::new(1).unwrap(),
                     };
-                    
+
                     let found_param = generics.params.iter().find_map(|param| {
                         let position = match param.kind {
                             GenericParamDefKind::Lifetime { .. } => {
                                 let pos = counter.lifetimes;
-                                counter.lifetimes = pos.checked_add(1).expect("param position overflow");
+                                counter.lifetimes =
+                                    pos.checked_add(1).expect("param position overflow");
                                 None // Lifetimes are not type parameters
                             }
                             GenericParamDefKind::Type { is_synthetic, .. } => {
@@ -626,26 +627,26 @@ pub(super) fn resolve_impl_edge<'a, V: AsVertex<Vertex<'a>> + 'a>(
                                     None
                                 } else {
                                     let pos = counter.types_and_consts;
-                                    counter.types_and_consts = pos
-                                        .checked_add(1)
-                                        .expect("param position overflow");
+                                    counter.types_and_consts =
+                                        pos.checked_add(1).expect("param position overflow");
                                     Some(pos)
                                 }
                             }
                             GenericParamDefKind::Const { .. } => {
                                 let pos = counter.types_and_consts;
-                                counter.types_and_consts = pos.checked_add(1).expect("param position overflow");
+                                counter.types_and_consts =
+                                    pos.checked_add(1).expect("param position overflow");
                                 None // Const parameters are not type parameters
                             }
                         };
-                        
+
                         if param.name.as_str() == generic_name.as_str() {
                             Some((param, position))
                         } else {
                             None
                         }
                     });
-                    
+
                     Box::new(found_param.into_iter().map(move |(param, position)| {
                         origin.make_generic_parameter_vertex(generics, param, position)
                     }))
@@ -964,49 +965,42 @@ pub(super) fn resolve_generic_type_parameter_edge<'a, V: AsVertex<Vertex<'a>> + 
                 types_and_consts: NonZeroUsize::new(1).unwrap(),
             };
 
-            Box::new(
-                generics
-                    .params
-                    .iter()
-                    .filter_map(move |p| {
-                        let position = match p.kind {
-                            GenericParamDefKind::Lifetime { .. } => {
-                                let pos = counter.lifetimes;
-                                counter.lifetimes =
-                                    pos.checked_add(1).expect("param position overflow");
-                                Some(pos)
-                            }
-                            _ => {
-                                // Update counter for other types but don't return them
-                                match p.kind {
-                                    GenericParamDefKind::Type { is_synthetic, .. } => {
-                                        if !is_synthetic {
-                                            let pos = counter.types_and_consts;
-                                            counter.types_and_consts = pos
-                                                .checked_add(1)
-                                                .expect("param position overflow");
-                                        }
-                                    }
-                                    GenericParamDefKind::Const { .. } => {
-                                        let pos = counter.types_and_consts;
-                                        counter.types_and_consts =
-                                            pos.checked_add(1).expect("param position overflow");
-                                    }
-                                    _ => {}
+            Box::new(generics.params.iter().filter_map(move |p| {
+                let position = match p.kind {
+                    GenericParamDefKind::Lifetime { .. } => {
+                        let pos = counter.lifetimes;
+                        counter.lifetimes = pos.checked_add(1).expect("param position overflow");
+                        Some(pos)
+                    }
+                    _ => {
+                        // Update counter for other types but don't return them
+                        match p.kind {
+                            GenericParamDefKind::Type { is_synthetic, .. } => {
+                                if !is_synthetic {
+                                    let pos = counter.types_and_consts;
+                                    counter.types_and_consts =
+                                        pos.checked_add(1).expect("param position overflow");
                                 }
-                                None
                             }
-                        };
-
-                        if lifetime_names.contains(&p.name.as_str()) {
-                            position.and_then(|pos| {
-                                Some(origin.make_generic_parameter_vertex(generics, p, Some(pos)))
-                            })
-                        } else {
-                            None
+                            GenericParamDefKind::Const { .. } => {
+                                let pos = counter.types_and_consts;
+                                counter.types_and_consts =
+                                    pos.checked_add(1).expect("param position overflow");
+                            }
+                            _ => {}
                         }
-                    }),
-            )
+                        None
+                    }
+                };
+
+                if lifetime_names.contains(&p.name.as_str()) {
+                    position.and_then(|pos| {
+                        Some(origin.make_generic_parameter_vertex(generics, p, Some(pos)))
+                    })
+                } else {
+                    None
+                }
+            }))
         }),
         _ => unreachable!("resolve_generic_type_parameter_edge {edge_name}"),
     }
@@ -1047,49 +1041,42 @@ pub(super) fn resolve_generic_lifetime_parameter_edge<'a, V: AsVertex<Vertex<'a>
                 types_and_consts: NonZeroUsize::new(1).unwrap(),
             };
 
-            Box::new(
-                generics
-                    .params
-                    .iter()
-                    .filter_map(move |p| {
-                        let position = match p.kind {
-                            GenericParamDefKind::Lifetime { .. } => {
-                                let pos = counter.lifetimes;
-                                counter.lifetimes =
-                                    pos.checked_add(1).expect("param position overflow");
-                                Some(pos)
-                            }
-                            _ => {
-                                // Update counter for other types but don't return them
-                                match p.kind {
-                                    GenericParamDefKind::Type { is_synthetic, .. } => {
-                                        if !is_synthetic {
-                                            let pos = counter.types_and_consts;
-                                            counter.types_and_consts = pos
-                                                .checked_add(1)
-                                                .expect("param position overflow");
-                                        }
-                                    }
-                                    GenericParamDefKind::Const { .. } => {
-                                        let pos = counter.types_and_consts;
-                                        counter.types_and_consts =
-                                            pos.checked_add(1).expect("param position overflow");
-                                    }
-                                    _ => {}
+            Box::new(generics.params.iter().filter_map(move |p| {
+                let position = match p.kind {
+                    GenericParamDefKind::Lifetime { .. } => {
+                        let pos = counter.lifetimes;
+                        counter.lifetimes = pos.checked_add(1).expect("param position overflow");
+                        Some(pos)
+                    }
+                    _ => {
+                        // Update counter for other types but don't return them
+                        match p.kind {
+                            GenericParamDefKind::Type { is_synthetic, .. } => {
+                                if !is_synthetic {
+                                    let pos = counter.types_and_consts;
+                                    counter.types_and_consts =
+                                        pos.checked_add(1).expect("param position overflow");
                                 }
-                                None
                             }
-                        };
-
-                        if lifetime_names.contains(&p.name.as_str()) {
-                            position.and_then(|pos| {
-                                Some(origin.make_generic_parameter_vertex(generics, p, Some(pos)))
-                            })
-                        } else {
-                            None
+                            GenericParamDefKind::Const { .. } => {
+                                let pos = counter.types_and_consts;
+                                counter.types_and_consts =
+                                    pos.checked_add(1).expect("param position overflow");
+                            }
+                            _ => {}
                         }
-                    }),
-            )
+                        None
+                    }
+                };
+
+                if lifetime_names.contains(&p.name.as_str()) {
+                    position.and_then(|pos| {
+                        Some(origin.make_generic_parameter_vertex(generics, p, Some(pos)))
+                    })
+                } else {
+                    None
+                }
+            }))
         }),
         _ => unreachable!("resolve_generic_lifetime_parameter_edge {edge_name}"),
     }

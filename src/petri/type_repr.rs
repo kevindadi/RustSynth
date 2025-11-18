@@ -65,10 +65,10 @@ impl TypeDescriptor {
     }
 
     /// 从字符串创建 TypeDescriptor
-    /// 自动检测借用类型（&, &mut, *const, *mut）
+    /// 自动检测借用类型(&, &mut, *const, *mut)
     pub fn from_string(s: &str) -> Self {
         let s = s.trim();
-        
+
         let (borrow, type_str) = if let Some(rest) = s.strip_prefix("*mut ") {
             (BorrowKind::RawMutPtr, rest)
         } else if let Some(rest) = s.strip_prefix("*const ") {
@@ -100,7 +100,7 @@ impl TypeDescriptor {
         };
 
         let canonical = Arc::<str>::from(type_str);
-        
+
         Self {
             display: canonical.clone(),
             canonical,
@@ -125,7 +125,7 @@ impl TypeDescriptor {
         &self.lifetimes
     }
 
-    /// 创建一个新的 TypeDescriptor，使用指定的借用类型
+    /// 创建一个新的 TypeDescriptor,使用指定的借用类型
     pub fn with_borrow_kind(&self, borrow: BorrowKind) -> Self {
         Self {
             canonical: self.canonical.clone(),
@@ -137,7 +137,7 @@ impl TypeDescriptor {
 
     /// `T`、`&T`、`&mut T` 映射到同一个库所
     pub fn normalized(&self) -> Self {
-        // 如果已经是 Owned，直接返回
+        // 如果已经是 Owned,直接返回
         if matches!(self.borrow, BorrowKind::Owned) {
             return self.clone();
         }
@@ -150,7 +150,7 @@ impl TypeDescriptor {
             if s.starts_with("*mut ") {
                 return s[5..].trim().to_string();
             }
-            // 去掉引用前缀：&'lifetime mut 或 &'lifetime 或 &mut 或 &
+            // 去掉引用前缀:&'lifetime mut 或 &'lifetime 或 &mut 或 &
             if s.starts_with('&') {
                 s = &s[1..];
                 while s.starts_with('\'') {
@@ -205,15 +205,15 @@ impl TypeDescriptor {
         })
     }
 
-    /// 提取类型名称，去除路径信息
-    /// 例如：`base64::alphabet::ParseAlphabetError` -> `ParseAlphabetError`
-    /// 或者：`std::vec::Vec<i32>` -> `Vec<i32>` (保留泛型参数)
-    /// 或者：`std::option::Option<String>` -> `Option<String>` (保留泛型参数)
+    /// 提取类型名称,去除路径信息
+    /// 例如:`base64::alphabet::ParseAlphabetError` -> `ParseAlphabetError`
+    /// 或者:`std::vec::Vec<i32>` -> `Vec<i32>` (保留泛型参数)
+    /// 或者:`std::option::Option<String>` -> `Option<String>` (保留泛型参数)
     pub fn type_name_only(&self) -> Self {
         let extract_name = |s: &str| -> String {
-            // 如果包含 "::"，提取最后一部分（包括泛型参数）
-            // 例如：`base64::alphabet::ParseAlphabetError` -> `ParseAlphabetError`
-            // 例如：`std::vec::Vec<i32>` -> `Vec<i32>`
+            // 如果包含 "::",提取最后一部分(包括泛型参数)
+            // 例如:`base64::alphabet::ParseAlphabetError` -> `ParseAlphabetError`
+            // 例如:`std::vec::Vec<i32>` -> `Vec<i32>`
             if let Some((_, name)) = s.rsplit_once("::") {
                 name.to_string()
             } else {
@@ -234,24 +234,24 @@ impl TypeDescriptor {
         strip_generics(self.type_name_only().display())
     }
 
-    /// 获取类型使用的泛型参数（按出现顺序）
+    /// 获取类型使用的泛型参数(按出现顺序)
     pub fn generic_arguments(&self) -> Vec<String> {
         parse_generic_arguments(self.display())
     }
 
-    /// 检查是否为泛型类型（如 T, U 等）
-    /// 泛型类型不应该创建 Place，因为它们只是约束占位符
+    /// 检查是否为泛型类型(如 T, U 等)
+    /// 泛型类型不应该创建 Place,因为它们只是约束占位符
     pub fn is_generic(&self) -> bool {
-        // 检查规范化后的类型名是否是单个标识符（可能是泛型参数）
+        // 检查规范化后的类型名是否是单个标识符(可能是泛型参数)
         let normalized = self.normalized();
         let canonical = normalized.canonical();
 
-        // 简单检查：如果规范化后的类型名是单个标识符，且不在已知的基本类型列表中
-        // 则可能是泛型参数（但需要更精确的检查）
+        // 简单检查:如果规范化后的类型名是单个标识符,且不在已知的基本类型列表中
+        // 则可能是泛型参数(但需要更精确的检查)
         // 更好的方法是检查原始的 Type 是否是 Type::Generic
         // 但这里我们只能根据字符串模式来判断
 
-        // 如果包含 "::" 或 "<" 或 ">" 或 "("，则不是简单的泛型参数
+        // 如果包含 "::" 或 "<" 或 ">" 或 "(",则不是简单的泛型参数
         if canonical.contains("::")
             || canonical.contains('<')
             || canonical.contains('>')
@@ -287,10 +287,10 @@ impl TypeDescriptor {
                 | "Self"
         );
 
-        // 如果不是基本类型且是单个标识符，可能是泛型参数
-        // 但为了安全，我们需要更精确的检查
-        // 这里先保守处理：只在明确知道是泛型时才返回 true
-        false // 暂时返回 false，让调用方通过其他方式检查
+        // 如果不是基本类型且是单个标识符,可能是泛型参数
+        // 但为了安全,我们需要更精确的检查
+        // 这里先保守处理:只在明确知道是泛型时才返回 true
+        false // 暂时返回 false,让调用方通过其他方式检查
     }
 }
 

@@ -1,8 +1,7 @@
 /// Guard 验证和评估引擎
-/// 
+///
 /// Guards 用于在 Petri 网的转换执行前进行条件检查,
-/// 例如所有权验证、类型约束检查等。
-
+/// 例如所有权验证、类型约束检查等.
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -11,7 +10,7 @@ use super::schema::{JsonGuard, JsonGuardCondition};
 /// Guard 评估上下文 - 包含执行 guard 检查所需的所有信息
 #[derive(Debug, Clone)]
 pub struct GuardContext {
-    /// 变量绑定（变量名 -> 值）
+    /// 变量绑定(变量名 -> 值)
     pub variables: HashMap<String, Value>,
 }
 
@@ -32,7 +31,7 @@ impl GuardContext {
         self.variables.get(name)
     }
 
-    /// 从路径获取值（支持 "token.ownership" 这样的路径）
+    /// 从路径获取值(支持 "token.ownership" 这样的路径)
     pub fn get_value_from_path(&self, path: &str) -> Option<Value> {
         let parts: Vec<&str> = path.split('.').collect();
         if parts.is_empty() {
@@ -41,8 +40,8 @@ impl GuardContext {
 
         // 获取根变量
         let root = self.variables.get(parts[0])?;
-        
-        // 如果只有一个部分，直接返回
+
+        // 如果只有一个部分,直接返回
         if parts.len() == 1 {
             return Some(root.clone());
         }
@@ -52,7 +51,7 @@ impl GuardContext {
         for part in &parts[1..] {
             current = current.get(part)?;
         }
-        
+
         Some(current.clone())
     }
 }
@@ -74,11 +73,7 @@ impl<'a> GuardEvaluator<'a> {
     }
 
     /// 评估指定的 guard 是否满足
-    pub fn evaluate_guard(
-        &self,
-        guard_id: &str,
-        context: &GuardContext,
-    ) -> Result<bool, String> {
+    pub fn evaluate_guard(&self, guard_id: &str, context: &GuardContext) -> Result<bool, String> {
         let guard = self
             .guards
             .iter()
@@ -88,7 +83,7 @@ impl<'a> GuardEvaluator<'a> {
         self.evaluate_guard_conditions(&guard.conditions, context)
     }
 
-    /// 评估多个 guard（所有 guard 都必须满足）
+    /// 评估多个 guard(所有 guard 都必须满足)
     pub fn evaluate_guards(
         &self,
         guard_ids: &[String],
@@ -102,7 +97,7 @@ impl<'a> GuardEvaluator<'a> {
         Ok(true)
     }
 
-    /// 评估 guard 的所有条件（所有条件都必须满足）
+    /// 评估 guard 的所有条件(所有条件都必须满足)
     fn evaluate_guard_conditions(
         &self,
         conditions: &[JsonGuardCondition],
@@ -161,7 +156,7 @@ impl<'a> GuardEvaluator<'a> {
         }
     }
 
-    /// 大于比较（仅用于数字）
+    /// 大于比较(仅用于数字)
     fn eval_greater_than(&self, lhs: &Value, rhs: &Value) -> Result<bool, String> {
         match (lhs.as_f64(), rhs.as_f64()) {
             (Some(l), Some(r)) => Ok(l > r),
@@ -169,7 +164,7 @@ impl<'a> GuardEvaluator<'a> {
         }
     }
 
-    /// 大于等于比较（仅用于数字）
+    /// 大于等于比较(仅用于数字)
     fn eval_greater_equal(&self, lhs: &Value, rhs: &Value) -> Result<bool, String> {
         match (lhs.as_f64(), rhs.as_f64()) {
             (Some(l), Some(r)) => Ok(l >= r),
@@ -177,7 +172,7 @@ impl<'a> GuardEvaluator<'a> {
         }
     }
 
-    /// 小于比较（仅用于数字）
+    /// 小于比较(仅用于数字)
     fn eval_less_than(&self, lhs: &Value, rhs: &Value) -> Result<bool, String> {
         match (lhs.as_f64(), rhs.as_f64()) {
             (Some(l), Some(r)) => Ok(l < r),
@@ -185,7 +180,7 @@ impl<'a> GuardEvaluator<'a> {
         }
     }
 
-    /// 小于等于比较（仅用于数字）
+    /// 小于等于比较(仅用于数字)
     fn eval_less_equal(&self, lhs: &Value, rhs: &Value) -> Result<bool, String> {
         match (lhs.as_f64(), rhs.as_f64()) {
             (Some(l), Some(r)) => Ok(l <= r),
@@ -201,7 +196,7 @@ impl<'a> GuardEvaluator<'a> {
         }
     }
 
-    /// 简单的模式匹配（通配符支持: * 匹配任意字符）
+    /// 简单的模式匹配(通配符支持: * 匹配任意字符)
     /// 注意: 这是一个简化版本,不支持完整的正则表达式
     fn eval_matches(&self, lhs: &Value, rhs: &Value) -> Result<bool, String> {
         let text = lhs
@@ -220,13 +215,13 @@ impl<'a> GuardEvaluator<'a> {
         if pattern == "*" {
             return true;
         }
-        
+
         if pattern.is_empty() {
             return text.is_empty();
         }
 
         let parts: Vec<&str> = pattern.split('*').collect();
-        
+
         if parts.len() == 1 {
             // 没有通配符,直接比较
             return text == pattern;
@@ -259,7 +254,7 @@ impl<'a> GuardEvaluator<'a> {
                 }
             }
         }
-        
+
         true
     }
 }
@@ -352,7 +347,7 @@ mod tests {
 
         let evaluator = GuardEvaluator::new(&guards);
 
-        // 测试: status = "valid" (应该通过，因为不等于 "invalid")
+        // 测试: status = "valid" (应该通过,因为不等于 "invalid")
         let mut context = GuardContext::new();
         context.set_variable("status".to_string(), json!("valid"));
         assert!(evaluator.evaluate_guard("g3", &context).unwrap());
@@ -363,4 +358,3 @@ mod tests {
         assert!(!evaluator.evaluate_guard("g3", &context2).unwrap());
     }
 }
-

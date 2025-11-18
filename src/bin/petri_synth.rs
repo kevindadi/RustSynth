@@ -270,7 +270,7 @@ fn find_descriptor(
     // 解析借用类型前缀
     let (base_name, borrow_kind) = parse_borrow_prefix(name);
 
-    // 查找基础类型（规范化版本）
+    // 查找基础类型(规范化版本)
     let base_descriptor = net.places().find_map(|place| {
         let descriptor = place.1.descriptor();
         let normalized = descriptor.normalized();
@@ -284,7 +284,7 @@ fn find_descriptor(
     Some(base_descriptor.with_borrow_kind(borrow_kind))
 }
 
-/// 解析类型名中的借用前缀，返回基础类型名和借用类型
+/// 解析类型名中的借用前缀,返回基础类型名和借用类型
 fn parse_borrow_prefix(name: &str) -> (&str, BorrowKind) {
     let name = name.trim();
 

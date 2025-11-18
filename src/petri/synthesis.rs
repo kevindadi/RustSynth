@@ -27,7 +27,7 @@ pub struct StepState {
 #[derive(Clone, Debug)]
 pub struct SynthesisPlan {
     pub transitions: Vec<TransitionId>,
-    pub states: Vec<StepState>, // 每个步骤后的状态（包括初始状态和每个变迁后的状态）
+    pub states: Vec<StepState>, // 每个步骤后的状态(包括初始状态和每个变迁后的状态)
     pub place_indices: std::collections::HashMap<PlaceId, usize>, // PlaceId 到索引的映射
 }
 
@@ -236,7 +236,7 @@ fn satisfies_goal(
                 return false;
             }
         } else {
-            // 如果没有记录，假设是 Owned
+            // 如果没有记录,假设是 Owned
             if !is_goal_borrow_compatible(BorrowKind::Owned, required_borrow) {
                 return false;
             }
@@ -248,23 +248,23 @@ fn satisfies_goal(
 
 /// 检查借用类型是否兼容
 ///
-/// 兼容性规则（用于输入弧）：
-/// - 如果弧需要 Owned，只有 Owned 可以满足
-/// - 如果弧需要 SharedRef，Owned 或 SharedRef 可以满足（可以从 Owned 借用得到 SharedRef）
-/// - 如果弧需要 MutRef，Owned 或 MutRef 可以满足（可以从 Owned 借用得到 MutRef）
+/// 兼容性规则(用于输入弧):
+/// - 如果弧需要 Owned,只有 Owned 可以满足
+/// - 如果弧需要 SharedRef,Owned 或 SharedRef 可以满足(可以从 Owned 借用得到 SharedRef)
+/// - 如果弧需要 MutRef,Owned 或 MutRef 可以满足(可以从 Owned 借用得到 MutRef)
 /// - 相同类型总是兼容
 ///
-/// 注意：这个函数用于检查输入弧的兼容性。对于目标类型，需要完全匹配。
+/// 注意:这个函数用于检查输入弧的兼容性.对于目标类型,需要完全匹配.
 fn is_borrow_compatible(available: BorrowKind, required: BorrowKind) -> bool {
     match (available, required) {
         // 相同类型总是兼容
         (a, r) if a == r => true,
-        // 如果弧需要 Owned，只有 Owned 可以满足
+        // 如果弧需要 Owned,只有 Owned 可以满足
         (_, BorrowKind::Owned) => available == BorrowKind::Owned,
-        // 如果弧需要 SharedRef，Owned 或 SharedRef 可以满足
+        // 如果弧需要 SharedRef,Owned 或 SharedRef 可以满足
         (BorrowKind::Owned, BorrowKind::SharedRef) => true,
         (BorrowKind::SharedRef, BorrowKind::SharedRef) => true,
-        // 如果弧需要 MutRef，Owned 或 MutRef 可以满足
+        // 如果弧需要 MutRef,Owned 或 MutRef 可以满足
         (BorrowKind::Owned, BorrowKind::MutRef) => true,
         (BorrowKind::MutRef, BorrowKind::MutRef) => true,
         // 其他情况不兼容
@@ -274,7 +274,7 @@ fn is_borrow_compatible(available: BorrowKind, required: BorrowKind) -> bool {
 
 /// 检查目标类型的借用类型是否匹配
 ///
-/// 对于目标类型，需要完全匹配（不能从 T 得到 &T 或 &mut T）
+/// 对于目标类型,需要完全匹配(不能从 T 得到 &T 或 &mut T)
 fn is_goal_borrow_compatible(available: BorrowKind, required: BorrowKind) -> bool {
     available == required
 }
@@ -305,7 +305,7 @@ fn is_enabled(
                                 return false;
                             }
                         } else {
-                            // 如果没有记录，假设是 Owned（向后兼容）
+                            // 如果没有记录,假设是 Owned(向后兼容)
                             if !is_borrow_compatible(BorrowKind::Owned, required_borrow) {
                                 return false;
                             }
@@ -321,7 +321,7 @@ fn is_enabled(
         return false;
     }
 
-    // 检查泛型参数的 guard：对于没有 Place 的输入参数（泛型参数），检查是否有 token 满足约束
+    // 检查泛型参数的 guard:对于没有 Place 的输入参数(泛型参数),检查是否有 token 满足约束
     if let Some(transition) = net.transition(transition_id) {
         let summary = &transition.summary;
 
@@ -331,9 +331,9 @@ fn is_enabled(
             .filter_map(|(place_id, _)| net.place(place_id).map(|place| place.descriptor().clone()))
             .collect();
 
-        // 检查所有输入参数（包括泛型参数）
+        // 检查所有输入参数(包括泛型参数)
         for input_param in &summary.inputs {
-            // 如果该输入参数没有对应的 Place（即泛型参数），需要 guard 检查
+            // 如果该输入参数没有对应的 Place(即泛型参数),需要 guard 检查
             if !place_input_descriptors.contains(&input_param.descriptor.normalized()) {
                 if !check_generic_guard(
                     &input_param.descriptor,
@@ -352,7 +352,7 @@ fn is_enabled(
     true
 }
 
-/// 检查泛型参数的 guard：当前 marking 中是否有 token 满足该泛型参数的约束
+/// 检查泛型参数的 guard:当前 marking 中是否有 token 满足该泛型参数的约束
 fn check_generic_guard(
     _generic_descriptor: &TypeDescriptor,
     marking: &[u32],
@@ -361,20 +361,20 @@ fn check_generic_guard(
     _available_borrows: &std::collections::HashMap<PlaceId, HashSet<BorrowKind>>,
     trait_bounds: &[std::sync::Arc<str>],
 ) -> bool {
-    // 如果泛型参数没有 trait 约束，所有类型都可以满足（但这里应该至少有一个 token）
+    // 如果泛型参数没有 trait 约束,所有类型都可以满足(但这里应该至少有一个 token)
     if trait_bounds.is_empty() {
         // 检查 marking 中是否有任何 token
         return marking.iter().any(|&count| count > 0);
     }
 
-    // 对于每个有 token 的 Place，检查是否满足泛型参数的 trait 约束
+    // 对于每个有 token 的 Place,检查是否满足泛型参数的 trait 约束
     for (place_id, place) in net.places() {
         if let Some(&idx) = place_indices.get(&place_id) {
             if marking[idx] > 0 {
                 // 检查该 Place 是否满足泛型参数的所有 trait 约束
                 if trait_bounds_satisfied(place, trait_bounds) {
-                    // 还需要检查借用类型兼容性（如果有要求）
-                    // 泛型参数默认是 Owned，但可以从其他借用类型转换
+                    // 还需要检查借用类型兼容性(如果有要求)
+                    // 泛型参数默认是 Owned,但可以从其他借用类型转换
                     return true;
                 }
             }
@@ -397,7 +397,7 @@ fn trait_bounds_satisfied(place: &super::net::Place, trait_bounds: &[std::sync::
     trait_bounds.iter().all(|bound| {
         let bound_str = bound.as_ref();
 
-        // 提取 trait 名称（去掉可能的关联类型约束，如 Iterator<Item = u8> 中的 Iterator）
+        // 提取 trait 名称(去掉可能的关联类型约束,如 Iterator<Item = u8> 中的 Iterator)
         let trait_name = if let Some(lt_pos) = bound_str.find('<') {
             &bound_str[..lt_pos].trim()
         } else {
@@ -407,10 +407,10 @@ fn trait_bounds_satisfied(place: &super::net::Place, trait_bounds: &[std::sync::
         // 移除可能的 '?' 修饰符
         let trait_name = trait_name.trim_start_matches('?').trim();
 
-        // 提取简单名称（最后一部分）
+        // 提取简单名称(最后一部分)
         let simple_name = trait_name.split("::").last().unwrap_or(trait_name);
 
-        // 检查是否实现了该 trait（支持完整路径或简单名称匹配）
+        // 检查是否实现了该 trait(支持完整路径或简单名称匹配)
         implemented_traits.iter().any(|&impl_trait| {
             impl_trait == trait_name
                 || impl_trait.ends_with(&format!("::{}", simple_name))
@@ -430,7 +430,7 @@ fn fire_transition(
     for (place_id, arc_data) in net.transition_inputs(transition_id) {
         if let Some(&idx) = place_indices.get(&place_id) {
             marking[idx] = marking[idx].saturating_sub(arc_data.weight);
-            // 注意：消耗后，借用类型集合保持不变（因为可能有多个令牌）
+            // 注意:消耗后,借用类型集合保持不变(因为可能有多个令牌)
         }
     }
 
@@ -445,7 +445,7 @@ fn fire_transition(
                     .or_insert_with(HashSet::new)
                     .insert(output_borrow);
             } else {
-                // 如果没有指定，假设是 Owned
+                // 如果没有指定,假设是 Owned
                 available_borrows
                     .entry(place_id)
                     .or_insert_with(HashSet::new)

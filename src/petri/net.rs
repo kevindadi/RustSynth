@@ -1,23 +1,23 @@
 use std::{fmt::Write, sync::Arc};
 
 use petgraph::{
-    Direction, 
-    graph::NodeIndex, 
-    stable_graph::StableGraph, 
-    visit::EdgeRef,
+    Direction,
     algo::{dijkstra, is_cyclic_directed},
+    graph::NodeIndex,
+    stable_graph::StableGraph,
+    visit::EdgeRef,
 };
 use rustdoc_types::{Id, Variant};
 use serde::{Deserialize, Serialize};
 
 use super::type_repr::{BorrowKind, TypeDescriptor};
 
-/// 类型化 Petri 网中，token 包含类型信息和借用信息
+/// 类型化 Petri 网中,token 包含类型信息和借用信息
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Token {
-    /// 令牌的类型描述符（规范化后的类型，不考虑借用）
+    /// 令牌的类型描述符(规范化后的类型,不考虑借用)
     pub descriptor: TypeDescriptor,
-    /// 令牌的借用类型（Owned、SharedRef、MutRef 等）
+    /// 令牌的借用类型(Owned、SharedRef、MutRef 等)
     pub borrow_kind: BorrowKind,
 }
 
@@ -47,7 +47,7 @@ pub enum Node {
 /// 泛型参数需要保存所属类型的 PlaceId 和描述符
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct GenericParameter {
-    /// 泛型参数名称（如 "T", "E", "W"）
+    /// 泛型参数名称(如 "T", "E", "W")
     pub name: Arc<str>,
     /// 该泛型参数需要的 trait 约束
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -67,18 +67,18 @@ pub struct CompositeTypeInfo {
     /// 该类型定义的泛型参数列表
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub generic_parameters: Vec<GenericParameter>,
-    /// Enum 的 Variant 列表（仅当类型为 Enum 时使用）
+    /// Enum 的 Variant 列表(仅当类型为 Enum 时使用)
     /// 直接使用 rustdoc-types 中的 Variant 定义
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub variants: Vec<Variant>,
 }
 
-/// 库所（Place）代表一个类型定义
-/// 使用枚举区分不同类型的 Place，每种类型有对应的数据结构
+/// 库所(Place)代表一个类型定义
+/// 使用枚举区分不同类型的 Place,每种类型有对应的数据结构
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Place {
-    /// 基本类型（Primitive）
+    /// 基本类型(Primitive)
     Primitive {
         descriptor: TypeDescriptor,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -154,7 +154,7 @@ pub struct FunctionSummary {
 }
 
 impl FunctionSummary {
-    /// 返回函数的显示名称（优先使用 qualified_path，否则使用 name）
+    /// 返回函数的显示名称(优先使用 qualified_path,否则使用 name)
     pub fn display_name(&self) -> &str {
         self.qualified_path.as_deref().unwrap_or(self.name.as_ref())
     }
@@ -166,13 +166,13 @@ pub struct ArcData {
     pub weight: ArcWeight,
     #[serde(default)]
     pub kind: ArcKind,
-    // 对于输入弧（Place -> Transition），可能包含参数信息
+    // 对于输入弧(Place -> Transition),可能包含参数信息
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parameter: Option<ParameterSummary>,
-    // 对于输出弧（Transition -> Place），存储类型描述符
+    // 对于输出弧(Transition -> Place),存储类型描述符
     #[serde(skip_serializing_if = "Option::is_none")]
     pub descriptor: Option<TypeDescriptor>,
-    // 边上需要的借用类型约束（对于输入弧）或提供的借用类型（对于输出弧）
+    // 边上需要的借用类型约束(对于输入弧)或提供的借用类型(对于输出弧)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub borrow_kind: Option<super::type_repr::BorrowKind>,
 }
@@ -187,13 +187,13 @@ pub struct Transition {
 }
 
 /// 用于查找 Place 的 key
-/// 对于普通类型，只用 TypeDescriptor
-/// 对于泛型参数，需要同时指定所有者 ID 和类型名称
+/// 对于普通类型,只用 TypeDescriptor
+/// 对于泛型参数,需要同时指定所有者 ID 和类型名称
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 /// Place 查找键
-/// 只使用类型描述符，因为泛型参数不再单独创建库所
+/// 只使用类型描述符,因为泛型参数不再单独创建库所
 enum PlaceLookupKey {
-    /// 类型描述符（规范化后的类型名，去掉泛型参数部分）
+    /// 类型描述符(规范化后的类型名,去掉泛型参数部分)
     Type(TypeDescriptor),
 }
 
@@ -276,7 +276,9 @@ impl Place {
     /// 获取实现的 trait 列表
     pub fn implemented_traits(&self) -> &[Arc<str>] {
         match self {
-            Place::Primitive { implemented_traits, .. } => implemented_traits,
+            Place::Primitive {
+                implemented_traits, ..
+            } => implemented_traits,
             Place::Composite { info, .. } => &info.implemented_traits,
             Place::Generic { .. } => &[],
         }
@@ -309,7 +311,7 @@ impl PetriNet {
         self.add_primitive_place(descriptor, Vec::new())
     }
 
-    /// 添加基本类型库所，并记录其实现的 trait
+    /// 添加基本类型库所,并记录其实现的 trait
     pub fn add_primitive_place(
         &mut self,
         descriptor: TypeDescriptor,
@@ -317,11 +319,15 @@ impl PetriNet {
     ) -> PlaceId {
         let normalized = descriptor.normalized();
         let lookup_key = PlaceLookupKey::Type(normalized.clone());
-        
+
         if let Some(&id) = self.place_lookup.get(&lookup_key) {
-            // 如果已存在，更新实现的 trait
+            // 如果已存在,更新实现的 trait
             if let Some(place) = self.graph.node_weight_mut(id.0) {
-                if let Node::Place(Place::Primitive { implemented_traits: traits, .. }) = place {
+                if let Node::Place(Place::Primitive {
+                    implemented_traits: traits,
+                    ..
+                }) = place
+                {
                     let mut existing_traits: std::collections::HashSet<_> =
                         traits.iter().cloned().collect();
                     for trait_ in implemented_traits {
@@ -347,7 +353,7 @@ impl PetriNet {
         id
     }
 
-    /// 添加 Composite 类型（Struct、Enum、Union）的 Place
+    /// 添加 Composite 类型(Struct、Enum、Union)的 Place
     pub fn add_composite_place(
         &mut self,
         descriptor: TypeDescriptor,
@@ -356,9 +362,9 @@ impl PetriNet {
     ) -> PlaceId {
         let normalized = descriptor.normalized();
         let lookup_key = PlaceLookupKey::Type(normalized.clone());
-        
+
         if let Some(&id) = self.place_lookup.get(&lookup_key) {
-            // 如果已存在，更新实现的 trait
+            // 如果已存在,更新实现的 trait
             if let Some(place) = self.graph.node_weight_mut(id.0) {
                 if let Node::Place(Place::Composite { info, .. }) = place {
                     let mut existing_traits: std::collections::HashSet<_> =
@@ -393,11 +399,7 @@ impl PetriNet {
 
     /// 为 Enum Place 添加 Variant
     /// Variant 的所有字段映射到 Enum 的 PlaceId
-    pub fn add_variant_to_enum(
-        &mut self,
-        enum_place_id: PlaceId,
-        variant: Variant,
-    ) {
+    pub fn add_variant_to_enum(&mut self, enum_place_id: PlaceId, variant: Variant) {
         if let Some(place) = self.graph.node_weight_mut(enum_place_id.0) {
             if let Node::Place(Place::Composite { kind, info, .. }) = place {
                 if matches!(kind, CompositeTypeKind::Enum) {
@@ -407,7 +409,7 @@ impl PetriNet {
         }
     }
 
-    /// 为已有的 Place 注册一个别名，使多个类型描述符指向同一个 Place
+    /// 为已有的 Place 注册一个别名,使多个类型描述符指向同一个 Place
     pub fn alias_place(&mut self, descriptor: TypeDescriptor, place_id: PlaceId) {
         let normalized = descriptor.normalized();
         let lookup_key = PlaceLookupKey::Type(normalized);
@@ -415,13 +417,13 @@ impl PetriNet {
     }
 
     /// 为类型 Place 添加泛型参数
-    /// 
-    /// 泛型参数作为类型定义的属性，存储在 Composite Place 的 generic_parameters 字段中
-    /// 
+    ///
+    /// 泛型参数作为类型定义的属性,存储在 Composite Place 的 generic_parameters 字段中
+    ///
     /// # 参数
-    /// 
-    /// * `place_id` - 类型 Place 的 ID（必须是 Composite 类型）
-    /// * `generic_name` - 泛型参数名称（如 "T", "E", "W"）
+    ///
+    /// * `place_id` - 类型 Place 的 ID(必须是 Composite 类型)
+    /// * `generic_name` - 泛型参数名称(如 "T", "E", "W")
     /// * `trait_bounds` - trait 约束列表
     pub fn add_generic_parameter_to_place(
         &mut self,
@@ -430,10 +432,16 @@ impl PetriNet {
         trait_bounds: Vec<Arc<str>>,
     ) {
         if let Some(place) = self.graph.node_weight_mut(place_id.0) {
-            if let Node::Place(Place::Composite { info, descriptor, .. }) = place {
+            if let Node::Place(Place::Composite {
+                info, descriptor, ..
+            }) = place
+            {
                 // 检查是否已存在同名泛型参数
-                if let Some(existing) = info.generic_parameters.iter_mut()
-                    .find(|p| p.name == generic_name) {
+                if let Some(existing) = info
+                    .generic_parameters
+                    .iter_mut()
+                    .find(|p| p.name == generic_name)
+                {
                     // 合并 trait bounds
                     let mut existing_bounds: std::collections::HashSet<_> =
                         existing.trait_bounds.iter().cloned().collect();
@@ -443,7 +451,7 @@ impl PetriNet {
                     existing.trait_bounds = existing_bounds.into_iter().collect();
                     existing.trait_bounds.sort();
                 } else {
-                    // 添加新的泛型参数，包含所属类型的 PlaceId 和描述符
+                    // 添加新的泛型参数,包含所属类型的 PlaceId 和描述符
                     let mut bounds = trait_bounds;
                     bounds.sort();
                     info.generic_parameters.push(GenericParameter {
@@ -464,7 +472,7 @@ impl PetriNet {
         to_generic: PlaceId,
         constraints: Vec<Arc<str>>,
     ) -> TransitionId {
-        // 先获取描述符，避免借用冲突
+        // 先获取描述符,避免借用冲突
         let primitive_descriptor = {
             let primitive_place = self
                 .place(from_primitive)
@@ -610,11 +618,15 @@ impl PetriNet {
         let lookup_key = PlaceLookupKey::Type(normalized);
         self.place_lookup.get(&lookup_key).copied()
     }
-    
-    pub fn place_id_with_owner(&self, _owner_id: Option<Id>, descriptor: &TypeDescriptor) -> Option<PlaceId> {
+
+    pub fn place_id_with_owner(
+        &self,
+        _owner_id: Option<Id>,
+        descriptor: &TypeDescriptor,
+    ) -> Option<PlaceId> {
         let normalized = descriptor.normalized();
-        
-        // 泛型参数不再单独创建库所，直接查找类型
+
+        // 泛型参数不再单独创建库所,直接查找类型
         let type_key = PlaceLookupKey::Type(normalized);
         self.place_lookup.get(&type_key).copied()
     }
@@ -633,7 +645,7 @@ impl PetriNet {
             .count()
     }
 
-    /// 获取 Transition 的所有输入边（从 Place 到 Transition）
+    /// 获取 Transition 的所有输入边(从 Place 到 Transition)
     pub fn transition_inputs(
         &self,
         transition: TransitionId,
@@ -650,7 +662,7 @@ impl PetriNet {
             })
     }
 
-    /// 获取 Transition 的所有输出边（从 Transition 到 Place）
+    /// 获取 Transition 的所有输出边(从 Transition 到 Place)
     pub fn transition_outputs(
         &self,
         transition: TransitionId,
@@ -689,7 +701,7 @@ impl PetriNet {
 
         for (id, place) in self.places() {
             let type_name = place.descriptor().display();
-            
+
             match place {
                 Place::Primitive { .. } => {
                     if matches!(
@@ -718,7 +730,7 @@ impl PetriNet {
                 }
                 Place::Composite { kind, info, .. } => {
                     if matches!(kind, CompositeTypeKind::Enum) && !info.variants.is_empty() {
-                        // Enum 类型如果有 Variant，用特殊样式
+                        // Enum 类型如果有 Variant,用特殊样式
                         variant_places.push((id, place));
                     } else if !info.generic_parameters.is_empty() {
                         // 有泛型参数的类型用特殊样式
@@ -745,10 +757,12 @@ impl PetriNet {
 
         for (id, place) in generic_type_places {
             let base_label = simplify_type_name(place.descriptor().display());
-            
-            // 构建泛型参数列表：T, E: Error, W: Write
+
+            // 构建泛型参数列表:T, E: Error, W: Write
             let generic_params: Vec<String> = match place {
-                Place::Composite { info, .. } => info.generic_parameters.iter()
+                Place::Composite { info, .. } => info
+                    .generic_parameters
+                    .iter()
                     .map(|param| {
                         if param.trait_bounds.is_empty() {
                             param.name.to_string()
@@ -759,13 +773,13 @@ impl PetriNet {
                     .collect(),
                 _ => Vec::new(),
             };
-            
+
             let generic_part = if generic_params.is_empty() {
                 String::new()
             } else {
                 format!("<{}>", generic_params.join(", "))
             };
-            
+
             let full_label = format!("{}{}", base_label, generic_part);
             let _ = writeln!(
                 dot,
@@ -799,10 +813,10 @@ impl PetriNet {
     fn write_transitions(&self, dot: &mut String) {
         for (id, transition) in self.transitions() {
             let summary = &transition.summary;
-            
-            let sig = summary.signature.as_ref();  
+
+            let sig = summary.signature.as_ref();
             let simplified_sig = simplify_signature(sig);
-            
+
             let _ = writeln!(
                 dot,
                 "  t{} [shape=box,style=rounded,label=\"{}\"];",
@@ -814,12 +828,12 @@ impl PetriNet {
 
     fn write_arcs(&self, dot: &mut String) {
         for (transition_id, _transition) in self.transitions() {
-            // 输入弧：Place -> Transition
+            // 输入弧:Place -> Transition
             for (place_id, arc_data) in self.transition_inputs(transition_id) {
                 self.write_input_arc(dot, place_id, transition_id, arc_data);
             }
 
-            // 输出弧：Transition -> Place
+            // 输出弧:Transition -> Place
             for (place_id, arc_data) in self.transition_outputs(transition_id) {
                 self.write_output_arc(dot, transition_id, place_id, arc_data);
             }
@@ -833,7 +847,7 @@ impl PetriNet {
         transition_id: TransitionId,
         arc: &ArcData,
     ) {
-        // 简化边标签：只显示借用模式
+        // 简化边标签:只显示借用模式
         let label = if let Some(borrow_kind) = arc.borrow_kind {
             let borrow_mark = match borrow_kind {
                 BorrowKind::Owned => "",
@@ -895,13 +909,13 @@ impl PetriNet {
         );
     }
 
-    /// 检查图中是否存在环路（用于检测类型依赖循环）
+    /// 检查图中是否存在环路(用于检测类型依赖循环)
     pub fn has_cycles(&self) -> bool {
         is_cyclic_directed(&self.graph)
     }
 
     /// 计算从一个 Place 到另一个 Place 的最短路径
-    /// 返回路径上经过的 transitions 数量，如果不可达则返回 None
+    /// 返回路径上经过的 transitions 数量,如果不可达则返回 None
     pub fn shortest_path_length(&self, from: PlaceId, to: PlaceId) -> Option<usize> {
         let distances = dijkstra(
             &self.graph,
@@ -909,7 +923,7 @@ impl PetriNet {
             Some(to.0),
             |_| 1, // 统一权重为 1
         );
-        
+
         distances.get(&to.0).copied()
     }
 
@@ -917,32 +931,30 @@ impl PetriNet {
     /// 返回 (target_place, transition, arc_data) 的列表
     pub fn reachable_in_one_step(&self, source: PlaceId) -> Vec<(PlaceId, TransitionId, &ArcData)> {
         let mut reachable = Vec::new();
-        
-        // 找到所有从 source place 出发的边（到 transition）
+
+        // 找到所有从 source place 出发的边(到 transition)
         for edge_ref in self.graph.edges_directed(source.0, Direction::Outgoing) {
             let transition_node = edge_ref.target();
-            
+
             // 检查这个节点是否是 transition
             if let Node::Transition(_) = &self.graph[transition_node] {
                 let transition_id = TransitionId(transition_node);
-                
+
                 // 找到这个 transition 的所有输出
-                for output_edge in self.graph.edges_directed(transition_node, Direction::Outgoing) {
+                for output_edge in self
+                    .graph
+                    .edges_directed(transition_node, Direction::Outgoing)
+                {
                     let target_node = output_edge.target();
                     if let Node::Place(_) = &self.graph[target_node] {
-                        reachable.push((
-                            PlaceId(target_node),
-                            transition_id,
-                            output_edge.weight(),
-                        ));
+                        reachable.push((PlaceId(target_node), transition_id, output_edge.weight()));
                     }
                 }
             }
         }
-        
+
         reachable
     }
-
 
     pub fn statistics(&self) -> PetriNetStatistics {
         let mut stats = PetriNetStatistics {
@@ -960,15 +972,27 @@ impl PetriNet {
             match &self.graph[node_idx] {
                 Node::Place(_) => {
                     stats.place_count += 1;
-                    let in_deg = self.graph.edges_directed(node_idx, Direction::Incoming).count();
-                    let out_deg = self.graph.edges_directed(node_idx, Direction::Outgoing).count();
+                    let in_deg = self
+                        .graph
+                        .edges_directed(node_idx, Direction::Incoming)
+                        .count();
+                    let out_deg = self
+                        .graph
+                        .edges_directed(node_idx, Direction::Outgoing)
+                        .count();
                     stats.max_place_in_degree = stats.max_place_in_degree.max(in_deg);
                     stats.max_place_out_degree = stats.max_place_out_degree.max(out_deg);
                 }
                 Node::Transition(_) => {
                     stats.transition_count += 1;
-                    let in_deg = self.graph.edges_directed(node_idx, Direction::Incoming).count();
-                    let out_deg = self.graph.edges_directed(node_idx, Direction::Outgoing).count();
+                    let in_deg = self
+                        .graph
+                        .edges_directed(node_idx, Direction::Incoming)
+                        .count();
+                    let out_deg = self
+                        .graph
+                        .edges_directed(node_idx, Direction::Outgoing)
+                        .count();
                     stats.max_transition_in_degree = stats.max_transition_in_degree.max(in_deg);
                     stats.max_transition_out_degree = stats.max_transition_out_degree.max(out_deg);
                 }
@@ -982,8 +1006,8 @@ impl PetriNet {
         &self.graph
     }
 
-    /// 查找类型转换链：从 source 类型到 target 类型的所有可能路径
-    /// 返回路径列表，每条路径是一系列 transition IDs
+    /// 查找类型转换链:从 source 类型到 target 类型的所有可能路径
+    /// 返回路径列表,每条路径是一系列 transition IDs
     pub fn find_type_conversion_paths(
         &self,
         source: PlaceId,
@@ -993,9 +1017,16 @@ impl PetriNet {
         let mut paths = Vec::new();
         let mut current_path = Vec::new();
         let mut visited = std::collections::HashSet::new();
-        
-        self.dfs_find_paths(source, target, &mut current_path, &mut visited, &mut paths, max_depth);
-        
+
+        self.dfs_find_paths(
+            source,
+            target,
+            &mut current_path,
+            &mut visited,
+            &mut paths,
+            max_depth,
+        );
+
         paths
     }
 
@@ -1054,8 +1085,16 @@ impl std::fmt::Display for PetriNetStatistics {
         writeln!(f, "  Has Cycles: {}", self.has_cycles)?;
         writeln!(f, "  Max Place In-Degree: {}", self.max_place_in_degree)?;
         writeln!(f, "  Max Place Out-Degree: {}", self.max_place_out_degree)?;
-        writeln!(f, "  Max Transition In-Degree: {}", self.max_transition_in_degree)?;
-        writeln!(f, "  Max Transition Out-Degree: {}", self.max_transition_out_degree)?;
+        writeln!(
+            f,
+            "  Max Transition In-Degree: {}",
+            self.max_transition_in_degree
+        )?;
+        writeln!(
+            f,
+            "  Max Transition Out-Degree: {}",
+            self.max_transition_out_degree
+        )?;
         Ok(())
     }
 }
@@ -1066,18 +1105,32 @@ fn simplify_type_name(type_name: &str) -> String {
     } else {
         type_name
     };
-    
+
     // 移除生命周期参数
     let mut without_lifetimes = remove_lifetimes(simplified);
-    
+
     // 清理孤立的括号和多余的尖括号
     // 例如: "Error)>" -> "Error", "Error>" -> "Error"
     while without_lifetimes.contains(")>") && !without_lifetimes.contains("(") {
         without_lifetimes = without_lifetimes.replace(")>", ">");
     }
-    
+
+    // 清理结尾的孤立右括号 (例如: "Error)" -> "Error")
+    let open_paren_count = without_lifetimes.matches('(').count();
+    let close_paren_count = without_lifetimes.matches(')').count();
+    if close_paren_count > open_paren_count {
+        // 移除多余的右括号
+        for _ in 0..(close_paren_count - open_paren_count) {
+            if let Some(pos) = without_lifetimes.rfind(')') {
+                without_lifetimes.remove(pos);
+            }
+        }
+    }
+
     // 清理结尾的孤立 >
-    if without_lifetimes.ends_with('>') && without_lifetimes.matches('<').count() < without_lifetimes.matches('>').count() {
+    if without_lifetimes.ends_with('>')
+        && without_lifetimes.matches('<').count() < without_lifetimes.matches('>').count()
+    {
         // 移除多余的 >
         let open_count = without_lifetimes.matches('<').count();
         let close_count = without_lifetimes.matches('>').count();
@@ -1087,7 +1140,7 @@ fn simplify_type_name(type_name: &str) -> String {
             }
         }
     }
-    
+
     if without_lifetimes.len() > 60 {
         format!("{}...", &without_lifetimes[..57])
     } else {
@@ -1101,7 +1154,7 @@ fn simplify_type_name(type_name: &str) -> String {
 fn remove_lifetimes(type_name: &str) -> String {
     let mut result = String::with_capacity(type_name.len());
     let mut chars = type_name.chars().peekable();
-    
+
     while let Some(ch) = chars.next() {
         if ch == '\'' {
             // 跳过生命周期名称
@@ -1112,25 +1165,25 @@ fn remove_lifetimes(type_name: &str) -> String {
                     break;
                 }
             }
-            
+
             // 跳过 'static 后的空格和 +
             while let Some(&' ') = chars.peek() {
                 chars.next();
             }
-            
-            // 如果后面是 + 号，也要跳过（因为这是 trait bound 的一部分）
+
+            // 如果后面是 + 号,也要跳过(因为这是 trait bound 的一部分)
             if let Some(&'+') = chars.peek() {
                 chars.next();
                 // 跳过 + 后的空格
                 while let Some(&' ') = chars.peek() {
                     chars.next();
                 }
-                
-                // 如果 + 后面没有其他内容了（只有括号或 >），需要移除前面的空格和 +
+
+                // 如果 + 后面没有其他内容了(只有括号或 >),需要移除前面的空格和 +
                 // 这个会在后面的 replace 中处理
             }
-            
-            // 如果是逗号，也跳过它和后续空格
+
+            // 如果是逗号,也跳过它和后续空格
             if let Some(&',') = chars.peek() {
                 chars.next();
                 while let Some(&' ') = chars.peek() {
@@ -1141,7 +1194,7 @@ fn remove_lifetimes(type_name: &str) -> String {
             result.push(ch);
         }
     }
-    
+
     // 清理可能的多余字符
     result = result.replace("<, ", "<");
     result = result.replace(", >", ">");
@@ -1149,13 +1202,13 @@ fn remove_lifetimes(type_name: &str) -> String {
     result = result.replace(" >", ">");
     result = result.replace("<>", "");
     result = result.replace("  ", " ");
-    result = result.replace(" +)", ")");  // 移除 trait bounds 结尾的 +
+    result = result.replace(" +)", ")"); // 移除 trait bounds 结尾的 +
     result = result.replace("+ )", ")");
     result = result.replace("+)", ")");
-    result = result.replace(" )", ")");   // 移除括号前的空格
-    result = result.replace("( ", "(");   // 移除括号后的空格
+    result = result.replace(" )", ")"); // 移除括号前的空格
+    result = result.replace("( ", "("); // 移除括号后的空格
     result = result.replace("dyn  ", "dyn ");
-    
+
     result
 }
 
@@ -1165,20 +1218,20 @@ fn remove_lifetimes(type_name: &str) -> String {
 ///   -> fn encode(self: &Self, input: T) -> String
 fn simplify_signature(sig: &str) -> String {
     let sig = sig.trim();
-    
-    // 移除 const、unsafe 等修饰符（保留位置但简化）
+
+    // 移除 const、unsafe 等修饰符(保留位置但简化)
     let mut result = sig.to_string();
-    
-    // 移除泛型约束（保留泛型参数但移除约束）
+
+    // 移除泛型约束(保留泛型参数但移除约束)
     // fn foo<T: Trait>(x: T) -> fn foo<T>(x: T)
     result = simplify_generic_bounds(&result);
-    
+
     // 移除生命周期
     result = remove_lifetimes(&result);
-    
+
     // 移除路径前缀 (std::string::String -> String)
     result = remove_type_paths(&result);
-    
+
     // 限制长度
     if result.len() > 80 {
         if let Some(arrow_pos) = result[..80].rfind("->") {
@@ -1198,17 +1251,19 @@ fn simplify_signature(sig: &str) -> String {
 fn simplify_generic_bounds(sig: &str) -> String {
     let mut result = String::new();
     let mut chars = sig.chars().peekable();
-    
+
     while let Some(ch) = chars.next() {
         match ch {
-            '<' if result.ends_with("fn ") || result.chars().rev().take(10).any(|c| c.is_alphanumeric()) => {
+            '<' if result.ends_with("fn ")
+                || result.chars().rev().take(10).any(|c| c.is_alphanumeric()) =>
+            {
                 // 可能是泛型参数开始
                 result.push(ch);
-                
+
                 // 跳过约束部分
                 let mut generic_content = String::new();
                 let mut bracket_level = 1;
-                
+
                 while let Some(&next_ch) = chars.peek() {
                     chars.next();
                     if next_ch == '<' {
@@ -1217,16 +1272,19 @@ fn simplify_generic_bounds(sig: &str) -> String {
                     } else if next_ch == '>' {
                         bracket_level -= 1;
                         if bracket_level == 0 {
-                            // 处理泛型内容，移除约束
+                            // 处理泛型内容,移除约束
                             let params: Vec<&str> = generic_content.split(',').collect();
-                            let simplified_params: Vec<String> = params.iter().map(|p| {
-                                // 提取参数名（在 : 之前的部分）
-                                if let Some(colon_pos) = p.find(':') {
-                                    p[..colon_pos].trim().to_string()
-                                } else {
-                                    p.trim().to_string()
-                                }
-                            }).collect();
+                            let simplified_params: Vec<String> = params
+                                .iter()
+                                .map(|p| {
+                                    // 提取参数名(在 : 之前的部分)
+                                    if let Some(colon_pos) = p.find(':') {
+                                        p[..colon_pos].trim().to_string()
+                                    } else {
+                                        p.trim().to_string()
+                                    }
+                                })
+                                .collect();
                             result.push_str(&simplified_params.join(", "));
                             result.push('>');
                             break;
@@ -1242,7 +1300,7 @@ fn simplify_generic_bounds(sig: &str) -> String {
             }
         }
     }
-    
+
     result
 }
 
@@ -1254,7 +1312,7 @@ fn remove_type_paths(sig: &str) -> String {
     let mut current_word = String::new();
     let mut in_angle_brackets: i32 = 0;
     let mut bracket_start = 0;
-    
+
     for ch in sig.chars() {
         match ch {
             '<' => {
@@ -1262,7 +1320,7 @@ fn remove_type_paths(sig: &str) -> String {
                     bracket_start = result.len();
                 }
                 in_angle_brackets += 1;
-                
+
                 // 先处理当前的word
                 if !current_word.is_empty() {
                     if let Some(last_colon) = current_word.rfind("::") {
@@ -1276,14 +1334,14 @@ fn remove_type_paths(sig: &str) -> String {
             }
             '>' => {
                 in_angle_brackets = in_angle_brackets.saturating_sub(1);
-                
+
                 // 先处理当前的word
                 if !current_word.is_empty() {
                     // 检查是否是 qualified path (e.g. <T as Trait>::Type)
-                    // 如果在尖括号内且有 ::，这可能是 associated type
+                    // 如果在尖括号内且有 ::,这可能是 associated type
                     if let Some(last_colon) = current_word.rfind("::") {
                         let type_name = &current_word[last_colon + 2..];
-                        // 如果这是 qualified path 的最后一部分，移除前面的尖括号
+                        // 如果这是 qualified path 的最后一部分,移除前面的尖括号
                         if in_angle_brackets == 0 && result[bracket_start..].starts_with('<') {
                             // 这是类似 <T as Trait>::Error 的情况
                             // 移除整个 qualified path 的尖括号部分
@@ -1318,7 +1376,7 @@ fn remove_type_paths(sig: &str) -> String {
             }
         }
     }
-    
+
     if !current_word.is_empty() {
         if let Some(last_colon) = current_word.rfind("::") {
             result.push_str(&current_word[last_colon + 2..]);
@@ -1326,7 +1384,7 @@ fn remove_type_paths(sig: &str) -> String {
             result.push_str(&current_word);
         }
     }
-    
+
     result
 }
 
