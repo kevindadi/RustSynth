@@ -1,28 +1,26 @@
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use log::{debug, info};
+use log::{debug, info, warn};
 use rustdoc_types::{
-    Crate, Function, GenericParamDefKind, Id, Impl, Item, ItemEnum, Path as RustdocPath, Type,
+    Crate, Function, Id, Impl, Item, ItemEnum, Path as RustdocPath, StructKind, Type, VariantKind,
 };
 
-use super::net::{FunctionContext, PetriNet, PlaceId};
-use super::type_repr::TypeDescriptor;
-use super::util::TypeFormatter;
+use super::net::{PetriNet, PlaceId};
+use super::structure::{BorrowKind, Flow, Place, PlaceKind, Transition, TransitionKind};
 
 pub struct PetriNetBuilder<'a> {
     crate_: &'a Crate,
     net: PetriNet,
-    impl_function_ids: HashSet<Id>,
-    // 记录类型 Item 的 id 到 PlaceId 的映射
+    /// 映射 Item ID 到 PlaceId，用于跟踪已创建的类型 Place
     type_place_map: HashMap<Id, PlaceId>,
-    // 记录每个 Option<T> 实例的完整类型描述符到内部类型的映射
-    option_wrappers: HashMap<Arc<str>, String>,
-    // 记录每个 Result<T, E> 实例的完整类型描述符到 (Ok类型, Err类型) 的映射
-    result_wrappers: HashMap<Arc<str>, (String, String)>,
-    // 记录结构泛型参数占位库所: (结构PlaceId, 泛型参数名) -> 占位库所PlaceId
-    generic_placeholder_places: HashMap<(PlaceId, Arc<str>), PlaceId>,
-    synthetic_id_counter: u32,
+    /// 用于跟踪哪些函数是 impl 块中的方法，避免重复处理
+    impl_function_ids: HashSet<Id>,
+    /// 用于跟踪已创建的 Type Place，避免重复创建
+    /// 键是类型的字符串表示
+    type_cache: HashMap<String, PlaceId>,
+    /// 用于生成临时 ID 的计数器
+    next_temp_id: u32,
 }
 
 impl<'a> PetriNetBuilder<'a> {
@@ -30,12 +28,10 @@ impl<'a> PetriNetBuilder<'a> {
         Self {
             crate_,
             net: PetriNet::new(),
-            impl_function_ids: HashSet::new(),
             type_place_map: HashMap::new(),
-            option_wrappers: HashMap::new(),
-            result_wrappers: HashMap::new(),
-            generic_placeholder_places: HashMap::new(),
-            synthetic_id_counter: 0,
+            impl_function_ids: HashSet::new(),
+            type_cache: HashMap::new(),
+            next_temp_id: u32::MAX - 1_000_000, // 从一个大数字开始，避免与真实 ID 冲突
         }
     }
 
@@ -54,12 +50,12 @@ impl<'a> PetriNetBuilder<'a> {
     pub fn ingest(&mut self) {
         info!("🔨 开始构建 Petri Net...");
 
-        // Step 1: 遍历所有 Struct、Enum、Union 等类型定义,为它们创建 Place
-        info!("📦 步骤 1/3: 创建类型定义的 Place (Struct/Enum/Union)");
+        // Step 1: 遍历所有 Struct、Enum、Union,Variant 等类型定义,为它们创建 Place
+        info!("📦 步骤 1/4: 创建类型定义的 Place (Struct/Enum/Union/Variant)");
         let mut type_count = 0;
         for item in self.crate_.index.values() {
             match &item.inner {
-                ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Union(_) => {
+                ItemEnum::Struct(_) | ItemEnum::Union(_) | ItemEnum::Variant(_) => {
                     self.create_type_place(item);
                     type_count += 1;
                 }
@@ -68,8 +64,12 @@ impl<'a> PetriNetBuilder<'a> {
         }
         debug!("   创建了 {} 个类型定义的 Place", type_count);
 
-        // Step 2: 根据已创建的类型 Place 的 id,查找对应的 impl 块,为方法创建变迁
-        info!("⚙️  步骤 2/3: 处理 impl 块,为方法创建 Transition");
+        // Step 2: 构建类型和其成员之间的 holds 关系
+        info!("🧱 步骤 2/4: 连接类型成员 holds 关系");
+        self.build_type_relationships();
+
+        // Step 3: 根据已创建的类型 Place 的 id,查找对应的 impl 块,为方法创建变迁
+        info!("⚙️  步骤 3/4: 处理 impl 块,为方法创建 Transition");
         let mut impl_items_to_process: Vec<(Id, &Impl)> = Vec::new();
         for (type_id, _place_id) in &self.type_place_map {
             if let Some(type_item) = self.crate_.index.get(type_id) {
@@ -157,7 +157,7 @@ impl<'a> PetriNetBuilder<'a> {
         };
 
         let context = if let Some(trait_path) = &impl_block.trait_ {
-            let trait_path_str = Arc::<str>::from(TypeFormatter::path_to_string(trait_path));
+            let trait_path_str = Arc::<str>::from(Self::format_path(trait_path));
             FunctionContext::TraitImplementation {
                 receiver_id,
                 trait_path: trait_path_str,
@@ -165,15 +165,6 @@ impl<'a> PetriNetBuilder<'a> {
         } else {
             FunctionContext::InherentMethod { receiver_id }
         };
-
-        let impl_generics = TypeFormatter::format_generic_params(&impl_block.generics.params);
-        let impl_where =
-            TypeFormatter::format_where_predicates(&impl_block.generics.where_predicates);
-
-        let mut impl_trait_bounds = Vec::new();
-        if let Some(trait_path) = &impl_block.trait_ {
-            impl_trait_bounds.push(TypeFormatter::path_to_string(trait_path));
-        }
 
         let trait_method_lookup: Option<HashMap<String, Id>> =
             impl_block.trait_.as_ref().and_then(|trait_path| {
@@ -204,14 +195,7 @@ impl<'a> PetriNetBuilder<'a> {
                 if let ItemEnum::Function(func) = &inner_item.inner {
                     // 泛型约束会记录在 FunctionSummary 的 trait_bounds 中
                     self.impl_function_ids.insert(inner_item.id);
-                    self.ingest_function_with_context(
-                        inner_item,
-                        func,
-                        context.clone(),
-                        impl_generics.clone(),
-                        impl_where.clone(),
-                        impl_trait_bounds.clone(),
-                    );
+                    self.ingest_function_with_context(inner_item, func, context.clone());
                 }
             }
         }
@@ -223,14 +207,7 @@ impl<'a> PetriNetBuilder<'a> {
                     if let Some(item) = self.crate_.index.get(method_id) {
                         if let ItemEnum::Function(func) = &item.inner {
                             self.impl_function_ids.insert(item.id);
-                            self.ingest_function_with_context(
-                                item,
-                                func,
-                                context.clone(),
-                                impl_generics.clone(),
-                                impl_where.clone(),
-                                impl_trait_bounds.clone(),
-                            );
+                            self.ingest_function_with_context(item, func, context.clone());
                         }
                     }
                 }
@@ -248,527 +225,466 @@ impl<'a> PetriNetBuilder<'a> {
             context
         };
 
-        self.ingest_function_with_context(item, func, context, Vec::new(), Vec::new(), Vec::new());
+        self.ingest_function_with_context(item, func, context);
     }
 
-    /// 从 Type 中提取 Item ID（如果是 ResolvedPath）
-    fn extract_item_id_from_type(&self, ty: &Type, receiver_id: Option<Id>) -> Option<Id> {
-        match ty {
-            Type::ResolvedPath(path) => {
-                // 如果是 Self，使用 receiver_id
-                if let Some(recv_id) = receiver_id {
-                    // 检查是否是 Self 类型
-                    if let Some(item) = self.crate_.index.get(&path.id) {
-                        if item.name.as_deref() == Some("Self") {
-                            return Some(recv_id);
-                        }
-                    }
-                }
-                Some(path.id)
-            }
-            Type::Generic(name) if name == "Self" => receiver_id.map(|id| id),
-            _ => None,
-        }
-    }
-
-    /// 参数 -> 输入 place, 返回值 -> 输出 place
-    fn ingest_function_with_context(
-        &mut self,
-        item: &Item,
-        func: &Function,
-        context: FunctionContext,
-        _impl_generics: Vec<String>,
-        _impl_where: Vec<String>,
-        _impl_trait_bounds: Vec<String>,
-    ) {
-        let receiver_id = context_receiver_id(&context);
-
-        let mut input_types = Vec::new();
-        let mut input_arcs = Vec::new();
-        for (name, ty) in &func.sig.inputs {
-            // 尝试从类型中提取 Item ID
-            if let Some(type_id) = self.extract_item_id_from_type(ty, receiver_id) {
-                // 查找对应的 Place
-                if let Some(place_id) = self.net.place_id(type_id) {
-                    input_types.push(type_id);
-                    let param_name = (!name.is_empty()).then(|| Arc::<str>::from(name.as_str()));
-                    input_arcs.push((place_id, param_name, type_id));
-                }
-            }
-        }
-
-        // 处理返回值
-        let output_type = func
-            .sig
-            .output
-            .as_ref()
-            .and_then(|ty| self.extract_item_id_from_type(ty, receiver_id));
-
-        let mut output_arcs = Vec::new();
-        if let Some(output_id) = output_type {
-            if let Some(place_id) = self.net.place_id(output_id) {
-                output_arcs.push((place_id, output_id));
-            }
-        }
-
-        let function_name = Arc::<str>::from(item.name.as_deref().unwrap_or("<anonymous>"));
-
-        let transition_id = self.net.add_transition(
-            item.id,
-            function_name.clone(),
-            context.clone(),
-            Option::Some(input_types.clone()),
-            output_type,
-        );
-
-        let context_str = match &context {
-            FunctionContext::FreeFunction => "FreeFunction".to_string(),
-            FunctionContext::InherentMethod { receiver_id } => {
-                format!("InherentMethod(Item ID: {})", receiver_id.0)
-            }
-            FunctionContext::TraitImplementation {
-                receiver_id,
-                trait_path,
-            } => {
-                format!(
-                    "TraitImplementation(Item ID: {}, {})",
-                    receiver_id.0, trait_path
-                )
-            }
-        };
-        info!(
-            "   🔄 [Transition] {} (Item ID: {}, Transition ID: {})",
-            function_name,
-            item.id.0,
-            transition_id.0.index()
-        );
-        debug!("       Context: {}", context_str);
-
-        let is_isolated = input_arcs.is_empty() && output_arcs.is_empty();
-
-        for (place_id, param_name, type_id) in input_arcs {
-            self.net
-                .add_input_arc_from_place(place_id, transition_id, param_name, type_id);
-        }
-
-        for (place_id, type_id) in output_arcs {
-            self.net
-                .add_output_arc_to_place(transition_id, place_id, type_id);
-        }
-
-        if is_isolated {
-            debug!(
-                "       ⚠️  警告: 变迁 {} 是孤立节点(所有参数和返回值都是泛型参数)",
-                function_name
-            );
-        }
-    }
-
-    fn infer_free_function_context(&self, item: &Item) -> Option<FunctionContext> {
-        let summary = self.crate_.paths.get(&item.id)?;
-        if summary.path.len() < 2 {
-            return None;
-        }
-
-        let owner_path = &summary.path[..summary.path.len() - 1];
-        let owner_item = self.find_item_by_path(owner_path)?;
-
-        let owner_path_str = owner_path.join("::");
-        let path = RustdocPath {
-            path: owner_path_str.clone(),
-            id: owner_item.id,
-            args: None,
-        };
-
-        match &owner_item.inner {
-            ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Union(_) | ItemEnum::Variant(_) => {
-                Some(FunctionContext::InherentMethod {
-                    receiver_id: owner_item.id,
-                })
-            }
-            ItemEnum::Trait(_) => Some(FunctionContext::TraitImplementation {
-                receiver_id: owner_item.id,
-                trait_path: Arc::<str>::from(TypeFormatter::path_to_string(&path)),
-            }),
-            _ => None,
-        }
-    }
-
-    fn find_item_by_path(&self, path: &[String]) -> Option<&Item> {
-        self.crate_.index.values().find(|candidate| {
-            self.crate_
-                .paths
-                .get(&candidate.id)
-                .map(|summary| paths_equal(&summary.path, path))
-                .unwrap_or(false)
-        })
-    }
-
-    /// 确保 Place 存在,通过 Item ID 查找或创建
-    /// 如果类型是泛型则返回 None(泛型不创建 Place)
-    fn ensure_place(&mut self, item_id: Id) -> Option<PlaceId> {
-        // 先检查是否已存在
-        if let Some(place_id) = self.net.place_id(item_id) {
-            return Some(place_id);
-        }
-
-        // 如果不存在，尝试从 crate 中获取 Item 并创建 Place
-        if let Some(item) = self.crate_.index.get(&item_id) {
-            match &item.inner {
-                ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Union(_) => {
-                    self.create_type_place(item);
-                    self.net.place_id(item_id)
-                }
-                _ => None,
-            }
-        } else {
-            None
-        }
-    }
-
-    #[allow(dead_code)]
-    fn ensure_place_old(&mut self, _descriptor: TypeDescriptor) -> Option<PlaceId> {
-        // 不再需要这个方法，因为不再创建基本类型的 Place
-        None
-    }
-
-    /// 为类型定义(Struct、Enum、Union、Variant)创建 Place
-    /// 记录类型 Item 的 id 到 PlaceId 的映射
-    /// 库所名称使用 item.name(类型名称),path 路径仅作为补充信息
+    /// 为 Struct/Union/Variant 类型创建 Place
     fn create_type_place(&mut self, item: &Item) {
-        // 使用 item.name 作为库所的 key,path 仅作为补充信息
-        let type_name = item
+        let place_kind = match &item.inner {
+            ItemEnum::Struct(s) => PlaceKind::Struct(s.clone()),
+            ItemEnum::Union(u) => PlaceKind::Union(u.clone()),
+            ItemEnum::Variant(v) => PlaceKind::Variant(v.clone()),
+            _ => return,
+        };
+
+        let name = item
             .name
-            .as_deref()
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| format!("Item{}", item.id.0));
+            .clone()
+            .unwrap_or_else(|| format!("anonymous_{:?}", item.id));
+        let path = item.name.clone().unwrap_or_default();
 
-        // 确定类型种类并创建对应的 Place
-        let place_id = match &item.inner {
-            ItemEnum::Struct(_) => {
-                let variants = Vec::new();
-                self.net
-                    .add_composite_place(item.id, item.inner.clone(), variants)
-            }
-            ItemEnum::Enum(enum_def) => {
-                let mut variants = Vec::new();
-                for variant_id in &enum_def.variants {
-                    if let Some(variant_item) = self.crate_.index.get(variant_id) {
-                        if let ItemEnum::Variant(variant) = &variant_item.inner {
-                            variants.push(variant.clone());
-                        }
-                    }
-                }
-                self.net
-                    .add_composite_place(item.id, item.inner.clone(), variants)
-            }
-            ItemEnum::Union(_) => {
-                let variants = Vec::new();
-                self.net
-                    .add_composite_place(item.id, item.inner.clone(), variants)
-            }
-            _ => {
-                // 其他类型不应该到达这里
-                return;
-            }
-        };
+        let place = Place::new(item.id, name, path, place_kind);
+        let place_id = self.net.add_place_and_get_id(place);
 
-        let type_kind = match &item.inner {
-            ItemEnum::Struct(_) => "Struct",
-            ItemEnum::Enum(_) => "Enum",
-            ItemEnum::Union(_) => "Union",
-            ItemEnum::Variant(_) => "Variant",
-            _ => "Unknown",
-        };
-
-        // 获取完整路径作为补充信息
-        let full_path = self
-            .crate_
-            .paths
-            .get(&item.id)
-            .map(|summary| summary.path.join("::"))
-            .unwrap_or_else(|| type_name.clone());
-
-        info!(
-            "   🎯 [Place] {} {} (Item ID: {}, Place ID: {}) [路径: {}]",
-            type_kind,
-            type_name,
-            item.id.0,
-            place_id.0.index(),
-            full_path
-        );
-
-        // 记录类型 Item 的 id 到 PlaceId 的映射
         self.type_place_map.insert(item.id, place_id);
     }
 
-    /// 将 Variant 的字段映射到 Enum 的 PlaceId
-    /// Variant 的所有字段都映射到同一个 Enum Place
-    /// 注意：现在不再需要别名映射，因为直接使用 Item ID
-    fn register_variant_field_aliases(
-        &mut self,
-        _variant_item: &Item,
-        _variant: &rustdoc_types::Variant,
-        _enum_place_id: PlaceId,
-    ) {
-        // 不再需要别名映射，因为直接使用 Item ID
-    }
+    /// 构建类型成员之间的 holds 关系
+    /// 1. 处理 Struct 的字段
+    /// 2. 处理 Enum 的变体
+    /// 3. 处理 Union 的字段
+    /// 4. 处理 Variant 的字段（Tuple 和 Struct）
+    fn build_type_relationships(&mut self) {
+        // 收集需要处理的类型关系
+        let mut relationships = Vec::new();
 
-    #[allow(dead_code)]
-    fn create_option_wrapper_transitions(&mut self) {
-        // 不再需要 wrapper transitions
-    }
-
-    #[allow(dead_code)]
-    fn add_option_some_transition(
-        &mut self,
-        _option_place: PlaceId,
-        _option_type_key: &str,
-        _inner_type: &str,
-    ) {
-        // 不再需要 wrapper transitions
-    }
-
-    #[allow(dead_code)]
-    fn add_option_none_transition(&mut self, _option_place: PlaceId, _option_type_key: &str) {
-        // 不再需要 wrapper transitions
-    }
-
-    #[allow(dead_code)]
-    fn create_result_wrapper_transitions(&mut self) {
-        // 不再需要 wrapper transitions
-    }
-
-    #[allow(dead_code)]
-    fn add_result_unwrap_transition(
-        &mut self,
-        _result_place: PlaceId,
-        _result_type_key: &str,
-        _ok_type: &str,
-        _err_type: &str,
-    ) {
-        // 不再需要 wrapper transitions
-    }
-
-    #[allow(dead_code)]
-    fn add_result_unwrap_single_transition(
-        &mut self,
-        _result_place: PlaceId,
-        _result_type_key: &str,
-        _ok_type: &str,
-    ) {
-        // 不再需要 wrapper transitions
-    }
-
-    fn next_synthetic_id(&mut self) -> Id {
-        let id = Id(u32::MAX.saturating_sub(self.synthetic_id_counter));
-        self.synthetic_id_counter = self.synthetic_id_counter.wrapping_add(1);
-        id
-    }
-
-    fn lookup_qualified_path(&self, item: &Item) -> Option<Arc<str>> {
-        self.crate_
-            .paths
-            .get(&item.id)
-            .map(|summary| Arc::<str>::from(summary.path.join("::")))
-    }
-
-    /// 获取基本类型的预定义 trait 实现
-    ///
-    /// 返回该基本类型实现的标准 trait 列表
-    /// trait 名称使用简单名称(如 "Sized"),与 rustdoc JSON 中的格式保持一致
-    fn get_primitive_traits(primitive_name: &str) -> Vec<Arc<str>> {
-        match primitive_name {
-            // 整数类型(有符号和无符号)
-            "i8" | "i16" | "i32" | "i64" | "i128" | "isize" | "u8" | "u16" | "u32" | "u64"
-            | "u128" | "usize" => {
-                vec![
-                    Arc::<str>::from("Copy"),
-                    Arc::<str>::from("Clone"),
-                    Arc::<str>::from("Debug"),
-                    Arc::<str>::from("PartialEq"),
-                    Arc::<str>::from("Eq"),
-                    Arc::<str>::from("PartialOrd"),
-                    Arc::<str>::from("Ord"),
-                    Arc::<str>::from("Hash"),
-                    Arc::<str>::from("Sized"),
-                    Arc::<str>::from("Send"),
-                    Arc::<str>::from("Sync"),
-                ]
-            }
-            // 浮点数类型(不实现 Ord 和 Eq,因为 NaN 问题)
-            "f32" | "f64" => {
-                vec![
-                    Arc::<str>::from("Copy"),
-                    Arc::<str>::from("Clone"),
-                    Arc::<str>::from("Debug"),
-                    Arc::<str>::from("PartialEq"),
-                    Arc::<str>::from("PartialOrd"),
-                    Arc::<str>::from("Sized"),
-                    Arc::<str>::from("Send"),
-                    Arc::<str>::from("Sync"),
-                ]
-            }
-            // bool 类型
-            "bool" => {
-                vec![
-                    Arc::<str>::from("Copy"),
-                    Arc::<str>::from("Clone"),
-                    Arc::<str>::from("Debug"),
-                    Arc::<str>::from("PartialEq"),
-                    Arc::<str>::from("Eq"),
-                    Arc::<str>::from("PartialOrd"),
-                    Arc::<str>::from("Ord"),
-                    Arc::<str>::from("Hash"),
-                    Arc::<str>::from("Sized"),
-                    Arc::<str>::from("Send"),
-                    Arc::<str>::from("Sync"),
-                ]
-            }
-            // char 类型
-            "char" => {
-                vec![
-                    Arc::<str>::from("Copy"),
-                    Arc::<str>::from("Clone"),
-                    Arc::<str>::from("Debug"),
-                    Arc::<str>::from("PartialEq"),
-                    Arc::<str>::from("Eq"),
-                    Arc::<str>::from("PartialOrd"),
-                    Arc::<str>::from("Ord"),
-                    Arc::<str>::from("Hash"),
-                    Arc::<str>::from("Sized"),
-                    Arc::<str>::from("Send"),
-                    Arc::<str>::from("Sync"),
-                ]
-            }
-            // str 类型(切片类型,不是 Sized)
-            "str" => {
-                vec![
-                    Arc::<str>::from("Clone"),
-                    Arc::<str>::from("Debug"),
-                    Arc::<str>::from("PartialEq"),
-                    Arc::<str>::from("Eq"),
-                    Arc::<str>::from("PartialOrd"),
-                    Arc::<str>::from("Ord"),
-                    Arc::<str>::from("Hash"),
-                    Arc::<str>::from("Send"),
-                    Arc::<str>::from("Sync"),
-                ]
-            }
-            _ => Vec::new(),
-        }
-    }
-
-    /// 从 rustdoc JSON 中查询基本类型的额外 trait 实现
-    ///
-    /// 对于关联类型约束(如 T: Iterator<Item = u8>),需要查询实际的 impl 条目
-    /// 返回的 trait 名称使用简单名称(如 "Sized"),与 rustdoc JSON 中的格式保持一致
-    fn query_primitive_impls_from_rustdoc(&self, primitive_name: &str) -> Vec<Arc<str>> {
-        let mut additional_traits = Vec::new();
-
-        for item in self.crate_.index.values() {
-            if let ItemEnum::Impl(impl_block) = &item.inner {
-                // 检查是否为基本类型的 impl
-                if let Type::Primitive(ref name) = impl_block.for_ {
-                    if name == primitive_name {
-                        // 如果有 trait,记录 trait 名称
-                        if let Some(trait_path) = &impl_block.trait_ {
-                            let trait_name = TypeFormatter::path_to_string(trait_path);
-                            // 提取简单名称(JSON 中通常就是简单名称,但为了保险起见提取最后一部分)
-                            let simple_name = trait_name.split("::").last().unwrap_or(&trait_name);
-                            additional_traits.push(Arc::<str>::from(simple_name));
+        for (type_id, _place_id) in &self.type_place_map.clone() {
+            if let Some(item) = self.crate_.index.get(type_id) {
+                match &item.inner {
+                    ItemEnum::Struct(struct_def) => {
+                        match &struct_def.kind {
+                            StructKind::Plain { fields, .. } => {
+                                for field_id in fields {
+                                    if let Some(field_item) = self.crate_.index.get(field_id) {
+                                        if let ItemEnum::StructField(field_type) = &field_item.inner
+                                        {
+                                            relationships.push((
+                                                *type_id,
+                                                *field_id,
+                                                field_type.clone(),
+                                            ));
+                                        }
+                                    }
+                                }
+                            }
+                            StructKind::Tuple(field_ids) => {
+                                for field_id in field_ids.iter().flatten() {
+                                    if let Some(field_item) = self.crate_.index.get(field_id) {
+                                        if let ItemEnum::StructField(field_type) = &field_item.inner
+                                        {
+                                            relationships.push((
+                                                *type_id,
+                                                *field_id,
+                                                field_type.clone(),
+                                            ));
+                                        }
+                                    }
+                                }
+                            }
+                            StructKind::Unit => {
+                                // Unit struct 没有字段
+                            }
                         }
                     }
+                    ItemEnum::Enum(enum_def) => {
+                        for variant_id in &enum_def.variants {
+                            relationships.push((*type_id, *variant_id, Type::Infer));
+                        }
+                    }
+                    ItemEnum::Union(union_def) => {
+                        for field_id in &union_def.fields {
+                            if let Some(field_item) = self.crate_.index.get(field_id) {
+                                if let ItemEnum::StructField(field_type) = &field_item.inner {
+                                    relationships.push((*type_id, *field_id, field_type.clone()));
+                                }
+                            }
+                        }
+                    }
+                    ItemEnum::Variant(variant) => {
+                        match &variant.kind {
+                            VariantKind::Plain => {
+                                // Plain variant 不需要特殊处理
+                            }
+                            VariantKind::Tuple(field_ids) => {
+                                for field_id in field_ids.iter().flatten() {
+                                    if let Some(field_item) = self.crate_.index.get(field_id) {
+                                        if let ItemEnum::StructField(field_type) = &field_item.inner
+                                        {
+                                            relationships.push((
+                                                *type_id,
+                                                *field_id,
+                                                field_type.clone(),
+                                            ));
+                                        }
+                                    }
+                                }
+                            }
+                            VariantKind::Struct { fields, .. } => {
+                                for field_id in fields {
+                                    if let Some(field_item) = self.crate_.index.get(field_id) {
+                                        if let ItemEnum::StructField(field_type) = &field_item.inner
+                                        {
+                                            relationships.push((
+                                                *type_id,
+                                                *field_id,
+                                                field_type.clone(),
+                                            ));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
 
-        additional_traits
-    }
+        // 处理所有关系
+        for (owner_id, member_id, field_type) in relationships {
+            // 为字段类型创建 Place（如果需要）
+            let member_place_id = self.create_or_get_type_place(&field_type, &member_id);
 
-    /// 创建所有基本类型的库所
-    ///
-    /// 使用先验知识预填常见 trait 实现,并查询 rustdoc JSON 获取额外的实现
-    /// 注意：现在不再需要基本类型，因为只创建 Struct、Enum、Union
-    #[allow(dead_code)]
-    fn create_primitive_places(&mut self) {
-        let primitives = vec![
-            "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize",
-            "f32", "f64", "bool", "char", "str",
-        ];
-
-        for primitive_name in primitives {
-            let _descriptor = TypeDescriptor::from_type(&Type::Primitive(primitive_name.into()));
-            let mut implemented_traits = Self::get_primitive_traits(primitive_name);
-
-            let additional_traits = self.query_primitive_impls_from_rustdoc(primitive_name);
-            implemented_traits.extend(additional_traits);
-
-            let unique_traits: std::collections::HashSet<_> =
-                implemented_traits.into_iter().collect();
-            let mut implemented_traits: Vec<_> = unique_traits.into_iter().collect();
-            implemented_traits.sort();
-
-            // 不再创建基本类型的 Place
-            // let place_id = self
-            //     .net
-            //     .add_primitive_place(descriptor.clone(), implemented_traits.clone());
-        }
-    }
-}
-
-fn context_receiver_id(context: &FunctionContext) -> Option<Id> {
-    match context {
-        FunctionContext::InherentMethod { receiver_id } => Some(*receiver_id),
-        FunctionContext::TraitImplementation { receiver_id, .. } => Some(*receiver_id),
-        FunctionContext::FreeFunction => None,
-    }
-}
-
-fn paths_equal(lhs: &[String], rhs: &[String]) -> bool {
-    lhs.len() == rhs.len() && lhs.iter().zip(rhs.iter()).all(|(a, b)| a == b)
-}
-
-fn dedup_arc_vec(vec: &mut Vec<Arc<str>>) {
-    let mut seen = BTreeSet::new();
-    vec.retain(|value| seen.insert(value.clone()));
-}
-
-fn extract_trait_bounds(params: &[rustdoc_types::GenericParamDef]) -> Vec<String> {
-    let mut bounds = Vec::new();
-    for param in params {
-        if let GenericParamDefKind::Type {
-            bounds: param_bounds,
-            ..
-        } = &param.kind
-        {
-            for bound in param_bounds {
-                bounds.push(TypeFormatter::format_generic_bound(bound));
+            // 创建 holds transition 连接 owner 和 member
+            if let (Some(owner_place_id), Some(member_place_id)) =
+                (self.type_place_map.get(&owner_id), member_place_id)
+            {
+                self.create_holds_transition(owner_id, member_id, *owner_place_id, member_place_id);
             }
         }
     }
-    bounds
+
+    /// 为类型创建或获取 Place，避免重复创建
+    /// 返回 PlaceId，如果类型无需创建 Place 则返回 None
+    fn create_or_get_type_place(&mut self, ty: &Type, field_id: &Id) -> Option<PlaceId> {
+        match ty {
+            Type::Primitive(name) => {
+                let type_key = format!("primitive:{}", name);
+                if let Some(&place_id) = self.type_cache.get(&type_key) {
+                    return Some(place_id);
+                }
+
+                let place = Place::new(
+                    *field_id,
+                    name.clone(),
+                    format!("primitive::{}", name),
+                    PlaceKind::Primitive(name.clone()),
+                );
+                let place_id = self.net.add_place_and_get_id(place);
+                self.type_cache.insert(type_key, place_id);
+                Some(place_id)
+            }
+            Type::Tuple(types) => {
+                let type_key = format!("tuple:{}", self.format_type(ty));
+                if let Some(&place_id) = self.type_cache.get(&type_key) {
+                    return Some(place_id);
+                }
+
+                // 递归为 tuple 中的每个类型创建 Place
+                let mut inner_info = Vec::new();
+                for inner_type in types.iter() {
+                    let dummy_id = self.generate_temp_id();
+                    if let Some(inner_place_id) =
+                        self.create_or_get_type_place(inner_type, &dummy_id)
+                    {
+                        inner_info.push((dummy_id, inner_place_id));
+                    }
+                }
+
+                let place = Place::new(
+                    *field_id,
+                    format!("Tuple{}", types.len()),
+                    format!("tuple::({})", self.format_type(ty)),
+                    PlaceKind::Tuple(types.clone()),
+                );
+                let place_id = self.net.add_place_and_get_id(place);
+                self.type_cache.insert(type_key.clone(), place_id);
+
+                // 创建 tuple 到其元素的 holds 关系
+                for (dummy_id, inner_place_id) in inner_info {
+                    self.create_holds_transition(*field_id, dummy_id, place_id, inner_place_id);
+                }
+
+                Some(place_id)
+            }
+            Type::Slice(inner_type) => {
+                let type_key = format!("slice:{}", self.format_type(ty));
+                if let Some(&place_id) = self.type_cache.get(&type_key) {
+                    return Some(place_id);
+                }
+
+                // 为 slice 的元素类型创建 Place
+                let dummy_id = self.generate_temp_id();
+                let inner_place_id = self.create_or_get_type_place(inner_type, &dummy_id);
+
+                let place = Place::new(
+                    *field_id,
+                    format!("[{}]", self.format_type(inner_type)),
+                    format!("slice::[{}]", self.format_type(inner_type)),
+                    PlaceKind::Slice(inner_type.clone()),
+                );
+                let place_id = self.net.add_place_and_get_id(place);
+                self.type_cache.insert(type_key, place_id);
+
+                // 创建 slice 到其元素的 holds 关系
+                if let Some(inner_place_id) = inner_place_id {
+                    self.create_holds_transition(*field_id, dummy_id, place_id, inner_place_id);
+                }
+
+                Some(place_id)
+            }
+            Type::Array { type_, len } => {
+                let type_key = format!("array:{}:{}", self.format_type(type_), len);
+                if let Some(&place_id) = self.type_cache.get(&type_key) {
+                    return Some(place_id);
+                }
+
+                // 为 array 的元素类型创建 Place
+                let dummy_id = self.generate_temp_id();
+                let inner_place_id = self.create_or_get_type_place(type_, &dummy_id);
+
+                let place = Place::new(
+                    *field_id,
+                    format!("[{}; {}]", self.format_type(type_), len),
+                    format!("array::[{}; {}]", self.format_type(type_), len),
+                    PlaceKind::Array(type_.clone(), len.clone()),
+                );
+                let place_id = self.net.add_place_and_get_id(place);
+                self.type_cache.insert(type_key, place_id);
+
+                // 创建 array 到其元素的 holds 关系
+                if let Some(inner_place_id) = inner_place_id {
+                    self.create_holds_transition(*field_id, dummy_id, place_id, inner_place_id);
+                }
+
+                Some(place_id)
+            }
+            Type::Infer => {
+                let type_key = "infer:_".to_string();
+                if let Some(&place_id) = self.type_cache.get(&type_key) {
+                    return Some(place_id);
+                }
+
+                let place = Place::new(
+                    *field_id,
+                    "_".to_string(),
+                    "infer::_".to_string(),
+                    PlaceKind::Infer,
+                );
+                let place_id = self.net.add_place_and_get_id(place);
+                self.type_cache.insert(type_key, place_id);
+                Some(place_id)
+            }
+            Type::RawPointer { is_mutable, type_ } => {
+                let mutability = if *is_mutable { "mut" } else { "const" };
+                let type_key = format!("rawptr:{}:{}", mutability, self.format_type(type_));
+                if let Some(&place_id) = self.type_cache.get(&type_key) {
+                    return Some(place_id);
+                }
+
+                // 为指针的目标类型创建 Place
+                let dummy_id = self.generate_temp_id();
+                let inner_place_id = self.create_or_get_type_place(type_, &dummy_id);
+
+                let place = Place::new(
+                    *field_id,
+                    format!("*{} {}", mutability, self.format_type(type_)),
+                    format!("rawptr::*{} {}", mutability, self.format_type(type_)),
+                    PlaceKind::RawPointer(type_.clone(), *is_mutable),
+                );
+                let place_id = self.net.add_place_and_get_id(place);
+                self.type_cache.insert(type_key, place_id);
+
+                // 创建 rawptr 到其目标的 holds 关系
+                if let Some(inner_place_id) = inner_place_id {
+                    self.create_holds_transition(*field_id, dummy_id, place_id, inner_place_id);
+                }
+
+                Some(place_id)
+            }
+            Type::BorrowedRef {
+                is_mutable,
+                type_,
+                lifetime,
+            } => {
+                let mutability = if *is_mutable { " mut" } else { "" };
+                let lifetime_str = lifetime.as_deref().unwrap_or("");
+                let type_key = format!(
+                    "borrowedref:{}{}:{}",
+                    lifetime_str,
+                    mutability,
+                    self.format_type(type_)
+                );
+                if let Some(&place_id) = self.type_cache.get(&type_key) {
+                    return Some(place_id);
+                }
+
+                // 为引用的目标类型创建 Place
+                let dummy_id = self.generate_temp_id();
+                let inner_place_id = self.create_or_get_type_place(type_, &dummy_id);
+
+                let place = Place::new(
+                    *field_id,
+                    format!(
+                        "&{}{} {}",
+                        lifetime_str,
+                        mutability,
+                        self.format_type(type_)
+                    ),
+                    format!(
+                        "borrowedref::&{}{} {}",
+                        lifetime_str,
+                        mutability,
+                        self.format_type(type_)
+                    ),
+                    PlaceKind::BorrowedRef(type_.clone(), *is_mutable, lifetime.clone()),
+                );
+                let place_id = self.net.add_place_and_get_id(place);
+                self.type_cache.insert(type_key, place_id);
+
+                // 创建 borrowedref 到其目标的 holds 关系
+                if let Some(inner_place_id) = inner_place_id {
+                    self.create_holds_transition(*field_id, dummy_id, place_id, inner_place_id);
+                }
+
+                Some(place_id)
+            }
+            Type::ResolvedPath(path) => {
+                // 如果是已知的类型，直接返回其 PlaceId
+                self.type_place_map.get(&path.id).copied()
+            }
+            _ => {
+                // 其他类型暂不处理
+                warn!("未处理的类型: {:?}", ty);
+                None
+            }
+        }
+    }
+
+    /// 创建 holds transition 连接 owner 和 member
+    fn create_holds_transition(
+        &mut self,
+        owner_id: Id,
+        member_id: Id,
+        owner_place_id: PlaceId,
+        member_place_id: PlaceId,
+    ) {
+        let transition_id_val = self.generate_temp_id();
+        let transition = Transition::new(
+            transition_id_val,
+            format!("holds"),
+            TransitionKind::Hold(owner_id, member_id),
+        );
+        let transition_id = self.net.add_transition_and_get_id(transition);
+
+        // 添加边：owner -> transition -> member
+        self.net.add_flow(
+            owner_place_id,
+            transition_id,
+            Flow {
+                weight: 1,
+                param_type: "owner".to_string(),
+                borrow_kind: BorrowKind::Owned,
+            },
+        );
+        self.net.add_flow_from_transition(
+            transition_id,
+            member_place_id,
+            Flow {
+                weight: 1,
+                param_type: "member".to_string(),
+                borrow_kind: BorrowKind::Owned,
+            },
+        );
+    }
+
+    /// 将 Type 转换为字符串表示
+    fn format_type(&self, ty: &Type) -> String {
+        match ty {
+            Type::Primitive(name) => name.clone(),
+            Type::Tuple(types) => {
+                let types_str = types
+                    .iter()
+                    .map(|t| self.format_type(t))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("({})", types_str)
+            }
+            Type::Slice(inner) => format!("[{}]", self.format_type(inner)),
+            Type::Array { type_, len } => format!("[{}; {}]", self.format_type(type_), len),
+            Type::Infer => "_".to_string(),
+            Type::RawPointer { is_mutable, type_ } => {
+                let mutability = if *is_mutable { "mut" } else { "const" };
+                format!("*{} {}", mutability, self.format_type(type_))
+            }
+            Type::BorrowedRef {
+                is_mutable,
+                type_,
+                lifetime,
+            } => {
+                let mutability = if *is_mutable { " mut" } else { "" };
+                let lifetime_str = lifetime.as_deref().unwrap_or("");
+                format!(
+                    "&{}{} {}",
+                    lifetime_str,
+                    mutability,
+                    self.format_type(type_)
+                )
+            }
+            Type::ResolvedPath(path) => Self::format_path(path),
+            Type::Generic(name) => name.clone(),
+            _ => format!("{:?}", ty),
+        }
+    }
+
+    /// 将 Path 转换为字符串
+    fn format_path(path: &RustdocPath) -> String {
+        path.path.clone()
+    }
+
+    /// 生成临时 ID
+    fn generate_temp_id(&mut self) -> Id {
+        let id = Id(self.next_temp_id);
+        self.next_temp_id = self.next_temp_id.wrapping_sub(1);
+        id
+    }
+
+    /// 推断自由函数的上下文（暂时返回 None）
+    fn infer_free_function_context(&self, _item: &Item) -> Option<FunctionContext> {
+        None
+    }
+
+    /// 处理函数，创建 transition
+    fn ingest_function_with_context(
+        &mut self,
+        _item: &Item,
+        _func: &Function,
+        _context: FunctionContext,
+    ) {
+        // TODO: 实现函数处理逻辑
+        // 这里需要根据函数的参数和返回值创建 transition，并连接相应的 Place
+    }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn load_test_crate(name: &str) -> Crate {
-        let path = format!("./localdata/test_data/{name}/rustdoc.json");
-        let content = std::fs::read_to_string(&path)
-            .unwrap_or_else(|err| panic!("failed to read {path}: {err}"));
-        serde_json::from_str(&content)
-            .unwrap_or_else(|err| panic!("failed to parse {path} as rustdoc JSON: {err}"))
-    }
-
-    #[test]
-    fn replaces_self_in_method_receivers() {
-        let crate_ = load_test_crate("method_self_receivers");
-        let net = PetriNetBuilder::from_crate(&crate_);
-
-        // 检查 Place 和 Transition 是否创建成功
-        assert!(net.place_count() > 0, "应该创建了至少一个 Place");
-        assert!(net.transition_count() > 0, "应该创建了至少一个 Transition");
-    }
+/// 函数上下文，用于记录函数的类型信息
+#[derive(Clone, Debug)]
+enum FunctionContext {
+    FreeFunction,
+    InherentMethod {
+        receiver_id: Id,
+    },
+    TraitImplementation {
+        receiver_id: Id,
+        trait_path: Arc<str>,
+    },
 }
