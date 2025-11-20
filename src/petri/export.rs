@@ -19,6 +19,7 @@ pub fn to_dot(net: &PetriNet, _crate_data: &Crate) -> String {
             PlaceKind::Struct(_) => "lightblue",
             PlaceKind::Enum(_) => "lightgreen",
             PlaceKind::Union(_) => "lightyellow",
+            PlaceKind::Trait(_) => "mediumpurple", // Trait 用紫色
             PlaceKind::Variant(_) => "lightcyan",
             PlaceKind::StructField(_) => "wheat",
             PlaceKind::Primitive(_) => "pink",
@@ -28,6 +29,10 @@ pub fn to_dot(net: &PetriNet, _crate_data: &Crate) -> String {
             PlaceKind::Infer => "lightgray",
             PlaceKind::RawPointer(_, _) => "plum",
             PlaceKind::BorrowedRef(_, _, _) => "lightsteelblue",
+            PlaceKind::GenericParam(_, _) => "lightsalmon", // 泛型参数用浅橙色
+            PlaceKind::Result(_, _) => "coral",             // Result 类型用珊瑚色
+            PlaceKind::Option(_) => "khaki",                // Option 类型用卡其色
+            PlaceKind::AssocType(_, _, _) => "lightpink",   // 关联类型用浅粉色
         };
 
         let label = escape_dot_label(&place.name);
@@ -47,6 +52,10 @@ pub fn to_dot(net: &PetriNet, _crate_data: &Crate) -> String {
         let label = match &trans.kind {
             TransitionKind::Function(_) => escape_dot_label(&trans.name),
             TransitionKind::Hold(_, _) => "holds".to_string(),
+            TransitionKind::Unwrap => "unwrap".to_string(),
+            TransitionKind::Ok => "ok".to_string(),
+            TransitionKind::Impls(_, _) => "impls".to_string(),
+            TransitionKind::AliasType(_, _) => "alias_type".to_string(),
         };
 
         dot.push_str(&format!(

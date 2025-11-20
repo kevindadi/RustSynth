@@ -1,11 +1,17 @@
- 2025-11-19T14:45:24.276Z INFO  trustfall_rustdoc_adapter::petri::builder > 🔨 开始构建 Petri Net...
- 2025-11-19T14:45:24.276Z INFO  trustfall_rustdoc_adapter::petri::builder > 📦 步骤 1/4: 创建类型定义的 Place (Struct/Enum/Union/Variant)
- 2025-11-19T14:45:24.276Z DEBUG trustfall_rustdoc_adapter::petri::builder >    创建了 22 个类型定义的 Place
- 2025-11-19T14:45:24.276Z INFO  trustfall_rustdoc_adapter::petri::builder > 🧱 步骤 2/4: 连接类型成员 holds 关系
- 2025-11-19T14:45:24.276Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 3/4: 处理 impl 块,为方法创建 Transition
- 2025-11-19T14:45:24.276Z DEBUG trustfall_rustdoc_adapter::petri::builder >    找到 144 个 impl 块需要处理
- 2025-11-19T14:45:24.276Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 4/4: 处理无约束函数
- 2025-11-19T14:45:24.276Z DEBUG trustfall_rustdoc_adapter::petri::builder >    处理了 32 个无约束函数
- 2025-11-19T14:45:24.276Z INFO  trustfall_rustdoc_adapter::petri::builder > 📊 Petri Net 构建完成
- 2025-11-19T14:45:24.276Z INFO  trustfall_rustdoc_adapter::petri::builder >    ✅ 总共创建了 24 个 Place
- 2025-11-19T14:45:24.276Z INFO  trustfall_rustdoc_adapter::petri::builder >    ✅ 总共创建了 8 个 Transition
+ 2025-11-20T16:05:07.865Z INFO  trustfall_rustdoc_adapter::petri::builder > 🔨 开始构建 Petri Net...
+ 2025-11-20T16:05:07.865Z INFO  trustfall_rustdoc_adapter::petri::builder > 📦 步骤 1/4: 创建类型定义的 Place (Struct/Enum/Union/Trait/Variant)
+ 2025-11-20T16:05:07.865Z INFO  trustfall_rustdoc_adapter::petri::builder > 🧱 步骤 2/4: 连接类型成员 holds 关系
+ 2025-11-20T16:05:07.866Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 3/4: 处理 impl 块,为方法创建 Transition
+ 2025-11-20T16:05:07.866Z INFO  trustfall_rustdoc_adapter::petri::builder >    🔍 自动发现并创建有 impl 的类型...
+ 2025-11-20T16:05:07.866Z INFO  trustfall_rustdoc_adapter::petri::builder >    ✅ 自动创建了 1 个有 impl 的类型 Place
+ 2025-11-20T16:05:07.866Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的限定路径类型: QualifiedPath { name: "Error", args: None, self_type: Generic("T"), trait_: Some(Path { path: "TryFrom", id: Id(33), args: Some(AngleBracketed { args: [Type(Generic("U"))], constraints: [] }) }) }
+ 2025-11-20T16:05:07.866Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的限定路径类型: QualifiedPath { name: "Error", args: None, self_type: Generic("U"), trait_: Some(Path { path: "TryFrom", id: Id(33), args: Some(AngleBracketed { args: [Type(Generic("T"))], constraints: [] }) }) }
+ 2025-11-20T16:05:07.866Z INFO  trustfall_rustdoc_adapter::petri::builder > 🔍 发现 blanket impl (ID: Id(156)), for_ = BorrowedRef { lifetime: None, is_mutable: true, type_: Generic("S") }
+ 2025-11-20T16:05:07.866Z INFO  trustfall_rustdoc_adapter::petri::builder > 🔧 处理 blanket impl (ID: Id(156))
+ 2025-11-20T16:05:07.866Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的类型: DynTrait(DynTrait { traits: [PolyTrait { trait_: Path { path: "error::Error", id: Id(385), args: None }, generic_params: [] }], lifetime: Some("'static") })
+ 2025-11-20T16:05:07.866Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的限定路径类型: QualifiedPath { name: "Error", args: None, self_type: Generic("Self"), trait_: Some(Path { path: "", id: Id(33), args: None }) }
+ 2025-11-20T16:05:07.866Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 4/5: 处理 Trait 方法
+ 2025-11-20T16:05:07.866Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 5/5: 处理无约束函数
+ 2025-11-20T16:05:07.866Z INFO  trustfall_rustdoc_adapter::petri::builder > 📊 Petri Net 构建完成
+ 2025-11-20T16:05:07.866Z INFO  trustfall_rustdoc_adapter::petri::builder >    ✅ 总共创建了 89 个 Place
+ 2025-11-20T16:05:07.866Z INFO  trustfall_rustdoc_adapter::petri::builder >    ✅ 总共创建了 238 个 Transition

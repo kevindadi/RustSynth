@@ -1,0 +1,21 @@
+ 2025-11-20T15:58:50.420Z INFO  trustfall_rustdoc_adapter::petri::builder > 🔨 开始构建 Petri Net...
+ 2025-11-20T15:58:50.420Z INFO  trustfall_rustdoc_adapter::petri::builder > 📦 步骤 1/4: 创建类型定义的 Place (Struct/Enum/Union/Trait/Variant)
+ 2025-11-20T15:58:50.420Z INFO  trustfall_rustdoc_adapter::petri::builder > 🧱 步骤 2/4: 连接类型成员 holds 关系
+ 2025-11-20T15:58:50.420Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 3/4: 处理 impl 块,为方法创建 Transition
+ 2025-11-20T15:58:50.420Z INFO  trustfall_rustdoc_adapter::petri::builder >    🔍 自动发现并创建有 impl 的类型...
+ 2025-11-20T15:58:50.421Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的限定路径类型: QualifiedPath { name: "Error", args: None, self_type: Generic("U"), trait_: Some(Path { path: "TryFrom", id: Id(33), args: Some(AngleBracketed { args: [Type(Generic("T"))], constraints: [] }) }) }
+ 2025-11-20T15:58:50.421Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的限定路径类型: QualifiedPath { name: "Error", args: None, self_type: Generic("Self"), trait_: Some(Path { path: "", id: Id(33), args: None }) }
+ 2025-11-20T15:58:50.421Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的限定路径类型: QualifiedPath { name: "Error", args: None, self_type: Generic("T"), trait_: Some(Path { path: "TryFrom", id: Id(33), args: Some(AngleBracketed { args: [Type(Generic("U"))], constraints: [] }) }) }
+ 2025-11-20T15:58:50.421Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的类型: DynTrait(DynTrait { traits: [PolyTrait { trait_: Path { path: "error::Error", id: Id(385), args: None }, generic_params: [] }], lifetime: Some("'static") })
+ 2025-11-20T15:58:50.421Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 4/5: 处理 Trait 方法
+ 2025-11-20T15:58:50.421Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 5/5: 处理无约束函数
+ 2025-11-20T15:58:50.421Z WARN  trustfall_rustdoc_adapter::petri::builder > ❌ 错误：遇到 Self 类型但没有接收者上下文 (function_id: Id(155))
+ 2025-11-20T15:58:50.421Z WARN  trustfall_rustdoc_adapter::petri::builder > 函数 'consume' (ID: Id(155)) 的参数 'self' 类型 'Self' 对应的 Place 不存在
+ 2025-11-20T15:58:50.421Z WARN  trustfall_rustdoc_adapter::petri::builder > ❌ 错误：遇到 Self 类型但没有接收者上下文 (function_id: Id(157))
+ 2025-11-20T15:58:50.421Z WARN  trustfall_rustdoc_adapter::petri::builder > 函数 'consume' (ID: Id(157)) 的参数 'self' 类型 'Self' 对应的 Place 不存在
+ 2025-11-20T15:58:50.421Z INFO  trustfall_rustdoc_adapter::petri::builder > 📊 Petri Net 构建完成
+ 2025-11-20T15:58:50.421Z INFO  trustfall_rustdoc_adapter::petri::builder >    ✅ 总共创建了 90 个 Place
+ 2025-11-20T15:58:50.422Z INFO  trustfall_rustdoc_adapter::petri::builder >    ✅ 总共创建了 236 个 Transition
+Petri 网构建完成:90 个 Place,236 个 Transition.
+Petri 网 DOT 文件已写入:net_with_generics.dot
+未指定目标类型 (--goal),跳过程序合成.

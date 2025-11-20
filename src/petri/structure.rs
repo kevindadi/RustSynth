@@ -1,5 +1,5 @@
 // 库所和变迁的结构定义
-use rustdoc_types::{Enum, Function, Id, Struct, Type, Union, Variant};
+use rustdoc_types::{Enum, Function, Id, Struct, Trait, Type, Union, Variant};
 
 #[derive(Clone, Debug)]
 pub struct Place {
@@ -14,6 +14,7 @@ pub enum PlaceKind {
     Struct(Struct),
     Enum(Enum),
     Union(Union),
+    Trait(Trait),
     Variant(Variant),
     StructField(Type),
     // 基本类型和复合类型
@@ -24,6 +25,15 @@ pub enum PlaceKind {
     Infer,                                        // _
     RawPointer(Box<Type>, bool),                  // *const T / *mut T，bool 表示 is_mutable
     BorrowedRef(Box<Type>, bool, Option<String>), // &T / &mut T，lifetime
+    // 泛型参数占位符，用于表示类型参数（如 Vec<T> 中的 T）
+    // (owner_type_id, generic_name)
+    GenericParam(Id, String),
+    // 特殊包装器类型
+    Result(Box<Type>, Box<Type>), // Result<T, E>
+    Option(Box<Type>),            // Option<T>
+    // 关联类型（Associated Type）
+    // (owner_trait_id, assoc_type_name, bounds)
+    AssocType(Id, String, Vec<String>),
 }
 
 impl Place {
@@ -103,6 +113,15 @@ pub struct Transition {
 pub enum TransitionKind {
     Function(Function),
     Hold(Id, Id),
+    /// Result<T, E> 的 unwrap 操作，连接到 T 和 E
+    Unwrap,
+    /// Option<T> 的 ok/unwrap 操作，连接到 T
+    Ok,
+    /// 类型实现 Trait 的关系，(impl_type_id, trait_id)
+    Impls(Id, Id),
+    /// 关联类型别名，(alias_id, target_type_id)
+    /// 例如 trait Engine { type Config: Config; }
+    AliasType(Id, Id),
 }
 
 impl Transition {
