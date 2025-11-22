@@ -914,9 +914,12 @@ pub(crate) fn resolve_generic_const_parameter_property<'a, V: AsVertex<Vertex<'a
                 .expect("vertex was not a GenericConstParameter");
 
             match &generic.kind {
-                rustdoc_types::GenericParamDefKind::Const { default, .. } => {
-                    default.as_ref().map(|s| s.as_str()).unwrap_or("").to_string().into()
-                }
+                rustdoc_types::GenericParamDefKind::Const { default, .. } => default
+                    .as_ref()
+                    .map(|s| s.as_str())
+                    .unwrap_or("")
+                    .to_string()
+                    .into(),
                 _ => unreachable!("vertex was not a GenericConstParameter: {vertex:?}"),
             }
         }),
