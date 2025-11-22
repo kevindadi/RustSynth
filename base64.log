@@ -1,100 +1,98 @@
- 2025-11-22T06:48:40.520Z INFO  trustfall_rustdoc_adapter::petri::builder > 🔨 开始构建 Petri Net...
- 2025-11-22T06:48:40.520Z INFO  trustfall_rustdoc_adapter::petri::builder > 📦 步骤 1/4: 创建类型定义的 Place (Struct/Enum/Union/Trait/Variant)
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 alias_type 关系: 关联类型 Id(252) 约束于 trait Id(242)
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建关联类型 'Engine::Config' (ID: Id(252))，约束: ["Config"]
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 alias_type 关系: 关联类型 Id(253) 约束于 trait Id(254)
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建关联类型 'Engine::DecodeEstimate' (ID: Id(253))，约束: ["DecodeEstimate"]
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder >    创建了 31 个类型定义的 Place
- 2025-11-22T06:48:40.520Z INFO  trustfall_rustdoc_adapter::petri::builder > 🧱 步骤 2/4: 连接类型成员 holds 关系
- 2025-11-22T06:48:40.520Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 3/4: 处理 impl 块,为方法创建 Transition
- 2025-11-22T06:48:40.520Z INFO  trustfall_rustdoc_adapter::petri::builder >    🔍 自动发现并创建有 impl 的类型...
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自动创建标准库类型 'String' Place
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder >    自动为标准库类型 'String' (ID: Id(47)) 创建 Place
- 2025-11-22T06:48:40.520Z INFO  trustfall_rustdoc_adapter::petri::builder >    ✅ 自动创建了 1 个有 impl 的类型 Place
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder >    找到 257 个 impl 块需要处理
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(453))
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(491))
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<W, _> 及其 unwrap 变迁
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
- 2025-11-22T06:48:40.520Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的限定路径类型: QualifiedPath { name: "Error", args: None, self_type: Generic("U"), trait_: Some(Path { path: "TryFrom", id: Id(33), args: Some(AngleBracketed { args: [Type(Generic("T"))], constraints: [] }) }) }
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<U, QualifiedPath { name: "Error", args: None, self_type: Generic("U"), trait_: Some(Path { path: "TryFrom", id: Id(33), args: Some(AngleBracketed { args: [Type(Generic("T"))], constraints: [] }) }) }> 及其 unwrap 变迁
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
- 2025-11-22T06:48:40.520Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的限定路径类型: QualifiedPath { name: "Error", args: None, self_type: Generic("T"), trait_: Some(Path { path: "TryFrom", id: Id(33), args: Some(AngleBracketed { args: [Type(Generic("U"))], constraints: [] }) }) }
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<T, QualifiedPath { name: "Error", args: None, self_type: Generic("T"), trait_: Some(Path { path: "TryFrom", id: Id(33), args: Some(AngleBracketed { args: [Type(Generic("U"))], constraints: [] }) }) }> 及其 unwrap 变迁
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
- 2025-11-22T06:48:40.520Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(51))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<usize, _> 及其 unwrap 变迁
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<(), _> 及其 unwrap 变迁
- 2025-11-22T06:48:40.521Z INFO  trustfall_rustdoc_adapter::petri::builder > 🔍 发现 blanket impl (ID: Id(156)), for_ = BorrowedRef { lifetime: None, is_mutable: true, type_: Generic("S") }
- 2025-11-22T06:48:40.521Z INFO  trustfall_rustdoc_adapter::petri::builder > 🔧 处理 blanket impl (ID: Id(156))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967221) 实现 trait Id(131)
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 blanket impl 泛型 'S' 实现 trait 'StrConsumer' (ID: Id(131))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 处理 blanket impl 中的函数 'consume' (ID: Id(155))，Self 指向 Id(131)
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<Self, ParseAlphabetError> 及其 unwrap 变迁
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(459))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(47) 实现 trait Id(131)
- 2025-11-22T06:48:40.521Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的限定路径类型: QualifiedPath { name: "Error", args: None, self_type: Generic("Self"), trait_: Some(Path { path: "", id: Id(33), args: None }) }
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<Self, QualifiedPath { name: "Error", args: None, self_type: Generic("Self"), trait_: Some(Path { path: "", id: Id(33), args: None }) }> 及其 unwrap 变迁
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(422))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(172) 实现 trait Id(242)
- 2025-11-22T06:48:40.521Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的类型: DynTrait(DynTrait { traits: [PolyTrait { trait_: Path { path: "error::Error", id: Id(385), args: None }, generic_params: [] }], lifetime: Some("'static") })
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Option<& DynTrait(DynTrait { traits: [PolyTrait { trait_: Path { path: "error::Error", id: Id(385), args: None }, generic_params: [] }], lifetime: Some("'static") })> 及其 ok 变迁
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(382))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(196))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(346))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(120))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(292))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<usize, _> 及其 unwrap 变迁
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<(), _> 及其 unwrap 变迁
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(416))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(84))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(235))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(321))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(376))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(485))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(169) 实现 trait Id(4)
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<usize, EncodeSliceError> 及其 unwrap 变迁
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自动创建标准库类型 'Vec' Place
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<Vec, DecodeError> 及其 unwrap 变迁
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<(), DecodeError> 及其 unwrap 变迁
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<usize, DecodeSliceError> 及其 unwrap 变迁
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<usize, DecodeError> 及其 unwrap 变迁
- 2025-11-22T06:48:40.521Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 4/5: 处理 Trait 方法
- 2025-11-22T06:48:40.521Z DEBUG trustfall_rustdoc_adapter::petri::builder >    处理了 11 个 Trait 方法
- 2025-11-22T06:48:40.521Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 5/5: 处理无约束函数
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967135) 实现 trait Id(4)
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 函数 '392' 的泛型 'E' 约束于 trait 'Engine' (ID: Id(4))
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'encode_engine' (ID: Id(392)) 有 2 个泛型参数，已创建 GenericParam Place
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967132) 实现 trait Id(4)
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 函数 '393' 的泛型 'E' 约束于 trait 'Engine' (ID: Id(4))
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'encode_engine_string' (ID: Id(393)) 有 2 个泛型参数，已创建 GenericParam Place
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967129) 实现 trait Id(4)
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 函数 '394' 的泛型 'E' 约束于 trait 'Engine' (ID: Id(4))
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'encode_engine_slice' (ID: Id(394)) 有 2 个泛型参数，已创建 GenericParam Place
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967125) 实现 trait Id(4)
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 函数 '496' 的泛型 'E' 约束于 trait 'Engine' (ID: Id(4))
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'decode_engine' (ID: Id(496)) 有 2 个泛型参数，已创建 GenericParam Place
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<alloc::vec::Vec, DecodeError> 及其 unwrap 变迁
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967118) 实现 trait Id(4)
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 函数 '498' 的泛型 'E' 约束于 trait 'Engine' (ID: Id(4))
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'decode_engine_slice' (ID: Id(498)) 有 2 个泛型参数，已创建 GenericParam Place
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'decode' (ID: Id(495)) 有 1 个泛型参数，已创建 GenericParam Place
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967112) 实现 trait Id(4)
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 函数 '497' 的泛型 'E' 约束于 trait 'Engine' (ID: Id(4))
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'decode_engine_vec' (ID: Id(497)) 有 2 个泛型参数，已创建 GenericParam Place
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Option<usize> 及其 ok 变迁
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'encode' (ID: Id(391)) 有 1 个泛型参数，已创建 GenericParam Place
- 2025-11-22T06:48:40.522Z DEBUG trustfall_rustdoc_adapter::petri::builder >    处理了 10 个无约束函数
- 2025-11-22T06:48:40.522Z INFO  trustfall_rustdoc_adapter::petri::builder > 📊 Petri Net 构建完成
- 2025-11-22T06:48:40.522Z INFO  trustfall_rustdoc_adapter::petri::builder >    ✅ 总共创建了 89 个 Place
- 2025-11-22T06:48:40.522Z INFO  trustfall_rustdoc_adapter::petri::builder >    ✅ 总共创建了 239 个 Transition
+ 2025-11-22T18:40:48.679Z INFO  trustfall_rustdoc_adapter::petri::builder > 🔨 开始构建 Petri Net...
+ 2025-11-22T18:40:48.679Z INFO  trustfall_rustdoc_adapter::petri::builder > 📦 步骤 1/4: 创建类型定义的 Place (Struct/Enum/Union/Trait/Variant)
+ 2025-11-22T18:40:48.679Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建关联类型 'Engine::Config' (ID: Id(252))，约束: ["Config"]
+ 2025-11-22T18:40:48.679Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建关联类型 'Engine::DecodeEstimate' (ID: Id(253))，约束: ["DecodeEstimate"]
+ 2025-11-22T18:40:48.679Z DEBUG trustfall_rustdoc_adapter::petri::builder >    创建了 31 个类型定义的 Place
+ 2025-11-22T18:40:48.679Z INFO  trustfall_rustdoc_adapter::petri::builder > 🧱 步骤 2/4: 连接类型成员 holds 关系
+ 2025-11-22T18:40:48.679Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 3/4: 处理 impl 块,为方法创建 Transition
+ 2025-11-22T18:40:48.679Z INFO  trustfall_rustdoc_adapter::petri::builder >    🔍 自动发现并创建有 impl 的类型...
+ 2025-11-22T18:40:48.679Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自动创建标准库类型 'String' Place
+ 2025-11-22T18:40:48.679Z DEBUG trustfall_rustdoc_adapter::petri::builder >    自动为标准库类型 'String' (ID: Id(47)) 创建 Place
+ 2025-11-22T18:40:48.679Z INFO  trustfall_rustdoc_adapter::petri::builder >    ✅ 自动创建了 1 个有 impl 的类型 Place
+ 2025-11-22T18:40:48.679Z DEBUG trustfall_rustdoc_adapter::petri::builder >    找到 257 个 impl 块需要处理
+ 2025-11-22T18:40:48.679Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
+ 2025-11-22T18:40:48.679Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(416))
+ 2025-11-22T18:40:48.679Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<Self, ParseAlphabetError> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.679Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的限定路径类型: QualifiedPath { name: "Error", args: None, self_type: Generic("T"), trait_: Some(Path { path: "TryFrom", id: Id(33), args: Some(AngleBracketed { args: [Type(Generic("U"))], constraints: [] }) }) }
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<T, QualifiedPath { name: "Error", args: None, self_type: Generic("T"), trait_: Some(Path { path: "TryFrom", id: Id(33), args: Some(AngleBracketed { args: [Type(Generic("U"))], constraints: [] }) }) }> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.680Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的限定路径类型: QualifiedPath { name: "Error", args: None, self_type: Generic("U"), trait_: Some(Path { path: "TryFrom", id: Id(33), args: Some(AngleBracketed { args: [Type(Generic("T"))], constraints: [] }) }) }
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<U, QualifiedPath { name: "Error", args: None, self_type: Generic("U"), trait_: Some(Path { path: "TryFrom", id: Id(33), args: Some(AngleBracketed { args: [Type(Generic("T"))], constraints: [] }) }) }> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(453))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(120))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(172) 实现 trait Id(242)
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(47) 实现 trait Id(131)
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<usize, _> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<(), _> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
+ 2025-11-22T18:40:48.680Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的限定路径类型: QualifiedPath { name: "Error", args: None, self_type: Generic("Self"), trait_: Some(Path { path: "", id: Id(33), args: None }) }
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<Self, QualifiedPath { name: "Error", args: None, self_type: Generic("Self"), trait_: Some(Path { path: "", id: Id(33), args: None }) }> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(459))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(292))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(84))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(485))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(51))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(346))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(169) 实现 trait Id(4)
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<usize, EncodeSliceError> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自动创建标准库类型 'Vec' Place
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<Vec, DecodeError> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<(), DecodeError> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<usize, DecodeSliceError> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<usize, DecodeError> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(196))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
+ 2025-11-22T18:40:48.680Z WARN  trustfall_rustdoc_adapter::petri::builder > 未处理的类型: DynTrait(DynTrait { traits: [PolyTrait { trait_: Path { path: "error::Error", id: Id(385), args: None }, generic_params: [] }], lifetime: Some("'static") })
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Option<& DynTrait(DynTrait { traits: [PolyTrait { trait_: Path { path: "error::Error", id: Id(385), args: None }, generic_params: [] }], lifetime: Some("'static") })> 及其 ok 变迁
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(382))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(491))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<usize, _> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<(), _> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<W, _> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(235))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(376))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'type_id' (ID: Id(42))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(422))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ⏭️  跳过函数 'fmt' (ID: Id(321))
+ 2025-11-22T18:40:48.680Z INFO  trustfall_rustdoc_adapter::petri::builder > 🔍 发现 blanket impl (ID: Id(156)), for_ = BorrowedRef { lifetime: None, is_mutable: true, type_: Generic("S") }
+ 2025-11-22T18:40:48.680Z INFO  trustfall_rustdoc_adapter::petri::builder > 🔧 处理 blanket impl (ID: Id(156))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967145) 实现 trait Id(131)
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 blanket impl 泛型 'S' 实现 trait 'StrConsumer' (ID: Id(131))
+ 2025-11-22T18:40:48.680Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 处理 blanket impl 中的函数 'consume' (ID: Id(155))，Self 指向 Id(131)
+ 2025-11-22T18:40:48.680Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 4/5: 处理 Trait 方法
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder >    处理了 11 个 Trait 方法
+ 2025-11-22T18:40:48.681Z INFO  trustfall_rustdoc_adapter::petri::builder > ⚙️  步骤 5/5: 处理无约束函数
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967137) 实现 trait Id(4)
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 函数 '392' 的泛型 'E' 约束于 trait 'Engine' (ID: Id(4))
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'encode_engine' (ID: Id(392)) 有 2 个泛型参数，已创建 GenericParam Place
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'decode' (ID: Id(495)) 有 1 个泛型参数，已创建 GenericParam Place
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Result<alloc::vec::Vec, DecodeError> 及其 unwrap 变迁
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 Option<usize> 及其 ok 变迁
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967126) 实现 trait Id(4)
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 函数 '496' 的泛型 'E' 约束于 trait 'Engine' (ID: Id(4))
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'decode_engine' (ID: Id(496)) 有 2 个泛型参数，已创建 GenericParam Place
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967122) 实现 trait Id(4)
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 函数 '393' 的泛型 'E' 约束于 trait 'Engine' (ID: Id(4))
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'encode_engine_string' (ID: Id(393)) 有 2 个泛型参数，已创建 GenericParam Place
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'encode' (ID: Id(391)) 有 1 个泛型参数，已创建 GenericParam Place
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967118) 实现 trait Id(4)
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 函数 '497' 的泛型 'E' 约束于 trait 'Engine' (ID: Id(4))
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'decode_engine_vec' (ID: Id(497)) 有 2 个泛型参数，已创建 GenericParam Place
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967114) 实现 trait Id(4)
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 函数 '394' 的泛型 'E' 约束于 trait 'Engine' (ID: Id(4))
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'encode_engine_slice' (ID: Id(394)) 有 2 个泛型参数，已创建 GenericParam Place
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 创建 impls 关系: 类型 Id(4293967110) 实现 trait Id(4)
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 函数 '498' 的泛型 'E' 约束于 trait 'Engine' (ID: Id(4))
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder > ✨ 自由函数 'decode_engine_slice' (ID: Id(498)) 有 2 个泛型参数，已创建 GenericParam Place
+ 2025-11-22T18:40:48.681Z DEBUG trustfall_rustdoc_adapter::petri::builder >    处理了 10 个无约束函数
+ 2025-11-22T18:40:48.681Z INFO  trustfall_rustdoc_adapter::petri::builder > 📊 Petri Net 构建完成
+ 2025-11-22T18:40:48.681Z INFO  trustfall_rustdoc_adapter::petri::builder >    ✅ 总共创建了 89 个 Place
+ 2025-11-22T18:40:48.681Z INFO  trustfall_rustdoc_adapter::petri::builder >    ✅ 总共创建了 237 个 Transition
