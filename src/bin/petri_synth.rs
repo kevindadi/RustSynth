@@ -5,7 +5,6 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result, anyhow, bail};
 use log::LevelFilter;
-use rustdoc_types::Id;
 use trustfall_rustdoc_adapter::Crate;
 use trustfall_rustdoc_adapter::petri::PetriNetBuilder;
 
@@ -40,7 +39,11 @@ fn main() -> Result<()> {
 
     let crate_data: Crate = serde_json::from_reader(reader).context("解析 rustdoc JSON 失败")?;
 
-    let petri_net = PetriNetBuilder::from_crate(&crate_data);
+    let petri_net = PetriNetBuilder::from_crate_with_logs(
+        &crate_data,
+        args.type_log_file.as_ref(),
+        args.generic_order_log_file.as_ref(),
+    );
 
     println!(
         "Petri 网构建完成:{} 个 Place,{} 个 Transition.",
@@ -69,12 +72,17 @@ fn main() -> Result<()> {
 
 struct CliArgs {
     json_path: PathBuf,
+    #[allow(unused)]
     input_types: Vec<String>,
     goal_types: Vec<String>,
     emit_net: Option<PathBuf>,
+    #[allow(unused)]
     max_depth: Option<usize>,
+    #[allow(unused)]
     max_states: Option<usize>,
     log_file: Option<PathBuf>,
+    type_log_file: Option<PathBuf>,
+    generic_order_log_file: Option<PathBuf>,
     verbose: bool,
 }
 
@@ -87,6 +95,8 @@ fn parse_args() -> Result<CliArgs> {
     let mut max_depth = None;
     let mut max_states = None;
     let mut log_file = None;
+    let mut type_log_file = None;
+    let mut generic_order_log_file = None;
     let mut verbose = false;
 
     while let Some(arg) = args.next() {
@@ -119,6 +129,16 @@ fn parse_args() -> Result<CliArgs> {
                 let value = args.next().context("`--log` 需要日志文件路径")?;
                 log_file = Some(PathBuf::from(value));
             }
+            "--type-log" => {
+                let value = args.next().context("`--type-log` 需要类型日志文件路径")?;
+                type_log_file = Some(PathBuf::from(value));
+            }
+            "--generic-order-log" => {
+                let value = args
+                    .next()
+                    .context("`--generic-order-log` 需要泛型偏序关系分析日志文件路径")?;
+                generic_order_log_file = Some(PathBuf::from(value));
+            }
             "--verbose" | "-v" => {
                 verbose = true;
             }
@@ -142,6 +162,8 @@ fn parse_args() -> Result<CliArgs> {
         max_depth,
         max_states,
         log_file,
+        type_log_file,
+        generic_order_log_file,
         verbose,
     })
 }
@@ -151,9 +173,12 @@ fn print_usage() {
         "用法:
   petri_synth --rustdoc <rustdoc.json> [--input <类型>]... [--goal <类型>]...
                [--emit-net <输出.dot>] [--max-depth N] [--max-states N]
+               [--log <日志文件>] [--type-log <类型日志文件>] [--generic-order-log <泛型偏序关系分析文件>]
 
 示例:
   petri_synth --rustdoc target/doc/my_crate.json --input \"&str\" --goal \"String\"
+  petri_synth --rustdoc target/doc/my_crate.json --type-log types.txt
+  petri_synth --rustdoc target/doc/my_crate.json --generic-order-log generic_order.txt
 
 说明:
   --rustdoc <path>     rustdoc JSON 输入文件路径 (required)
@@ -161,6 +186,9 @@ fn print_usage() {
   --goal <类型>              指定目标类型,可多次指定.
   --emit-net <输出.dot>      将构建好的 Petri 网拓扑写入 DOT 文件.
   --max-depth <N>           搜索调用序列的最大深度(默认 6).
-  --max-states <N>          搜索过程中允许的最大状态数量(默认 10000)."
+  --max-states <N>          搜索过程中允许的最大状态数量(默认 10000).
+  --log <文件>               将运行日志保存到文件.
+  --type-log <文件>          将类型清单保存到文件(包含所有类型和泛型约束).
+  --generic-order-log <文件> 将泛型偏序关系分析保存到文件(包含泛型可用性和约束层级关系)."
     );
 }
