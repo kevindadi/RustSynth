@@ -270,9 +270,8 @@ pub fn analyze_generic_partial_order(
     Ok(())
 }
 
-
- /// 生成类型日志文件,记录所有类型及其泛型约束
- pub fn generate_type_log(builder: &PetriNetBuilder, log_path: &PathBuf) -> std::io::Result<()> {
+/// 生成类型日志文件,记录所有类型及其泛型约束
+pub fn generate_type_log(builder: &PetriNetBuilder, log_path: &PathBuf) -> std::io::Result<()> {
     let mut file = File::create(log_path)?;
     writeln!(file, "📋 Rust 类型清单\n")?;
 

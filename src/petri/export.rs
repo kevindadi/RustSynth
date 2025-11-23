@@ -1,4 +1,4 @@
-use rustdoc_types::{Crate};
+use rustdoc_types::Crate;
 use serde_json::json;
 
 use super::net::PetriNet;
@@ -33,7 +33,7 @@ pub fn to_dot(net: &PetriNet, _: &Crate) -> String {
             PlaceKind::Result(_, _) => "coral",             // Result 类型用珊瑚色
             PlaceKind::Option(_) => "khaki",                // Option 类型用卡其色
             PlaceKind::AssocType(_, _, _) => "lightpink",   // 关联类型用浅粉色
-            PlaceKind::Projection(_, _, _) => "lightcoral",  // Projection 类型用浅珊瑚色
+            PlaceKind::Projection(_, _, _) => "lightcoral", // Projection 类型用浅珊瑚色
         };
 
         // 对于泛型参数,直接使用 place.name (已经包含约束信息)
