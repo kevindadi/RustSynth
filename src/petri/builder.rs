@@ -1,6 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::fs::File;
-use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -10,28 +8,31 @@ use rustdoc_types::{
     StructKind, Type, VariantKind,
 };
 
+use crate::petri::utils::is_std_library_type;
+use crate::petri::log::{analyze_generic_partial_order, generate_type_log};
+
 use super::net::{PetriNet, PlaceId};
 use super::structure::{BorrowKind, Flow, Place, PlaceKind, Transition, TransitionKind};
 
 pub struct PetriNetBuilder<'a> {
-    crate_: &'a Crate,
-    net: PetriNet,
+    pub(super) crate_: &'a Crate,
+    pub(super) net: PetriNet,
     /// 映射 Item ID 到 PlaceId,用于跟踪已创建的类型 Place
-    type_place_map: HashMap<Id, PlaceId>,
+    pub(super) type_place_map: HashMap<Id, PlaceId>,
     /// 用于跟踪哪些函数是 impl 块中的方法,避免重复处理
-    impl_function_ids: HashSet<Id>,
+    pub(super) impl_function_ids: HashSet<Id>,
     /// 用于跟踪已创建的 Type Place,避免重复创建
     /// 键是类型的字符串表示
-    type_cache: HashMap<String, PlaceId>,
+    pub(super) type_cache: HashMap<String, PlaceId>,
     /// 用于跟踪泛型参数的占位符 Place
     /// 键是 (泛型名, 约束trait_id列表的排序后的元组)
     /// 无约束的泛型参数使用空列表,有约束的根据约束集合创建不同的库所
-    generic_param_cache: HashMap<(String, Vec<Id>), PlaceId>,
+    pub(super) generic_param_cache: HashMap<(String, Vec<Id>), PlaceId>,
     /// 用于跟踪 Projection Place(QualifiedPath 的规范化表示)
     /// 键是 (self_type_id, trait_id, assoc_name),保证相同的 Projection 只创建一次
-    projection_cache: HashMap<(Id, Id, String), PlaceId>,
+    pub(super) projection_cache: HashMap<(Id, Id, String), PlaceId>,
     /// 用于生成临时 ID 的计数器
-    next_temp_id: u32,
+    pub(super) next_temp_id: u32,
 }
 
 impl<'a> PetriNetBuilder<'a> {
@@ -48,57 +49,7 @@ impl<'a> PetriNetBuilder<'a> {
         }
     }
 
-    /// 标准库/核心库类型白名单
-    /// 这些类型会自动创建 Place
-    fn is_std_library_type(&self, path: &str) -> bool {
-        matches!(
-            path,
-            // 基本字符串类型
-            "String" | "alloc::string::String" | "std::string::String"
-            | "str" | "alloc::str" | "std::str"
-            // 集合类型
-            | "Vec" | "alloc::vec::Vec" | "std::vec::Vec"
-            | "VecDeque" | "alloc::collections::VecDeque" | "std::collections::VecDeque"
-            | "LinkedList" | "alloc::collections::LinkedList" | "std::collections::LinkedList"
-            | "HashMap" | "std::collections::HashMap"
-            | "HashSet" | "std::collections::HashSet"
-            | "BTreeMap" | "alloc::collections::BTreeMap" | "std::collections::BTreeMap"
-            | "BTreeSet" | "alloc::collections::BTreeSet" | "std::collections::BTreeSet"
-            // 智能指针
-            | "Box" | "alloc::boxed::Box" | "std::boxed::Box"
-            | "Rc" | "alloc::rc::Rc" | "std::rc::Rc"
-            | "Arc" | "alloc::sync::Arc" | "std::sync::Arc"
-            | "Cow" | "alloc::borrow::Cow" | "std::borrow::Cow"
-            // 基本数值类型(虽然是 Primitive,但可能以 Path 形式出现)
-            | "bool" | "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
-            | "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
-            | "f32" | "f64" | "char"
-            // IO 类型
-            | "io::Error" | "std::io::Error"
-            | "io::Result" | "std::io::Result"
-            // 格式化类型
-            | "fmt::Error" | "std::fmt::Error" | "core::fmt::Error"
-            | "fmt::Result" | "std::fmt::Result" | "core::fmt::Result"
-            | "fmt::Formatter" | "std::fmt::Formatter" | "core::fmt::Formatter"
-            | "fmt::Arguments" | "std::fmt::Arguments" | "core::fmt::Arguments"
-            // 其他常用类型
-            | "PathBuf" | "std::path::PathBuf"
-            | "Path" | "std::path::Path"
-            | "OsString" | "std::ffi::OsString"
-            | "OsStr" | "std::ffi::OsStr"
-            | "CString" | "std::ffi::CString"
-            | "CStr" | "std::ffi::CStr"
-            // 时间类型
-            | "Duration" | "std::time::Duration" | "core::time::Duration"
-            | "Instant" | "std::time::Instant"
-            | "SystemTime" | "std::time::SystemTime"
-            // 错误处理
-            | "Error" | "std::error::Error"
-            // 类型相关
-            | "TypeId" | "std::any::TypeId" | "core::any::TypeId"
-            | "PhantomData" | "std::marker::PhantomData" | "core::marker::PhantomData"
-        )
-    }
+    
 
     pub fn from_crate(crate_: &'a Crate) -> PetriNet {
         Self::from_crate_with_log(crate_, None)
@@ -118,7 +69,7 @@ impl<'a> PetriNetBuilder<'a> {
 
         // 生成类型日志
         if let Some(log_path) = type_log_path {
-            if let Err(e) = builder.generate_type_log(log_path) {
+            if let Err(e) = generate_type_log(&builder, log_path) {
                 warn!("⚠️  无法生成类型日志文件: {}", e);
             } else {
                 info!("📋 类型日志已保存到: {}", log_path.display());
@@ -127,7 +78,7 @@ impl<'a> PetriNetBuilder<'a> {
 
         // 生成泛型偏序关系分析日志
         if let Some(log_path) = generic_order_log_path {
-            if let Err(e) = builder.analyze_generic_partial_order(log_path) {
+            if let Err(e) = analyze_generic_partial_order(&builder, log_path) {
                 warn!("⚠️  无法生成泛型偏序关系分析文件: {}", e);
             } else {
                 info!("🔗 泛型偏序关系分析已保存到: {}", log_path.display());
@@ -193,7 +144,7 @@ impl<'a> PetriNetBuilder<'a> {
                             }
                         } else {
                             // 类型不在 index 中,可能是标准库类型
-                            if self.is_std_library_type(&path.path) {
+                            if is_std_library_type(&path.path) {
                                 // 创建标准库类型的 Place
                                 let temp_id = self.generate_temp_id();
                                 if let Some(_place_id) =
@@ -243,28 +194,10 @@ impl<'a> PetriNetBuilder<'a> {
             }
         }
 
-        // Step 4: 处理 Trait 方法
-        info!("⚙️  步骤 4/5: 处理 Trait 方法");
-        let mut trait_method_count = 0;
-        for item in self.crate_.index.values() {
-            if let ItemEnum::Trait(trait_def) = &item.inner {
-                let trait_id = item.id;
-                for method_id in &trait_def.items {
-                    if let Some(method_item) = self.crate_.index.get(method_id) {
-                        if let ItemEnum::Function(func) = &method_item.inner {
-                            // Trait 方法的上下文:receiver_id 是 trait 本身
-                            let context = FunctionContext::InherentMethod {
-                                receiver_id: trait_id,
-                            };
-                            self.impl_function_ids.insert(*method_id);
-                            self.ingest_function_with_context(method_item, func, context);
-                            trait_method_count += 1;
-                        }
-                    }
-                }
-            }
-        }
-        debug!("   处理了 {} 个 Trait 方法", trait_method_count);
+        // Step 4: 处理 Trait 方法（已跳过，trait 定义中的方法已在 create_trait_items_places 中处理）
+        // trait 定义中的方法只保留函数签名，不创建独立的 Transition
+        // 只有 impl 块中实现的方法才会创建 Transition
+        info!("⚙️  步骤 4/5: 处理 Trait 方法（已跳过，trait 定义中的方法只保留签名）");
 
         // Step 5: 处理无约束函数
         info!("⚙️  步骤 5/5: 处理无约束函数");
@@ -284,255 +217,7 @@ impl<'a> PetriNetBuilder<'a> {
         debug!("   处理了 {} 个无约束函数", free_func_count);
     }
 
-    /// 生成类型日志文件,记录所有类型及其泛型约束
-    pub fn generate_type_log(&self, log_path: &PathBuf) -> std::io::Result<()> {
-        let mut file = File::create(log_path)?;
-        writeln!(file, "📋 Rust 类型清单\n")?;
-
-        // 收集所有类型
-        let mut structs = Vec::new();
-        let mut enums = Vec::new();
-        let mut unions = Vec::new();
-        let mut traits = Vec::new();
-        let mut variants = Vec::new();
-        let mut generics = Vec::new();
-        let mut primitives = Vec::new();
-        let mut others = Vec::new();
-
-        for item in self.crate_.index.values() {
-            let name = item.name.as_deref().unwrap_or("(匿名)");
-            let id_str = format!("{:?}", item.id);
-
-            match &item.inner {
-                ItemEnum::Struct(s) => {
-                    let generics_info = self.format_generics(&s.generics);
-                    structs.push((name.to_string(), id_str, generics_info));
-                }
-                ItemEnum::Enum(e) => {
-                    let generics_info = self.format_generics(&e.generics);
-                    enums.push((name.to_string(), id_str, generics_info));
-                }
-                ItemEnum::Union(u) => {
-                    let generics_info = self.format_generics(&u.generics);
-                    unions.push((name.to_string(), id_str, generics_info));
-                }
-                ItemEnum::Trait(t) => {
-                    let generics_info = self.format_generics(&t.generics);
-                    traits.push((name.to_string(), id_str, generics_info));
-                }
-                ItemEnum::Variant(_v) => {
-                    // Variant 没有自己的 generics,它继承自 Enum
-                    variants.push((name.to_string(), id_str, String::new()));
-                }
-                ItemEnum::Primitive(_) => {
-                    primitives.push((name.to_string(), id_str, String::new()));
-                }
-                _ => {
-                    others.push((name.to_string(), id_str, String::new()));
-                }
-            }
-        }
-
-        // 收集泛型参数(从 generic_param_cache)
-        for ((generic_name, constraint_trait_ids), _place_id) in &self.generic_param_cache {
-            // 格式化约束信息
-            let constraints = if constraint_trait_ids.is_empty() {
-                String::new()
-            } else {
-                let trait_names: Vec<String> = constraint_trait_ids
-                    .iter()
-                    .filter_map(|trait_id| {
-                        if let Some(item) = self.crate_.index.get(trait_id) {
-                            item.name.clone()
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
-                if trait_names.is_empty() {
-                    format!(": {:?}", constraint_trait_ids)
-                } else {
-                    format!(": {}", trait_names.join(" + "))
-                }
-            };
-
-            generics.push((
-                format!("{}{}", generic_name, constraints),
-                format!("{:?}", constraint_trait_ids),
-                constraints,
-            ));
-        }
-
-        // 写入 Struct 类型
-        if !structs.is_empty() {
-            writeln!(file, "📦 Struct 类型 (共 {} 个):\n", structs.len())?;
-            for (name, id, generics_info) in &structs {
-                writeln!(file, "  • {} (ID: {})", name, id)?;
-                if !generics_info.is_empty() {
-                    writeln!(file, "    {}", generics_info)?;
-                }
-            }
-            writeln!(file)?;
-        }
-
-        // 写入 Enum 类型
-        if !enums.is_empty() {
-            writeln!(file, "🔢 Enum 类型 (共 {} 个):\n", enums.len())?;
-            for (name, id, generics_info) in &enums {
-                writeln!(file, "  • {} (ID: {})", name, id)?;
-                if !generics_info.is_empty() {
-                    writeln!(file, "    {}", generics_info)?;
-                }
-            }
-            writeln!(file)?;
-        }
-
-        // 写入 Union 类型
-        if !unions.is_empty() {
-            writeln!(file, "🔗 Union 类型 (共 {} 个):\n", unions.len())?;
-            for (name, id, generics_info) in &unions {
-                writeln!(file, "  • {} (ID: {})", name, id)?;
-                if !generics_info.is_empty() {
-                    writeln!(file, "    {}", generics_info)?;
-                }
-            }
-            writeln!(file)?;
-        }
-
-        // 写入 Trait 类型
-        if !traits.is_empty() {
-            writeln!(file, "🎯 Trait 类型 (共 {} 个):\n", traits.len())?;
-            for (name, id, generics_info) in &traits {
-                writeln!(file, "  • {} (ID: {})", name, id)?;
-                if !generics_info.is_empty() {
-                    writeln!(file, "    {}", generics_info)?;
-                }
-            }
-            writeln!(file)?;
-        }
-
-        // 写入 Variant 类型
-        if !variants.is_empty() {
-            writeln!(file, "🔀 Variant 类型 (共 {} 个):\n", variants.len())?;
-            for (name, id, generics_info) in &variants {
-                writeln!(file, "  • {} (ID: {})", name, id)?;
-                if !generics_info.is_empty() {
-                    writeln!(file, "    {}", generics_info)?;
-                }
-            }
-            writeln!(file)?;
-        }
-
-        // 写入泛型参数
-        if !generics.is_empty() {
-            writeln!(file, "🔧 泛型参数 (共 {} 个):\n", generics.len())?;
-            for (name, id, constraints) in &generics {
-                writeln!(file, "  • {} (Owner ID: {})", name, id)?;
-                if !constraints.is_empty() {
-                    writeln!(file, "    约束: {}", constraints)?;
-                } else {
-                    writeln!(file, "    约束: 无")?;
-                }
-            }
-            writeln!(file)?;
-        }
-
-        // 写入 Primitive 类型
-        if !primitives.is_empty() {
-            writeln!(file, "⚡ Primitive 类型 (共 {} 个):\n", primitives.len())?;
-            for (name, id, _) in &primitives {
-                writeln!(file, "  • {} (ID: {})", name, id)?;
-            }
-            writeln!(file)?;
-        }
-
-        // 写入其他类型
-        if !others.is_empty() {
-            writeln!(file, "📝 其他类型 (共 {} 个):\n", others.len())?;
-            for (name, id, _) in &others {
-                writeln!(file, "  • {} (ID: {})", name, id)?;
-            }
-            writeln!(file)?;
-        }
-
-        writeln!(
-            file,
-            "================================================================================\n"
-        )?;
-        writeln!(file, "📊 统计信息:\n")?;
-        writeln!(file, "  • Struct:  {} 个", structs.len())?;
-        writeln!(file, "  • Enum:    {} 个", enums.len())?;
-        writeln!(file, "  • Union:   {} 个", unions.len())?;
-        writeln!(file, "  • Trait:   {} 个", traits.len())?;
-        writeln!(file, "  • Variant: {} 个", variants.len())?;
-        writeln!(file, "  • 泛型参数: {} 个", generics.len())?;
-        writeln!(file, "  • Primitive: {} 个", primitives.len())?;
-        writeln!(file, "  • 其他:     {} 个", others.len())?;
-        writeln!(
-            file,
-            "  • 总计:    {} 个类型\n",
-            structs.len()
-                + enums.len()
-                + unions.len()
-                + traits.len()
-                + variants.len()
-                + generics.len()
-                + primitives.len()
-                + others.len()
-        )?;
-        writeln!(
-            file,
-            "================================================================================\n"
-        )?;
-
-        Ok(())
-    }
-
-    /// 格式化泛型参数信息
-    fn format_generics(&self, generics: &rustdoc_types::Generics) -> String {
-        if generics.params.is_empty() {
-            return String::new();
-        }
-
-        let mut parts = Vec::new();
-        for param in &generics.params {
-            match &param.kind {
-                GenericParamDefKind::Type { bounds, .. } => {
-                    let mut constraint_str = String::new();
-                    if !bounds.is_empty() {
-                        let bound_strs: Vec<String> = bounds
-                            .iter()
-                            .filter_map(|bound| {
-                                if let rustdoc_types::GenericBound::TraitBound { trait_, .. } =
-                                    bound
-                                {
-                                    Some(trait_.path.clone())
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect();
-                        if !bound_strs.is_empty() {
-                            constraint_str = format!(": {}", bound_strs.join(" + "));
-                        }
-                    }
-                    parts.push(format!("{}{}", param.name, constraint_str));
-                }
-                GenericParamDefKind::Lifetime { .. } => {
-                    parts.push(format!("'{}", param.name));
-                }
-                GenericParamDefKind::Const { .. } => {
-                    parts.push(format!("const {}", param.name));
-                }
-            }
-        }
-
-        if parts.is_empty() {
-            String::new()
-        } else {
-            format!("泛型参数: <{}>", parts.join(", "))
-        }
-    }
+   
 
     /// 查找泛型参数的约束 trait IDs
     fn find_generic_constraint_trait_ids(&self, owner_id: Id, generic_name: &str) -> Vec<Id> {
@@ -569,276 +254,7 @@ impl<'a> PetriNetBuilder<'a> {
         Vec::new()
     }
 
-    /// 分析泛型偏序关系
-    /// 生成一个报告,显示哪些泛型可以使用哪些泛型,以及约束之间的层级关系
-    pub fn analyze_generic_partial_order(&self, log_path: &PathBuf) -> std::io::Result<()> {
-        use std::collections::{HashMap, HashSet};
-
-        let mut file = File::create(log_path)?;
-        writeln!(file, "🔗 泛型偏序关系分析\n")?;
-
-        // Rust 编译器默认实现的 trait
-        let default_traits: HashSet<&str> = [
-            "Send",
-            "Sync",
-            "Sized",
-            "Copy",
-            "Clone",
-            "Debug",
-            "Display",
-            "PartialEq",
-            "Eq",
-            "PartialOrd",
-            "Ord",
-            "Hash",
-            "Default",
-            "Drop",
-            "Unpin",
-            "UnwindSafe",
-            "RefUnwindSafe",
-        ]
-        .iter()
-        .cloned()
-        .collect();
-
-        // 收集所有泛型参数及其约束
-        #[derive(Debug, Clone)]
-        struct GenericInfo {
-            #[allow(unused)]
-            owner_id: Id,
-            owner_name: String,
-            generic_name: String,
-            constraints: Vec<String>, // trait 路径列表
-        }
-
-        let mut generic_infos: Vec<GenericInfo> = Vec::new();
-
-        // 从类型定义中收集泛型
-        for item in self.crate_.index.values() {
-            let owner_name = item.name.as_deref().unwrap_or("(匿名)").to_string();
-            let generics = match &item.inner {
-                ItemEnum::Struct(s) => Some(&s.generics),
-                ItemEnum::Enum(e) => Some(&e.generics),
-                ItemEnum::Union(u) => Some(&u.generics),
-                ItemEnum::Trait(t) => Some(&t.generics),
-                _ => None,
-            };
-
-            if let Some(generics) = generics {
-                for param in &generics.params {
-                    if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
-                        let constraints: Vec<String> = bounds
-                            .iter()
-                            .filter_map(|bound| {
-                                if let rustdoc_types::GenericBound::TraitBound { trait_, .. } =
-                                    bound
-                                {
-                                    Some(trait_.path.clone())
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect();
-
-                        generic_infos.push(GenericInfo {
-                            owner_id: item.id,
-                            owner_name: owner_name.clone(),
-                            generic_name: param.name.clone(),
-                            constraints,
-                        });
-                    }
-                }
-            }
-        }
-
-        // 从函数和 impl 中收集泛型
-        for item in self.crate_.index.values() {
-            let owner_name = item.name.as_deref().unwrap_or("(匿名)").to_string();
-            let generics = match &item.inner {
-                ItemEnum::Function(f) => Some(&f.generics),
-                ItemEnum::Impl(i) => Some(&i.generics),
-                _ => None,
-            };
-
-            if let Some(generics) = generics {
-                for param in &generics.params {
-                    if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
-                        let constraints: Vec<String> = bounds
-                            .iter()
-                            .filter_map(|bound| {
-                                if let rustdoc_types::GenericBound::TraitBound { trait_, .. } =
-                                    bound
-                                {
-                                    Some(trait_.path.clone())
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect();
-
-                        generic_infos.push(GenericInfo {
-                            owner_id: item.id,
-                            owner_name: owner_name.clone(),
-                            generic_name: param.name.clone(),
-                            constraints,
-                        });
-                    }
-                }
-            }
-        }
-
-        // 构建约束图:trait -> 满足该约束的泛型列表
-        let mut trait_to_generics: HashMap<String, Vec<&GenericInfo>> = HashMap::new();
-        for info in &generic_infos {
-            for constraint in &info.constraints {
-                trait_to_generics
-                    .entry(constraint.clone())
-                    .or_insert_with(Vec::new)
-                    .push(info);
-            }
-        }
-
-        // 分析偏序关系
-        writeln!(file, "📊 泛型约束统计:\n")?;
-        writeln!(file, "  总泛型参数数量: {}\n", generic_infos.len())?;
-
-        // 按约束分组显示
-        writeln!(file, "🎯 按 Trait 约束分组:\n")?;
-        let mut sorted_traits: Vec<_> = trait_to_generics.iter().collect();
-        sorted_traits.sort_by_key(|(trait_name, _)| *trait_name);
-
-        for (trait_name, generics) in &sorted_traits {
-            let is_default = default_traits.contains(trait_name.as_str());
-            let default_marker = if is_default { " (默认 trait)" } else { "" };
-            writeln!(file, "  • {}:{}", trait_name, default_marker)?;
-            for info in *generics {
-                writeln!(file, "    └─ {}.{}", info.owner_name, info.generic_name)?;
-            }
-            writeln!(file)?;
-        }
-
-        // 分析哪些泛型可以用于哪些约束
-        writeln!(file, "🔗 泛型可用性分析:\n")?;
-        writeln!(
-            file,
-            "  说明: 如果泛型 T 满足约束 A + B,那么 T 可以用于需要 A 或 B 的地方\n"
-        )?;
-
-        for info in &generic_infos {
-            if info.constraints.is_empty() {
-                writeln!(
-                    file,
-                    "  • {}.{}: 无约束 (可用于任何地方)",
-                    info.owner_name, info.generic_name
-                )?;
-            } else {
-                writeln!(
-                    file,
-                    "  • {}.{}: 满足 {}",
-                    info.owner_name,
-                    info.generic_name,
-                    info.constraints.join(" + ")
-                )?;
-                writeln!(file, "    可以用于需要以下任一约束的地方:")?;
-                for constraint in &info.constraints {
-                    writeln!(file, "      - {}", constraint)?;
-                }
-            }
-            writeln!(file)?;
-        }
-
-        // 分析约束层级关系(如果 T: A + B,且 A: C,那么 T 也满足 C)
-        writeln!(file, "📈 约束层级关系:\n")?;
-        writeln!(
-            file,
-            "  说明: 如果 T: A,且 A: B,那么 T 也满足 B (传递性)\n"
-        )?;
-
-        // 查找 trait 之间的继承关系(通过 impl 块)
-        let mut trait_supertraits: HashMap<String, Vec<String>> = HashMap::new();
-        for item in self.crate_.index.values() {
-            if let ItemEnum::Trait(trait_def) = &item.inner {
-                let trait_name = item.name.as_deref().unwrap_or("(匿名)").to_string();
-                let supertraits: Vec<String> = trait_def
-                    .bounds
-                    .iter()
-                    .filter_map(|bound| {
-                        if let rustdoc_types::GenericBound::TraitBound { trait_, .. } = bound {
-                            Some(trait_.path.clone())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
-
-                if !supertraits.is_empty() {
-                    trait_supertraits.insert(trait_name, supertraits);
-                }
-            }
-        }
-
-        if !trait_supertraits.is_empty() {
-            writeln!(file, "  Trait 继承关系:\n")?;
-            for (trait_name, supertraits) in &trait_supertraits {
-                writeln!(file, "    {}: {:?}", trait_name, supertraits)?;
-            }
-            writeln!(file)?;
-        } else {
-            writeln!(file, "  (未发现显式的 trait 继承关系)\n")?;
-        }
-
-        // 分析同级别约束(满足相同约束集合的泛型)
-        writeln!(file, "⚖️  同级别约束分析:\n")?;
-        writeln!(file, "  说明: 满足相同约束集合的泛型被视为同级别\n")?;
-
-        let mut constraint_groups: HashMap<Vec<String>, Vec<&GenericInfo>> = HashMap::new();
-        for info in &generic_infos {
-            let mut constraints = info.constraints.clone();
-            constraints.sort();
-            constraint_groups
-                .entry(constraints)
-                .or_insert_with(Vec::new)
-                .push(info);
-        }
-
-        let mut sorted_groups: Vec<_> = constraint_groups.iter().collect();
-        sorted_groups.sort_by_key(|(constraints, _)| constraints.len());
-        sorted_groups.reverse(); // 从约束最多的开始
-
-        for (constraints, generics) in &sorted_groups {
-            if generics.len() > 1 {
-                writeln!(file, "  约束集合: {}", constraints.join(" + "))?;
-                writeln!(file, "  满足该约束的泛型 (共 {} 个):", generics.len())?;
-                for info in *generics {
-                    writeln!(file, "    • {}.{}", info.owner_name, info.generic_name)?;
-                }
-                writeln!(file)?;
-            }
-        }
-
-        // 默认 trait 说明
-        writeln!(file, "🔧 Rust 默认 Trait 说明:\n")?;
-        writeln!(
-            file,
-            "  以下 trait 由 Rust 编译器自动实现(如果类型满足条件):\n"
-        )?;
-        for trait_name in &default_traits {
-            writeln!(file, "    • {}", trait_name)?;
-        }
-        writeln!(file)?;
-        writeln!(
-            file,
-            "  注意: 这些 trait 可能不会在约束中显式出现,但类型可能自动满足它们\n"
-        )?;
-
-        writeln!(
-            file,
-            "================================================================================\n"
-        )?;
-
-        Ok(())
-    }
-
+   
     pub fn finish(self) -> PetriNet {
         // 不再创建 wrapper transitions,因为不再需要基本类型
         info!("📊 Petri Net 构建完成");
@@ -956,313 +372,10 @@ impl<'a> PetriNetBuilder<'a> {
         self.ingest_function_with_context(item, func, context);
     }
 
-    /// 为 Struct/Enum/Union/Variant 类型创建 Place
-    fn create_type_place(&mut self, item: &Item) {
-        let place_kind = match &item.inner {
-            ItemEnum::Struct(s) => PlaceKind::Struct(s.clone()),
-            ItemEnum::Enum(e) => PlaceKind::Enum(e.clone()),
-            ItemEnum::Union(u) => PlaceKind::Union(u.clone()),
-            ItemEnum::Trait(t) => PlaceKind::Trait(t.clone()),
-            ItemEnum::Variant(v) => PlaceKind::Variant(v.clone()),
-            _ => return,
-        };
-
-        let name = item
-            .name
-            .clone()
-            .unwrap_or_else(|| format!("anonymous_{:?}", item.id));
-        let path = item.name.clone().unwrap_or_default();
-
-        let place = Place::new(item.id, name, path, place_kind);
-        let place_id = self.net.add_place_and_get_id(place);
-
-        self.type_place_map.insert(item.id, place_id);
-
-        self.create_generic_param_places(item.id, &item.inner, place_id);
-
-        // 如果是 Trait,还要处理关联类型
-        if let ItemEnum::Trait(_) = &item.inner {
-            self.create_associated_type_places(item.id, &item.inner, place_id);
-        }
-    }
-
-    /// 为有 impl 的类型创建 Place(如果类型支持的话)
-    ///
-    /// 这个方法用于自动发现并创建那些有 impl 块但还没有创建 Place 的类型
-    /// 主要用于处理标准库类型(如 String、Vec 等)和类型别名
-    ///
-    /// 返回是否成功创建了 Place
-    fn create_type_place_for_impl(&mut self, item: &Item, impl_block: &Impl) -> bool {
-        // 如果已经存在,不重复创建
-        if self.type_place_map.contains_key(&item.id) {
-            return false;
-        }
-
-        let place_kind = match &item.inner {
-            ItemEnum::Struct(s) => PlaceKind::Struct(s.clone()),
-            ItemEnum::Enum(e) => PlaceKind::Enum(e.clone()),
-            ItemEnum::Union(u) => PlaceKind::Union(u.clone()),
-            ItemEnum::Variant(v) => PlaceKind::Variant(v.clone()),
-            // 对于 Primitive 和 TypeAlias,我们也可以创建 Place
-            ItemEnum::Primitive(_) => {
-                let name = item
-                    .name
-                    .clone()
-                    .unwrap_or_else(|| format!("primitive_{:?}", item.id));
-                let place = Place::new(
-                    item.id,
-                    name.clone(),
-                    format!("primitive::{}", name),
-                    PlaceKind::Primitive(name),
-                );
-                let place_id = self.net.add_place_and_get_id(place);
-                self.type_place_map.insert(item.id, place_id);
-                return true;
-            }
-            // 其他类型暂不支持自动创建
-            _ => {
-                return false;
-            }
-        };
-
-        let name = item
-            .name
-            .clone()
-            .unwrap_or_else(|| format!("anonymous_{:?}", item.id));
-        let path = item.name.clone().unwrap_or_default();
-
-        let place = Place::new(item.id, name, path, place_kind);
-        let place_id = self.net.add_place_and_get_id(place);
-
-        self.type_place_map.insert(item.id, place_id);
-
-        // 为类型的泛型参数创建占位符 Place
-        // 使用 impl 块的泛型信息
-        self.create_generic_param_places_from_impl(item.id, impl_block, place_id);
-
-        true
-    }
-
-    /// 从 impl 块的泛型信息创建泛型参数占位符
-    fn create_generic_param_places_from_impl(
-        &mut self,
-        _type_id: Id,
-        impl_block: &Impl,
-        _type_place_id: PlaceId,
-    ) {
-        // 为 impl 块的泛型参数创建 Place
-        // 使用与 create_generic_param_places 相同的逻辑，基于约束创建
-        for param_def in &impl_block.generics.params {
-            if let GenericParamDefKind::Type { bounds, .. } = &param_def.kind {
-                let generic_name = param_def.name.clone();
-                
-                // 提取约束的 trait IDs
-                let mut constraint_trait_ids = Vec::new();
-                for bound in bounds {
-                    if let rustdoc_types::GenericBound::TraitBound { trait_, .. } = bound {
-                        constraint_trait_ids.push(trait_.id);
-                    }
-                }
-                constraint_trait_ids.sort();
-                
-                // 使用 (generic_name, constraint_trait_ids) 作为 key
-                let cache_key = (generic_name.clone(), constraint_trait_ids.clone());
-
-                // 如果已存在则重用，否则创建（在 create_generic_param_places 中会创建）
-                // 这里只是确保 impl 块的泛型参数也被考虑
-                if !self.generic_param_cache.contains_key(&cache_key) {
-                    // 如果不存在，会在其他地方创建，这里不做处理
-                    debug!("Impl 块的泛型参数 '{}' 将在需要时创建", generic_name);
-                }
-            }
-        }
-    }
-
-    /// 为类型的泛型参数创建占位符 Place,并建立 holds 关系
-    fn create_generic_param_places(
-        &mut self,
-        type_id: Id,
-        item_inner: &ItemEnum,
-        type_place_id: PlaceId,
-    ) {
-        let generics = match item_inner {
-            ItemEnum::Struct(s) => &s.generics,
-            ItemEnum::Enum(e) => &e.generics,
-            ItemEnum::Union(u) => &u.generics,
-            ItemEnum::Trait(t) => &t.generics,
-            _ => return,
-        };
-
-        for param_def in &generics.params {
-            // 只处理类型参数(Type),不处理生命周期(Lifetime)和常量(Const)
-            if let GenericParamDefKind::Type { bounds, .. } = &param_def.kind {
-                let generic_name = param_def.name.clone();
-                
-                // 提取约束的 trait IDs
-                let mut constraint_trait_ids = Vec::new();
-                for bound in bounds {
-                    if let rustdoc_types::GenericBound::TraitBound { trait_, .. } = bound {
-                        constraint_trait_ids.push(trait_.id);
-                    }
-                }
-                // 排序以保证相同约束集合使用相同的 key
-                constraint_trait_ids.sort();
-                
-                // 使用 (generic_name, constraint_trait_ids) 作为 key
-                let cache_key = (generic_name.clone(), constraint_trait_ids.clone());
-
-                // 检查是否已经创建过这个约束集合的泛型参数 Place
-                let generic_place_id = if let Some(&place_id) = self.generic_param_cache.get(&cache_key) {
-                    // 已存在，重用
-                    place_id
-                } else {
-                    // 创建新的泛型参数占位符 Place
-                    let generic_id = self.generate_temp_id();
-                    let constraint_str = if constraint_trait_ids.is_empty() {
-                        "".to_string()
-                    } else {
-                        let trait_names: Vec<String> = constraint_trait_ids
-                            .iter()
-                            .filter_map(|trait_id| self.get_type_name(trait_id))
-                            .collect();
-                        if trait_names.is_empty() {
-                            format!(": {:?}", constraint_trait_ids)
-                        } else {
-                            format!(": {}", trait_names.join(" + "))
-                        }
-                    };
-                    let generic_place = Place::new(
-                        generic_id,
-                        format!("{}{}", generic_name, constraint_str),
-                        format!("generic_param::{}::{:?}", generic_name, constraint_trait_ids),
-                        PlaceKind::GenericParam(generic_name.clone(), constraint_trait_ids.clone()),
-                    );
-                    let place_id = self.net.add_place_and_get_id(generic_place);
-
-                    // 缓存泛型参数 Place
-                    self.generic_param_cache.insert(cache_key, place_id);
-
-                    // 为有约束的泛型参数创建 impls 变迁链接到 trait
-                    for trait_id in &constraint_trait_ids {
-                        if let Some(&trait_place_id) = self.type_place_map.get(trait_id) {
-                            self.create_impls_transition(
-                                generic_id,
-                                *trait_id,
-                                place_id,
-                                trait_place_id,
-                            );
-                            debug!(
-                                "✨ 泛型参数 '{}' 约束于 trait {:?}",
-                                generic_name, trait_id
-                            );
-                        }
-                    }
-
-                    place_id
-                };
-
-                // 创建 holds 关系:类型 -> 泛型参数
-                let dummy_member_id = self.generate_temp_id();
-                self.create_holds_transition(
-                    type_id,
-                    dummy_member_id,
-                    type_place_id,
-                    generic_place_id,
-                );
-            }
-        }
-    }
-
-    /// 为 Trait 的关联类型创建 Place
-    fn create_associated_type_places(
-        &mut self,
-        trait_id: Id,
-        item_inner: &ItemEnum,
-        trait_place_id: PlaceId,
-    ) {
-        let trait_def = match item_inner {
-            ItemEnum::Trait(t) => t,
-            _ => return,
-        };
-
-        // 遍历 trait 的所有 items,找到关联类型
-        for item_id in &trait_def.items {
-            if let Some(assoc_item) = self.crate_.index.get(item_id) {
-                if let ItemEnum::AssocType {
-                    generics: _,
-                    bounds,
-                    type_: _,
-                } = &assoc_item.inner
-                {
-                    let assoc_type_name = assoc_item.name.as_deref().unwrap_or("UnnamedAssocType");
-
-                    // 提取 bounds 中的 trait 约束
-                    let bound_names: Vec<String> = bounds
-                        .iter()
-                        .filter_map(|bound| {
-                            if let rustdoc_types::GenericBound::TraitBound { trait_, .. } = bound {
-                                Some(trait_.path.clone())
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-
-                    // 创建关联类型 Place
-                    let assoc_place = Place::new(
-                        *item_id,
-                        format!("{}::{}", self.get_trait_name(trait_id), assoc_type_name),
-                        format!("assoc_type::{}::{}", trait_id.0, assoc_type_name),
-                        PlaceKind::AssocType(
-                            trait_id,
-                            assoc_type_name.to_string(),
-                            bound_names.clone(),
-                        ),
-                    );
-                    let assoc_place_id = self.net.add_place_and_get_id(assoc_place);
-
-                    // 将关联类型也存入 type_place_map,以便后续查找
-                    self.type_place_map.insert(*item_id, assoc_place_id);
-
-                    // 创建 holds 关系:trait -> 关联类型
-                    self.create_holds_transition(
-                        trait_id,
-                        *item_id,
-                        trait_place_id,
-                        assoc_place_id,
-                    );
-
-                    // 如果有 bound 约束,创建 AliasType 变迁连接到约束的 trait
-                    for bound_name in &bound_names {
-                        // 尝试找到约束的 trait Place
-                        if let Some(bound_trait_id) = self.find_trait_by_name(bound_name) {
-                            if let Some(&bound_trait_place_id) =
-                                self.type_place_map.get(&bound_trait_id)
-                            {
-                                self.create_alias_type_transition(
-                                    *item_id,
-                                    bound_trait_id,
-                                    assoc_place_id,
-                                    bound_trait_place_id,
-                                );
-                            }
-                        }
-                    }
-
-                    debug!(
-                        "✨ 创建关联类型 '{}::{}' (ID: {:?}),约束: {:?}",
-                        self.get_trait_name(trait_id),
-                        assoc_type_name,
-                        item_id,
-                        bound_names
-                    );
-                }
-            }
-        }
-    }
+    // Place 创建相关的函数已移动到 to_place.rs
 
     /// 获取 Trait 的名称
-    fn get_trait_name(&self, trait_id: Id) -> String {
+    pub(super) fn get_trait_name(&self, trait_id: Id) -> String {
         self.crate_
             .index
             .get(&trait_id)
@@ -1636,7 +749,7 @@ impl<'a> PetriNetBuilder<'a> {
                 }
 
                 // 检查是否是标准库类型,如果是则自动创建
-                if self.is_std_library_type(&path.path) {
+                if is_std_library_type(&path.path) {
                     return self.handle_std_library_type(path, field_id, owner_type_id);
                 }
 
@@ -1668,7 +781,7 @@ impl<'a> PetriNetBuilder<'a> {
     }
 
     /// 创建 holds transition 连接 owner 和 member
-    fn create_holds_transition(
+    pub(super) fn create_holds_transition(
         &mut self,
         owner_id: Id,
         member_id: Id,
@@ -1705,7 +818,7 @@ impl<'a> PetriNetBuilder<'a> {
     }
 
     /// 创建 impls transition 连接实现类型和 trait
-    fn create_impls_transition(
+    pub(super) fn create_impls_transition(
         &mut self,
         impl_type_id: Id,
         trait_id: Id,
@@ -1919,7 +1032,7 @@ impl<'a> PetriNetBuilder<'a> {
     }
 
     /// 获取类型的名称(用于显示)
-    fn get_type_name(&self, type_id: &Id) -> Option<String> {
+    pub(super) fn get_type_name(&self, type_id: &Id) -> Option<String> {
         if let Some(item) = self.crate_.index.get(type_id) {
             item.name.clone()
         } else {
@@ -2586,7 +1699,7 @@ impl<'a> PetriNetBuilder<'a> {
     }
 
     /// 生成临时 ID
-    fn generate_temp_id(&mut self) -> Id {
+    pub(super) fn generate_temp_id(&mut self) -> Id {
         let id = Id(self.next_temp_id);
         self.next_temp_id = self.next_temp_id.wrapping_sub(1);
         id

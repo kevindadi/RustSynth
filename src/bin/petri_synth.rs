@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result, anyhow, bail};
 use log::LevelFilter;
-use trustfall_rustdoc_adapter::Crate;
+use rustdoc_types::Crate;
 use trustfall_rustdoc_adapter::petri::PetriNetBuilder;
 
 fn main() -> Result<()> {

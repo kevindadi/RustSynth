@@ -23,8 +23,6 @@ pretty_env_logger = "0.5"
 # Packages in our public API, where bumping a major version is a breaking change.
 # Extra spacing included to minimize the chance of merge conflicts.
 #
-trustfall = "0.8.1"
-cargo_metadata = "0.23.0"
 indexmap = { version = "2.11.0", features = ["serde"] }
 petgraph = { version = "0.8.3", features = ["serde-1"] }
 
@@ -32,24 +30,10 @@ petgraph = { version = "0.8.3", features = ["serde-1"] }
 # Keep this dependency last, its own block, since we change it often via automated means
 # and we'd like to avoid merge conflicts.
 #
-rustdoc-types = "0.56.0"
+rustdoc-types = "0.57.0"
 chrono = "0.4.42"
+#0.57.0dependencies after this point. Put all dependencies above this section.
 #
-# No dependencies after this point. Put all dependencies above this section.
-#
-
-[features]
-default = []
-# Enable rayon for speeding up building `IndexedCrate`, this massively improves
-# performance on big crates, but may impact performance on small crates and
-# definitely increases the memory usage
-rayon = ["dep:rayon"]
-# Use rustc-hash::{FxHashMap, FxHashSet} internally for improved performance
-rustc-hash = ["dep:rustc-hash", "rustdoc-types/rustc-hash"]
-
-[[bench]]
-name = "indexed_crate"
-harness = false
 
 [profile.bench]
 debug = 1 # We only need function name information (for flamegraphs)
