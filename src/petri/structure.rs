@@ -21,19 +21,24 @@ pub enum PlaceKind {
     Primitive(String),                            // bool, i32, u32, f32, char 等
     Tuple(Vec<Type>),                             // (T1, T2, ...)
     Slice(Box<Type>),                             // [T]
-    Array(Box<Type>, String),                     // [T; N]，N 是字符串表达式
+    Array(Box<Type>, String),                     // [T; N],N 是字符串表达式
     Infer,                                        // _
-    RawPointer(Box<Type>, bool),                  // *const T / *mut T，bool 表示 is_mutable
-    BorrowedRef(Box<Type>, bool, Option<String>), // &T / &mut T，lifetime
-    // 泛型参数占位符，用于表示类型参数（如 Vec<T> 中的 T）
-    // (owner_type_id, generic_name)
-    GenericParam(Id, String),
+    RawPointer(Box<Type>, bool),                  // *const T / *mut T,bool 表示 is_mutable
+    BorrowedRef(Box<Type>, bool, Option<String>), // &T / &mut T,lifetime
+    // 泛型参数占位符,用于表示类型参数(如 Vec<T> 中的 T)
+    // (generic_name, constraint_trait_ids)
+    // 约束集合为空表示无约束(无穷大),有约束的泛型参数通过 impls 变迁链接到 trait
+    GenericParam(String, Vec<Id>),
     // 特殊包装器类型
     Result(Box<Type>, Box<Type>), // Result<T, E>
     Option(Box<Type>),            // Option<T>
-    // 关联类型（Associated Type）
+    // 关联类型(Associated Type)
     // (owner_trait_id, assoc_type_name, bounds)
     AssocType(Id, String, Vec<String>),
+    // Projection 类型(QualifiedPath 的规范化表示)
+    // (self_type_id, trait_id, assoc_name)
+    // 表示 <SelfType as Trait>::Assoc
+    Projection(Id, Id, String),
 }
 
 impl Place {
@@ -113,15 +118,18 @@ pub struct Transition {
 pub enum TransitionKind {
     Function(Function),
     Hold(Id, Id),
-    /// Result<T, E> 的 unwrap 操作，连接到 T 和 E
+    /// Result<T, E> 的 unwrap 操作,连接到 T 和 E
     Unwrap,
-    /// Option<T> 的 ok/unwrap 操作，连接到 T
+    /// Option<T> 的 ok/unwrap 操作,连接到 T
     Ok,
-    /// 类型实现 Trait 的关系，(impl_type_id, trait_id)
+    /// 类型实现 Trait 的关系,(impl_type_id, trait_id)
     Impls(Id, Id),
-    /// 关联类型别名，(alias_id, target_type_id)
+    /// 关联类型别名,(alias_id, target_type_id)
     /// 例如 trait Engine { type Config: Config; }
     AliasType(Id, Id),
+    /// Projection 操作,从 SelfType 到 Projection Place
+    /// (self_type_id, trait_id, assoc_name)
+    Projection(Id, Id, String),
 }
 
 impl Transition {
