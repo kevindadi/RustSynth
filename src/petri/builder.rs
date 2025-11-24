@@ -45,7 +45,7 @@ impl<'a> PetriNetBuilder<'a> {
             type_cache: HashMap::new(),
             generic_param_cache: HashMap::new(),
             projection_cache: HashMap::new(),
-            next_temp_id: u32::MAX - 1_000_000, // 从一个大数字开始,避免与真实 ID 冲突
+            next_temp_id: u32::MAX - 1_000_000, 
         }
     }
 
