@@ -3,11 +3,14 @@
 use log::debug;
 use rustdoc_types::Id;
 
-use crate::petri::{PetriNetBuilder, net::PlaceId, structure::{BorrowKind, Flow, Transition, TransitionKind}};
-
+use crate::petri::{
+    PetriNetBuilder,
+    net::PlaceId,
+    structure::{BorrowKind, Flow, Transition, TransitionKind},
+};
 
 impl<'a> PetriNetBuilder<'a> {
-  /// 创建 holds transition 连接 owner 和 member
+    /// 创建 holds transition 连接 owner 和 member
     pub(super) fn create_holds_transition(
         &mut self,
         owner_id: Id,

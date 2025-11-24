@@ -3,12 +3,12 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use log::{debug, info, warn};
-use rustdoc_types::{
-    Crate, Function, GenericParamDefKind, Id, Impl, Item, ItemEnum, Type};
+use rustdoc_types::{Crate, Function, GenericParamDefKind, Id, Impl, Item, ItemEnum, Type};
 
 use crate::petri::log::{analyze_generic_partial_order, generate_type_log};
 use crate::petri::utils::{
-    extract_borrow_info, format_path, format_type, is_standard_trait, is_std_library_type, resolve_std_trait_type, type_has_generic
+    extract_borrow_info, format_path, format_type, is_standard_trait, is_std_library_type,
+    resolve_std_trait_type,
 };
 
 use super::net::{PetriNet, PlaceId};
@@ -45,7 +45,7 @@ impl<'a> PetriNetBuilder<'a> {
             type_cache: HashMap::new(),
             generic_param_cache: HashMap::new(),
             projection_cache: HashMap::new(),
-            next_temp_id: u32::MAX - 1_000_000, 
+            next_temp_id: u32::MAX - 1_000_000,
         }
     }
 
@@ -62,37 +62,34 @@ impl<'a> PetriNetBuilder<'a> {
         type_log_path: Option<&PathBuf>,
         generic_order_log_path: Option<&PathBuf>,
     ) -> PetriNet {
-        let mut builder = Self::new(crate_);
-        builder.ingest();
+        let mut petri_net = Self::new(crate_);
+        petri_net.build();
 
-        // 生成类型日志
         if let Some(log_path) = type_log_path {
-            if let Err(e) = generate_type_log(&builder, log_path) {
+            if let Err(e) = generate_type_log(&petri_net, log_path) {
                 warn!("⚠️  无法生成类型日志文件: {}", e);
             } else {
                 info!("📋 类型日志已保存到: {}", log_path.display());
             }
         }
 
-        // 生成泛型偏序关系分析日志
         if let Some(log_path) = generic_order_log_path {
-            if let Err(e) = analyze_generic_partial_order(&builder, log_path) {
+            if let Err(e) = analyze_generic_partial_order(&petri_net, log_path) {
                 warn!("⚠️  无法生成泛型偏序关系分析文件: {}", e);
             } else {
                 info!("🔗 泛型偏序关系分析已保存到: {}", log_path.display());
             }
         }
 
-        builder.finish()
+        petri_net.finish()
     }
 
-    /// 遍历 rustdoc 索引, 将所有ItemEnum::Function | ItemEnum::Impl 注册为变迁
-    /// ItemEnum::Trait 注册为 Guard
+    /// 遍历 rustdoc 索引, 为所有 ItemEnum 建模
     ///
     /// 1. 首先对 Item 中的 Struct、Enum(Variant)、Union 等类型进行建模,创建 Place
     /// 2. 根据已创建的类型 Place 的 id,从 index 中查找对应的 impl 块,为方法创建变迁
     /// 3. 泛型约束作为变迁的 guard,不需要为泛型参数创建 Place
-    pub fn ingest(&mut self) {
+    pub fn build(&mut self) {
         info!("🔨 开始构建 Petri Net...");
 
         // Step 1: 遍历所有 Struct、Enum、Union、Trait、Variant 等类型定义,为它们创建 Place
@@ -214,7 +211,6 @@ impl<'a> PetriNetBuilder<'a> {
         }
         debug!("   处理了 {} 个无约束函数", free_func_count);
     }
-
 
     pub fn finish(self) -> PetriNet {
         // 不再创建 wrapper transitions,因为不再需要基本类型
@@ -341,9 +337,6 @@ impl<'a> PetriNetBuilder<'a> {
             .and_then(|item| item.name.clone())
             .unwrap_or_else(|| format!("Trait_{:?}", trait_id))
     }
-
-  
- 
 
     /// 获取类型的名称(用于显示)
     pub(super) fn get_type_name(&self, type_id: &Id) -> Option<String> {
@@ -493,7 +486,6 @@ impl<'a> PetriNetBuilder<'a> {
             }
         }
     }
- 
 
     /// 判断是否应该跳过某个函数,不为其创建变迁
     ///
@@ -637,7 +629,7 @@ impl<'a> PetriNetBuilder<'a> {
                 );
             } else {
                 // 返回值类型对应的 Place 不存在,记录警告
-                    let type_str = format_type(actual_type);
+                let type_str = format_type(actual_type);
                 warn!(
                     "函数 '{}' (ID: {:?}) 的返回值类型 '{}' 对应的 Place 不存在",
                     func_name, item.id, type_str
@@ -761,8 +753,6 @@ impl<'a> PetriNetBuilder<'a> {
 
         created_count
     }
-
-   
 }
 
 /// 函数上下文,用于记录函数的类型信息
@@ -773,7 +763,7 @@ enum FunctionContext {
         receiver_id: Id,
     },
     TraitImplementation {
-        receiver_id: Id,    
+        receiver_id: Id,
         trait_path: Arc<str>,
     },
 }

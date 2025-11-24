@@ -3,7 +3,9 @@
 //! 这个模块包含 PetriNetBuilder 中与 Place 创建相关的方法实现
 
 use log::{debug, info, warn};
-use rustdoc_types::{GenericParamDefKind, Id, Impl, Item, ItemEnum, Path, StructKind, Type, VariantKind};
+use rustdoc_types::{
+    GenericParamDefKind, Id, Impl, Item, ItemEnum, Path, StructKind, Type, VariantKind,
+};
 
 use crate::petri::structure::{BorrowKind, Flow, Transition, TransitionKind};
 use crate::petri::utils::{format_type, is_std_library_type, type_has_generic};
@@ -13,7 +15,6 @@ use super::net::PlaceId;
 use super::structure::{Place, PlaceKind};
 
 impl<'a> PetriNetBuilder<'a> {
-
     /// 构建类型成员之间的 holds 关系
     /// 1. 处理 Struct 的字段
     /// 2. 处理 Enum 的变体
@@ -392,7 +393,7 @@ impl<'a> PetriNetBuilder<'a> {
         }
     }
 
-  /// 处理 Result<T, E> 类型
+    /// 处理 Result<T, E> 类型
     /// 为 Result 创建 Place,提取 T 和 E,并创建 unwrap 变迁连接到 T 和 E
     fn handle_result_type(
         &mut self,
@@ -607,8 +608,7 @@ impl<'a> PetriNetBuilder<'a> {
         Some(place_id)
     }
 
-
-     /// 处理 Option<T> 类型
+    /// 处理 Option<T> 类型
     /// 为 Option 创建 Place,提取 T,并创建 ok 变迁连接到 T
     pub(super) fn handle_option_type(
         &mut self,
@@ -699,7 +699,8 @@ impl<'a> PetriNetBuilder<'a> {
 
         Some(option_place_id)
     }
-   /// 处理 QualifiedPath,将其转换为 Projection-Type Place
+
+    /// 处理 QualifiedPath,将其转换为 Projection-Type Place
     ///
     /// 根据规则文档,每个 QualifiedPath 必须转换为一个 Projection-Type Place,
     /// 使用规范化的身份标识:Projection(self=<SelfTypeCanonicalID>, trait=<TraitCanonicalID>, assoc=<AssocName>)
@@ -918,8 +919,12 @@ impl<'a> PetriNetBuilder<'a> {
         }
     }
 
-     /// 查找泛型参数的约束 trait IDs
-     pub(super) fn find_generic_constraint_trait_ids(&self, owner_id: Id, generic_name: &str) -> Vec<Id> {
+    /// 查找泛型参数的约束 trait IDs
+    pub(super) fn find_generic_constraint_trait_ids(
+        &self,
+        owner_id: Id,
+        generic_name: &str,
+    ) -> Vec<Id> {
         // 查找 owner 的 generics 定义
         if let Some(item) = self.crate_.index.get(&owner_id) {
             let generics = match &item.inner {
@@ -952,6 +957,7 @@ impl<'a> PetriNetBuilder<'a> {
 
         Vec::new()
     }
+
     /// 为有 impl 的类型创建 Place
     ///
     /// 这个方法用于自动发现并创建那些有 impl 块但还没有创建 Place 的类型
@@ -1263,7 +1269,7 @@ impl<'a> PetriNetBuilder<'a> {
         }
     }
 
-     /// 查找类型对应的 Place
+    /// 查找类型对应的 Place
     ///
     /// 支持以下类型:
     /// - ResolvedPath: 查找 type_place_map
@@ -1289,7 +1295,7 @@ impl<'a> PetriNetBuilder<'a> {
                 self.type_cache.get(&type_key).copied()
             }
             Type::Tuple(_) => {
-                // 查找元组类型 
+                // 查找元组类型
                 let type_key = format!("tuple:{}", format_type(ty));
                 self.type_cache.get(&type_key).copied()
             }
@@ -1321,7 +1327,7 @@ impl<'a> PetriNetBuilder<'a> {
         }
     }
 
-     /// 在函数上下文中查找类型对应的 Place
+    /// 在函数上下文中查找类型对应的 Place
     ///
     /// 与 find_type_place 的区别:
     /// - 支持 Self 类型解析(通过 receiver_id)
