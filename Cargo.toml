@@ -1,49 +1,18 @@
 [package]
-name = "trustfall-rustdoc-adapter"
+name = "rustdoc-petri-net-builder"
 version = "56.2.0"
 edition = "2024"
-authors = ["Predrag Gruevski <obi1kenobi82@gmail.com>"]
+authors = ["Kevin Zhang <zhangkaiwenyy@gmail.com>"]
 license = "Apache-2.0 OR MIT"
-description = "Trustfall query adapter for rustdoc JSON data."
-repository = "https://github.com/obi1kenobi/trustfall-rustdoc-adapter"
-readme = "./README.md"
+description = "Rustdoc Petri Net Builder"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rayon = { version = "1.11.0", optional = true }
-rustc-hash = { version = "2.1.1", optional = true }
-cargo_toml = { version = "0.22.3", features = ["features"] }
-anyhow = "1.0.99"
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.143"
-log = "0.4"
-pretty_env_logger = "0.5"
-
-# Packages in our public API, where bumping a major version is a breaking change.
-# Extra spacing included to minimize the chance of merge conflicts.
-#
-indexmap = { version = "2.11.0", features = ["serde"] }
-petgraph = { version = "0.8.3", features = ["serde-1"] }
-
-#
-# Keep this dependency last, its own block, since we change it often via automated means
-# and we'd like to avoid merge conflicts.
-#
 rustdoc-types = "0.57.0"
 chrono = "0.4.42"
-#0.57.0dependencies after this point. Put all dependencies above this section.
-#
-
-[profile.bench]
-debug = 1 # We only need function name information (for flamegraphs)
-lto = "thin"
-
-[dev-dependencies]
-criterion = "0.7.0"
-itertools = "0.14.0"
-maplit = "1.0.2"
-similar-asserts = { version = "1.7.0", features = ["serde"] }
+petgraph = "0.6"
+serde_json = "1.0"
 
 [lints.clippy]
 collapsible_if = "allow"
