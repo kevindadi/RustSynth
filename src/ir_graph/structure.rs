@@ -60,8 +60,18 @@ pub enum TypeNode {
     /// Never 类型 !
     Never,
 
+    /// 关联类型/限定路径 <T as Trait>::Item
+    QualifiedPath {
+        parent: Box<TypeNode>,
+        name: String,
+        trait_id: Option<Id>,
+    },
+
     /// 未知/不支持的类型
     Unknown,
+
+    /// 不透明类型（外部类型，无法构建）
+    Opaque(String),
 }
 
 /// 边的模式：定义数据如何传递
@@ -282,12 +292,19 @@ impl IrGraph {
 
     /// 添加类型节点
     pub fn add_type(&mut self, node: TypeNode, name: String) {
+        log::info!("Creating TypeNode: {:?} (ID/Name: {})", node, name);
         self.type_nodes.insert(node.clone());
         self.type_names.insert(node, name);
     }
 
     /// 添加操作节点
     pub fn add_operation(&mut self, op: OpNode) {
+        log::info!(
+            "Creating OpNode: {} (Kind: {:?}, ID: {:?})",
+            op.name,
+            op.kind,
+            op.id
+        );
         // 自动收集操作中涉及的所有类型（包括基本类型）
         for input in &op.inputs {
             self.type_nodes.insert(input.type_node.clone());
@@ -311,8 +328,30 @@ impl IrGraph {
                 TypeNode::Array(_) => "Array".to_string(),
                 TypeNode::Tuple(_) => "Tuple".to_string(),
                 TypeNode::GenericParam { name, .. } => name.clone(),
-                TypeNode::Unknown => "unknown".to_string(),
-                _ => return, // Struct/Enum/Union/Trait 已经在 build_type_nodes 中添加
+                TypeNode::QualifiedPath {
+                    parent: _, name, ..
+                } => format!("::{}", name),
+                TypeNode::Unknown => {
+                    log::info!("遇到未知类型，标记为 Unknown: {:?}", node);
+                    "unknown".to_string()
+                }
+                TypeNode::Opaque(name) => name.clone(),
+                // 尝试解析 Struct/Enum/Union/TraitObject 的名称，即便是外部类型
+                TypeNode::Struct(id)
+                | TypeNode::Enum(id)
+                | TypeNode::Union(id)
+                | TypeNode::TraitObject(id) => {
+                    self.parsed_crate
+                        .type_index
+                        .get(id)
+                        .and_then(|item| item.name.clone())
+                        .unwrap_or_else(|| {
+                            // 如果在索引中找不到，可能是外部 crate 的引用
+                            // 尝试使用 rustdoc 的路径信息如果可用，或者仅仅返回 ID
+                            format!("ExternalType_{:?}", id)
+                        })
+                }
+                _ => return, // 其他情况（如不应该在这里出现的类型）
             };
             self.type_names.insert(node.clone(), name);
         }

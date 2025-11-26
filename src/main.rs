@@ -2,10 +2,48 @@ pub mod cpn;
 pub mod ir_graph;
 pub mod parse;
 
+use log::info;
 use std::env;
+use std::fs::File;
 use std::process;
+use std::sync::Mutex;
+
+struct FileLogger {
+    file: Mutex<File>,
+}
+
+impl log::Log for FileLogger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.level() <= log::Level::Info
+    }
+
+    fn log(&self, record: &log::Record) {
+        if self.enabled(record.metadata()) {
+            let msg = format!("[{}] {}", record.level(), record.args());
+            println!("{}", msg); // Print to stdout
+            use std::io::Write;
+            if let Ok(mut file) = self.file.lock() {
+                let _ = writeln!(file, "{}", msg); // Write to file
+            }
+        }
+    }
+
+    fn flush(&self) {}
+}
+
+fn init_logger() {
+    let file = File::create("ir_graph.log").expect("无法创建日志文件");
+    let logger = Box::new(FileLogger {
+        file: Mutex::new(file),
+    });
+
+    // 如果已经初始化过，忽略错误
+    let _ = log::set_boxed_logger(logger);
+    log::set_max_level(log::LevelFilter::Info);
+}
 
 fn main() {
+    init_logger();
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
@@ -17,6 +55,7 @@ fn main() {
     let json_path = &args[1];
 
     println!("正在加载 rustdoc JSON: {}", json_path);
+    info!("开始解析 rustdoc JSON: {}", json_path);
 
     // 步骤 1: 解析 rustdoc JSON
     let parsed_crate = match parse::ParsedCrate::from_json_file(json_path) {

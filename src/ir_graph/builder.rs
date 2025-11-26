@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use super::generic_scope::GenericScope;
 use super::structure::{DataEdge, EdgeMode, IrGraph, OpKind, OpNode, TypeNode};
 use crate::parse::{FunctionInfo, ParsedCrate, TypeKind, TypeRef};
+use log::warn;
 
 pub struct IrGraphBuilder {
     graph: IrGraph,
@@ -54,6 +55,7 @@ impl IrGraphBuilder {
                 TypeKind::TypeAlias => {
                     // Type alias: 可能需要解析实际类型
                     // 暂时作为 Unknown 处理
+                    warn!("遇到 TypeAlias，暂时标记为 Unknown: {:?}", type_info);
                     continue;
                 }
             };
@@ -305,8 +307,18 @@ impl IrGraphBuilder {
             // 设置 Self 类型上下文
             let self_type_id = impl_block.for_type;
 
-            // TODO: 处理 impl 的泛型参数
-            let generic_nodes = HashMap::new(); // 暂时为空
+            // 处理 impl 的泛型参数
+            let generic_nodes =
+                if let Some(item) = self.graph.parsed_crate().type_index.get(&impl_block.id) {
+                    if let rustdoc_types::ItemEnum::Impl(impl_item) = &item.inner {
+                        self.create_generic_nodes(impl_block.id, &impl_item.generics)
+                    } else {
+                        HashMap::new()
+                    }
+                } else {
+                    HashMap::new()
+                };
+
             self.generic_scope
                 .push_scope_with_self(impl_block.id, generic_nodes, self_type_id);
 
@@ -627,29 +639,96 @@ impl IrGraphBuilder {
         scope: &GenericScope,
     ) -> Option<(TypeNode, EdgeMode)> {
         match ty {
-            // 处理 Self 类型
+            // 处理 Self 类型 (T)
             Type::Generic(name) if name == "Self" => {
-                // 从作用域解析 Self
                 let self_id = scope.resolve_self()?;
+                // 尝试获取具体类型节点（例如 Struct/Enum）
+                // 这里简化为 Struct，实际应该根据 ID 查询 TypeIndex
                 Some((TypeNode::Struct(self_id), EdgeMode::Move))
+            }
+
+            // 处理引用 (&T, &mut T)
+            Type::BorrowedRef {
+                is_mutable, type_, ..
+            } => {
+                // 递归调用 with_self
+                let (inner_type, inner_mode) = Self::extract_type_and_mode_with_self(type_, scope)?;
+
+                if inner_mode.is_reference() || inner_mode.is_raw_pointer() {
+                    return Some((inner_type, inner_mode));
+                }
+
+                let mode = if *is_mutable {
+                    EdgeMode::MutRef
+                } else {
+                    EdgeMode::Ref
+                };
+                Some((inner_type, mode))
+            }
+
+            // 处理裸指针 (*const T, *mut T)
+            Type::RawPointer { is_mutable, type_ } => {
+                // 递归调用 with_self
+                let (inner_type, inner_mode) = Self::extract_type_and_mode_with_self(type_, scope)?;
+
+                if inner_mode.is_raw_pointer() {
+                    return Some((inner_type, inner_mode));
+                }
+
+                let mode = if *is_mutable {
+                    EdgeMode::MutRawPtr
+                } else {
+                    EdgeMode::RawPtr
+                };
+                Some((inner_type, mode))
+            }
+
+            // 处理 Slice ([T])
+            Type::Slice(elem_type) => {
+                let (inner_type, _) = Self::extract_type_and_mode_with_self(elem_type, scope)?;
+                Some((TypeNode::Array(Box::new(inner_type)), EdgeMode::Move))
+            }
+
+            // 处理 Array ([T; N])
+            Type::Array { type_, .. } => {
+                let (inner_type, _) = Self::extract_type_and_mode_with_self(type_, scope)?;
+                Some((TypeNode::Array(Box::new(inner_type)), EdgeMode::Move))
+            }
+
+            // 处理 Tuple ((T, U))
+            Type::Tuple(elements) => {
+                let nodes: Option<Vec<TypeNode>> = elements
+                    .iter()
+                    .map(|ty| {
+                        Self::extract_type_and_mode_with_self(ty, scope).map(|(node, _)| node)
+                    })
+                    .collect();
+                nodes.map(|ns| (TypeNode::Tuple(ns), EdgeMode::Move))
             }
 
             // QualifiedPath: <T as Trait>::Item 或 Self::Item
             Type::QualifiedPath {
                 self_type,
-                trait_: _,
-                name: _,
+                trait_,
+                name,
                 ..
             } => {
                 // 尝试解析 self_type
-                let (_inner_type, _) = Self::extract_type_and_mode_with_self(self_type, scope)?;
+                let (inner_type, _) = Self::extract_type_and_mode_with_self(self_type, scope)?;
+                let trait_id = trait_.as_ref().map(|path| path.id);
 
-                // TODO: 完整处理关联类型
-                // 暂时返回 Unknown 或尝试简化处理
-                Some((TypeNode::Unknown, EdgeMode::Move))
+                Some((
+                    TypeNode::QualifiedPath {
+                        parent: Box::new(inner_type),
+                        name: name.clone(),
+                        trait_id,
+                    },
+                    EdgeMode::Move,
+                ))
             }
 
-            // 其他类型：委托给原有的处理逻辑
+            // 其他类型：不涉及递归的，可以安全委托给 extract_type_and_mode
+            // (Primitive, ResolvedPath, Generic(非Self), ImplTrait, etc.)
             _ => Self::extract_type_and_mode(ty),
         }
     }
@@ -784,11 +863,15 @@ impl IrGraphBuilder {
             // 8. 函数指针
             Type::FunctionPointer(_) => {
                 // TODO: 完整处理函数指针
+                warn!("遇到 FunctionPointer，暂时标记为 Unknown");
                 Some((TypeNode::Unknown, EdgeMode::Move))
             }
 
             // 9. 其他类型
-            _ => Some((TypeNode::Unknown, EdgeMode::Move)),
+            _ => {
+                warn!("遇到未知类型，标记为 Unknown: {:?}", ty);
+                Some((TypeNode::Unknown, EdgeMode::Move))
+            }
         }
     }
 }

@@ -175,6 +175,13 @@ impl ParsedCrate {
     fn extract_impl_blocks(&mut self) {
         for (&id, item) in &self.crate_data.index {
             if let ItemEnum::Impl(impl_item) = &item.inner {
+                // 过滤：检查 Trait 黑名单
+                if let Some(trait_ref) = &impl_item.trait_ {
+                    if Self::is_blacklisted_trait(trait_ref) {
+                        continue;
+                    }
+                }
+
                 // 提取实现的目标类型
                 if let Some(for_type_id) = Self::extract_type_id(&impl_item.for_) {
                     let trait_id = impl_item.trait_.as_ref().map(|t| t.id);
@@ -197,6 +204,11 @@ impl ParsedCrate {
             if let ItemEnum::Impl(impl_item) = &item.inner {
                 // 只处理 Trait 实现（不是固有实现）
                 if let Some(trait_ref) = &impl_item.trait_ {
+                    // 过滤：检查 Trait 黑名单
+                    if Self::is_blacklisted_trait(trait_ref) {
+                        continue;
+                    }
+
                     let trait_id = trait_ref.id;
 
                     // 提取实现该 Trait 的类型
@@ -216,6 +228,11 @@ impl ParsedCrate {
         for (&id, item) in &self.crate_data.index {
             if let ItemEnum::Function(func) = &item.inner {
                 let name = item.name.as_deref().unwrap_or("anonymous").to_string();
+
+                // 过滤：检查方法黑名单
+                if Self::is_blacklisted_method(&name) {
+                    continue;
+                }
 
                 // 提取输入参数类型
                 let inputs: Vec<TypeRef> = func
@@ -459,5 +476,61 @@ impl ParsedCrate {
         println!("  - Struct: {}", struct_count);
         println!("  - Enum: {}", enum_count);
         println!("  - Trait: {}", trait_count);
+    }
+
+    /// 检查方法是否在黑名单中
+    fn is_blacklisted_method(name: &str) -> bool {
+        const METHOD_BLACKLIST: &[&str] = &[
+            "fmt",
+            "eq",
+            "ne",
+            "cmp",
+            "partial_cmp",
+            "type_id",
+            "borrow",
+            "borrow_mut",
+            "as_ref",
+            "as_mut",
+            "into",
+            "from",
+            "try_from",
+            "try_into",
+            "default",
+            "clone",
+            "clone_into",
+            "to_owned",
+            "drop",
+            "write_fmt",
+        ];
+        METHOD_BLACKLIST.contains(&name)
+    }
+
+    /// 检查 Trait 是否在黑名单中
+    fn is_blacklisted_trait(trait_path: &rustdoc_types::Path) -> bool {
+        const TRAIT_BLACKLIST: &[&str] = &[
+            "Debug",
+            "Display",
+            "PartialEq",
+            "Eq",
+            "Hash",
+            "Clone",
+            "Copy",
+            "Drop",
+            "Any",
+            "Sized",
+            "Send",
+            "Sync",
+            "Borrow",
+            "From",
+            "Into",
+            "TryFrom",
+            "TryInto",
+            "Default",
+        ];
+
+        TRAIT_BLACKLIST.iter().any(|&blacklisted| {
+            trait_path.path == blacklisted
+                || trait_path.path.ends_with(&format!("::{}", blacklisted))
+        })
     }
 }

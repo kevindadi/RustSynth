@@ -1,7 +1,6 @@
-/// IR Graph 导出功能
-
-use serde_json;
 use super::structure::{IrGraph, TypeNode};
+/// IR Graph 导出功能
+use serde_json;
 
 impl IrGraph {
     /// 导出为 JSON 格式
@@ -23,6 +22,8 @@ impl IrGraph {
                     TypeNode::FnPointer { .. } => "fn_pointer",
                     TypeNode::Unit => "unit",
                     TypeNode::Never => "never",
+                    TypeNode::QualifiedPath { .. } => "qualified_path",
+                    TypeNode::Opaque(_) => "opaque",
                     TypeNode::Unknown => "unknown",
                 };
 
@@ -83,8 +84,25 @@ impl IrGraph {
 
         // 类型节点（Places）
         for (idx, node) in self.type_nodes.iter().enumerate() {
-            let name = self.get_type_name(node).unwrap_or("unknown");
-            dot.push_str(&format!("  type_{} [label=\"{}\"];\n", idx, name));
+            let label = match node {
+                TypeNode::GenericParam { name, owner_id, .. } => {
+                    let owner_name = self
+                        .parsed_crate()
+                        .type_index
+                        .get(owner_id)
+                        .and_then(|item| item.name.as_deref())
+                        .unwrap_or("unknown_owner");
+                    format!("{}::{}", owner_name, name)
+                }
+                _ => {
+                    let name = self.get_type_name(node);
+                    if name.is_none() {
+                        log::warn!("DOT导出: 发现未命名类型节点 (显示为unknown): {:?}", node);
+                    }
+                    name.unwrap_or("unknown").to_string()
+                }
+            };
+            dot.push_str(&format!("  type_{} [label=\"{}\"];\n", idx, label));
         }
 
         dot.push_str("\n  // Operations are transitions (boxes)\n");
@@ -100,8 +118,7 @@ impl IrGraph {
         // 连接
         for (op_idx, op) in self.operations.iter().enumerate() {
             for input in &op.inputs {
-                if let Some(type_idx) = self.type_nodes.iter().position(|n| n == &input.type_node)
-                {
+                if let Some(type_idx) = self.type_nodes.iter().position(|n| n == &input.type_node) {
                     let edge_label = format!("{:?}", input.mode);
                     dot.push_str(&format!(
                         "  type_{} -> op_{} [label=\"{}\"];\n",
@@ -111,10 +128,7 @@ impl IrGraph {
             }
 
             if let Some(output) = &op.output {
-                if let Some(type_idx) = self
-                    .type_nodes
-                    .iter()
-                    .position(|n| n == &output.type_node)
+                if let Some(type_idx) = self.type_nodes.iter().position(|n| n == &output.type_node)
                 {
                     let edge_label = format!("{:?}", output.mode);
                     dot.push_str(&format!(

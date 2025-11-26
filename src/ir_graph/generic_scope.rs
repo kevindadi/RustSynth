@@ -22,9 +22,9 @@ struct ScopeFrame {
     /// 作用域所有者（Struct/Enum/Fn/Impl 的 Id）
     owner_id: Id,
     /// 泛型参数映射：名称 -> TypeNode
-    generics: HashMap<String, TypeNode>,
+    generics: HashMap<String, crate::ir_graph::TypeNode>,
     /// Self 类型的具体 Id（用于 impl 块）
-    /// 
+    ///
     /// 例如：impl MyTrait for MyStruct { ... }
     /// 在这个作用域中，self_type = Some(MyStruct_Id)
     self_type: Option<Id>,
