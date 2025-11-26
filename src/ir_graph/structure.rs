@@ -16,16 +16,17 @@ pub enum TypeNode {
     Primitive(String),
 
     /// 用户定义的结构体
-    Struct(Id),
+    Struct(Option<Id>),
 
     /// 枚举类型
-    Enum(Id),
+    Enum(Option<Id>),
 
     /// 联合体
-    Union(Id),
+    Union(Option<Id>),
 
     /// Trait 对象 (dyn Trait)
-    TraitObject(Id),
+    TraitObject(Option<Id>),
+    MultiTrait(Vec<Id>),
 
     /// 泛型参数节点(作用域化的一等类型)
     ///
@@ -68,7 +69,7 @@ pub enum TypeNode {
         trait_id: Option<Id>,
     },
 
-    /// 泛型实例化类型（如 Vec<u8>, HashMap<String, i32>）
+    /// 泛型实例化类型(如 Vec<u8>, HashMap<String, i32>)
     /// 保留完整的路径和泛型参数信息
     GenericInstance {
         /// 基础类型的 ID (如 Vec 的定义)
@@ -319,14 +320,14 @@ impl IrGraph {
 
     /// 添加类型节点
     pub fn add_type(&mut self, node: TypeNode, name: String) {
-        log::info!("Creating TypeNode: {:?} (ID/Name: {})", node, name);
+        log::debug!("Creating TypeNode: {:?} (ID/Name: {})", node, name);
         self.type_nodes.insert(node.clone());
         self.type_names.insert(node, name);
     }
 
     /// 添加操作节点
     pub fn add_operation(&mut self, op: OpNode) {
-        log::info!(
+        log::debug!(
             "Creating OpNode: {} (Kind: {:?}, ID: {:?})",
             op.name,
             op.kind,
@@ -408,7 +409,7 @@ impl IrGraph {
                         self.ensure_type_name(arg);
                     }
 
-                    // 提取基础类型名称（从完整路径中）
+                    // 提取基础类型名称(从完整路径中)
                     let base_name = path.split("::").last().unwrap_or(path);
 
                     // 构建泛型参数字符串
@@ -442,30 +443,36 @@ impl IrGraph {
                 | TypeNode::Union(id)
                 | TypeNode::TraitObject(id) => {
                     // 优先从 type_index 获取
-                    if let Some(item) = self.parsed_crate.type_index.get(id) {
+                    if id.is_none() {
+                        "unknown".to_string();
+                    }
+                    if let Some(item) = self.parsed_crate.type_index.get(&id.unwrap()) {
                         if let Some(name) = &item.name {
                             name.clone()
                         } else {
-                            // 尝试从 paths 获取（外部 crate 的类型）
+                            // 尝试从 paths 获取(外部 crate 的类型)
                             self.parsed_crate
                                 .crate_data
                                 .paths
-                                .get(id)
+                                .get(&id.unwrap())
                                 .and_then(|path_info| path_info.path.last().cloned())
                                 .unwrap_or_else(|| format!("ExternalType_{:?}", id))
                         }
                     } else {
-                        // 不在 type_index 中，尝试从 paths 获取（外部 crate 的类型）
+                        // 不在 type_index 中,尝试从 paths 获取(外部 crate 的类型)
                         self.parsed_crate
                             .crate_data
                             .paths
-                            .get(id)
+                            .get(&id.unwrap())
                             .and_then(|path_info| path_info.path.last().cloned())
                             .unwrap_or_else(|| format!("ExternalType_{:?}", id))
                     }
                 }
 
                 TypeNode::FnPointer { .. } => "fn".to_string(),
+                TypeNode::MultiTrait(_) => {
+                    todo!("MultiTrait 类型名称生成");
+                }
             };
 
             // 插入类型名称

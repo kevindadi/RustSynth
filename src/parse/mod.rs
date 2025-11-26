@@ -210,7 +210,14 @@ impl ParsedCrate {
     fn extract_impl_blocks(&mut self) {
         for (&id, item) in &self.crate_data.index {
             if let ItemEnum::Impl(impl_item) = &item.inner {
-                // 过滤:检查 Trait 黑名单
+                // 过滤:检查 Auto Trait 和 Blanket Implementation
+                use crate::support_types::{TRAIT_BLACKLIST, should_filter_impl};
+                if should_filter_impl(impl_item, item.crate_id, TRAIT_BLACKLIST) {
+                    log::debug!("跳过 Auto Trait 或 Blanket Implementation: impl {:?}", id);
+                    continue;
+                }
+
+                // 过滤:检查 Trait 黑名单(额外检查,should_filter_impl 已包含但更严格)
                 if let Some(trait_ref) = &impl_item.trait_ {
                     if Self::is_blacklisted_trait(trait_ref) {
                         continue;
@@ -219,7 +226,7 @@ impl ParsedCrate {
 
                 // 提取实现的目标类型
                 if let Some(for_type_id) = Self::extract_type_id(&impl_item.for_) {
-                    // 解析到规范 ID（跟随 pub use 链）
+                    // 解析到规范 ID(跟随 pub use 链)
                     let canonical_for_type = self.resolve_root_id(for_type_id);
                     let trait_id = impl_item.trait_.as_ref().map(|t| t.id);
 
@@ -246,9 +253,15 @@ impl ParsedCrate {
     fn extract_trait_implementations(&mut self) {
         for (_id, item) in &self.crate_data.index {
             if let ItemEnum::Impl(impl_item) = &item.inner {
+                // 过滤:检查 Auto Trait 和 Blanket Implementation
+                use crate::support_types::{TRAIT_BLACKLIST, should_filter_impl};
+                if should_filter_impl(impl_item, item.crate_id, TRAIT_BLACKLIST) {
+                    continue;
+                }
+
                 // 只处理 Trait 实现(不是固有实现)
                 if let Some(trait_ref) = &impl_item.trait_ {
-                    // 过滤:检查 Trait 黑名单
+                    // 过滤:检查 Trait 黑名单(额外检查)
                     if Self::is_blacklisted_trait(trait_ref) {
                         continue;
                     }
@@ -257,7 +270,7 @@ impl ParsedCrate {
 
                     // 提取实现该 Trait 的类型
                     if let Some(implementor_id) = Self::extract_type_id(&impl_item.for_) {
-                        // 解析到规范 ID（跟随 pub use 链）
+                        // 解析到规范 ID(跟随 pub use 链)
                         let canonical_implementor = self.resolve_root_id(implementor_id);
 
                         self.trait_implementations
@@ -498,26 +511,26 @@ impl ParsedCrate {
     /// 检查某个 ID 是否是 Trait 中定义的方法
     ///
     /// # 返回值
-    /// - `true`: 该 ID 是某个 Trait 的方法定义（抽象方法）
-    /// - `false`: 该 ID 不是 Trait 方法，可以创建操作节点
+    /// - `true`: 该 ID 是某个 Trait 的方法定义(抽象方法)
+    /// - `false`: 该 ID 不是 Trait 方法,可以创建操作节点
     pub fn is_trait_method(&self, id: &Id) -> bool {
         self.traits
             .iter()
             .any(|trait_info| trait_info.methods.contains(id))
     }
 
-    /// 解析 ID 到其规范定义（跟随 pub use 链）
+    /// 解析 ID 到其规范定义(跟随 pub use 链)
     ///
     /// # 参数
-    /// - `id`: 待解析的 ID（可能是重导出）
+    /// - `id`: 待解析的 ID(可能是重导出)
     ///
     /// # 返回值
-    /// - 规范定义的 ID（Struct/Enum/Union/Trait 等的实际定义 ID）
+    /// - 规范定义的 ID(Struct/Enum/Union/Trait 等的实际定义 ID)
     ///
     /// # 行为
-    /// - 如果 `id` 指向 `ItemEnum::Use`，递归跟随到实际定义
-    /// - 如果 `id` 指向实际定义（Struct/Enum 等），直接返回
-    /// - 如果遇到外部 crate 的重导出（无 target ID），返回当前 ID
+    /// - 如果 `id` 指向 `ItemEnum::Use`,递归跟随到实际定义
+    /// - 如果 `id` 指向实际定义(Struct/Enum 等),直接返回
+    /// - 如果遇到外部 crate 的重导出(无 target ID),返回当前 ID
     /// - 设置递归深度限制防止循环引用
     ///
     /// # 示例
@@ -534,7 +547,7 @@ impl ParsedCrate {
             match self.type_index.get(&current_id) {
                 Some(item) => {
                     match &item.inner {
-                        // 如果是 Use（重导出），跟随到目标
+                        // 如果是 Use(重导出),跟随到目标
                         ItemEnum::Use(use_item) => {
                             if let Some(target_id) = use_item.id {
                                 log::trace!(
@@ -546,12 +559,12 @@ impl ParsedCrate {
                                 current_id = target_id;
                                 continue;
                             } else {
-                                // 外部 crate 的重导出，无法继续跟随
-                                log::debug!("遇到外部重导出（无 target ID）: {:?}", current_id);
+                                // 外部 crate 的重导出,无法继续跟随
+                                log::debug!("遇到外部重导出(无 target ID): {:?}", current_id);
                                 return current_id;
                             }
                         }
-                        // 其他类型（Struct/Enum/Function 等）是实际定义
+                        // 其他类型(Struct/Enum/Function 等)是实际定义
                         _ => {
                             if depth > 0 {
                                 log::debug!(
@@ -566,16 +579,16 @@ impl ParsedCrate {
                     }
                 }
                 None => {
-                    // ID 不在索引中（外部类型）
+                    // ID 不在索引中(外部类型)
                     log::debug!("ID 不在索引中: {:?}", current_id);
                     return current_id;
                 }
             }
         }
 
-        // 达到最大递归深度，可能是循环引用
+        // 达到最大递归深度,可能是循环引用
         log::warn!(
-            "达到最大解析深度 ({})，可能存在循环重导出: {:?}",
+            "达到最大解析深度 ({}),可能存在循环重导出: {:?}",
             MAX_DEPTH,
             id
         );
@@ -618,58 +631,16 @@ impl ParsedCrate {
     }
 
     /// 检查方法是否在黑名单中
+    ///
+    /// 委托给 support_types 模块
     fn is_blacklisted_method(name: &str) -> bool {
-        const METHOD_BLACKLIST: &[&str] = &[
-            "fmt",
-            "eq",
-            "ne",
-            "cmp",
-            "partial_cmp",
-            "type_id",
-            "borrow",
-            "borrow_mut",
-            "as_ref",
-            "as_mut",
-            "into",
-            "from",
-            "try_from",
-            "try_into",
-            "default",
-            "clone",
-            "clone_into",
-            "to_owned",
-            "drop",
-            "write_fmt",
-        ];
-        METHOD_BLACKLIST.contains(&name)
+        crate::support_types::is_blacklisted_method(name)
     }
 
     /// 检查 Trait 是否在黑名单中
+    ///
+    /// 委托给 support_types 模块
     fn is_blacklisted_trait(trait_path: &rustdoc_types::Path) -> bool {
-        const TRAIT_BLACKLIST: &[&str] = &[
-            "Debug",
-            "Display",
-            "PartialEq",
-            "Eq",
-            "Hash",
-            "Clone",
-            "Copy",
-            "Drop",
-            "Any",
-            "Sized",
-            "Send",
-            "Sync",
-            "Borrow",
-            "From",
-            "Into",
-            "TryFrom",
-            "TryInto",
-            "Default",
-        ];
-
-        TRAIT_BLACKLIST.iter().any(|&blacklisted| {
-            trait_path.path == blacklisted
-                || trait_path.path.ends_with(&format!("::{}", blacklisted))
-        })
+        crate::support_types::is_blacklisted_trait_path(trait_path)
     }
 }

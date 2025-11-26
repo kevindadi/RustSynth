@@ -2,6 +2,7 @@ pub mod cpn;
 pub mod generate;
 pub mod ir_graph;
 pub mod parse;
+pub mod support_types;
 
 use log::info;
 use std::env;

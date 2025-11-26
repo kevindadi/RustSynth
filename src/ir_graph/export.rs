@@ -16,6 +16,7 @@ impl IrGraph {
                     TypeNode::Enum(_) => "enum",
                     TypeNode::Union(_) => "union",
                     TypeNode::TraitObject(_) => "trait_object",
+                    TypeNode::MultiTrait(_) => "multi_trait",
                     TypeNode::GenericParam { .. } => "generic_param",
                     TypeNode::Tuple(_) => "tuple",
                     TypeNode::Array(_) => "array",
@@ -150,7 +151,7 @@ impl IrGraph {
                     trait_bounds,
                     ..
                 } => {
-                    // 显示 trait 约束（过滤黑名单）
+                    // 显示 trait 约束(过滤黑名单)
                     const TRAIT_BLACKLIST: &[&str] = &[
                         "Debug",
                         "Clone",
@@ -255,9 +256,9 @@ impl IrGraph {
                 label = format!("{} (?)", label);
             }
 
-            // 添加文档注释（如果有）
+            // 添加文档注释(如果有)
             if let Some(docs) = &op.docs {
-                // 清理文档注释：去除换行符，限制长度
+                // 清理文档注释:去除换行符,限制长度
                 let cleaned_docs = docs
                     .lines()
                     .map(|line| line.trim())
@@ -265,7 +266,7 @@ impl IrGraph {
                     .collect::<Vec<_>>()
                     .join(" ");
 
-                // 限制文档长度，避免标签过长
+                // 限制文档长度,避免标签过长
                 let docs_preview = if cleaned_docs.len() > 100 {
                     format!("{}...", &cleaned_docs[..100])
                 } else {
@@ -304,7 +305,7 @@ impl IrGraph {
                 {
                     let edge_label = format!("{:?}", output.mode);
                     let edge_style = if op.error_output.is_some() {
-                        // 如果有错误输出，用绿色标识成功分支
+                        // 如果有错误输出,用绿色标识成功分支
                         "[label=\"{}\", color=green, penwidth=2.0]"
                     } else {
                         "[label=\"{}\"]"
@@ -346,7 +347,7 @@ impl IrGraph {
                     if let Some(trait_item) = self.parsed_crate().type_index.get(trait_id) {
                         let trait_name = trait_item.name.as_deref().unwrap_or("");
 
-                        // 黑名单检查（与方法黑名单类似）
+                        // 黑名单检查(与方法黑名单类似)
                         const TRAIT_BLACKLIST: &[&str] = &[
                             "Debug",
                             "Clone",
@@ -380,11 +381,9 @@ impl IrGraph {
                         }
 
                         // 查找 trait 对应的类型节点索引
-                        if let Some(trait_idx) = self
-                            .type_nodes
-                            .iter()
-                            .position(|n| matches!(n, TypeNode::TraitObject(id) if id == trait_id))
-                        {
+                        if let Some(trait_idx) = self.type_nodes.iter().position(
+                            |n| matches!(n, TypeNode::TraitObject(id) if id.unwrap() == *trait_id),
+                        ) {
                             dot.push_str(&format!(
                                 "  type_{} -> type_{} [label=\"requires\", color=purple, style=dashed, constraint=false];\n",
                                 trait_idx, generic_idx

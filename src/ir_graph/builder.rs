@@ -1,7 +1,7 @@
 /// IR Graph 构建器
 ///
 /// 负责将 ParsedCrate 转换为 IR Graph
-/// 核心:将 BorrowedRef 和 RawPointer 映射到 EdgeMode
+/// 将 BorrowedRef 和 RawPointer 映射到 EdgeMode
 use rustdoc_types::{GenericBound, GenericParamDefKind, Id, Type};
 use std::collections::HashMap;
 
@@ -12,9 +12,9 @@ use log::warn;
 
 pub struct IrGraphBuilder {
     graph: IrGraph,
-    /// 泛型作用域管理器
+    /// 泛型作用域管理器, 链接到类型定义的泛型
     generic_scope: GenericScope,
-    /// 实例化类型的 ID 生成器(从 u32::MAX 递减)
+    /// 实例化类型的 ID 生成器, 用于 Vec<u8> 等已经实例化类型
     #[allow(dead_code)]
     next_synthetic_id: u32,
 }
@@ -28,58 +28,27 @@ impl IrGraphBuilder {
         }
     }
 
-    /// 检查方法是否在黑名单中
-    ///
-    /// 黑名单包含常见的 trait 方法（Debug, Clone, Default 等）
-    /// 这些方法对 fuzzing 没有意义，应该被过滤
     fn is_blacklisted_method(&self, name: &str) -> bool {
-        const METHOD_BLACKLIST: &[&str] = &[
-            "fmt",
-            "eq",
-            "ne",
-            "cmp",
-            "partial_cmp",
-            "type_id",
-            "borrow",
-            "borrow_mut",
-            "as_ref",
-            "as_mut",
-            "into",
-            "from",
-            "try_from",
-            "try_into",
-            "default",
-            "clone",
-            "clone_into",
-            "to_owned",
-            "drop",
-            "write_fmt",
-            "to_string",       // 新增：ToString trait
-            "clone_to_uninit", // 新增：Clone trait 内部方法
-            "source",          // 新增：Error trait
-        ];
-        METHOD_BLACKLIST.contains(&name)
+        crate::support_types::is_blacklisted_method(name)
     }
 
     /// 根据 Id 创建正确的 TypeNode
     ///
     /// 查询 parsed_crate.types 来确定实际的类型种类 (Struct/Enum/Union/Trait)
-    /// 自动解析重导出（pub use）到规范定义
+    /// 自动解析重导出(pub use)到规范定义
     fn create_type_node_from_id(&self, id: Id) -> TypeNode {
-        // 解析到规范 ID（跟随 pub use 链）
         let canonical_id = self.graph.parsed_crate().resolve_root_id(id);
 
-        // 在 types 列表中查找
         for type_info in &self.graph.parsed_crate().types {
             if type_info.id == canonical_id {
                 return match type_info.kind {
-                    TypeKind::Struct => TypeNode::Struct(canonical_id),
-                    TypeKind::Enum => TypeNode::Enum(canonical_id),
-                    TypeKind::Union => TypeNode::Union(canonical_id),
-                    TypeKind::Trait => TypeNode::TraitObject(canonical_id),
+                    TypeKind::Struct => TypeNode::Struct(Some(canonical_id)),
+                    TypeKind::Enum => TypeNode::Enum(Some(canonical_id)),
+                    TypeKind::Union => TypeNode::Union(Some(canonical_id)),
+                    TypeKind::Trait => TypeNode::TraitObject(Some(canonical_id)),
                     TypeKind::TypeAlias => {
                         warn!("TypeAlias 暂时映射为 Struct: {:?}", type_info.name);
-                        TypeNode::Struct(canonical_id)
+                        TypeNode::Struct(Some(canonical_id))
                     }
                 };
             }
@@ -88,14 +57,16 @@ impl IrGraphBuilder {
         // 如果在 types 中找不到,尝试在 type_index 中查找
         if let Some(item) = self.graph.parsed_crate().type_index.get(&canonical_id) {
             match &item.inner {
-                rustdoc_types::ItemEnum::Struct(_) => return TypeNode::Struct(canonical_id),
-                rustdoc_types::ItemEnum::Enum(_) => return TypeNode::Enum(canonical_id),
-                rustdoc_types::ItemEnum::Union(_) => return TypeNode::Union(canonical_id),
-                rustdoc_types::ItemEnum::Trait(_) => return TypeNode::TraitObject(canonical_id),
+                rustdoc_types::ItemEnum::Struct(_) => return TypeNode::Struct(Some(canonical_id)),
+                rustdoc_types::ItemEnum::Enum(_) => return TypeNode::Enum(Some(canonical_id)),
+                rustdoc_types::ItemEnum::Union(_) => return TypeNode::Union(Some(canonical_id)),
+                rustdoc_types::ItemEnum::Trait(_) => {
+                    return TypeNode::TraitObject(Some(canonical_id));
+                }
 
-                // 关联类型：需要解析到实际类型
+                // 关联类型:需要解析到实际类型
                 rustdoc_types::ItemEnum::AssocType { type_, bounds, .. } => {
-                    // 如果关联类型有具体的 type，使用它
+                    // 如果关联类型有具体的 type,使用它
                     if let Some(actual_type) = type_ {
                         if let Some((type_node, _)) = self.extract_type_and_mode(actual_type) {
                             log::debug!("关联类型 {:?} 解析到实际类型: {:?}", item.name, type_node);
@@ -103,7 +74,7 @@ impl IrGraphBuilder {
                         }
                     }
 
-                    // 如果没有具体类型，查看 bounds
+                    // 如果没有具体类型,查看 bounds
                     // 取第一个 trait bound 作为类型约束
                     for bound in bounds {
                         if let rustdoc_types::GenericBound::TraitBound { trait_, .. } = bound {
@@ -112,7 +83,7 @@ impl IrGraphBuilder {
                                 item.name,
                                 trait_.id
                             );
-                            return TypeNode::TraitObject(trait_.id);
+                            return TypeNode::TraitObject(Some(trait_.id));
                         }
                     }
 
@@ -128,22 +99,21 @@ impl IrGraphBuilder {
             }
         }
 
-        // 默认假设是 Struct (兼容旧行为)
-        TypeNode::Struct(canonical_id)
+        TypeNode::Struct(Some(canonical_id))
     }
 
     /// 构建 IR 图
     pub fn build(mut self) -> IrGraph {
-        // 步骤 1: 添加所有类型节点
+        // Step 1: 添加所有类型节点
         self.build_type_nodes();
 
-        // 步骤 2: 构建操作节点(函数,带泛型作用域)
+        // Step 2: 构建操作节点(函数,带泛型作用域)
         self.build_function_operations();
 
-        // 步骤 3: 构建构造器操作
+        // Step 3: 构建构造器操作, pub 字段默认可以构造一个复合类型
         self.build_constructor_operations();
 
-        // 步骤 4: 处理 impl 块中的方法
+        // Step 4: 处理 impl 块中的方法
         self.build_impl_methods();
 
         self.graph
@@ -151,15 +121,14 @@ impl IrGraphBuilder {
 
     /// 构建类型节点
     fn build_type_nodes(&mut self) {
-        // 克隆类型列表以避免借用冲突
         let types = self.graph.parsed_crate().types.clone();
 
         for type_info in &types {
             let node = match type_info.kind {
-                TypeKind::Struct => TypeNode::Struct(type_info.id),
-                TypeKind::Enum => TypeNode::Enum(type_info.id),
-                TypeKind::Union => TypeNode::Union(type_info.id),
-                TypeKind::Trait => TypeNode::TraitObject(type_info.id),
+                TypeKind::Struct => TypeNode::Struct(Some(type_info.id)),
+                TypeKind::Enum => TypeNode::Enum(Some(type_info.id)),
+                TypeKind::Union => TypeNode::Union(Some(type_info.id)),
+                TypeKind::Trait => TypeNode::TraitObject(Some(type_info.id)),
                 TypeKind::TypeAlias => {
                     warn!("遇到 TypeAlias,暂时标记为 Unknown: {:?}", type_info);
                     continue;
@@ -193,7 +162,7 @@ impl IrGraphBuilder {
         }
 
         // 注意: ItemEnum::Use 在 extract_types 阶段已被过滤掉
-        // 因为它们不会生成 TypeInfo，只有实际定义才会
+        // 因为它们不会生成 TypeInfo,只有实际定义才会
 
         // 注意:不预先添加基本类型(i32, u64, str 等)
         // 它们会在实际使用时(通过 add_operation)自动添加到 type_nodes
@@ -204,7 +173,7 @@ impl IrGraphBuilder {
         let functions = self.graph.parsed_crate().functions.clone();
 
         // 收集所有在 impl 块中的函数 ID
-        // 这些函数将在 build_impl_methods 中处理，避免重复
+        // 这些函数将在 build_impl_methods 中处理,避免重复
         let impl_method_ids: std::collections::HashSet<Id> = self
             .graph
             .parsed_crate()
@@ -224,10 +193,10 @@ impl IrGraphBuilder {
                 continue;
             }
 
-            // 跳过 impl 块中的方法，它们会在 build_impl_methods 中处理
+            // 跳过 impl 块中的方法,它们会在 build_impl_methods 中处理
             if impl_method_ids.contains(&func_info.id) {
                 log::debug!(
-                    "跳过 impl 块方法（将在 impl 处理阶段创建）: {} (ID: {:?})",
+                    "跳过 impl 块方法(将在 impl 处理阶段创建): {} (ID: {:?})",
                     func_info.name,
                     func_info.id
                 );
@@ -242,7 +211,7 @@ impl IrGraphBuilder {
 
     /// 从函数信息构建操作节点
     fn build_operation_from_function(&mut self, func: &FunctionInfo) -> Option<OpNode> {
-        // 步骤 1: 创建泛型作用域
+        // Step 1: 创建泛型作用域
         // 从 rustdoc 获取函数的泛型参数定义
         let func_item = self.graph.parsed_crate().type_index.get(&func.id)?;
         let rustdoc_func = if let rustdoc_types::ItemEnum::Function(f) = &func_item.inner {
@@ -252,12 +221,12 @@ impl IrGraphBuilder {
         };
         let generics = &rustdoc_func.generics;
 
-        // 对于独立函数，将泛型参数解析为它们约束的 Trait（不创建 GenericParam 节点）
+        // 对于独立函数,将泛型参数解析为它们约束的 Trait(不创建 GenericParam 节点)
         let generic_nodes = self.create_generic_nodes(func.id, &func.name, generics);
         self.generic_scope.push_scope(func.id, generic_nodes);
 
-        // 步骤 2: 解析输入参数(在泛型作用域中)
-        // 直接从 rustdoc Type 解析，保留完整的引用和所有权信息
+        // Step 2: 解析输入参数(在泛型作用域中)
+        // 直接从 rustdoc Type 解析,保留完整的引用和所有权信息
         let inputs: Vec<DataEdge> = rustdoc_func
             .sig
             .inputs
@@ -275,7 +244,7 @@ impl IrGraphBuilder {
             })
             .collect();
 
-        // 步骤 3: 解析输出(在泛型作用域中)- 提取 Result 的成功和错误分支
+        // Step 3: 解析输出(在泛型作用域中)- 提取 Result 的成功和错误分支
         let (output, error_output, is_fallible) = if let Some(ty) = &rustdoc_func.sig.output {
             let (success_ty, error_ty) = self.extract_result_branches(ty);
             let output = self.extract_data_edge_from_type(success_ty, None);
@@ -286,7 +255,7 @@ impl IrGraphBuilder {
             (None, None, false)
         };
 
-        // 步骤 4: 构建泛型约束映射
+        // Step 4: 构建泛型约束映射
         let mut generic_constraints: HashMap<String, Vec<Id>> = HashMap::new();
         for constraint in &func.generic_constraints {
             generic_constraints
@@ -295,10 +264,10 @@ impl IrGraphBuilder {
                 .push(constraint.required_trait);
         }
 
-        // 步骤 5: 弹出作用域
+        // Step 5: 弹出作用域
         self.generic_scope.pop_scope();
 
-        // 提取文档注释
+        // 提取文档注释: 如果链接到 llm 给它用的
         let docs = func_item.docs.clone();
 
         Some(OpNode {
@@ -317,7 +286,7 @@ impl IrGraphBuilder {
         })
     }
 
-    /// 从 rustdoc Generics 创建泛型节点（用于类型定义：Struct/Enum/Union）
+    /// 从 rustdoc Generics 创建泛型节点(用于类型定义:Struct/Enum/Union)
     fn create_generic_nodes(
         &self,
         owner_id: Id,
@@ -356,8 +325,8 @@ impl IrGraphBuilder {
 
     /// 获取类型定义的泛型节点
     ///
-    /// 用于 impl 块：impl 块应该使用类型定义的泛型参数，而不是创建新的
-    /// 例如：impl<E, R> DecoderReader<E, R> 的 E 和 R 应该链接到 DecoderReader::E 和 DecoderReader::R
+    /// 用于 impl 块:impl 块应该使用类型定义的泛型参数,而不是创建新的
+    /// 例如:impl<E, R> DecoderReader<E, R> 的 E 和 R 应该链接到 DecoderReader::E 和 DecoderReader::R
     fn get_type_generic_nodes(&self, type_id: Id) -> HashMap<String, TypeNode> {
         let mut nodes = HashMap::new();
 
@@ -374,7 +343,7 @@ impl IrGraphBuilder {
             };
 
             if let Some(generics) = generics {
-                // 重建泛型节点（与类型定义时创建的一致）
+                // 重建泛型节点(与类型定义时创建的一致)
                 for param in &generics.params {
                     if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
                         let trait_bounds: Vec<Id> = bounds
@@ -390,7 +359,7 @@ impl IrGraphBuilder {
 
                         let node = TypeNode::GenericParam {
                             name: param.name.clone(),
-                            owner_id: type_id, // 使用类型的 ID，不是 impl 的 ID
+                            owner_id: type_id, // 使用类型的 ID,不是 impl 的 ID
                             owner_name: type_name.to_string(),
                             trait_bounds,
                         };
@@ -404,8 +373,9 @@ impl IrGraphBuilder {
         nodes
     }
 
-    /// 为独立函数创建泛型作用域（将泛型参数解析为 Trait，避免创建 GenericParam 节点）
-    #[allow(unused)]
+    /// 为独立函数创建泛型作用域(将泛型参数解析为 Trait,避免创建 GenericParam 节点)
+    /// 所有指向该泛型 Trait 的类型都会调用此方法
+    #[allow(dead_code)]
     fn create_generic_nodes_as_traits(
         &self,
         generics: &rustdoc_types::Generics,
@@ -417,7 +387,7 @@ impl IrGraphBuilder {
                 // 提取第一个 trait bound 作为该泛型的类型
                 let trait_node = bounds.iter().find_map(|bound| {
                     if let GenericBound::TraitBound { trait_, .. } = bound {
-                        Some(TypeNode::TraitObject(trait_.id))
+                        Some(TypeNode::TraitObject(Some(trait_.id)))
                     } else {
                         None
                     }
@@ -427,7 +397,7 @@ impl IrGraphBuilder {
                     log::debug!("独立函数泛型参数 {} 解析为 Trait: {:?}", param.name, node);
                     nodes.insert(param.name.clone(), node);
                 } else {
-                    // 如果没有 trait bound，使用 Unknown
+                    // 如果没有 trait bound, 则是最大泛型约束, 忽略
                     log::warn!("独立函数泛型参数 {} 没有 trait 约束", param.name);
                     nodes.insert(param.name.clone(), TypeNode::Unknown);
                 }
@@ -465,7 +435,7 @@ impl IrGraphBuilder {
     /// 2. FieldAccessor(port): Config(Ref) -> u16(Ref)
     /// 3. FieldAccessor(port_mut): Config(MutRef) -> u16(MutRef)
     fn build_struct_operations(&mut self, type_info: &crate::parse::TypeInfo) {
-        let struct_type_node = TypeNode::Struct(type_info.id);
+        let struct_type_node = TypeNode::Struct(Some(type_info.id));
 
         // 步骤 1: 创建构造器
         // 只为有公开字段的结构体创建构造器
@@ -637,7 +607,7 @@ impl IrGraphBuilder {
         let name = method_name.as_deref().unwrap_or("anonymous").to_string();
 
         // 跳过 Trait 定义中的抽象方法
-        // 注意：这是额外的安全检查，因为 trait 定义的方法不应出现在具体类型的 impl 块中
+        // 注意:这是额外的安全检查,因为 trait 定义的方法不应出现在具体类型的 impl 块中
         if self.graph.parsed_crate().is_trait_method(&method_id) {
             log::debug!(
                 "在 impl 块中跳过 Trait 抽象方法: {} (ID: {:?})",
@@ -762,21 +732,21 @@ impl IrGraphBuilder {
                                 }
                             }
                             // 类型别名如 io::Result<T> = Result<T, io::Error>
-                            // 只显示一个泛型参数，错误类型被别名隐藏
+                            // 只显示一个泛型参数,错误类型被别名隐藏
                             else if args.len() == 1 {
                                 if let rustdoc_types::GenericArg::Type(success_ty) = &args[0] {
                                     log::debug!(
                                         "提取 Result 类型别名: 成功={:?}, 错误类型被别名隐藏",
                                         success_ty
                                     );
-                                    // 返回成功类型，错误类型为 None
+                                    // 返回成功类型,错误类型为 None
                                     return (success_ty, None);
                                 }
                             }
                         }
                     }
 
-                    // 没有泛型参数的 Result（极少见）
+                    // 没有泛型参数的 Result(极少见)
                     log::debug!("Result 类型缺少泛型参数: {:?}", path);
                 } else if is_option {
                     // Option<T> -> 提取 T, 没有错误类型
@@ -791,7 +761,7 @@ impl IrGraphBuilder {
                         }
                     }
 
-                    // 没有泛型参数的 Option（极少见）
+                    // 没有泛型参数的 Option(极少见)
                     log::debug!("Option 类型缺少泛型参数: {:?}", path);
                 }
 
@@ -930,7 +900,7 @@ impl IrGraphBuilder {
     /// 1. None 构造器: () -> Option<T>
     /// 2. Some 构造器: T(Move) -> Option<T>
     fn build_enum_operations(&mut self, type_info: &crate::parse::TypeInfo) {
-        let enum_type_node = TypeNode::Enum(type_info.id);
+        let enum_type_node = TypeNode::Enum(Some(type_info.id));
 
         for variant in &type_info.variants {
             // 构建变体构造器的输入
@@ -975,7 +945,7 @@ impl IrGraphBuilder {
     ///
     /// Union 类似于 struct,但所有字段共享内存
     fn build_union_operations(&mut self, type_info: &crate::parse::TypeInfo) {
-        let union_type_node = TypeNode::Union(type_info.id);
+        let union_type_node = TypeNode::Union(Some(type_info.id));
         let public_fields: Vec<_> = type_info.fields.iter().filter(|f| f.is_public).collect();
 
         if !public_fields.is_empty() {
@@ -1080,7 +1050,7 @@ impl IrGraphBuilder {
     /// - TypeRef::Resolved(id) -> DataEdge { TypeNode::from_id(id), Move }
     /// - TypeRef::Generic(name) -> 从作用域解析
     /// - 如果是引用,需要在更高层处理(因为 TypeRef 可能不包含引用信息)
-    /// - 自动解析重导出（pub use）到规范定义
+    /// - 自动解析重导出(pub use)到规范定义
     fn type_ref_to_data_edge(&self, type_ref: &TypeRef, name: Option<String>) -> Option<DataEdge> {
         match type_ref {
             TypeRef::Resolved(id) => {
@@ -1125,18 +1095,18 @@ impl IrGraphBuilder {
             }
 
             TypeRef::Composite(inner_types) => {
-                // 复合类型：数组、切片等
-                // 对于切片 [T]，inner_types 只有一个元素
+                // 复合类型:数组、切片等
+                // 对于切片 [T],inner_types 只有一个元素
                 if inner_types.len() == 1 {
                     // 递归解析内部类型
                     let inner_edge = self.type_ref_to_data_edge(&inner_types[0], None)?;
                     Some(DataEdge {
                         type_node: TypeNode::Array(Box::new(inner_edge.type_node)),
-                        mode: EdgeMode::Move, // 注意：引用信息在 TypeRef 中已丢失
+                        mode: EdgeMode::Move, // 注意:引用信息在 TypeRef 中已丢失
                         name,
                     })
                 } else if inner_types.is_empty() {
-                    // 空复合类型（不太可能出现）
+                    // 空复合类型(不太可能出现)
                     None
                 } else {
                     // 元组类型
@@ -1170,14 +1140,14 @@ impl IrGraphBuilder {
         scope: &GenericScope,
     ) -> Option<(TypeNode, EdgeMode)> {
         match ty {
-            // 处理泛型参数（包括 Self 和其他泛型参数）
+            // 处理泛型参数(包括 Self 和其他泛型参数)
             Type::Generic(name) => {
                 if name == "Self" {
-                    // Self 类型：从作用域解析 Self 的 ID
+                    // Self 类型:从作用域解析 Self 的 ID
                     let self_id = scope.resolve_self()?;
                     Some((self.create_type_node_from_id(self_id), EdgeMode::Move))
                 } else {
-                    // 其他泛型参数（E, R, T 等）：从作用域解析
+                    // 其他泛型参数(E, R, T 等):从作用域解析
                     let type_node = scope.resolve(name)?;
                     Some((type_node, EdgeMode::Move))
                 }
@@ -1259,7 +1229,7 @@ impl IrGraphBuilder {
                     if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } =
                         args_box.as_ref()
                     {
-                        // 如果有泛型参数，尝试使用第一个（通常是实际类型）
+                        // 如果有泛型参数,尝试使用第一个(通常是实际类型)
                         if let Some(rustdoc_types::GenericArg::Type(actual_ty)) = args.first() {
                             log::debug!(
                                 "QualifiedPath 通过 args 解析: {} -> {:?}",
@@ -1290,7 +1260,7 @@ impl IrGraphBuilder {
                                             name,
                                             item_id
                                         );
-                                        // 找到关联类型定义，使用其 ID
+                                        // 找到关联类型定义,使用其 ID
                                         return Some((
                                             self.create_type_node_from_id(item_id),
                                             EdgeMode::Move,
@@ -1302,8 +1272,8 @@ impl IrGraphBuilder {
                     }
                 }
 
-                // 如果无法解析，尝试解析 self_type
-                log::debug!("QualifiedPath 无法完全解析，使用路径表示: {}", name);
+                // 如果无法解析,尝试解析 self_type
+                log::debug!("QualifiedPath 无法完全解析,使用路径表示: {}", name);
                 let (inner_type, _) = self.extract_type_and_mode_with_self(self_type, scope)?;
                 let trait_id = trait_.as_ref().map(|path| path.id);
 
@@ -1365,8 +1335,8 @@ impl IrGraphBuilder {
                     || name == "core::option::Option";
 
                 if is_result || is_option {
-                    // 包装类型：提取第一个泛型参数（成功类型）
-                    // 注意：这里忽略了错误类型，因为这个函数只能返回单个类型
+                    // 包装类型:提取第一个泛型参数(成功类型)
+                    // 注意:这里忽略了错误类型,因为这个函数只能返回单个类型
                     // 错误类型应该在 extract_result_branches 中处理
                     if let Some(args) = &path.args {
                         if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } =
@@ -1385,16 +1355,13 @@ impl IrGraphBuilder {
                         }
                     }
 
-                    log::warn!(
-                        "无法从包装类型 {} 中提取内部类型，标记为 Unknown",
-                        path.path
-                    );
+                    log::warn!("无法从包装类型 {} 中提取内部类型,标记为 Unknown", path.path);
                     return Some((TypeNode::Unknown, EdgeMode::Move));
                 }
 
-                // 非包装类型：检查是否有泛型参数
-                // 只有当泛型参数是具体类型（不是泛型参数占位符）时才创建 GenericInstance
-                // 例如：Vec<u8> 是 GenericInstance，但 EncoderWriter<E, W> 不是
+                // 非包装类型:检查是否有泛型参数
+                // 只有当泛型参数是具体类型(不是泛型参数占位符)时才创建 GenericInstance
+                // 例如:Vec<u8> 是 GenericInstance,但 EncoderWriter<E, W> 不是
                 if let Some(args) = &path.args {
                     if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = args.as_ref() {
                         // 提取类型参数
@@ -1410,13 +1377,13 @@ impl IrGraphBuilder {
                             .collect();
 
                         if !type_args.is_empty() {
-                            // 检查是否所有类型参数都是具体类型（不是 GenericParam）
+                            // 检查是否所有类型参数都是具体类型(不是 GenericParam)
                             let has_concrete_types = type_args
                                 .iter()
                                 .any(|node| !matches!(node, TypeNode::GenericParam { .. }));
 
                             if has_concrete_types {
-                                // 至少有一个具体类型，创建泛型实例化节点
+                                // 至少有一个具体类型,创建泛型实例化节点
                                 log::debug!(
                                     "创建泛型实例化: {} with {} type args (有具体类型)",
                                     path.path,
@@ -1431,14 +1398,14 @@ impl IrGraphBuilder {
                                     EdgeMode::Move,
                                 ));
                             } else {
-                                // 全是泛型参数占位符，使用类型定义本身
+                                // 全是泛型参数占位符,使用类型定义本身
                                 log::debug!("跳过泛型实例化: {} (全是泛型参数占位符)", path.path);
                             }
                         }
                     }
                 }
 
-                // 没有泛型参数，使用普通类型节点
+                // 没有泛型参数,使用普通类型节点
                 Some((self.create_type_node_from_id(path.id), EdgeMode::Move))
             }
 
@@ -1483,13 +1450,13 @@ impl IrGraphBuilder {
             }
 
             // 3. 泛型参数
-            // 需要从作用域解析，而不是创建新节点
-            // 注意：这个函数不接受作用域参数，所以委托给 extract_type_and_mode_with_self
+            // 需要从作用域解析,而不是创建新节点
+            // 注意:这个函数不接受作用域参数,所以委托给 extract_type_and_mode_with_self
             Type::Generic(_name) => {
-                // 这里不应该直接处理，应该在 extract_type_and_mode_with_self 中处理
-                // 临时创建一个匿名节点，但这不应该被使用
+                // 这里不应该直接处理,应该在 extract_type_and_mode_with_self 中处理
+                // 临时创建一个匿名节点,但这不应该被使用
                 log::warn!(
-                    "extract_type_and_mode 遇到泛型参数，应该使用 extract_type_and_mode_with_self: {}",
+                    "extract_type_and_mode 遇到泛型参数,应该使用 extract_type_and_mode_with_self: {}",
                     _name
                 );
                 Some((
