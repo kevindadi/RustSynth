@@ -1,18 +1,18 @@
 /// IR Graph 数据结构定义
 ///
-/// 核心设计：类型节点是规范的（canonical），所有权信息在边上
+/// 核心设计:类型节点是规范的(canonical),所有权信息在边上
 use rustdoc_types::Id;
 use std::collections::{HashMap, HashSet};
 
 use crate::parse::ParsedCrate;
 
-/// 类型节点：代表类型的规范形式
+/// 类型节点:代表类型的规范形式
 ///
-/// 重要：不为引用类型创建单独节点
-/// 例如：u32, &u32, &mut u32 都映射到同一个 TypeNode(u32)
+/// 重要:不为引用类型创建单独节点
+/// 例如:u32, &u32, &mut u32 都映射到同一个 TypeNode(u32)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TypeNode {
-    /// 原始类型：i32, u64, bool, str 等
+    /// 原始类型:i32, u64, bool, str 等
     Primitive(String),
 
     /// 用户定义的结构体
@@ -27,28 +27,28 @@ pub enum TypeNode {
     /// Trait 对象 (dyn Trait)
     TraitObject(Id),
 
-    /// 泛型参数节点（作用域化的一等类型）
+    /// 泛型参数节点(作用域化的一等类型)
     ///
-    /// 例如：impl<T: Clone> Container<T> 中的 T
+    /// 例如:impl<T: Clone> Container<T> 中的 T
     /// 每个泛型参数都有明确的所有者和约束
     GenericParam {
-        /// 参数名（如 "T", "U"）
+        /// 参数名(如 "T", "U")
         name: String,
-        /// 所有者 ID（定义该泛型的 Struct/Fn/Impl 的 Id）
+        /// 所有者 ID(定义该泛型的 Struct/Fn/Impl 的 Id)
         /// 用于区分不同作用域的同名泛型
         owner_id: Id,
-        /// Trait 约束（该泛型必须实现的 Trait）
+        /// Trait 约束(该泛型必须实现的 Trait)
         trait_bounds: Vec<Id>,
     },
 
-    /// 元组类型（例如 (i32, String)）
+    /// 元组类型(例如 (i32, String))
     Tuple(Vec<TypeNode>),
 
     /// 数组/切片的元素类型
-    /// 注意：[T] 和 &[T] 的区别在 EdgeMode，这里只存 T
+    /// 注意:[T] 和 &[T] 的区别在 EdgeMode,这里只存 T
     Array(Box<TypeNode>),
 
-    /// 函数指针类型（fn(A) -> B）
+    /// 函数指针类型(fn(A) -> B)
     FnPointer {
         inputs: Vec<DataEdge>,
         output: Option<Box<DataEdge>>,
@@ -70,16 +70,16 @@ pub enum TypeNode {
     /// 未知/不支持的类型
     Unknown,
 
-    /// 不透明类型（外部类型，无法构建）
+    /// 不透明类型(外部类型,无法构建)
     Opaque(String),
 }
 
-/// 边的模式：定义数据如何传递
+/// 边的模式:定义数据如何传递
 ///
-/// 这是设计的核心：所有权信息存储在这里，而不是类型节点
+/// 这是设计的核心:所有权信息存储在这里,而不是类型节点
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EdgeMode {
-    /// 按值移动（所有权转移）
+    /// 按值移动(所有权转移)
     Move,
 
     /// 共享引用 &T
@@ -112,18 +112,18 @@ impl EdgeMode {
     }
 }
 
-/// 数据边：连接类型节点和操作节点
+/// 数据边:连接类型节点和操作节点
 ///
 /// 包含类型信息和所有权模式
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DataEdge {
-    /// 指向的类型节点（规范类型）
+    /// 指向的类型节点(规范类型)
     pub type_node: TypeNode,
 
     /// 数据传递方式
     pub mode: EdgeMode,
 
-    /// 可选的名称（参数名）
+    /// 可选的名称(参数名)
     pub name: Option<String>,
 }
 
@@ -163,7 +163,7 @@ pub enum OpKind {
     FnCall,
 
     /// 结构体构造器
-    /// 输入：所有字段值 -> 输出：结构体实例
+    /// 输入:所有字段值 -> 输出:结构体实例
     StructCtor,
 
     /// 枚举变体构造器
@@ -178,8 +178,8 @@ pub enum OpKind {
     UnionCtor,
 
     /// 字段访问器
-    /// 输入：结构体引用 &S 或 &mut S
-    /// 输出：字段引用 &T 或 &mut T
+    /// 输入:结构体引用 &S 或 &mut S
+    /// 输出:字段引用 &T 或 &mut T
     ///
     /// 这允许 Petri Net 使用 struct S { field: T } 来满足需要 &T 的转换
     FieldAccessor {
@@ -195,19 +195,19 @@ pub enum OpKind {
         self_type: TypeNode,
     },
 
-    /// 关联函数（Associated function）
+    /// 关联函数(Associated function)
     AssocFn {
         /// 关联的类型
         assoc_type: Id,
     },
 }
 
-/// 操作节点：表示一个可调用的转换
+/// 操作节点:表示一个可调用的转换
 ///
 /// 统一处理函数、构造器等
 #[derive(Debug, Clone)]
 pub struct OpNode {
-    /// 操作的唯一标识符（来自 rustdoc Item Id）
+    /// 操作的唯一标识符(来自 rustdoc Item Id)
     pub id: Id,
 
     /// 操作名称
@@ -216,17 +216,28 @@ pub struct OpNode {
     /// 操作类型
     pub kind: OpKind,
 
-    /// 输入边（参数）
+    /// 输入边(参数)
     pub inputs: Vec<DataEdge>,
 
-    /// 输出边（返回值）
-    /// 注意：函数可以返回引用，所以这里用 DataEdge 而不是 TypeNode
+    /// 输出边(成功返回值)
+    /// 对于 Result<T, E>: 这是 T
+    /// 对于 Option<T>: 这是 Some(T)
+    /// 对于其他类型: 就是返回值本身
     pub output: Option<DataEdge>,
 
+    /// 错误输出边(仅用于 Result<T, E>)
+    /// 当函数返回 Result<T, E> 时,这里存储错误类型 E
+    /// 这样 Petri Net 中会有两条输出边,分别对应成功和失败路径
+    pub error_output: Option<DataEdge>,
+
     /// 泛型参数约束
-    /// 例如：fn foo<T: Display + Clone>(t: T)
+    /// 例如:fn foo<T: Display + Clone>(t: T)
     /// 这里存储 T -> [Display, Clone]
     pub generic_constraints: HashMap<String, Vec<Id>>,
+
+    /// 文档注释 (从 rustdoc 提取)
+    /// 用于在可视化时显示函数的说明文档
+    pub docs: Option<String>,
 
     /// 是否是 unsafe 函数
     pub is_unsafe: bool,
@@ -236,6 +247,10 @@ pub struct OpNode {
 
     /// 可见性
     pub is_public: bool,
+
+    /// 是否可能失败(返回 Result/Option)
+    /// 如果为 true,则 error_output 可能有值
+    pub is_fallible: bool,
 }
 
 impl OpNode {
@@ -258,7 +273,7 @@ impl OpNode {
     }
 }
 
-/// IR 图：整个程序的中间表示
+/// IR 图:整个程序的中间表示
 #[derive(Debug)]
 pub struct IrGraph {
     /// 所有类型节点
@@ -267,10 +282,10 @@ pub struct IrGraph {
     /// 所有操作节点
     pub operations: Vec<OpNode>,
 
-    /// 类型名称映射（用于调试和导出）
+    /// 类型名称映射(用于调试和导出)
     pub type_names: HashMap<TypeNode, String>,
 
-    /// Trait 实现映射（类型 -> 它实现的 Trait 列表）
+    /// Trait 实现映射(类型 -> 它实现的 Trait 列表)
     /// 用于解析泛型约束
     pub trait_impls: HashMap<Id, Vec<Id>>,
 
@@ -305,7 +320,7 @@ impl IrGraph {
             op.kind,
             op.id
         );
-        // 自动收集操作中涉及的所有类型（包括基本类型）
+        // 自动收集操作中涉及的所有类型(包括基本类型)
         for input in &op.inputs {
             self.type_nodes.insert(input.type_node.clone());
             // 为基本类型自动生成名称
@@ -318,25 +333,66 @@ impl IrGraph {
         self.operations.push(op);
     }
 
-    /// 确保类型有名称（用于基本类型）
+    /// 确保类型有名称(用于基本类型)
+    ///
+    /// 递归处理复合类型(Array, Tuple),确保所有嵌套的类型节点都被添加
     fn ensure_type_name(&mut self, node: &TypeNode) {
         if !self.type_names.contains_key(node) {
             let name = match node {
                 TypeNode::Primitive(name) => name.clone(),
                 TypeNode::Unit => "()".to_string(),
                 TypeNode::Never => "!".to_string(),
-                TypeNode::Array(_) => "Array".to_string(),
-                TypeNode::Tuple(_) => "Tuple".to_string(),
+
+                // 数组类型: [T] 或 [T; N]
+                // 递归确保元素类型也被添加
+                TypeNode::Array(elem_type) => {
+                    // 先确保元素类型被处理
+                    self.ensure_type_name(elem_type);
+
+                    // 获取元素类型名称
+                    let elem_name = self
+                        .type_names
+                        .get(elem_type.as_ref())
+                        .map(|s| s.as_str())
+                        .unwrap_or("unknown");
+
+                    format!("[{}]", elem_name)
+                }
+
+                // 元组类型: (T, U, ...)
+                // 递归确保所有元素类型都被添加
+                TypeNode::Tuple(elements) => {
+                    // 先确保所有元素类型被处理
+                    for elem in elements {
+                        self.ensure_type_name(elem);
+                    }
+
+                    // 构建元组名称
+                    let elem_names: Vec<String> = elements
+                        .iter()
+                        .map(|elem| {
+                            self.type_names
+                                .get(elem)
+                                .map(|s| s.as_str())
+                                .unwrap_or("unknown")
+                                .to_string()
+                        })
+                        .collect();
+
+                    format!("({})", elem_names.join(", "))
+                }
+
                 TypeNode::GenericParam { name, .. } => name.clone(),
                 TypeNode::QualifiedPath {
                     parent: _, name, ..
                 } => format!("::{}", name),
                 TypeNode::Unknown => {
-                    log::info!("遇到未知类型，标记为 Unknown: {:?}", node);
+                    log::info!("遇到未知类型,标记为 Unknown: {:?}", node);
                     "unknown".to_string()
                 }
                 TypeNode::Opaque(name) => name.clone(),
-                // 尝试解析 Struct/Enum/Union/TraitObject 的名称，即便是外部类型
+
+                // 尝试解析 Struct/Enum/Union/TraitObject 的名称,即便是外部类型
                 TypeNode::Struct(id)
                 | TypeNode::Enum(id)
                 | TypeNode::Union(id)
@@ -346,14 +402,20 @@ impl IrGraph {
                         .get(id)
                         .and_then(|item| item.name.clone())
                         .unwrap_or_else(|| {
-                            // 如果在索引中找不到，可能是外部 crate 的引用
-                            // 尝试使用 rustdoc 的路径信息如果可用，或者仅仅返回 ID
+                            // 如果在索引中找不到,可能是外部 crate 的引用
+                            // 尝试使用 rustdoc 的路径信息如果可用,或者仅仅返回 ID
                             format!("ExternalType_{:?}", id)
                         })
                 }
-                _ => return, // 其他情况（如不应该在这里出现的类型）
+
+                TypeNode::FnPointer { .. } => "fn".to_string(),
             };
+
+            // 插入类型名称
             self.type_names.insert(node.clone(), name);
+
+            // 同时将该类型节点添加到 type_nodes 集合中
+            self.type_nodes.insert(node.clone());
         }
     }
 

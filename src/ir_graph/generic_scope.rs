@@ -1,7 +1,7 @@
 /// 泛型作用域管理器
 ///
 /// 用于在解析过程中跟踪泛型参数的作用域
-/// 例如：
+/// 例如:
 /// ```rust
 /// struct Container<T> {       // Push scope: T -> TypeNode_123
 ///     value: T,                // Resolve: T -> TypeNode_123
@@ -19,21 +19,21 @@ use super::structure::TypeNode;
 /// 泛型作用域栈帧
 #[derive(Debug, Clone)]
 struct ScopeFrame {
-    /// 作用域所有者（Struct/Enum/Fn/Impl 的 Id）
+    /// 作用域所有者(Struct/Enum/Fn/Impl 的 Id)
     owner_id: Id,
-    /// 泛型参数映射：名称 -> TypeNode
+    /// 泛型参数映射:名称 -> TypeNode
     generics: HashMap<String, crate::ir_graph::TypeNode>,
-    /// Self 类型的具体 Id（用于 impl 块）
+    /// Self 类型的具体 Id(用于 impl 块)
     ///
-    /// 例如：impl MyTrait for MyStruct { ... }
-    /// 在这个作用域中，self_type = Some(MyStruct_Id)
+    /// 例如:impl MyTrait for MyStruct { ... }
+    /// 在这个作用域中,self_type = Some(MyStruct_Id)
     self_type: Option<Id>,
 }
 
 /// 泛型作用域管理器
 #[derive(Debug)]
 pub struct GenericScope {
-    /// 作用域栈（从外到内）
+    /// 作用域栈(从外到内)
     stack: Vec<ScopeFrame>,
 }
 
@@ -45,9 +45,9 @@ impl GenericScope {
 
     /// 进入新作用域
     ///
-    /// 参数：
+    /// 参数:
     /// - owner_id: 作用域所有者 ID
-    /// - generics: 泛型参数映射（名称 -> TypeNode）
+    /// - generics: 泛型参数映射(名称 -> TypeNode)
     pub fn push_scope(&mut self, owner_id: Id, generics: HashMap<String, TypeNode>) {
         self.stack.push(ScopeFrame {
             owner_id,
@@ -56,7 +56,7 @@ impl GenericScope {
         });
     }
 
-    /// 进入新作用域（带 Self 类型）
+    /// 进入新作用域(带 Self 类型)
     ///
     /// 用于 impl 块
     pub fn push_scope_with_self(
@@ -79,16 +79,16 @@ impl GenericScope {
 
     /// 解析泛型参数
     ///
-    /// 从栈顶向下查找泛型参数名，返回对应的 TypeNode
+    /// 从栈顶向下查找泛型参数名,返回对应的 TypeNode
     ///
-    /// 参数：
-    /// - name: 泛型参数名（如 "T"）
+    /// 参数:
+    /// - name: 泛型参数名(如 "T")
     ///
-    /// 返回：
+    /// 返回:
     /// - Some(TypeNode): 找到对应的泛型节点
-    /// - None: 未找到（可能是未定义的泛型）
+    /// - None: 未找到(可能是未定义的泛型)
     pub fn resolve(&self, name: &str) -> Option<TypeNode> {
-        // 从栈顶向下查找（最内层作用域优先）
+        // 从栈顶向下查找(最内层作用域优先)
         for frame in self.stack.iter().rev() {
             if let Some(node) = frame.generics.get(name) {
                 return Some(node.clone());
@@ -104,7 +104,7 @@ impl GenericScope {
 
     /// 解析 Self 类型
     ///
-    /// 从栈顶向下查找，返回最近的 self_type
+    /// 从栈顶向下查找,返回最近的 self_type
     pub fn resolve_self(&self) -> Option<Id> {
         for frame in self.stack.iter().rev() {
             if let Some(self_type) = frame.self_type {

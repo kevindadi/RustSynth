@@ -37,7 +37,7 @@ fn init_logger() {
         file: Mutex::new(file),
     });
 
-    // 如果已经初始化过，忽略错误
+    // 如果已经初始化过,忽略错误
     let _ = log::set_boxed_logger(logger);
     log::set_max_level(log::LevelFilter::Info);
 }
@@ -73,8 +73,8 @@ fn main() {
     parsed_crate.print_stats();
     println!();
 
-    // 步骤 2:  构建 IR 图（中间表示）
-    println!("正在构建 IR Graph（中间表示）...");
+    // 步骤 2:  构建 IR 图(中间表示)
+    println!("正在构建 IR Graph(中间表示)...");
     let ir_graph = ir_graph::build_ir_graph(parsed_crate);
     println!("✓ IR Graph 构建完成");
     println!();
@@ -98,7 +98,7 @@ fn main() {
         println!("✓ IR Graph JSON 已导出到: {}", ir_json_file);
     }
 
-    // 导出 IR Graph 为 DOT（Petri Net 风格）
+    // 导出 IR Graph 为 DOT(Petri Net 风格)
     let ir_dot_output = ir_graph.export_to_dot();
     let ir_dot_file = "ir_graph.dot";
     if let Err(e) = std::fs::write(ir_dot_file, ir_dot_output) {

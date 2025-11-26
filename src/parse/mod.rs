@@ -1,7 +1,7 @@
-/// Parse 模块：负责解析 rustdoc JSON 输出
+/// Parse 模块:负责解析 rustdoc JSON 输出
 ///
-/// 该模块的职责是从 rustdoc 生成的 JSON 文件中提取所有相关信息，
-/// 包括类型、函数、Trait 实现关系等，为 API 图构建提供数据基础。
+/// 该模块的职责是从 rustdoc 生成的 JSON 文件中提取所有相关信息,
+/// 包括类型、函数、Trait 实现关系等,为 API 图构建提供数据基础.
 use rustdoc_types::{Crate, GenericBound, Id, Item, ItemEnum, Type};
 use std::collections::HashMap;
 use std::fs::File;
@@ -13,13 +13,13 @@ use std::path::Path;
 pub struct ParsedCrate {
     /// 原始的 Crate 数据
     pub crate_data: Crate,
-    /// 类型索引：Id -> Item
+    /// 类型索引:Id -> Item
     pub type_index: HashMap<Id, Item>,
-    /// Trait 实现映射：Trait Id -> 实现该 Trait 的类型 Id 列表
+    /// Trait 实现映射:Trait Id -> 实现该 Trait 的类型 Id 列表
     pub trait_implementations: HashMap<Id, Vec<Id>>,
-    /// 函数列表：(函数 Id, 函数信息)
+    /// 函数列表:(函数 Id, 函数信息)
     pub functions: Vec<FunctionInfo>,
-    /// 类型列表：(类型 Id, 类型种类)
+    /// 类型列表:(类型 Id, 类型种类)
     pub types: Vec<TypeInfo>,
     /// Impl 块列表
     pub impl_blocks: Vec<ImplBlockInfo>,
@@ -30,9 +30,9 @@ pub struct ParsedCrate {
 pub struct ImplBlockInfo {
     /// Impl 块 Id
     pub id: Id,
-    /// 实现的 Trait（如果是 trait impl）
+    /// 实现的 Trait(如果是 trait impl)
     pub trait_id: Option<Id>,
-    /// 实现的目标类型（Self 类型）
+    /// 实现的目标类型(Self 类型)
     pub for_type: Id,
     /// Impl 块中的方法/函数 Id 列表
     pub items: Vec<Id>,
@@ -61,7 +61,7 @@ pub enum TypeRef {
     Primitive(String),
     /// impl Trait
     ImplTrait(Vec<Id>), // Trait Id 列表
-    /// 其他复合类型（元组、数组等）
+    /// 其他复合类型(元组、数组等)
     Composite(Vec<TypeRef>),
 }
 
@@ -80,20 +80,20 @@ pub struct TypeInfo {
     pub id: Id,
     pub name: String,
     pub kind: TypeKind,
-    /// 结构体的公开字段（仅对 Struct 和 Union 有效）
+    /// 结构体的公开字段(仅对 Struct 和 Union 有效)
     pub fields: Vec<FieldInfo>,
-    /// 枚举的变体（仅对 Enum 有效）
+    /// 枚举的变体(仅对 Enum 有效)
     pub variants: Vec<VariantInfo>,
 }
 
 /// 字段信息
 #[derive(Debug, Clone)]
 pub struct FieldInfo {
-    /// 字段 Id（来自 rustdoc）
+    /// 字段 Id(来自 rustdoc)
     pub id: Id,
     /// 字段名
     pub name: String,
-    /// 字段类型（作为 TypeRef）
+    /// 字段类型(作为 TypeRef)
     pub field_type: TypeRef,
     /// 是否公开
     pub is_public: bool,
@@ -102,11 +102,11 @@ pub struct FieldInfo {
 /// 枚举变体信息
 #[derive(Debug, Clone)]
 pub struct VariantInfo {
-    /// 变体 Id（来自 rustdoc）
+    /// 变体 Id(来自 rustdoc)
     pub id: Id,
     /// 变体名
     pub name: String,
-    /// 变体的字段（如果是 struct-like 或 tuple-like）
+    /// 变体的字段(如果是 struct-like 或 tuple-like)
     pub fields: Vec<FieldInfo>,
     /// 变体类型
     pub kind: VariantKindInfo,
@@ -115,11 +115,11 @@ pub struct VariantInfo {
 /// 变体类型
 #[derive(Debug, Clone, PartialEq)]
 pub enum VariantKindInfo {
-    /// 无字段变体：None
+    /// 无字段变体:None
     Plain,
-    /// 元组变体：Some(T)
+    /// 元组变体:Some(T)
     Tuple,
-    /// 结构体变体：Point { x: i32, y: i32 }
+    /// 结构体变体:Point { x: i32, y: i32 }
     Struct,
 }
 
@@ -175,7 +175,7 @@ impl ParsedCrate {
     fn extract_impl_blocks(&mut self) {
         for (&id, item) in &self.crate_data.index {
             if let ItemEnum::Impl(impl_item) = &item.inner {
-                // 过滤：检查 Trait 黑名单
+                // 过滤:检查 Trait 黑名单
                 if let Some(trait_ref) = &impl_item.trait_ {
                     if Self::is_blacklisted_trait(trait_ref) {
                         continue;
@@ -202,9 +202,9 @@ impl ParsedCrate {
     fn extract_trait_implementations(&mut self) {
         for (_id, item) in &self.crate_data.index {
             if let ItemEnum::Impl(impl_item) = &item.inner {
-                // 只处理 Trait 实现（不是固有实现）
+                // 只处理 Trait 实现(不是固有实现)
                 if let Some(trait_ref) = &impl_item.trait_ {
-                    // 过滤：检查 Trait 黑名单
+                    // 过滤:检查 Trait 黑名单
                     if Self::is_blacklisted_trait(trait_ref) {
                         continue;
                     }
@@ -229,7 +229,7 @@ impl ParsedCrate {
             if let ItemEnum::Function(func) = &item.inner {
                 let name = item.name.as_deref().unwrap_or("anonymous").to_string();
 
-                // 过滤：检查方法黑名单
+                // 过滤:检查方法黑名单
                 if Self::is_blacklisted_method(&name) {
                     continue;
                 }
@@ -249,7 +249,7 @@ impl ParsedCrate {
                     .as_ref()
                     .map(|ty| Self::extract_type_ref(ty));
 
-                // 提取泛型约束（从函数声明中）
+                // 提取泛型约束(从函数声明中)
                 let generic_constraints = Self::extract_generic_constraints_from_item(item);
 
                 self.functions.push(FunctionInfo {
@@ -268,7 +268,7 @@ impl ParsedCrate {
         for (&id, item) in &self.crate_data.index {
             let (kind, fields, variants) = match &item.inner {
                 ItemEnum::Struct(struct_item) => {
-                    // 提取结构体字段（根据 StructKind）
+                    // 提取结构体字段(根据 StructKind)
                     let fields = match &struct_item.kind {
                         // Plain struct: struct Foo { a: T, b: U }
                         rustdoc_types::StructKind::Plain { fields, .. } => {
@@ -430,9 +430,9 @@ impl ParsedCrate {
 
     /// 从 Item 提取泛型约束
     fn extract_generic_constraints_from_item(_item: &Item) -> Vec<GenericConstraint> {
-        // rustdoc-types 0.57 中，泛型信息可能在不同位置
-        // 暂时返回空列表，因为 FunctionSignature 可能没有直接的 generics 字段
-        // 实际实现中，可能需要从函数的其他部分提取泛型信息
+        // rustdoc-types 0.57 中,泛型信息可能在不同位置
+        // 暂时返回空列表,因为 FunctionSignature 可能没有直接的 generics 字段
+        // 实际实现中,可能需要从函数的其他部分提取泛型信息
         Vec::new()
     }
 
