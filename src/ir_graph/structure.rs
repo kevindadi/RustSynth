@@ -37,6 +37,7 @@ pub enum TypeNode {
         /// 所有者 ID(定义该泛型的 Struct/Fn/Impl 的 Id)
         /// 用于区分不同作用域的同名泛型
         owner_id: Id,
+        owner_name: String,
         /// Trait 约束(该泛型必须实现的 Trait)
         trait_bounds: Vec<Id>,
     },
@@ -65,6 +66,17 @@ pub enum TypeNode {
         parent: Box<TypeNode>,
         name: String,
         trait_id: Option<Id>,
+    },
+
+    /// 泛型实例化类型（如 Vec<u8>, HashMap<String, i32>）
+    /// 保留完整的路径和泛型参数信息
+    GenericInstance {
+        /// 基础类型的 ID (如 Vec 的定义)
+        base_id: Id,
+        /// 完整路径 (如 "alloc::vec::Vec", "std::vec::Vec")
+        path: String,
+        /// 泛型参数列表
+        type_args: Vec<TypeNode>,
     },
 
     /// 未知/不支持的类型
@@ -386,6 +398,38 @@ impl IrGraph {
                 TypeNode::QualifiedPath {
                     parent: _, name, ..
                 } => format!("::{}", name),
+
+                // 泛型实例化: Vec<u8>, HashMap<String, i32> 等
+                TypeNode::GenericInstance {
+                    path, type_args, ..
+                } => {
+                    // 先确保所有泛型参数类型被处理
+                    for arg in type_args {
+                        self.ensure_type_name(arg);
+                    }
+
+                    // 提取基础类型名称（从完整路径中）
+                    let base_name = path.split("::").last().unwrap_or(path);
+
+                    // 构建泛型参数字符串
+                    let arg_names: Vec<String> = type_args
+                        .iter()
+                        .map(|arg| {
+                            self.type_names
+                                .get(arg)
+                                .map(|s| s.as_str())
+                                .unwrap_or("unknown")
+                                .to_string()
+                        })
+                        .collect();
+
+                    if arg_names.is_empty() {
+                        base_name.to_string()
+                    } else {
+                        format!("{}<{}>", base_name, arg_names.join(", "))
+                    }
+                }
+
                 TypeNode::Unknown => {
                     log::info!("遇到未知类型,标记为 Unknown: {:?}", node);
                     "unknown".to_string()
@@ -397,15 +441,28 @@ impl IrGraph {
                 | TypeNode::Enum(id)
                 | TypeNode::Union(id)
                 | TypeNode::TraitObject(id) => {
-                    self.parsed_crate
-                        .type_index
-                        .get(id)
-                        .and_then(|item| item.name.clone())
-                        .unwrap_or_else(|| {
-                            // 如果在索引中找不到,可能是外部 crate 的引用
-                            // 尝试使用 rustdoc 的路径信息如果可用,或者仅仅返回 ID
-                            format!("ExternalType_{:?}", id)
-                        })
+                    // 优先从 type_index 获取
+                    if let Some(item) = self.parsed_crate.type_index.get(id) {
+                        if let Some(name) = &item.name {
+                            name.clone()
+                        } else {
+                            // 尝试从 paths 获取（外部 crate 的类型）
+                            self.parsed_crate
+                                .crate_data
+                                .paths
+                                .get(id)
+                                .and_then(|path_info| path_info.path.last().cloned())
+                                .unwrap_or_else(|| format!("ExternalType_{:?}", id))
+                        }
+                    } else {
+                        // 不在 type_index 中，尝试从 paths 获取（外部 crate 的类型）
+                        self.parsed_crate
+                            .crate_data
+                            .paths
+                            .get(id)
+                            .and_then(|path_info| path_info.path.last().cloned())
+                            .unwrap_or_else(|| format!("ExternalType_{:?}", id))
+                    }
                 }
 
                 TypeNode::FnPointer { .. } => "fn".to_string(),

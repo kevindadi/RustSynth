@@ -1,4 +1,5 @@
 pub mod cpn;
+pub mod generate;
 pub mod ir_graph;
 pub mod parse;
 

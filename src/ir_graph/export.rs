@@ -23,14 +23,29 @@ impl IrGraph {
                     TypeNode::Unit => "unit",
                     TypeNode::Never => "never",
                     TypeNode::QualifiedPath { .. } => "qualified_path",
+                    TypeNode::GenericInstance { .. } => "generic_instance",
                     TypeNode::Opaque(_) => "opaque",
                     TypeNode::Unknown => "unknown",
                 };
 
-                serde_json::json!({
+                let mut json = serde_json::json!({
                     "name": name,
                     "kind": kind,
-                })
+                });
+
+                // 为泛型参数添加额外信息
+                if let TypeNode::GenericParam {
+                    owner_id,
+                    trait_bounds,
+                    ..
+                } = node
+                {
+                    json["owner_id"] = serde_json::json!(owner_id.0);
+                    json["trait_bounds"] =
+                        serde_json::json!(trait_bounds.iter().map(|id| id.0).collect::<Vec<_>>());
+                }
+
+                json
             })
             .collect();
 
@@ -129,18 +144,68 @@ impl IrGraph {
                     let name = self.get_type_name(node).unwrap_or("unknown");
                     (name.to_string(), "lavender")
                 }
-                TypeNode::GenericParam { name, owner_id, .. } => {
-                    let owner_name = self
-                        .parsed_crate()
-                        .type_index
-                        .get(owner_id)
-                        .and_then(|item| item.name.as_deref())
-                        .unwrap_or("unknown_owner");
-                    (format!("{}::{}", owner_name, name), "lightgray")
+                TypeNode::GenericParam {
+                    name,
+                    owner_name,
+                    trait_bounds,
+                    ..
+                } => {
+                    // 显示 trait 约束（过滤黑名单）
+                    const TRAIT_BLACKLIST: &[&str] = &[
+                        "Debug",
+                        "Clone",
+                        "Copy",
+                        "PartialEq",
+                        "Eq",
+                        "PartialOrd",
+                        "Ord",
+                        "Hash",
+                        "Default",
+                        "Display",
+                        "Error",
+                        "From",
+                        "Into",
+                        "TryFrom",
+                        "TryInto",
+                        "AsRef",
+                        "AsMut",
+                        "Borrow",
+                        "BorrowMut",
+                        "ToOwned",
+                        "Send",
+                        "Sync",
+                        "Sized",
+                        "Unpin",
+                    ];
+
+                    let bounds_str: Vec<String> = trait_bounds
+                        .iter()
+                        .filter_map(|trait_id| {
+                            let trait_item = self.parsed_crate().type_index.get(trait_id)?;
+                            let trait_name = trait_item.name.as_deref()?;
+                            if TRAIT_BLACKLIST.contains(&trait_name) {
+                                None
+                            } else {
+                                Some(trait_name.to_string())
+                            }
+                        })
+                        .collect();
+
+                    let label = if bounds_str.is_empty() {
+                        format!("{}::{}", owner_name, name)
+                    } else {
+                        format!("{}::{}: {}", owner_name, name, bounds_str.join(" + "))
+                    };
+
+                    (label, "lightgray")
                 }
                 TypeNode::Array(_) | TypeNode::Tuple(_) => {
                     let name = self.get_type_name(node).unwrap_or("unknown");
                     (name.to_string(), "wheat")
+                }
+                TypeNode::GenericInstance { .. } => {
+                    let name = self.get_type_name(node).unwrap_or("unknown");
+                    (name.to_string(), "lightyellow")
                 }
                 TypeNode::Unit => ("()".to_string(), "white"),
                 TypeNode::Never => ("!".to_string(), "white"),
@@ -180,7 +245,7 @@ impl IrGraph {
                 // 普通函数/方法用浅绿色
                 "lightgreen"
             };
-            
+
             // 构建标签
             let mut label = op.name.clone();
             if op.is_unsafe {
@@ -189,7 +254,7 @@ impl IrGraph {
             if op.is_fallible {
                 label = format!("{} (?)", label);
             }
-            
+
             // 添加文档注释（如果有）
             if let Some(docs) = &op.docs {
                 // 清理文档注释：去除换行符，限制长度
@@ -199,19 +264,19 @@ impl IrGraph {
                     .filter(|line| !line.is_empty())
                     .collect::<Vec<_>>()
                     .join(" ");
-                
+
                 // 限制文档长度，避免标签过长
                 let docs_preview = if cleaned_docs.len() > 100 {
                     format!("{}...", &cleaned_docs[..100])
                 } else {
                     cleaned_docs
                 };
-                
+
                 // 转义引号
                 let escaped_docs = docs_preview.replace("\"", "\\\"");
                 label = format!("{}\\n📝 {}", label, escaped_docs);
             }
-            
+
             dot.push_str(&format!(
                 "  op_{} [shape=box, style=filled, fillcolor={}, label=\"{}\"];\n",
                 idx, color, label
@@ -265,6 +330,67 @@ impl IrGraph {
                         "  op_{} -> type_{} [label=\"{}\", color=red, penwidth=2.0, style=dashed];\n",
                         op_idx, type_idx, edge_label
                     ));
+                }
+            }
+        }
+
+        // 泛型参数的 Trait 约束边
+        dot.push_str("\n  // Generic parameter trait constraints\n\n");
+        for (generic_idx, node) in self.type_nodes.iter().enumerate() {
+            if let TypeNode::GenericParam {
+                trait_bounds, name, ..
+            } = node
+            {
+                for trait_id in trait_bounds {
+                    // 检查 trait 是否在黑名单中
+                    if let Some(trait_item) = self.parsed_crate().type_index.get(trait_id) {
+                        let trait_name = trait_item.name.as_deref().unwrap_or("");
+
+                        // 黑名单检查（与方法黑名单类似）
+                        const TRAIT_BLACKLIST: &[&str] = &[
+                            "Debug",
+                            "Clone",
+                            "Copy",
+                            "PartialEq",
+                            "Eq",
+                            "PartialOrd",
+                            "Ord",
+                            "Hash",
+                            "Default",
+                            "Display",
+                            "Error",
+                            "From",
+                            "Into",
+                            "TryFrom",
+                            "TryInto",
+                            "AsRef",
+                            "AsMut",
+                            "Borrow",
+                            "BorrowMut",
+                            "ToOwned",
+                            "Send",
+                            "Sync",
+                            "Sized",
+                            "Unpin",
+                        ];
+
+                        if TRAIT_BLACKLIST.contains(&trait_name) {
+                            log::debug!("跳过黑名单 trait 约束: {} 用于泛型 {}", trait_name, name);
+                            continue;
+                        }
+
+                        // 查找 trait 对应的类型节点索引
+                        if let Some(trait_idx) = self
+                            .type_nodes
+                            .iter()
+                            .position(|n| matches!(n, TypeNode::TraitObject(id) if id == trait_id))
+                        {
+                            dot.push_str(&format!(
+                                "  type_{} -> type_{} [label=\"requires\", color=purple, style=dashed, constraint=false];\n",
+                                trait_idx, generic_idx
+                            ));
+                        }
+                    }
                 }
             }
         }

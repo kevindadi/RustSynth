@@ -23,6 +23,8 @@ pub struct ParsedCrate {
     pub types: Vec<TypeInfo>,
     /// Impl 块列表
     pub impl_blocks: Vec<ImplBlockInfo>,
+    /// Trait 信息列表
+    pub traits: Vec<TraitInfo>,
 }
 
 /// Impl 块信息
@@ -37,6 +39,19 @@ pub struct ImplBlockInfo {
     /// Impl 块中的方法/函数 Id 列表
     pub items: Vec<Id>,
     /// Impl 的泛型参数
+    pub generics: Vec<String>,
+}
+
+/// Trait 信息
+#[derive(Debug, Clone)]
+pub struct TraitInfo {
+    /// Trait Id
+    pub id: Id,
+    /// Trait 名称
+    pub name: String,
+    /// Trait 中定义的方法 Id 列表
+    pub methods: Vec<Id>,
+    /// Trait 的泛型参数
     pub generics: Vec<Id>, // TODO: 完整的泛型信息
 }
 
@@ -154,21 +169,41 @@ impl ParsedCrate {
             functions: Vec::new(),
             types: Vec::new(),
             impl_blocks: Vec::new(),
+            traits: Vec::new(),
         };
 
-        // 1. 提取 Trait 实现关系
+        // 1. 提取 Trait 信息
+        parsed.extract_traits();
+
+        // 2. 提取 Trait 实现关系
         parsed.extract_trait_implementations();
 
-        // 2. 提取函数信息
+        // 3. 提取函数信息
         parsed.extract_functions();
 
-        // 3. 提取类型信息
+        // 4. 提取类型信息
         parsed.extract_types();
 
-        // 4. 提取 Impl 块信息
+        // 5. 提取 Impl 块信息
         parsed.extract_impl_blocks();
 
         parsed
+    }
+
+    /// 提取 Trait 信息
+    fn extract_traits(&mut self) {
+        for (&id, item) in &self.crate_data.index {
+            if let ItemEnum::Trait(trait_item) = &item.inner {
+                let name = item.name.as_deref().unwrap_or("anonymous").to_string();
+
+                self.traits.push(TraitInfo {
+                    id,
+                    name,
+                    methods: trait_item.items.clone(),
+                    generics: Vec::new(),
+                });
+            }
+        }
     }
 
     /// 提取 Impl 块信息
@@ -184,14 +219,23 @@ impl ParsedCrate {
 
                 // 提取实现的目标类型
                 if let Some(for_type_id) = Self::extract_type_id(&impl_item.for_) {
+                    // 解析到规范 ID（跟随 pub use 链）
+                    let canonical_for_type = self.resolve_root_id(for_type_id);
                     let trait_id = impl_item.trait_.as_ref().map(|t| t.id);
 
+                    let generics: Vec<String> = impl_item
+                        .generics
+                        .clone()
+                        .params
+                        .iter()
+                        .map(|g| g.name.clone())
+                        .collect();
                     self.impl_blocks.push(ImplBlockInfo {
                         id,
                         trait_id,
-                        for_type: for_type_id,
+                        for_type: canonical_for_type,
                         items: impl_item.items.clone(),
-                        generics: Vec::new(), // TODO: 提取泛型
+                        generics: generics,
                     });
                 }
             }
@@ -213,10 +257,13 @@ impl ParsedCrate {
 
                     // 提取实现该 Trait 的类型
                     if let Some(implementor_id) = Self::extract_type_id(&impl_item.for_) {
+                        // 解析到规范 ID（跟随 pub use 链）
+                        let canonical_implementor = self.resolve_root_id(implementor_id);
+
                         self.trait_implementations
                             .entry(trait_id)
                             .or_insert_with(Vec::new)
-                            .push(implementor_id);
+                            .push(canonical_implementor);
                     }
                 }
             }
@@ -448,12 +495,100 @@ impl ParsedCrate {
         self.trait_implementations.get(trait_id)
     }
 
+    /// 检查某个 ID 是否是 Trait 中定义的方法
+    ///
+    /// # 返回值
+    /// - `true`: 该 ID 是某个 Trait 的方法定义（抽象方法）
+    /// - `false`: 该 ID 不是 Trait 方法，可以创建操作节点
+    pub fn is_trait_method(&self, id: &Id) -> bool {
+        self.traits
+            .iter()
+            .any(|trait_info| trait_info.methods.contains(id))
+    }
+
+    /// 解析 ID 到其规范定义（跟随 pub use 链）
+    ///
+    /// # 参数
+    /// - `id`: 待解析的 ID（可能是重导出）
+    ///
+    /// # 返回值
+    /// - 规范定义的 ID（Struct/Enum/Union/Trait 等的实际定义 ID）
+    ///
+    /// # 行为
+    /// - 如果 `id` 指向 `ItemEnum::Use`，递归跟随到实际定义
+    /// - 如果 `id` 指向实际定义（Struct/Enum 等），直接返回
+    /// - 如果遇到外部 crate 的重导出（无 target ID），返回当前 ID
+    /// - 设置递归深度限制防止循环引用
+    ///
+    /// # 示例
+    /// ```ignore
+    /// // Item A (ID: 100) 是 struct RealType
+    /// // Item B (ID: 200) 是 pub use A;
+    /// // resolve_root_id(Id(200)) -> Id(100)
+    /// ```
+    pub fn resolve_root_id(&self, id: Id) -> Id {
+        const MAX_DEPTH: usize = 20;
+        let mut current_id = id;
+
+        for depth in 0..MAX_DEPTH {
+            match self.type_index.get(&current_id) {
+                Some(item) => {
+                    match &item.inner {
+                        // 如果是 Use（重导出），跟随到目标
+                        ItemEnum::Use(use_item) => {
+                            if let Some(target_id) = use_item.id {
+                                log::trace!(
+                                    "解析重导出 (深度 {}): {:?} -> {:?}",
+                                    depth,
+                                    current_id,
+                                    target_id
+                                );
+                                current_id = target_id;
+                                continue;
+                            } else {
+                                // 外部 crate 的重导出，无法继续跟随
+                                log::debug!("遇到外部重导出（无 target ID）: {:?}", current_id);
+                                return current_id;
+                            }
+                        }
+                        // 其他类型（Struct/Enum/Function 等）是实际定义
+                        _ => {
+                            if depth > 0 {
+                                log::debug!(
+                                    "解析完成 (深度 {}): {:?} -> {:?}",
+                                    depth,
+                                    id,
+                                    current_id
+                                );
+                            }
+                            return current_id;
+                        }
+                    }
+                }
+                None => {
+                    // ID 不在索引中（外部类型）
+                    log::debug!("ID 不在索引中: {:?}", current_id);
+                    return current_id;
+                }
+            }
+        }
+
+        // 达到最大递归深度，可能是循环引用
+        log::warn!(
+            "达到最大解析深度 ({})，可能存在循环重导出: {:?}",
+            MAX_DEPTH,
+            id
+        );
+        current_id
+    }
+
     /// 打印解析统计信息
     pub fn print_stats(&self) {
         println!("=== Rustdoc 解析统计 ===");
         println!("总 Item 数: {}", self.type_index.len());
         println!("函数数: {}", self.functions.len());
         println!("类型数: {}", self.types.len());
+        println!("Trait 数: {}", self.traits.len());
         println!("Impl 块数: {}", self.impl_blocks.len());
         println!("Trait 实现数: {}", self.trait_implementations.len());
 
@@ -476,6 +611,10 @@ impl ParsedCrate {
         println!("  - Struct: {}", struct_count);
         println!("  - Enum: {}", enum_count);
         println!("  - Trait: {}", trait_count);
+
+        // 统计 Trait 方法总数
+        let trait_method_count: usize = self.traits.iter().map(|t| t.methods.len()).sum();
+        println!("  - Trait 方法总数: {}", trait_method_count);
     }
 
     /// 检查方法是否在黑名单中
