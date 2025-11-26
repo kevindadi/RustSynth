@@ -1,0 +1,5173 @@
+{
+  "operations": [
+    {
+      "id": 350,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(170))"
+      }
+    },
+    {
+      "id": 324,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(309))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 302,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(214))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 499,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "source",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(402))"
+      }
+    },
+    {
+      "id": 88,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "read",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(89))"
+      }
+    },
+    {
+      "id": 192,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "to_owned",
+      "output": null
+    },
+    {
+      "id": 198,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(169))"
+      }
+    },
+    {
+      "id": 359,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "Primitive(\"str\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 504,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "GenericParam { name: \"T\", owner_id: Id(504), trait_bounds: [Id(263)] }"
+        },
+        {
+          "mode": "Move",
+          "name": "arg2",
+          "type": "GenericParam { name: \"E\", owner_id: Id(504), trait_bounds: [Id(4)] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "decode_engine_slice",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 491,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 465,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 295,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(214))"
+      }
+    },
+    {
+      "id": 211,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Primitive(\"bool\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "with_encode_padding",
+      "output": null
+    },
+    {
+      "id": 210,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "new",
+      "output": null
+    },
+    {
+      "id": 397,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "GenericParam { name: \"T\", owner_id: Id(397), trait_bounds: [Id(263)] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "encode",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(47))"
+      }
+    },
+    {
+      "id": 501,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "GenericParam { name: \"T\", owner_id: Id(501), trait_bounds: [Id(263)] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "decode",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 240,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "encode_padding",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 51,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 68,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "new",
+      "output": null
+    },
+    {
+      "id": 122,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "write",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(89))"
+      }
+    },
+    {
+      "id": 298,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 333,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "as_str",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"str\")"
+      }
+    },
+    {
+      "id": 152,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "flush",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(89))"
+      }
+    },
+    {
+      "id": 428,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 502,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "GenericParam { name: \"T\", owner_id: Id(502), trait_bounds: [Id(263)] }"
+        },
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "GenericParam { name: \"E\", owner_id: Id(502), trait_bounds: [Id(4)] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "decode_engine",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 196,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 468,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "Struct(Id(269))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "from",
+      "output": null
+    },
+    {
+      "id": 171,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "Struct(Id(170))"
+        },
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(172))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "new",
+      "output": null
+    },
+    {
+      "id": 265,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "GenericParam { name: \"T\", owner_id: Id(265), trait_bounds: [Id(263)] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "encode_slice",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 136,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "new",
+      "output": null
+    },
+    {
+      "id": 398,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "GenericParam { name: \"T\", owner_id: Id(398), trait_bounds: [Id(263)] }"
+        },
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "GenericParam { name: \"E\", owner_id: Id(398), trait_bounds: [Id(4)] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "encode_engine",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(47))"
+      }
+    },
+    {
+      "id": 386,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(332))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 23,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "borrow_mut",
+      "output": null
+    },
+    {
+      "id": 124,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "flush",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(89))"
+      }
+    },
+    {
+      "id": 276,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "decoded_len_estimate",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"usize\")"
+      }
+    },
+    {
+      "id": 154,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Primitive(\"str\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "consume",
+      "output": null
+    },
+    {
+      "id": 497,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 420,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(266))"
+      }
+    },
+    {
+      "id": 267,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "GenericParam { name: \"T\", owner_id: Id(267), trait_bounds: [Id(263)] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "decode",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 388,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 104,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "finish",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(89))"
+      }
+    },
+    {
+      "id": 157,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Primitive(\"str\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "consume",
+      "output": null
+    },
+    {
+      "id": 5,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "new",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(3))"
+      }
+    },
+    {
+      "id": 264,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "GenericParam { name: \"T\", owner_id: Id(264), trait_bounds: [Id(263)] }"
+        },
+        {
+          "mode": "Move",
+          "name": "arg2",
+          "type": "Struct(Id(47))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "encode_string",
+      "output": null
+    },
+    {
+      "id": 203,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "config",
+      "output": null
+    },
+    {
+      "id": 151,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "write",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(89))"
+      }
+    },
+    {
+      "id": 105,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "into_inner",
+      "output": null
+    },
+    {
+      "id": 459,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 213,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(214))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "with_decode_padding_mode",
+      "output": null
+    },
+    {
+      "id": 84,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 19,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "borrow",
+      "output": null
+    },
+    {
+      "id": 400,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "GenericParam { name: \"T\", owner_id: Id(400), trait_bounds: [Id(263)] }"
+        },
+        {
+          "mode": "Move",
+          "name": "arg2",
+          "type": "GenericParam { name: \"E\", owner_id: Id(400), trait_bounds: [Id(4)] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "encode_engine_slice",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 503,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "GenericParam { name: \"T\", owner_id: Id(503), trait_bounds: [Id(263)] }"
+        },
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(268))"
+        },
+        {
+          "mode": "Move",
+          "name": "arg2",
+          "type": "GenericParam { name: \"E\", owner_id: Id(503), trait_bounds: [Id(4)] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "decode_engine_vec",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 193,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "clone_into",
+      "output": null
+    },
+    {
+      "id": 103,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "new",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(101))"
+      }
+    },
+    {
+      "id": 120,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 262,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "GenericParam { name: \"T\", owner_id: Id(262), trait_bounds: [Id(263)] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "encode",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(47))"
+      }
+    },
+    {
+      "id": 401,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "Primitive(\"usize\")"
+        },
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Primitive(\"bool\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "encoded_len",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(402))"
+      }
+    },
+    {
+      "id": 27,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "into",
+      "output": null
+    },
+    {
+      "id": 489,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(274))"
+      }
+    },
+    {
+      "id": 425,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(266))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 356,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(170))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 237,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "default",
+      "output": null
+    },
+    {
+      "id": 457,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(269))"
+      }
+    },
+    {
+      "id": 212,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Primitive(\"bool\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "with_decode_allow_trailing_bits",
+      "output": null
+    },
+    {
+      "id": 182,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Primitive(\"unknown\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "clone_to_uninit",
+      "output": null
+    },
+    {
+      "id": 271,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "Primitive(\"usize\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "decoded_len_estimate",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"usize\")"
+      }
+    },
+    {
+      "id": 69,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "into_inner",
+      "output": null
+    },
+    {
+      "id": 422,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 352,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 261,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "config",
+      "output": null
+    },
+    {
+      "id": 272,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "GenericParam { name: \"T\", owner_id: Id(272), trait_bounds: [Id(263)] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "decode_slice_unchecked",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 133,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "from_consumer",
+      "output": null
+    },
+    {
+      "id": 462,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(269))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 30,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "from",
+      "output": null
+    },
+    {
+      "id": 231,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(172))"
+      }
+    },
+    {
+      "id": 270,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "GenericParam { name: \"T\", owner_id: Id(270), trait_bounds: [Id(263)] }"
+        },
+        {
+          "mode": "Move",
+          "name": "arg2",
+          "type": "Struct(Id(268))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "decode_vec",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 42,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 494,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(274))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 235,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 155,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Primitive(\"str\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "consume",
+      "output": null
+    },
+    {
+      "id": 34,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 382,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 275,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "encode_padding",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 327,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 273,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "GenericParam { name: \"T\", owner_id: Id(273), trait_bounds: [Id(263)] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "decode_slice",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 331,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "Primitive(\"str\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "new",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 134,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "into_inner",
+      "output": null
+    },
+    {
+      "id": 126,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "drop",
+      "output": null
+    },
+    {
+      "id": 399,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "arg0",
+          "type": "GenericParam { name: \"T\", owner_id: Id(399), trait_bounds: [Id(263)] }"
+        },
+        {
+          "mode": "Move",
+          "name": "arg1",
+          "type": "Struct(Id(47))"
+        },
+        {
+          "mode": "Move",
+          "name": "arg2",
+          "type": "GenericParam { name: \"E\", owner_id: Id(399), trait_bounds: [Id(4)] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "encode_engine_string",
+      "output": null
+    },
+    {
+      "id": 46,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "to_string",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(47))"
+      }
+    },
+    {
+      "id": 361,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(332), variant_name: \"InvalidLength\" }",
+      "name": "ParseAlphabetError::InvalidLength",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(332))"
+      }
+    },
+    {
+      "id": 363,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(332), variant_name: \"DuplicatedByte\" }",
+      "name": "ParseAlphabetError::DuplicatedByte",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(332))"
+      }
+    },
+    {
+      "id": 365,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(332), variant_name: \"UnprintableByte\" }",
+      "name": "ParseAlphabetError::UnprintableByte",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(332))"
+      }
+    },
+    {
+      "id": 367,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(332), variant_name: \"ReservedByte\" }",
+      "name": "ParseAlphabetError::ReservedByte",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(332))"
+      }
+    },
+    {
+      "id": 277,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(214), variant_name: \"Indifferent\" }",
+      "name": "DecodePaddingMode::Indifferent",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(214))"
+      }
+    },
+    {
+      "id": 278,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(214), variant_name: \"RequireCanonical\" }",
+      "name": "DecodePaddingMode::RequireCanonical",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(214))"
+      }
+    },
+    {
+      "id": 279,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(214), variant_name: \"RequireNone\" }",
+      "name": "DecodePaddingMode::RequireNone",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(214))"
+      }
+    },
+    {
+      "id": 403,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(266), variant_name: \"OutputSliceTooSmall\" }",
+      "name": "EncodeSliceError::OutputSliceTooSmall",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(266))"
+      }
+    },
+    {
+      "id": 434,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(269), variant_name: \"InvalidByte\" }",
+      "name": "DecodeError::InvalidByte",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(269))"
+      }
+    },
+    {
+      "id": 436,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(269), variant_name: \"InvalidLength\" }",
+      "name": "DecodeError::InvalidLength",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(269))"
+      }
+    },
+    {
+      "id": 439,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(269), variant_name: \"InvalidLastSymbol\" }",
+      "name": "DecodeError::InvalidLastSymbol",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(269))"
+      }
+    },
+    {
+      "id": 440,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(269), variant_name: \"InvalidPadding\" }",
+      "name": "DecodeError::InvalidPadding",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(269))"
+      }
+    },
+    {
+      "id": 471,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(274), variant_name: \"DecodeError\" }",
+      "name": "DecodeSliceError::DecodeError",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(274))"
+      }
+    },
+    {
+      "id": 472,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(274), variant_name: \"OutputSliceTooSmall\" }",
+      "name": "DecodeSliceError::OutputSliceTooSmall",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Id(274))"
+      }
+    },
+    {
+      "id": 88,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "buf",
+          "type": "Array(Primitive(\"u8\"))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(66)) }",
+      "name": "read",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(89))"
+      }
+    },
+    {
+      "id": 42,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(309)) }",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "value",
+          "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(101) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 425,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "other",
+          "type": "Struct(Id(266))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(266)) }",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 42,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(132)) }",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 34,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(274))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 30,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "t",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(274) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 237,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(172) }",
+      "name": "default",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(172))"
+      }
+    },
+    {
+      "id": 19,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(66)) }",
+      "name": "borrow",
+      "output": {
+        "mode": "Ref",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 302,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "other",
+          "type": "Struct(Id(214))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(214)) }",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 30,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "t",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(101) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 27,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(66))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(66)) }",
+      "name": "into",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "value",
+          "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(3) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 46,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(332)) }",
+      "name": "to_string",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(47))"
+      }
+    },
+    {
+      "id": 27,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(274))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "into",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 34,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(266))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(266)) }",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 420,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(266)) }",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(266))"
+      }
+    },
+    {
+      "id": 46,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(269)) }",
+      "name": "to_string",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(47))"
+      }
+    },
+    {
+      "id": 34,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(3))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(3)) }",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 19,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(101)) }",
+      "name": "borrow",
+      "output": {
+        "mode": "Ref",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 19,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(169)) }",
+      "name": "borrow",
+      "output": {
+        "mode": "Ref",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 192,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(269)) }",
+      "name": "to_owned",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 193,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "target",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(269)) }",
+      "name": "clone_into",
+      "output": null
+    },
+    {
+      "id": 122,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "input",
+          "type": "Array(Primitive(\"u8\"))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(101)) }",
+      "name": "write",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(89))"
+      }
+    },
+    {
+      "id": 124,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(101)) }",
+      "name": "flush",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(89))"
+      }
+    },
+    {
+      "id": 30,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "t",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(309) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 30,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "t",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(214) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 198,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(169)) }",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(169))"
+      }
+    },
+    {
+      "id": 42,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(170)) }",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 68,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "reader",
+          "type": "GenericParam { name: \"R\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "engine",
+          "type": "GenericParam { name: \"E\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(66) }",
+      "name": "new",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(66))"
+      }
+    },
+    {
+      "id": 69,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(66))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(66)) }",
+      "name": "into_inner",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"R\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 468,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "e",
+          "type": "Struct(Id(269))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(274) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(274))"
+      }
+    },
+    {
+      "id": 27,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(170))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(170)) }",
+      "name": "into",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 30,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "t",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(3) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 182,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRawPtr",
+          "name": "dest",
+          "type": "Primitive(\"u8\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": true,
+      "kind": "MethodCall { self_type: Struct(Id(214)) }",
+      "name": "clone_to_uninit",
+      "output": null
+    },
+    {
+      "id": 462,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "other",
+          "type": "Struct(Id(269))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(269)) }",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 457,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(269)) }",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(269))"
+      }
+    },
+    {
+      "id": 27,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(132))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(132)) }",
+      "name": "into",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "value",
+          "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(132) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "value",
+          "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(266) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 42,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(266)) }",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "value",
+          "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(169) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 192,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "to_owned",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 193,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "target",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "clone_into",
+      "output": null
+    },
+    {
+      "id": 23,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(169)) }",
+      "name": "borrow_mut",
+      "output": {
+        "mode": "MutRef",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 151,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "buf",
+          "type": "Array(Primitive(\"u8\"))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(132)) }",
+      "name": "write",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(89))"
+      }
+    },
+    {
+      "id": 152,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(132)) }",
+      "name": "flush",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(89))"
+      }
+    },
+    {
+      "id": 42,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(269)) }",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "value",
+          "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(274) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 19,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(332)) }",
+      "name": "borrow",
+      "output": {
+        "mode": "Ref",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 182,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRawPtr",
+          "name": "dest",
+          "type": "Primitive(\"u8\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": true,
+      "kind": "MethodCall { self_type: Struct(Id(169)) }",
+      "name": "clone_to_uninit",
+      "output": null
+    },
+    {
+      "id": 23,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "borrow_mut",
+      "output": {
+        "mode": "MutRef",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 34,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(66))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(66)) }",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 23,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(66)) }",
+      "name": "borrow_mut",
+      "output": {
+        "mode": "MutRef",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 352,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(170)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 126,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(101)) }",
+      "name": "drop",
+      "output": null
+    },
+    {
+      "id": 23,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(214)) }",
+      "name": "borrow_mut",
+      "output": {
+        "mode": "MutRef",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 298,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(214)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 499,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "source",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(402))"
+      }
+    },
+    {
+      "id": 19,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(214)) }",
+      "name": "borrow",
+      "output": {
+        "mode": "Ref",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 34,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(332))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(332)) }",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 30,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "t",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(170) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 42,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(332)) }",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 42,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(66)) }",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 203,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(169)) }",
+      "name": "config",
+      "output": {
+        "mode": "Ref",
+        "type": "Unknown"
+      }
+    },
+    {
+      "id": 34,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(214))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(214)) }",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 30,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "t",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(266) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 46,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "to_string",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(47))"
+      }
+    },
+    {
+      "id": 27,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(332))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(332)) }",
+      "name": "into",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 30,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "t",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(132) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 34,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(170))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(170)) }",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 19,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(170)) }",
+      "name": "borrow",
+      "output": {
+        "mode": "Ref",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 19,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "borrow",
+      "output": {
+        "mode": "Ref",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 196,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(169)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 231,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(172))"
+      }
+    },
+    {
+      "id": 210,
+      "inputs": [],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(172) }",
+      "name": "new",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(172))"
+      }
+    },
+    {
+      "id": 211,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(172))"
+        },
+        {
+          "mode": "Move",
+          "name": "padding",
+          "type": "Primitive(\"bool\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "with_encode_padding",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(172))"
+      }
+    },
+    {
+      "id": 212,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(172))"
+        },
+        {
+          "mode": "Move",
+          "name": "allow",
+          "type": "Primitive(\"bool\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "with_decode_allow_trailing_bits",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(172))"
+      }
+    },
+    {
+      "id": 213,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(172))"
+        },
+        {
+          "mode": "Move",
+          "name": "mode",
+          "type": "Struct(Id(214))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "with_decode_padding_mode",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(172))"
+      }
+    },
+    {
+      "id": 34,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(269))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(269)) }",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 422,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(266)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 42,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(3)) }",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 494,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "other",
+          "type": "Struct(Id(274))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 34,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(132))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(132)) }",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 34,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(172))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 23,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(132)) }",
+      "name": "borrow_mut",
+      "output": {
+        "mode": "MutRef",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 27,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(101))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(101)) }",
+      "name": "into",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 240,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "encode_padding",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 27,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(269))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(269)) }",
+      "name": "into",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 5,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "bytes",
+          "type": "Array(Primitive(\"u8\"))"
+        },
+        {
+          "mode": "Ref",
+          "name": "engine",
+          "type": "GenericParam { name: \"E\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(3) }",
+      "name": "new",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(3))"
+      }
+    },
+    {
+      "id": 331,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "alphabet",
+          "type": "Primitive(\"str\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(170) }",
+      "name": "new",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 333,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(170)) }",
+      "name": "as_str",
+      "output": {
+        "mode": "Ref",
+        "type": "Primitive(\"str\")"
+      }
+    },
+    {
+      "id": 34,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(169))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(169)) }",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "value",
+          "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(214) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 171,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "alphabet",
+          "type": "Struct(Id(170))"
+        },
+        {
+          "mode": "Move",
+          "name": "config",
+          "type": "Struct(Id(172))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(169) }",
+      "name": "new",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(169))"
+      }
+    },
+    {
+      "id": 27,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(3))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(3)) }",
+      "name": "into",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 182,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRawPtr",
+          "name": "dest",
+          "type": "Primitive(\"u8\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": true,
+      "kind": "MethodCall { self_type: Struct(Id(269)) }",
+      "name": "clone_to_uninit",
+      "output": null
+    },
+    {
+      "id": 27,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(309))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(309)) }",
+      "name": "into",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 27,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(169))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(169)) }",
+      "name": "into",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 356,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "other",
+          "type": "Struct(Id(170))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(170)) }",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 30,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "t",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(332) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 42,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 133,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "str_consumer",
+          "type": "GenericParam { name: \"S\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "engine",
+          "type": "GenericParam { name: \"E\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(132) }",
+      "name": "from_consumer",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(132))"
+      }
+    },
+    {
+      "id": 134,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(132))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(132)) }",
+      "name": "into_inner",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"S\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 19,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(3)) }",
+      "name": "borrow",
+      "output": {
+        "mode": "Ref",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 157,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "buf",
+          "type": "Primitive(\"str\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(47)) }",
+      "name": "consume",
+      "output": null
+    },
+    {
+      "id": 42,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(169)) }",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 182,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRawPtr",
+          "name": "dest",
+          "type": "Primitive(\"u8\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": true,
+      "kind": "MethodCall { self_type: Struct(Id(266)) }",
+      "name": "clone_to_uninit",
+      "output": null
+    },
+    {
+      "id": 459,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(269)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "value",
+          "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(332) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "value",
+          "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(269) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 30,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "t",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(169) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "value",
+          "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(66) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 382,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(332)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 19,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(132)) }",
+      "name": "borrow",
+      "output": {
+        "mode": "Ref",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 27,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(172))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "into",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 23,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(269)) }",
+      "name": "borrow_mut",
+      "output": {
+        "mode": "MutRef",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 42,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(214)) }",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 192,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(169)) }",
+      "name": "to_owned",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 193,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "target",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(169)) }",
+      "name": "clone_into",
+      "output": null
+    },
+    {
+      "id": 42,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(101)) }",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 46,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(266)) }",
+      "name": "to_string",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(47))"
+      }
+    },
+    {
+      "id": 192,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(266)) }",
+      "name": "to_owned",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 193,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "target",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(266)) }",
+      "name": "clone_into",
+      "output": null
+    },
+    {
+      "id": 27,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(214))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(214)) }",
+      "name": "into",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 136,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "engine",
+          "type": "GenericParam { name: \"E\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(132) }",
+      "name": "new",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(132))"
+      }
+    },
+    {
+      "id": 497,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 359,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "value",
+          "type": "Primitive(\"str\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(170) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "value",
+          "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(172) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 428,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(266)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "value",
+          "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(170) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 489,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(274))"
+      }
+    },
+    {
+      "id": 192,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(170)) }",
+      "name": "to_owned",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 193,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "target",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(170)) }",
+      "name": "clone_into",
+      "output": null
+    },
+    {
+      "id": 19,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(309)) }",
+      "name": "borrow",
+      "output": {
+        "mode": "Ref",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 46,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(3)) }",
+      "name": "to_string",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(47))"
+      }
+    },
+    {
+      "id": 19,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "borrow",
+      "output": {
+        "mode": "Ref",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 23,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(266)) }",
+      "name": "borrow_mut",
+      "output": {
+        "mode": "MutRef",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 34,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(309))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(309)) }",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 386,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "other",
+          "type": "Struct(Id(332))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(332)) }",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 491,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 84,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(66)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 182,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRawPtr",
+          "name": "dest",
+          "type": "Primitive(\"u8\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": true,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "clone_to_uninit",
+      "output": null
+    },
+    {
+      "id": 23,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(101)) }",
+      "name": "borrow_mut",
+      "output": {
+        "mode": "MutRef",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 182,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRawPtr",
+          "name": "dest",
+          "type": "Primitive(\"u8\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": true,
+      "kind": "MethodCall { self_type: Struct(Id(170)) }",
+      "name": "clone_to_uninit",
+      "output": null
+    },
+    {
+      "id": 388,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(332)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 19,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(269)) }",
+      "name": "borrow",
+      "output": {
+        "mode": "Ref",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 235,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 42,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "type_id",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(43))"
+      }
+    },
+    {
+      "id": 40,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "value",
+          "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(309) }",
+      "name": "try_from",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 103,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "delegate",
+          "type": "GenericParam { name: \"W\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "engine",
+          "type": "GenericParam { name: \"E\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(101) }",
+      "name": "new",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(101))"
+      }
+    },
+    {
+      "id": 104,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(101)) }",
+      "name": "finish",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(89))"
+      }
+    },
+    {
+      "id": 105,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(101))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(101)) }",
+      "name": "into_inner",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"W\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 23,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(332)) }",
+      "name": "borrow_mut",
+      "output": {
+        "mode": "MutRef",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 182,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRawPtr",
+          "name": "dest",
+          "type": "Primitive(\"u8\")"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": true,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "clone_to_uninit",
+      "output": null
+    },
+    {
+      "id": 192,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(214)) }",
+      "name": "to_owned",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 193,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "target",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(214)) }",
+      "name": "clone_into",
+      "output": null
+    },
+    {
+      "id": 23,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(3)) }",
+      "name": "borrow_mut",
+      "output": {
+        "mode": "MutRef",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 23,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(309)) }",
+      "name": "borrow_mut",
+      "output": {
+        "mode": "MutRef",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 120,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(101)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 19,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(266)) }",
+      "name": "borrow",
+      "output": {
+        "mode": "Ref",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 30,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "t",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(66) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 51,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "formatter",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(3)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 34,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(101))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(101)) }",
+      "name": "try_into",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(35))"
+      }
+    },
+    {
+      "id": 27,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Id(266))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(266)) }",
+      "name": "into",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"U\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 23,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(274)) }",
+      "name": "borrow_mut",
+      "output": {
+        "mode": "MutRef",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 30,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "t",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(172) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 295,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(214)) }",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(214))"
+      }
+    },
+    {
+      "id": 23,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(170)) }",
+      "name": "borrow_mut",
+      "output": {
+        "mode": "MutRef",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 327,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(309)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    },
+    {
+      "id": 324,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "other",
+          "type": "Struct(Id(309))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(309)) }",
+      "name": "eq",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "id": 192,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "to_owned",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 193,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "target",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(172)) }",
+      "name": "clone_into",
+      "output": null
+    },
+    {
+      "id": 30,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "t",
+          "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(269) }",
+      "name": "from",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"T\", owner_id: Id(0), trait_bounds: [] }"
+      }
+    },
+    {
+      "id": 350,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(170)) }",
+      "name": "clone",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(170))"
+      }
+    },
+    {
+      "id": 465,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "GenericParam { name: \"Self\", owner_id: Id(0), trait_bounds: [] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "f",
+          "type": "Struct(Id(52))"
+        }
+      ],
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Id(269)) }",
+      "name": "fmt",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Id(85))"
+      }
+    }
+  ],
+  "types": [
+    {
+      "kind": "array",
+      "name": "Array"
+    },
+    {
+      "kind": "generic_param",
+      "name": "E"
+    },
+    {
+      "kind": "generic_param",
+      "name": "U"
+    },
+    {
+      "kind": "struct",
+      "name": "Alphabet"
+    },
+    {
+      "kind": "struct",
+      "name": "GeneralPurpose"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "trait_object",
+      "name": "Config"
+    },
+    {
+      "kind": "struct",
+      "name": "unknown"
+    },
+    {
+      "kind": "generic_param",
+      "name": "Self"
+    },
+    {
+      "kind": "struct",
+      "name": "unknown"
+    },
+    {
+      "kind": "generic_param",
+      "name": "E"
+    },
+    {
+      "kind": "trait_object",
+      "name": "DecodeEstimate"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "enum",
+      "name": "EncodeSliceError"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "struct",
+      "name": "GeneralPurposeConfig"
+    },
+    {
+      "kind": "enum",
+      "name": "DecodePaddingMode"
+    },
+    {
+      "kind": "struct",
+      "name": "unknown"
+    },
+    {
+      "kind": "struct",
+      "name": "DecodeMetadata"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "struct",
+      "name": "unknown"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "struct",
+      "name": "unknown"
+    },
+    {
+      "kind": "enum",
+      "name": "DecodeSliceError"
+    },
+    {
+      "kind": "generic_param",
+      "name": "R"
+    },
+    {
+      "kind": "struct",
+      "name": "EncoderWriter"
+    },
+    {
+      "kind": "trait_object",
+      "name": "Engine"
+    },
+    {
+      "kind": "struct",
+      "name": "EncoderStringWriter"
+    },
+    {
+      "kind": "struct",
+      "name": "unknown"
+    },
+    {
+      "kind": "struct",
+      "name": "unknown"
+    },
+    {
+      "kind": "struct",
+      "name": "DecoderReader"
+    },
+    {
+      "kind": "primitive",
+      "name": "usize"
+    },
+    {
+      "kind": "struct",
+      "name": "unknown"
+    },
+    {
+      "kind": "struct",
+      "name": "Base64Display"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "generic_param",
+      "name": "E"
+    },
+    {
+      "kind": "generic_param",
+      "name": "E"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "primitive",
+      "name": "u8"
+    },
+    {
+      "kind": "enum",
+      "name": "ParseAlphabetError"
+    },
+    {
+      "kind": "struct",
+      "name": "unknown"
+    },
+    {
+      "kind": "generic_param",
+      "name": "W"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "enum",
+      "name": "DecodeError"
+    },
+    {
+      "kind": "struct",
+      "name": "unknown"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "generic_param",
+      "name": "E"
+    },
+    {
+      "kind": "struct",
+      "name": "unknown"
+    },
+    {
+      "kind": "trait_object",
+      "name": "StrConsumer"
+    },
+    {
+      "kind": "struct",
+      "name": "unknown"
+    },
+    {
+      "kind": "primitive",
+      "name": "str"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "struct",
+      "name": "unknown"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "generic_param",
+      "name": "E"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T"
+    },
+    {
+      "kind": "unknown",
+      "name": "unknown"
+    },
+    {
+      "kind": "generic_param",
+      "name": "S"
+    },
+    {
+      "kind": "primitive",
+      "name": "unknown"
+    },
+    {
+      "kind": "generic_param",
+      "name": "E"
+    },
+    {
+      "kind": "primitive",
+      "name": "bool"
+    }
+  ]
+}
