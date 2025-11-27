@@ -6,7 +6,7 @@ use rustdoc_types::{GenericBound, GenericParamDefKind, Id, Type, Visibility};
 use std::collections::HashMap;
 
 use super::generic_scope::GenericScope;
-use super::structure::{DataEdge, EdgeMode, IrGraph, OpKind, OpNode, TypeNode};
+use super::structure::{DataEdge, EdgeMode, IrGraph, OpKind, OpNode, TraitImpl, TypeNode};
 use crate::parse::{FunctionInfo, ParsedCrate, TypeKind, TypeRef};
 use log::warn;
 
@@ -30,6 +30,27 @@ impl IrGraphBuilder {
 
     fn is_blacklisted_method(&self, name: &str) -> bool {
         crate::support_types::is_blacklisted_method(name)
+    }
+
+    /// 检查方法是否来自黑名单 trait
+    fn is_method_from_blacklisted_trait(&self, method_id: &Id) -> bool {
+        // 查找这个方法所属的 trait
+        for trait_info in &self.graph.parsed_crate().traits {
+            if trait_info.methods.contains(method_id) {
+                // 找到了方法所属的 trait，检查这个 trait 是否在黑名单中
+                if let Some(trait_item) = self.graph.parsed_crate().type_index.get(&trait_info.id) {
+                    let trait_name = trait_item.name.as_deref().unwrap_or("");
+
+                    // 使用黑名单检查
+                    use crate::support_types::TRAIT_BLACKLIST;
+                    if TRAIT_BLACKLIST.contains(&trait_name) {
+                        return true;
+                    }
+                }
+                break;
+            }
+        }
+        false
     }
 
     /// 根据 Id 创建正确的 TypeNode
@@ -142,6 +163,9 @@ impl IrGraphBuilder {
 
         // Step 5: 处理 impl 块中的方法
         self.build_impl_methods();
+
+        // Step 6: 构建 Trait 实现关系
+        self.build_trait_implementations();
 
         self.graph
     }
@@ -694,7 +718,7 @@ impl IrGraphBuilder {
             self.generic_scope
                 .push_scope_with_self(impl_block.id, generic_nodes, self_type_id);
 
-            // 遍历 impl 块中的所有 item
+            // 遍历 impl 块中显式定义的 item
             for &item_id in &impl_block.items {
                 if let Some(item) = self.graph.parsed_crate().type_index.get(&item_id) {
                     // 处理方法
@@ -715,6 +739,81 @@ impl IrGraphBuilder {
                 }
             }
 
+            // 如果是 trait impl，添加 provided_trait_methods（trait 提供的默认方法）
+            if let Some(trait_id) = impl_block.trait_id {
+                log::debug!(
+                    "处理 trait impl: 类型 {:?} 实现 trait {:?}",
+                    impl_block.for_type,
+                    trait_id
+                );
+
+                let mut trait_provided_ops = Vec::new();
+
+                // 从原始 JSON 中获取 impl 块的 provided_trait_methods
+                if let Some(impl_item) = self.graph.parsed_crate().type_index.get(&impl_block.id) {
+                    log::debug!("找到 impl 块项: {:?}", impl_block.id);
+                    if let rustdoc_types::ItemEnum::Impl(impl_data) = &impl_item.inner {
+                        let provided_methods = impl_data.provided_trait_methods.clone();
+
+                        // 查找 trait 定义
+                        if let Some(trait_item) =
+                            self.graph.parsed_crate().type_index.get(&trait_id)
+                        {
+                            if let rustdoc_types::ItemEnum::Trait(trait_data) = &trait_item.inner {
+                                // provided_trait_methods 包含使用默认实现的方法名
+                                for method_name in &provided_methods {
+                                    // 在 trait 的 items 中查找这个方法
+                                    for &trait_method_id in &trait_data.items {
+                                        if let Some(method_item) = self
+                                            .graph
+                                            .parsed_crate()
+                                            .type_index
+                                            .get(&trait_method_id)
+                                        {
+                                            if method_item.name.as_deref() == Some(method_name) {
+                                                if let rustdoc_types::ItemEnum::Function(func) =
+                                                    &method_item.inner
+                                                {
+                                                    // 检查黑名单
+                                                    if self.is_blacklisted_method(method_name) {
+                                                        log::debug!(
+                                                            "跳过黑名单 provided 方法: {}",
+                                                            method_name
+                                                        );
+                                                        continue;
+                                                    }
+
+                                                    // 为这个类型构建 trait 提供的方法
+                                                    if let Some(op) = self.build_method_from_impl(
+                                                        trait_method_id,
+                                                        &method_item.name,
+                                                        func,
+                                                        self_type_id,
+                                                    ) {
+                                                        log::debug!(
+                                                            "添加 trait provided 方法: {} 到类型 {:?}",
+                                                            method_name,
+                                                            self_type_id
+                                                        );
+                                                        trait_provided_ops.push(op);
+                                                    }
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 添加所有收集到的操作
+                for op in trait_provided_ops {
+                    self.graph.add_operation(op);
+                }
+            }
+
             // 退出作用域
             self.generic_scope.pop_scope();
         }
@@ -730,14 +829,10 @@ impl IrGraphBuilder {
     ) -> Option<OpNode> {
         let name = method_name.as_deref().unwrap_or("anonymous").to_string();
 
-        // 跳过 Trait 定义中的抽象方法
-        // 注意:这是额外的安全检查,因为 trait 定义的方法不应出现在具体类型的 impl 块中
-        if self.graph.parsed_crate().is_trait_method(&method_id) {
-            log::debug!(
-                "在 impl 块中跳过 Trait 抽象方法: {} (ID: {:?})",
-                name,
-                method_id
-            );
+        // 只跳过黑名单 Trait 的方法
+        // 检查这个方法是否来自黑名单 trait
+        if self.is_method_from_blacklisted_trait(&method_id) {
+            log::debug!("跳过黑名单 Trait 的方法: {} (ID: {:?})", name, method_id);
             return None;
         }
 
@@ -1650,6 +1745,24 @@ impl IrGraphBuilder {
             _ => {
                 warn!("遇到未知类型,标记为 Unknown: {:?}", ty);
                 Some((TypeNode::Unknown, EdgeMode::Move))
+            }
+        }
+    }
+
+    /// 构建 Trait 实现关系
+    fn build_trait_implementations(&mut self) {
+        let impl_blocks = self.graph.parsed_crate().impl_blocks.clone();
+
+        for impl_block in impl_blocks {
+            // 只处理 trait impl（跳过固有 impl）
+            if let Some(trait_id) = impl_block.trait_id {
+                let trait_impl = TraitImpl {
+                    for_type: impl_block.for_type,
+                    trait_id,
+                    assoc_type_aliases: impl_block.assoc_types.clone(),
+                    impl_id: impl_block.id,
+                };
+                self.graph.add_trait_impl(trait_impl);
             }
         }
     }

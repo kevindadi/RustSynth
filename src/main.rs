@@ -16,7 +16,7 @@ use crate::pipeline::Pipeline;
 
 #[derive(Parser)]
 #[command(name = "sypetype")]
-#[command(about = "SyPetype: 从 Rust API 文档自动生成 Fuzz Target", long_about = None)]
+#[command(about = "SyPetype: 从 Rust API 文档自动生成 Petri 网", long_about = None)]
 #[command(version)]
 struct Cli {
     /// rustdoc JSON 文件路径   
@@ -50,6 +50,10 @@ struct Cli {
     /// 静默模式（不打印统计信息）
     #[arg(short, long)]
     quiet: bool,
+
+    /// 打印类型和 Trait 实现的详细摘要
+    #[arg(long)]
+    print_summary: bool,
 }
 
 fn main() -> Result<()> {
@@ -75,6 +79,7 @@ fn main() -> Result<()> {
             export_petri_net_json: cli.petri_net,
             petri_net_json_name: "petri_net.json".to_string(),
             print_stats: !cli.quiet,
+            print_type_summary: cli.print_summary,
         },
     };
 

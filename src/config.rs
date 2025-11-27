@@ -2,23 +2,16 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-/// SyPetype 工作流配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    /// 输入：rustdoc JSON 文件路径
     pub input_json: PathBuf,
 
     /// 目标 crate 名称（用于生成 fuzz target）
     pub target_crate: String,
-
-    /// 输出配置
     pub output: OutputConfig,
-
-    /// 导出选项
     pub export: ExportConfig,
 }
 
-/// 输出配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OutputConfig {
     /// 输出目录（所有生成文件的根目录）
@@ -72,6 +65,10 @@ pub struct ExportConfig {
     /// 是否打印统计信息
     #[serde(default = "default_true")]
     pub print_stats: bool,
+
+    /// 是否打印类型和 Trait 实现的详细摘要
+    #[serde(default)]
+    pub print_type_summary: bool,
 }
 
 // 默认值函数
@@ -139,7 +136,8 @@ impl Default for ExportConfig {
             petri_net_dot_name: default_petri_dot_name(),
             export_petri_net_json: false,
             petri_net_json_name: default_petri_json_name(),
-            print_stats: true,
+            print_stats: false,
+            print_type_summary: false,
         }
     }
 }
@@ -203,6 +201,7 @@ impl Config {
                 export_petri_net_json: true,
                 petri_net_json_name: "petri_net.json".to_string(),
                 print_stats: true,
+                print_type_summary: false,
             },
         };
 

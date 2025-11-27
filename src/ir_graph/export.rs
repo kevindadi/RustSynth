@@ -478,6 +478,72 @@ impl IrGraph {
             }
         }
 
+        // Trait 实现关系 (类型 implements Trait)
+        dot.push_str("\n  // Trait Implementations\n");
+        for trait_impl in &self.trait_impl_details {
+            // 查找类型节点索引
+            let for_type_idx = self.type_nodes.iter().position(|n| {
+                matches!(n, TypeNode::Struct(Some(id)) if *id == trait_impl.for_type)
+                    || matches!(n, TypeNode::Enum(Some(id)) if *id == trait_impl.for_type)
+            });
+
+            // 查找 trait 节点索引
+            let trait_idx = self.type_nodes.iter().position(
+                |n| matches!(n, TypeNode::TraitObject(Some(id)) if *id == trait_impl.trait_id),
+            );
+
+            if let (Some(type_idx), Some(trait_idx)) = (for_type_idx, trait_idx) {
+                let type_name = self
+                    .type_nodes
+                    .iter()
+                    .nth(type_idx)
+                    .and_then(|n| self.get_type_name(n))
+                    .unwrap_or("unknown");
+                let trait_name = self
+                    .type_nodes
+                    .iter()
+                    .nth(trait_idx)
+                    .and_then(|n| self.get_type_name(n))
+                    .unwrap_or("unknown");
+
+                dot.push_str(&format!(
+                    "  type_{} -> type_{} [label=\"impl\", color=green, style=bold, penwidth=2];\n",
+                    type_idx, trait_idx
+                ));
+
+                // 关联类型别名边
+                for (assoc_name, assoc_type_id) in &trait_impl.assoc_type_aliases {
+                    // 查找关联类型的具体类型节点
+                    let assoc_idx = self.type_nodes.iter().position(|n| match n {
+                        TypeNode::Struct(Some(id)) => *id == *assoc_type_id,
+                        TypeNode::Enum(Some(id)) => *id == *assoc_type_id,
+                        _ => false,
+                    });
+
+                    if let Some(assoc_idx) = assoc_idx {
+                        let assoc_type_name = self
+                            .type_nodes
+                            .iter()
+                            .nth(assoc_idx)
+                            .and_then(|n| self.get_type_name(n))
+                            .unwrap_or("unknown");
+
+                        dot.push_str(&format!(
+                            "  type_{} -> type_{} [label=\"{}={}\", color=orange, style=dashed];\n",
+                            type_idx, assoc_idx, assoc_name, assoc_type_name
+                        ));
+                    }
+                }
+
+                log::debug!(
+                    "导出 Trait 实现: {} impl {}, 关联类型: {:?}",
+                    type_name,
+                    trait_name,
+                    trait_impl.assoc_type_aliases.keys().collect::<Vec<_>>()
+                );
+            }
+        }
+
         dot.push_str("}\n");
         dot
     }
