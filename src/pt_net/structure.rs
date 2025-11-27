@@ -149,11 +149,13 @@ impl PetriNet {
     }
 
     /// 根据 Place ID 获取 NodeIndex
+    #[allow(dead_code)]
     pub fn get_place_index(&self, id: PlaceId) -> Option<NodeIndex> {
         self.place_map.get(&id).copied()
     }
 
     /// 根据 Transition ID 获取 NodeIndex
+    #[allow(dead_code)]
     pub fn get_transition_index(&self, id: TransitionId) -> Option<NodeIndex> {
         self.transition_map.get(&id).copied()
     }

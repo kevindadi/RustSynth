@@ -98,6 +98,7 @@ impl GenericScope {
     }
 
     /// 获取当前作用域的所有者 ID
+    #[allow(dead_code)]
     pub fn current_owner(&self) -> Option<Id> {
         self.stack.last().map(|frame| frame.owner_id)
     }
@@ -105,6 +106,7 @@ impl GenericScope {
     /// 解析 Self 类型
     ///
     /// 从栈顶向下查找,返回最近的 self_type
+    #[allow(dead_code)]
     pub fn resolve_self(&self) -> Option<Id> {
         for frame in self.stack.iter().rev() {
             if let Some(self_type) = frame.self_type {
@@ -115,11 +117,13 @@ impl GenericScope {
     }
 
     /// 检查是否在任何作用域中
+    #[allow(dead_code)]
     pub fn has_scope(&self) -> bool {
         !self.stack.is_empty()
     }
 
     /// 获取作用域深度
+    #[allow(dead_code)]
     pub fn depth(&self) -> usize {
         self.stack.len()
     }

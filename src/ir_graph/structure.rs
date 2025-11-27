@@ -70,15 +70,18 @@ pub enum TypeNode {
     Array(Box<TypeNode>),
 
     /// 函数指针类型(fn(A) -> B)
+    #[allow(unused)]
     FnPointer {
         inputs: Vec<DataEdge>,
         output: Option<Box<DataEdge>>,
     },
 
     /// 单元类型 ()
+    #[allow(unused)]
     Unit,
 
     /// Never 类型 !
+    #[allow(unused)]
     Never,
 
     /// 关联类型/限定路径 <T as Trait>::Item
@@ -103,6 +106,7 @@ pub enum TypeNode {
     Unknown,
 
     /// 不透明类型(外部类型,无法构建)
+    #[allow(unused)]
     Opaque(String),
 }
 
@@ -161,6 +165,7 @@ pub struct DataEdge {
 
 impl DataEdge {
     /// 创建一个按值传递的边
+    #[allow(dead_code)]
     pub fn move_edge(type_node: TypeNode, name: Option<String>) -> Self {
         Self {
             type_node,
@@ -170,6 +175,7 @@ impl DataEdge {
     }
 
     /// 创建一个共享引用边
+    #[allow(dead_code)]
     pub fn ref_edge(type_node: TypeNode, name: Option<String>) -> Self {
         Self {
             type_node,
@@ -179,6 +185,7 @@ impl DataEdge {
     }
 
     /// 创建一个可变引用边
+    #[allow(dead_code)]
     pub fn mut_ref_edge(type_node: TypeNode, name: Option<String>) -> Self {
         Self {
             type_node,
@@ -287,9 +294,11 @@ pub struct OpNode {
     pub is_unsafe: bool,
 
     /// 是否是 const 函数
+    #[allow(unused)]
     pub is_const: bool,
 
     /// 可见性
+    #[allow(unused)]
     pub is_public: bool,
 
     /// 是否可能失败(返回 Result/Option)
@@ -298,12 +307,10 @@ pub struct OpNode {
 }
 
 impl OpNode {
-    /// 判断操作是否有泛型参数
     pub fn is_generic(&self) -> bool {
         !self.generic_constraints.is_empty()
     }
 
-    /// 判断是否是构造器
     pub fn is_constructor(&self) -> bool {
         matches!(
             self.kind,

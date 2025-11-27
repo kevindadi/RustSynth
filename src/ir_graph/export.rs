@@ -247,8 +247,6 @@ impl IrGraph {
                 TypeNode::Never => ("!".to_string(), "white"),
                 TypeNode::MultiTrait(_)
                 | TypeNode::FnPointer { .. }
-                | TypeNode::Unit
-                | TypeNode::Never
                 | TypeNode::QualifiedPath { .. }
                 | TypeNode::Opaque(_)
                 | TypeNode::Unknown => {

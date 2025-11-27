@@ -6,7 +6,7 @@ use crate::ir_graph::structure::IrGraph;
 use crate::parse::ParsedCrate;
 use crate::pt_net::builder::PetriNetBuilder;
 use crate::pt_net::structure::PetriNet;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::fs;
 use std::path::Path;
 
@@ -16,48 +16,44 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
-    /// 创建新的工作流执行器
     pub fn new(config: Config) -> Self {
         Self { config }
     }
 
-    /// 执行完整的工作流
     pub fn run(&self) -> Result<()> {
-        log::info!("=== SyPetype 工作流开始 ===");
-
-        // 步骤 1: 解析 rustdoc JSON
-        log::info!("步骤 1: 解析 rustdoc JSON");
+        // Step 1: 解析 rustdoc JSON
+        log::info!("Step 1: Parse rustdoc JSON");
         let parsed_crate = self.parse_json()?;
 
-        // 步骤 2: 构建 IR Graph
-        log::info!("步骤 2: 构建 IR Graph");
+        // Step 2: Build IR Graph
+        log::info!("Step 2: Build IR Graph");
         let ir_graph = self.build_ir_graph(parsed_crate)?;
 
-        // 步骤 3: 导出 IR Graph（如果配置启用）
+        // Step 3: Export IR Graph (if enabled)
         if self.config.export.export_ir_graph_dot || self.config.export.export_ir_graph_json {
-            log::info!("步骤 3: 导出 IR Graph");
+            log::info!("Step 3: Export IR Graph");
             self.export_ir_graph(&ir_graph)?;
         }
 
-        // 步骤 4: 转换为 Petri Net
-        log::info!("步骤 4: 转换为 Petri Net");
+        // Step 4: Convert to Petri Net
+        log::info!("Step 4: Convert to Petri Net");
         let petri_net = self.build_petri_net(&ir_graph)?;
 
-        // 步骤 5: 导出 Petri Net（如果配置启用）
+        // Step 5: Export Petri Net (if enabled)
         if self.config.export.export_petri_net_dot || self.config.export.export_petri_net_json {
-            log::info!("步骤 5: 导出 Petri Net");
+            log::info!("Step 5: Export Petri Net");
             self.export_petri_net(&petri_net)?;
         }
 
-        // 步骤 6: 生成 Fuzz Target
-        log::info!("步骤 6: 生成 Fuzz Target");
+        // Step 6: Generate Fuzz Target
+        log::info!("Step 6: Generate Fuzz Target");
         self.generate_fuzz_target(&petri_net)?;
 
-        // 步骤 7: 生成 Fuzz 项目结构
-        log::info!("步骤 7: 生成 Fuzz 项目结构");
+        // Step 7: Generate Fuzz Project Structure
+        log::info!("Step 7: Generate Fuzz Project Structure");
         self.setup_fuzz_project()?;
 
-        log::info!("=== SyPetype 工作流完成 ===");
+        log::info!("SyPetype workflow completed");
         Ok(())
     }
 
