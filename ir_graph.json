@@ -2,13 +2,139 @@
   "operations": [
     {
       "error_output": null,
-      "id": 252,
+      "id": 246,
       "inputs": [],
       "is_fallible": false,
       "is_generic": false,
       "is_unsafe": false,
-      "kind": "ConstantAlias { const_id: Id(252), const_path: \"base64::engine::general_purpose::URL_SAFE_PAD_INDIFFERENT\" }",
-      "name": "get_URL_SAFE_PAD_INDIFFERENT",
+      "kind": "ConstantAlias { const_id: Id(246), const_path: \"base64::engine::general_purpose::STANDARD_PAD_INDIFFERENT\" }",
+      "name": "get_STANDARD_PAD_INDIFFERENT",
+      "output": {
+        "mode": "Ref",
+        "type": "Struct(Some(Id(169)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 253,
+      "inputs": [],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "ConstantAlias { const_id: Id(253), const_path: \"base64::engine::general_purpose::URL_SAFE_NO_PAD\" }",
+      "name": "get_URL_SAFE_NO_PAD",
+      "output": {
+        "mode": "Ref",
+        "type": "Struct(Some(Id(169)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 393,
+      "inputs": [],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "ConstantAlias { const_id: Id(393), const_path: \"base64::alphabet::BCRYPT\" }",
+      "name": "get_BCRYPT",
+      "output": {
+        "mode": "Ref",
+        "type": "Struct(Some(Id(170)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 244,
+      "inputs": [],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "ConstantAlias { const_id: Id(244), const_path: \"base64::engine::general_purpose::STANDARD\" }",
+      "name": "get_STANDARD",
+      "output": {
+        "mode": "Ref",
+        "type": "Struct(Some(Id(169)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 247,
+      "inputs": [],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "ConstantAlias { const_id: Id(247), const_path: \"base64::engine::general_purpose::STANDARD_NO_PAD\" }",
+      "name": "get_STANDARD_NO_PAD",
+      "output": {
+        "mode": "Ref",
+        "type": "Struct(Some(Id(169)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 249,
+      "inputs": [],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "ConstantAlias { const_id: Id(249), const_path: \"base64::engine::general_purpose::STANDARD_NO_PAD_INDIFFERENT\" }",
+      "name": "get_STANDARD_NO_PAD_INDIFFERENT",
+      "output": {
+        "mode": "Ref",
+        "type": "Struct(Some(Id(169)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 245,
+      "inputs": [],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "ConstantAlias { const_id: Id(245), const_path: \"base64::engine::general_purpose::PAD_INDIFFERENT\" }",
+      "name": "get_PAD_INDIFFERENT",
+      "output": {
+        "mode": "Ref",
+        "type": "Struct(Some(Id(172)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 209,
+      "inputs": [],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "ConstantAlias { const_id: Id(209), const_path: \"base64::engine::general_purpose::NO_PAD\" }",
+      "name": "get_NO_PAD",
+      "output": {
+        "mode": "Ref",
+        "type": "Struct(Some(Id(172)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 243,
+      "inputs": [],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "ConstantAlias { const_id: Id(243), const_path: \"base64::alphabet::STANDARD\" }",
+      "name": "get_STANDARD",
+      "output": {
+        "mode": "Ref",
+        "type": "Struct(Some(Id(170)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 254,
+      "inputs": [],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "ConstantAlias { const_id: Id(254), const_path: \"base64::engine::general_purpose::URL_SAFE_NO_PAD_INDIFFERENT\" }",
+      "name": "get_URL_SAFE_NO_PAD_INDIFFERENT",
       "output": {
         "mode": "Ref",
         "type": "Struct(Some(Id(169)))"
@@ -23,20 +149,6 @@
       "is_unsafe": false,
       "kind": "ConstantAlias { const_id: Id(394), const_path: \"base64::alphabet::IMAP_MUTF7\" }",
       "name": "get_IMAP_MUTF7",
-      "output": {
-        "mode": "Ref",
-        "type": "Struct(Some(Id(170)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 392,
-      "inputs": [],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "ConstantAlias { const_id: Id(392), const_path: \"base64::alphabet::CRYPT\" }",
-      "name": "get_CRYPT",
       "output": {
         "mode": "Ref",
         "type": "Struct(Some(Id(170)))"
@@ -72,6 +184,20 @@
     },
     {
       "error_output": null,
+      "id": 208,
+      "inputs": [],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "ConstantAlias { const_id: Id(208), const_path: \"base64::engine::general_purpose::PAD\" }",
+      "name": "get_PAD",
+      "output": {
+        "mode": "Ref",
+        "type": "Struct(Some(Id(172)))"
+      }
+    },
+    {
+      "error_output": null,
       "id": 395,
       "inputs": [],
       "is_fallible": false,
@@ -86,114 +212,16 @@
     },
     {
       "error_output": null,
-      "id": 244,
+      "id": 392,
       "inputs": [],
       "is_fallible": false,
       "is_generic": false,
       "is_unsafe": false,
-      "kind": "ConstantAlias { const_id: Id(244), const_path: \"base64::engine::general_purpose::STANDARD\" }",
-      "name": "get_STANDARD",
-      "output": {
-        "mode": "Ref",
-        "type": "Struct(Some(Id(169)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 393,
-      "inputs": [],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "ConstantAlias { const_id: Id(393), const_path: \"base64::alphabet::BCRYPT\" }",
-      "name": "get_BCRYPT",
+      "kind": "ConstantAlias { const_id: Id(392), const_path: \"base64::alphabet::CRYPT\" }",
+      "name": "get_CRYPT",
       "output": {
         "mode": "Ref",
         "type": "Struct(Some(Id(170)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 243,
-      "inputs": [],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "ConstantAlias { const_id: Id(243), const_path: \"base64::alphabet::STANDARD\" }",
-      "name": "get_STANDARD",
-      "output": {
-        "mode": "Ref",
-        "type": "Struct(Some(Id(170)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 246,
-      "inputs": [],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "ConstantAlias { const_id: Id(246), const_path: \"base64::engine::general_purpose::STANDARD_PAD_INDIFFERENT\" }",
-      "name": "get_STANDARD_PAD_INDIFFERENT",
-      "output": {
-        "mode": "Ref",
-        "type": "Struct(Some(Id(169)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 245,
-      "inputs": [],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "ConstantAlias { const_id: Id(245), const_path: \"base64::engine::general_purpose::PAD_INDIFFERENT\" }",
-      "name": "get_PAD_INDIFFERENT",
-      "output": {
-        "mode": "Ref",
-        "type": "Struct(Some(Id(172)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 247,
-      "inputs": [],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "ConstantAlias { const_id: Id(247), const_path: \"base64::engine::general_purpose::STANDARD_NO_PAD\" }",
-      "name": "get_STANDARD_NO_PAD",
-      "output": {
-        "mode": "Ref",
-        "type": "Struct(Some(Id(169)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 209,
-      "inputs": [],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "ConstantAlias { const_id: Id(209), const_path: \"base64::engine::general_purpose::NO_PAD\" }",
-      "name": "get_NO_PAD",
-      "output": {
-        "mode": "Ref",
-        "type": "Struct(Some(Id(172)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 208,
-      "inputs": [],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "ConstantAlias { const_id: Id(208), const_path: \"base64::engine::general_purpose::PAD\" }",
-      "name": "get_PAD",
-      "output": {
-        "mode": "Ref",
-        "type": "Struct(Some(Id(172)))"
       }
     },
     {
@@ -212,13 +240,13 @@
     },
     {
       "error_output": null,
-      "id": 254,
+      "id": 252,
       "inputs": [],
       "is_fallible": false,
       "is_generic": false,
       "is_unsafe": false,
-      "kind": "ConstantAlias { const_id: Id(254), const_path: \"base64::engine::general_purpose::URL_SAFE_NO_PAD_INDIFFERENT\" }",
-      "name": "get_URL_SAFE_NO_PAD_INDIFFERENT",
+      "kind": "ConstantAlias { const_id: Id(252), const_path: \"base64::engine::general_purpose::URL_SAFE_PAD_INDIFFERENT\" }",
+      "name": "get_URL_SAFE_PAD_INDIFFERENT",
       "output": {
         "mode": "Ref",
         "type": "Struct(Some(Id(169)))"
@@ -226,30 +254,27 @@
     },
     {
       "error_output": null,
-      "id": 253,
-      "inputs": [],
+      "id": 401,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "bytes_len",
+          "type": "Primitive(\"usize\")"
+        },
+        {
+          "mode": "Move",
+          "name": "padding",
+          "type": "Primitive(\"bool\")"
+        }
+      ],
       "is_fallible": false,
       "is_generic": false,
       "is_unsafe": false,
-      "kind": "ConstantAlias { const_id: Id(253), const_path: \"base64::engine::general_purpose::URL_SAFE_NO_PAD\" }",
-      "name": "get_URL_SAFE_NO_PAD",
+      "kind": "FnCall",
+      "name": "encoded_len",
       "output": {
-        "mode": "Ref",
-        "type": "Struct(Some(Id(169)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 249,
-      "inputs": [],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "ConstantAlias { const_id: Id(249), const_path: \"base64::engine::general_purpose::STANDARD_NO_PAD_INDIFFERENT\" }",
-      "name": "get_STANDARD_NO_PAD_INDIFFERENT",
-      "output": {
-        "mode": "Ref",
-        "type": "Struct(Some(Id(169)))"
+        "mode": "Move",
+        "type": "Primitive(\"usize\")"
       }
     },
     {
@@ -287,22 +312,100 @@
     },
     {
       "error_output": null,
-      "id": 397,
+      "id": 271,
       "inputs": [
         {
           "mode": "Move",
-          "name": "input",
-          "type": "GenericParam { name: \"T\", owner_id: Id(397), owner_name: \"encode\", trait_bounds: [Id(263)] }"
+          "name": "encoded_len",
+          "type": "Primitive(\"usize\")"
         }
       ],
       "is_fallible": false,
       "is_generic": false,
       "is_unsafe": false,
       "kind": "FnCall",
-      "name": "encode",
+      "name": "decoded_len_estimate",
       "output": {
         "mode": "Move",
-        "type": "Struct(Some(Id(47)))"
+        "type": "Primitive(\"usize\")"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 155,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "buf",
+          "type": "Primitive(\"str\")"
+        }
+      ],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "consume",
+      "output": null
+    },
+    {
+      "error_output": {
+        "mode": "Move",
+        "type": "Enum(Some(Id(269)))"
+      },
+      "id": 502,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "input",
+          "type": "GenericParam { name: \"T\", owner_id: Id(502), owner_name: \"decode_engine\", trait_bounds: [Id(263)] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "engine",
+          "type": "GenericParam { name: \"E\", owner_id: Id(502), owner_name: \"decode_engine\", trait_bounds: [Id(4)] }"
+        }
+      ],
+      "is_fallible": true,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "decode_engine",
+      "output": {
+        "mode": "Move",
+        "type": "GenericInstance { base_id: Id(268), path: \"alloc::vec::Vec\", type_args: [Primitive(\"u8\")] }"
+      }
+    },
+    {
+      "error_output": {
+        "mode": "Move",
+        "type": "Enum(Some(Id(274)))"
+      },
+      "id": 504,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "input",
+          "type": "GenericParam { name: \"T\", owner_id: Id(504), owner_name: \"decode_engine_slice\", trait_bounds: [Id(263)] }"
+        },
+        {
+          "mode": "MutRef",
+          "name": "output",
+          "type": "Array(Primitive(\"u8\"))"
+        },
+        {
+          "mode": "Ref",
+          "name": "engine",
+          "type": "GenericParam { name: \"E\", owner_id: Id(504), owner_name: \"decode_engine_slice\", trait_bounds: [Id(4)] }"
+        }
+      ],
+      "is_fallible": true,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "FnCall",
+      "name": "decode_engine_slice",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"usize\")"
       }
     },
     {
@@ -362,51 +465,23 @@
       }
     },
     {
-      "error_output": {
-        "mode": "Move",
-        "type": "Enum(Some(Id(269)))"
-      },
-      "id": 502,
+      "error_output": null,
+      "id": 397,
       "inputs": [
         {
           "mode": "Move",
           "name": "input",
-          "type": "GenericParam { name: \"T\", owner_id: Id(502), owner_name: \"decode_engine\", trait_bounds: [Id(263)] }"
-        },
-        {
-          "mode": "Ref",
-          "name": "engine",
-          "type": "GenericParam { name: \"E\", owner_id: Id(502), owner_name: \"decode_engine\", trait_bounds: [Id(4)] }"
-        }
-      ],
-      "is_fallible": true,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "FnCall",
-      "name": "decode_engine",
-      "output": {
-        "mode": "Move",
-        "type": "GenericInstance { base_id: Id(268), path: \"alloc::vec::Vec\", type_args: [Primitive(\"u8\")] }"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 271,
-      "inputs": [
-        {
-          "mode": "Move",
-          "name": "encoded_len",
-          "type": "Primitive(\"usize\")"
+          "type": "GenericParam { name: \"T\", owner_id: Id(397), owner_name: \"encode\", trait_bounds: [Id(263)] }"
         }
       ],
       "is_fallible": false,
       "is_generic": false,
       "is_unsafe": false,
       "kind": "FnCall",
-      "name": "decoded_len_estimate",
+      "name": "encode",
       "output": {
         "mode": "Move",
-        "type": "Primitive(\"usize\")"
+        "type": "Struct(Some(Id(47)))"
       }
     },
     {
@@ -463,77 +538,72 @@
     },
     {
       "error_output": null,
-      "id": 401,
-      "inputs": [
-        {
-          "mode": "Move",
-          "name": "bytes_len",
-          "type": "Primitive(\"usize\")"
-        },
-        {
-          "mode": "Move",
-          "name": "padding",
-          "type": "Primitive(\"bool\")"
-        }
-      ],
+      "id": 277,
+      "inputs": [],
       "is_fallible": false,
       "is_generic": false,
       "is_unsafe": false,
-      "kind": "FnCall",
-      "name": "encoded_len",
+      "kind": "VariantCtor { enum_id: Id(214), variant_name: \"Indifferent\" }",
+      "name": "DecodePaddingMode::Indifferent",
       "output": {
         "mode": "Move",
-        "type": "Primitive(\"usize\")"
+        "type": "Enum(Some(Id(214)))"
       }
     },
     {
       "error_output": null,
-      "id": 155,
-      "inputs": [
-        {
-          "mode": "Ref",
-          "name": "buf",
-          "type": "Primitive(\"str\")"
-        }
-      ],
+      "id": 278,
+      "inputs": [],
       "is_fallible": false,
       "is_generic": false,
       "is_unsafe": false,
-      "kind": "FnCall",
-      "name": "consume",
-      "output": null
-    },
-    {
-      "error_output": {
-        "mode": "Move",
-        "type": "Enum(Some(Id(274)))"
-      },
-      "id": 504,
-      "inputs": [
-        {
-          "mode": "Move",
-          "name": "input",
-          "type": "GenericParam { name: \"T\", owner_id: Id(504), owner_name: \"decode_engine_slice\", trait_bounds: [Id(263)] }"
-        },
-        {
-          "mode": "MutRef",
-          "name": "output",
-          "type": "Array(Primitive(\"u8\"))"
-        },
-        {
-          "mode": "Ref",
-          "name": "engine",
-          "type": "GenericParam { name: \"E\", owner_id: Id(504), owner_name: \"decode_engine_slice\", trait_bounds: [Id(4)] }"
-        }
-      ],
-      "is_fallible": true,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "FnCall",
-      "name": "decode_engine_slice",
+      "kind": "VariantCtor { enum_id: Id(214), variant_name: \"RequireCanonical\" }",
+      "name": "DecodePaddingMode::RequireCanonical",
       "output": {
         "mode": "Move",
-        "type": "Primitive(\"usize\")"
+        "type": "Enum(Some(Id(214)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 279,
+      "inputs": [],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(214), variant_name: \"RequireNone\" }",
+      "name": "DecodePaddingMode::RequireNone",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Some(Id(214)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 471,
+      "inputs": [],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(274), variant_name: \"DecodeError\" }",
+      "name": "DecodeSliceError::DecodeError",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Some(Id(274)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 472,
+      "inputs": [],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "VariantCtor { enum_id: Id(274), variant_name: \"OutputSliceTooSmall\" }",
+      "name": "DecodeSliceError::OutputSliceTooSmall",
+      "output": {
+        "mode": "Move",
+        "type": "Enum(Some(Id(274)))"
       }
     },
     {
@@ -594,62 +664,6 @@
     },
     {
       "error_output": null,
-      "id": 403,
-      "inputs": [],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "VariantCtor { enum_id: Id(266), variant_name: \"OutputSliceTooSmall\" }",
-      "name": "EncodeSliceError::OutputSliceTooSmall",
-      "output": {
-        "mode": "Move",
-        "type": "Enum(Some(Id(266)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 277,
-      "inputs": [],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "VariantCtor { enum_id: Id(214), variant_name: \"Indifferent\" }",
-      "name": "DecodePaddingMode::Indifferent",
-      "output": {
-        "mode": "Move",
-        "type": "Enum(Some(Id(214)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 278,
-      "inputs": [],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "VariantCtor { enum_id: Id(214), variant_name: \"RequireCanonical\" }",
-      "name": "DecodePaddingMode::RequireCanonical",
-      "output": {
-        "mode": "Move",
-        "type": "Enum(Some(Id(214)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 279,
-      "inputs": [],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "VariantCtor { enum_id: Id(214), variant_name: \"RequireNone\" }",
-      "name": "DecodePaddingMode::RequireNone",
-      "output": {
-        "mode": "Move",
-        "type": "Enum(Some(Id(214)))"
-      }
-    },
-    {
-      "error_output": null,
       "id": 361,
       "inputs": [],
       "is_fallible": false,
@@ -706,30 +720,303 @@
     },
     {
       "error_output": null,
-      "id": 471,
+      "id": 403,
       "inputs": [],
       "is_fallible": false,
       "is_generic": false,
       "is_unsafe": false,
-      "kind": "VariantCtor { enum_id: Id(274), variant_name: \"DecodeError\" }",
-      "name": "DecodeSliceError::DecodeError",
+      "kind": "VariantCtor { enum_id: Id(266), variant_name: \"OutputSliceTooSmall\" }",
+      "name": "EncodeSliceError::OutputSliceTooSmall",
       "output": {
         "mode": "Move",
-        "type": "Enum(Some(Id(274)))"
+        "type": "Enum(Some(Id(266)))"
       }
     },
     {
       "error_output": null,
-      "id": 472,
-      "inputs": [],
+      "id": 240,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "Struct(Some(Id(172)))"
+        }
+      ],
       "is_fallible": false,
       "is_generic": false,
       "is_unsafe": false,
-      "kind": "VariantCtor { enum_id: Id(274), variant_name: \"OutputSliceTooSmall\" }",
-      "name": "DecodeSliceError::OutputSliceTooSmall",
+      "kind": "MethodCall { self_type: Struct(Some(Id(172))) }",
+      "name": "encode_padding",
       "output": {
         "mode": "Move",
+        "type": "Primitive(\"bool\")"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 203,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "Struct(Some(Id(169)))"
+        }
+      ],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Some(Id(169))) }",
+      "name": "config",
+      "output": {
+        "mode": "Ref",
+        "type": "TraitObject(Some(Id(242)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 262,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "Struct(Some(Id(169)))"
+        }
+      ],
+      "is_fallible": false,
+      "is_generic": true,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Some(Id(169))) }",
+      "name": "encode",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Some(Id(47)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 264,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "Struct(Some(Id(169)))"
+        },
+        {
+          "mode": "MutRef",
+          "name": "output_buf",
+          "type": "Struct(Some(Id(47)))"
+        }
+      ],
+      "is_fallible": false,
+      "is_generic": true,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Some(Id(169))) }",
+      "name": "encode_string",
+      "output": null
+    },
+    {
+      "error_output": {
+        "mode": "Move",
+        "type": "Enum(Some(Id(266)))"
+      },
+      "id": 265,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "Struct(Some(Id(169)))"
+        },
+        {
+          "mode": "MutRef",
+          "name": "output_buf",
+          "type": "Array(Primitive(\"u8\"))"
+        }
+      ],
+      "is_fallible": true,
+      "is_generic": true,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Some(Id(169))) }",
+      "name": "encode_slice",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"usize\")"
+      }
+    },
+    {
+      "error_output": {
+        "mode": "Move",
+        "type": "Enum(Some(Id(269)))"
+      },
+      "id": 267,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "Struct(Some(Id(169)))"
+        }
+      ],
+      "is_fallible": true,
+      "is_generic": true,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Some(Id(169))) }",
+      "name": "decode",
+      "output": {
+        "mode": "Move",
+        "type": "GenericInstance { base_id: Id(268), path: \"Vec\", type_args: [Primitive(\"u8\")] }"
+      }
+    },
+    {
+      "error_output": {
+        "mode": "Move",
+        "type": "Enum(Some(Id(269)))"
+      },
+      "id": 270,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "Struct(Some(Id(169)))"
+        },
+        {
+          "mode": "MutRef",
+          "name": "buffer",
+          "type": "GenericInstance { base_id: Id(268), path: \"Vec\", type_args: [Primitive(\"u8\")] }"
+        }
+      ],
+      "is_fallible": true,
+      "is_generic": true,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Some(Id(169))) }",
+      "name": "decode_vec",
+      "output": {
+        "mode": "Move",
+        "type": "Tuple([])"
+      }
+    },
+    {
+      "error_output": {
+        "mode": "Move",
         "type": "Enum(Some(Id(274)))"
+      },
+      "id": 273,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "Struct(Some(Id(169)))"
+        },
+        {
+          "mode": "MutRef",
+          "name": "output",
+          "type": "Array(Primitive(\"u8\"))"
+        }
+      ],
+      "is_fallible": true,
+      "is_generic": true,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Some(Id(169))) }",
+      "name": "decode_slice",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"usize\")"
+      }
+    },
+    {
+      "error_output": {
+        "mode": "Move",
+        "type": "Enum(Some(Id(269)))"
+      },
+      "id": 272,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "self",
+          "type": "Struct(Some(Id(169)))"
+        },
+        {
+          "mode": "MutRef",
+          "name": "output",
+          "type": "Array(Primitive(\"u8\"))"
+        }
+      ],
+      "is_fallible": true,
+      "is_generic": true,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Some(Id(169))) }",
+      "name": "decode_slice_unchecked",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"usize\")"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 133,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "str_consumer",
+          "type": "GenericParam { name: \"S\", owner_id: Id(132), owner_name: \"EncoderStringWriter\", trait_bounds: [Id(131)] }"
+        },
+        {
+          "mode": "Ref",
+          "name": "engine",
+          "type": "GenericParam { name: \"E\", owner_id: Id(132), owner_name: \"EncoderStringWriter\", trait_bounds: [Id(4)] }"
+        }
+      ],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(132) }",
+      "name": "from_consumer",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Some(Id(132)))"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 134,
+      "inputs": [
+        {
+          "mode": "Move",
+          "name": "self",
+          "type": "Struct(Some(Id(132)))"
+        }
+      ],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Some(Id(132))) }",
+      "name": "into_inner",
+      "output": {
+        "mode": "Move",
+        "type": "GenericParam { name: \"S\", owner_id: Id(132), owner_name: \"EncoderStringWriter\", trait_bounds: [Id(131)] }"
+      }
+    },
+    {
+      "error_output": null,
+      "id": 88,
+      "inputs": [
+        {
+          "mode": "MutRef",
+          "name": "self",
+          "type": "Struct(Some(Id(66)))"
+        },
+        {
+          "mode": "MutRef",
+          "name": "buf",
+          "type": "Array(Primitive(\"u8\"))"
+        }
+      ],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Some(Id(66))) }",
+      "name": "read",
+      "output": {
+        "mode": "Move",
+        "type": "Primitive(\"usize\")"
       }
     },
     {
@@ -777,45 +1064,28 @@
     },
     {
       "error_output": null,
-      "id": 136,
+      "id": 171,
       "inputs": [
         {
           "mode": "Ref",
-          "name": "engine",
-          "type": "GenericParam { name: \"E\", owner_id: Id(132), owner_name: \"EncoderStringWriter\", trait_bounds: [Id(4)] }"
+          "name": "alphabet",
+          "type": "Struct(Some(Id(170)))"
+        },
+        {
+          "mode": "Move",
+          "name": "config",
+          "type": "Struct(Some(Id(172)))"
         }
       ],
       "is_fallible": false,
       "is_generic": false,
       "is_unsafe": false,
-      "kind": "AssocFn { assoc_type: Id(132) }",
+      "kind": "AssocFn { assoc_type: Id(169) }",
       "name": "new",
       "output": {
         "mode": "Move",
-        "type": "Struct(Some(Id(132)))"
+        "type": "Struct(Some(Id(169)))"
       }
-    },
-    {
-      "error_output": null,
-      "id": 157,
-      "inputs": [
-        {
-          "mode": "MutRef",
-          "name": "self",
-          "type": "Struct(Some(Id(47)))"
-        },
-        {
-          "mode": "Ref",
-          "name": "buf",
-          "type": "Primitive(\"str\")"
-        }
-      ],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "MethodCall { self_type: Struct(Some(Id(47))) }",
-      "name": "consume",
-      "output": null
     },
     {
       "error_output": null,
@@ -929,76 +1199,6 @@
     },
     {
       "error_output": null,
-      "id": 171,
-      "inputs": [
-        {
-          "mode": "Ref",
-          "name": "alphabet",
-          "type": "Struct(Some(Id(170)))"
-        },
-        {
-          "mode": "Move",
-          "name": "config",
-          "type": "Struct(Some(Id(172)))"
-        }
-      ],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "AssocFn { assoc_type: Id(169) }",
-      "name": "new",
-      "output": {
-        "mode": "Move",
-        "type": "Struct(Some(Id(169)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 5,
-      "inputs": [
-        {
-          "mode": "Ref",
-          "name": "bytes",
-          "type": "Array(Primitive(\"u8\"))"
-        },
-        {
-          "mode": "Ref",
-          "name": "engine",
-          "type": "GenericParam { name: \"E\", owner_id: Id(3), owner_name: \"Base64Display\", trait_bounds: [Id(4)] }"
-        }
-      ],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "AssocFn { assoc_type: Id(3) }",
-      "name": "new",
-      "output": {
-        "mode": "Move",
-        "type": "Struct(Some(Id(3)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 240,
-      "inputs": [
-        {
-          "mode": "Ref",
-          "name": "self",
-          "type": "Struct(Some(Id(172)))"
-        }
-      ],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "MethodCall { self_type: Struct(Some(Id(172))) }",
-      "name": "encode_padding",
-      "output": {
-        "mode": "Move",
-        "type": "Primitive(\"bool\")"
-      }
-    },
-    {
-      "error_output": null,
       "id": 210,
       "inputs": [],
       "is_fallible": false,
@@ -1088,6 +1288,26 @@
     },
     {
       "error_output": null,
+      "id": 136,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "engine",
+          "type": "GenericParam { name: \"E\", owner_id: Id(132), owner_name: \"EncoderStringWriter\", trait_bounds: [Id(4)] }"
+        }
+      ],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "AssocFn { assoc_type: Id(132) }",
+      "name": "new",
+      "output": {
+        "mode": "Move",
+        "type": "Struct(Some(Id(132)))"
+      }
+    },
+    {
+      "error_output": null,
       "id": 68,
       "inputs": [
         {
@@ -1133,67 +1353,49 @@
     },
     {
       "error_output": null,
-      "id": 133,
+      "id": 157,
       "inputs": [
         {
-          "mode": "Move",
-          "name": "str_consumer",
-          "type": "GenericParam { name: \"S\", owner_id: Id(132), owner_name: \"EncoderStringWriter\", trait_bounds: [Id(131)] }"
+          "mode": "MutRef",
+          "name": "self",
+          "type": "Struct(Some(Id(47)))"
+        },
+        {
+          "mode": "Ref",
+          "name": "buf",
+          "type": "Primitive(\"str\")"
+        }
+      ],
+      "is_fallible": false,
+      "is_generic": false,
+      "is_unsafe": false,
+      "kind": "MethodCall { self_type: Struct(Some(Id(47))) }",
+      "name": "consume",
+      "output": null
+    },
+    {
+      "error_output": null,
+      "id": 5,
+      "inputs": [
+        {
+          "mode": "Ref",
+          "name": "bytes",
+          "type": "Array(Primitive(\"u8\"))"
         },
         {
           "mode": "Ref",
           "name": "engine",
-          "type": "GenericParam { name: \"E\", owner_id: Id(132), owner_name: \"EncoderStringWriter\", trait_bounds: [Id(4)] }"
+          "type": "GenericParam { name: \"E\", owner_id: Id(3), owner_name: \"Base64Display\", trait_bounds: [Id(4)] }"
         }
       ],
       "is_fallible": false,
       "is_generic": false,
       "is_unsafe": false,
-      "kind": "AssocFn { assoc_type: Id(132) }",
-      "name": "from_consumer",
+      "kind": "AssocFn { assoc_type: Id(3) }",
+      "name": "new",
       "output": {
         "mode": "Move",
-        "type": "Struct(Some(Id(132)))"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 134,
-      "inputs": [
-        {
-          "mode": "Move",
-          "name": "self",
-          "type": "Struct(Some(Id(132)))"
-        }
-      ],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "MethodCall { self_type: Struct(Some(Id(132))) }",
-      "name": "into_inner",
-      "output": {
-        "mode": "Move",
-        "type": "GenericParam { name: \"S\", owner_id: Id(132), owner_name: \"EncoderStringWriter\", trait_bounds: [Id(131)] }"
-      }
-    },
-    {
-      "error_output": null,
-      "id": 203,
-      "inputs": [
-        {
-          "mode": "Ref",
-          "name": "self",
-          "type": "Struct(Some(Id(169)))"
-        }
-      ],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "MethodCall { self_type: Struct(Some(Id(169))) }",
-      "name": "config",
-      "output": {
-        "mode": "Ref",
-        "type": "TraitObject(Some(Id(242)))"
+        "type": "Struct(Some(Id(3)))"
       }
     },
     {
@@ -1240,84 +1442,27 @@
         "mode": "Move",
         "type": "Tuple([])"
       }
-    },
-    {
-      "error_output": null,
-      "id": 88,
-      "inputs": [
-        {
-          "mode": "MutRef",
-          "name": "self",
-          "type": "Struct(Some(Id(66)))"
-        },
-        {
-          "mode": "MutRef",
-          "name": "buf",
-          "type": "Array(Primitive(\"u8\"))"
-        }
-      ],
-      "is_fallible": false,
-      "is_generic": false,
-      "is_unsafe": false,
-      "kind": "MethodCall { self_type: Struct(Some(Id(66))) }",
-      "name": "read",
-      "output": {
-        "mode": "Move",
-        "type": "Primitive(\"usize\")"
-      }
     }
   ],
   "types": [
     {
-      "kind": "struct",
-      "name": "EncoderWriter"
-    },
-    {
-      "kind": "generic_param",
-      "name": "T",
-      "owner_id": 400,
-      "trait_bounds": [
-        263
-      ]
-    },
-    {
-      "kind": "generic_instance",
-      "name": "Vec<u8>"
+      "kind": "constant",
+      "name": "URL_SAFE_PAD_INDIFFERENT",
+      "path": "base64::engine::general_purpose::URL_SAFE_PAD_INDIFFERENT",
+      "type_id": 169
     },
     {
       "kind": "constant",
-      "name": "PAD_INDIFFERENT",
-      "path": "base64::engine::general_purpose::PAD_INDIFFERENT",
+      "name": "NO_PAD_INDIFFERENT",
+      "path": "base64::engine::general_purpose::NO_PAD_INDIFFERENT",
       "type_id": 172
     },
     {
       "kind": "generic_param",
-      "name": "T",
-      "owner_id": 502,
+      "name": "E",
+      "owner_id": 132,
       "trait_bounds": [
-        263
-      ]
-    },
-    {
-      "kind": "constant",
-      "name": "URL_SAFE",
-      "path": "base64::engine::general_purpose::URL_SAFE",
-      "type_id": 169
-    },
-    {
-      "kind": "generic_param",
-      "name": "T",
-      "owner_id": 501,
-      "trait_bounds": [
-        263
-      ]
-    },
-    {
-      "kind": "generic_param",
-      "name": "T",
-      "owner_id": 399,
-      "trait_bounds": [
-        263
+        4
       ]
     },
     {
@@ -1329,18 +1474,40 @@
       ]
     },
     {
-      "kind": "primitive",
-      "name": "str"
+      "kind": "struct",
+      "name": "Base64Display"
     },
     {
       "kind": "constant",
-      "name": "IMAP_MUTF7",
-      "path": "base64::alphabet::IMAP_MUTF7",
-      "type_id": 170
+      "name": "PAD",
+      "path": "base64::engine::general_purpose::PAD",
+      "type_id": 172
     },
     {
       "kind": "trait_object",
-      "name": "Engine"
+      "name": "DecodeEstimate"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T",
+      "owner_id": 503,
+      "trait_bounds": [
+        263
+      ]
+    },
+    {
+      "kind": "generic_param",
+      "name": "E",
+      "owner_id": 399,
+      "trait_bounds": [
+        4
+      ]
+    },
+    {
+      "kind": "constant",
+      "name": "STANDARD_PAD_INDIFFERENT",
+      "path": "base64::engine::general_purpose::STANDARD_PAD_INDIFFERENT",
+      "type_id": 169
     },
     {
       "kind": "generic_param",
@@ -1351,44 +1518,50 @@
       ]
     },
     {
-      "kind": "trait_object",
-      "name": "Config"
+      "kind": "struct",
+      "name": "GeneralPurpose"
     },
     {
       "kind": "constant",
-      "name": "URL_SAFE",
-      "path": "base64::alphabet::URL_SAFE",
+      "name": "STANDARD",
+      "path": "base64::alphabet::STANDARD",
       "type_id": 170
     },
     {
+      "kind": "trait_object",
+      "name": "StrConsumer"
+    },
+    {
       "kind": "struct",
-      "name": "DecodeMetadata"
+      "name": "String"
+    },
+    {
+      "kind": "enum",
+      "name": "EncodeSliceError"
+    },
+    {
+      "kind": "enum",
+      "name": "DecodePaddingMode"
+    },
+    {
+      "kind": "generic_param",
+      "name": "E",
+      "owner_id": 66,
+      "trait_bounds": [
+        4
+      ]
+    },
+    {
+      "kind": "constant",
+      "name": "STANDARD_NO_PAD",
+      "path": "base64::engine::general_purpose::STANDARD_NO_PAD",
+      "type_id": 169
     },
     {
       "kind": "constant",
       "name": "BIN_HEX",
       "path": "base64::alphabet::BIN_HEX",
       "type_id": 170
-    },
-    {
-      "kind": "constant",
-      "name": "URL_SAFE_PAD_INDIFFERENT",
-      "path": "base64::engine::general_purpose::URL_SAFE_PAD_INDIFFERENT",
-      "type_id": 169
-    },
-    {
-      "kind": "generic_param",
-      "name": "T",
-      "owner_id": 397,
-      "trait_bounds": [
-        263
-      ]
-    },
-    {
-      "kind": "constant",
-      "name": "URL_SAFE_NO_PAD_INDIFFERENT",
-      "path": "base64::engine::general_purpose::URL_SAFE_NO_PAD_INDIFFERENT",
-      "type_id": 169
     },
     {
       "kind": "generic_param",
@@ -1400,25 +1573,49 @@
     },
     {
       "kind": "struct",
-      "name": "Alphabet"
+      "name": "EncoderWriter"
+    },
+    {
+      "kind": "generic_param",
+      "name": "W",
+      "owner_id": 101,
+      "trait_bounds": [
+        102
+      ]
+    },
+    {
+      "kind": "primitive",
+      "name": "str"
+    },
+    {
+      "kind": "array",
+      "name": "[u8]"
+    },
+    {
+      "kind": "struct",
+      "name": "DecoderReader"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T",
+      "owner_id": 397,
+      "trait_bounds": [
+        263
+      ]
+    },
+    {
+      "kind": "generic_param",
+      "name": "T",
+      "owner_id": 398,
+      "trait_bounds": [
+        263
+      ]
     },
     {
       "kind": "constant",
-      "name": "NO_PAD_INDIFFERENT",
-      "path": "base64::engine::general_purpose::NO_PAD_INDIFFERENT",
+      "name": "PAD_INDIFFERENT",
+      "path": "base64::engine::general_purpose::PAD_INDIFFERENT",
       "type_id": 172
-    },
-    {
-      "kind": "enum",
-      "name": "EncodeSliceError"
-    },
-    {
-      "kind": "trait_object",
-      "name": "StrConsumer"
-    },
-    {
-      "kind": "trait_object",
-      "name": "DecodeEstimate"
     },
     {
       "kind": "generic_param",
@@ -1429,20 +1626,42 @@
       ]
     },
     {
-      "kind": "generic_param",
-      "name": "R",
-      "owner_id": 66,
-      "trait_bounds": [
-        67
-      ]
+      "kind": "struct",
+      "name": "DecodeMetadata"
     },
     {
-      "kind": "array",
-      "name": "[u8]"
+      "kind": "tuple",
+      "name": "()"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T",
+      "owner_id": 502,
+      "trait_bounds": [
+        263
+      ]
     },
     {
       "kind": "enum",
       "name": "DecodeSliceError"
+    },
+    {
+      "kind": "constant",
+      "name": "URL_SAFE",
+      "path": "base64::engine::general_purpose::URL_SAFE",
+      "type_id": 169
+    },
+    {
+      "kind": "struct",
+      "name": "GeneralPurposeConfig"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T",
+      "owner_id": 501,
+      "trait_bounds": [
+        263
+      ]
     },
     {
       "kind": "constant",
@@ -1451,31 +1670,113 @@
       "type_id": 169
     },
     {
-      "kind": "generic_param",
-      "name": "S",
-      "owner_id": 132,
-      "trait_bounds": [
-        131
-      ]
+      "kind": "generic_instance",
+      "name": "Vec<u8>"
     },
     {
       "kind": "generic_param",
       "name": "E",
-      "owner_id": 502,
+      "owner_id": 503,
       "trait_bounds": [
         4
       ]
     },
     {
+      "kind": "enum",
+      "name": "ParseAlphabetError"
+    },
+    {
+      "kind": "trait_object",
+      "name": "Config"
+    },
+    {
       "kind": "constant",
-      "name": "PAD",
-      "path": "base64::engine::general_purpose::PAD",
+      "name": "NO_PAD",
+      "path": "base64::engine::general_purpose::NO_PAD",
       "type_id": 172
+    },
+    {
+      "kind": "trait_object",
+      "name": "Engine"
+    },
+    {
+      "kind": "generic_instance",
+      "name": "Vec<u8>"
+    },
+    {
+      "kind": "primitive",
+      "name": "bool"
+    },
+    {
+      "kind": "constant",
+      "name": "URL_SAFE_NO_PAD",
+      "path": "base64::engine::general_purpose::URL_SAFE_NO_PAD",
+      "type_id": 169
+    },
+    {
+      "kind": "constant",
+      "name": "STANDARD_NO_PAD_INDIFFERENT",
+      "path": "base64::engine::general_purpose::STANDARD_NO_PAD_INDIFFERENT",
+      "type_id": 169
+    },
+    {
+      "kind": "struct",
+      "name": "Alphabet"
     },
     {
       "kind": "generic_param",
       "name": "E",
       "owner_id": 398,
+      "trait_bounds": [
+        4
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "EncoderStringWriter"
+    },
+    {
+      "kind": "generic_param",
+      "name": "R",
+      "owner_id": 66,
+      "trait_bounds": [
+        67
+      ]
+    },
+    {
+      "kind": "generic_param",
+      "name": "T",
+      "owner_id": 400,
+      "trait_bounds": [
+        263
+      ]
+    },
+    {
+      "kind": "primitive",
+      "name": "u8"
+    },
+    {
+      "kind": "primitive",
+      "name": "usize"
+    },
+    {
+      "kind": "generic_param",
+      "name": "T",
+      "owner_id": 504,
+      "trait_bounds": [
+        263
+      ]
+    },
+    {
+      "kind": "constant",
+      "name": "IMAP_MUTF7",
+      "path": "base64::alphabet::IMAP_MUTF7",
+      "type_id": 170
+    },
+    {
+      "kind": "generic_param",
+      "name": "E",
+      "owner_id": 502,
       "trait_bounds": [
         4
       ]
@@ -1492,157 +1793,37 @@
     },
     {
       "kind": "constant",
-      "name": "STANDARD_NO_PAD_INDIFFERENT",
-      "path": "base64::engine::general_purpose::STANDARD_NO_PAD_INDIFFERENT",
-      "type_id": 169
-    },
-    {
-      "kind": "struct",
-      "name": "String"
-    },
-    {
-      "kind": "primitive",
-      "name": "bool"
-    },
-    {
-      "kind": "struct",
-      "name": "GeneralPurposeConfig"
-    },
-    {
-      "kind": "constant",
-      "name": "STANDARD_PAD_INDIFFERENT",
-      "path": "base64::engine::general_purpose::STANDARD_PAD_INDIFFERENT",
-      "type_id": 169
-    },
-    {
-      "kind": "constant",
-      "name": "URL_SAFE_NO_PAD",
-      "path": "base64::engine::general_purpose::URL_SAFE_NO_PAD",
-      "type_id": 169
-    },
-    {
-      "kind": "generic_param",
-      "name": "T",
-      "owner_id": 504,
-      "trait_bounds": [
-        263
-      ]
-    },
-    {
-      "kind": "constant",
-      "name": "STANDARD_NO_PAD",
-      "path": "base64::engine::general_purpose::STANDARD_NO_PAD",
-      "type_id": 169
-    },
-    {
-      "kind": "struct",
-      "name": "GeneralPurpose"
-    },
-    {
-      "kind": "struct",
-      "name": "DecoderReader"
-    },
-    {
-      "kind": "generic_param",
-      "name": "E",
-      "owner_id": 132,
-      "trait_bounds": [
-        4
-      ]
-    },
-    {
-      "kind": "enum",
-      "name": "ParseAlphabetError"
-    },
-    {
-      "kind": "enum",
-      "name": "DecodePaddingMode"
-    },
-    {
-      "kind": "constant",
-      "name": "NO_PAD",
-      "path": "base64::engine::general_purpose::NO_PAD",
-      "type_id": 172
-    },
-    {
-      "kind": "struct",
-      "name": "Base64Display"
-    },
-    {
-      "kind": "primitive",
-      "name": "usize"
-    },
-    {
-      "kind": "constant",
-      "name": "STANDARD",
-      "path": "base64::alphabet::STANDARD",
+      "name": "URL_SAFE",
+      "path": "base64::alphabet::URL_SAFE",
       "type_id": 170
     },
     {
       "kind": "generic_param",
-      "name": "T",
-      "owner_id": 503,
+      "name": "S",
+      "owner_id": 132,
       "trait_bounds": [
-        263
+        131
       ]
     },
     {
       "kind": "generic_param",
-      "name": "E",
+      "name": "T",
       "owner_id": 399,
       "trait_bounds": [
-        4
-      ]
-    },
-    {
-      "kind": "struct",
-      "name": "EncoderStringWriter"
-    },
-    {
-      "kind": "generic_param",
-      "name": "E",
-      "owner_id": 503,
-      "trait_bounds": [
-        4
-      ]
-    },
-    {
-      "kind": "generic_param",
-      "name": "W",
-      "owner_id": 101,
-      "trait_bounds": [
-        102
-      ]
-    },
-    {
-      "kind": "tuple",
-      "name": "()"
-    },
-    {
-      "kind": "generic_param",
-      "name": "T",
-      "owner_id": 398,
-      "trait_bounds": [
         263
       ]
-    },
-    {
-      "kind": "generic_param",
-      "name": "E",
-      "owner_id": 66,
-      "trait_bounds": [
-        4
-      ]
-    },
-    {
-      "kind": "primitive",
-      "name": "u8"
     },
     {
       "kind": "constant",
       "name": "BCRYPT",
       "path": "base64::alphabet::BCRYPT",
       "type_id": 170
+    },
+    {
+      "kind": "constant",
+      "name": "URL_SAFE_NO_PAD_INDIFFERENT",
+      "path": "base64::engine::general_purpose::URL_SAFE_NO_PAD_INDIFFERENT",
+      "type_id": 169
     }
   ]
 }

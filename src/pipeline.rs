@@ -68,6 +68,10 @@ impl Pipeline {
             parsed_crate.print_stats();
         }
 
+        if self.config.export.print_type_summary {
+            parsed_crate.print_type_trait_summary();
+        }
+
         Ok(parsed_crate)
     }
 

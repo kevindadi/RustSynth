@@ -324,6 +324,20 @@ impl OpNode {
     }
 }
 
+/// Trait 实现关系
+#[derive(Debug, Clone)]
+pub struct TraitImpl {
+    /// 实现 Trait 的类型 ID
+    pub for_type: Id,
+    /// Trait ID
+    pub trait_id: Id,
+    /// 关联类型别名映射 (关联类型名 -> 具体类型 ID)
+    /// 例如: "Config" -> GeneralPurposeConfig 的 ID
+    pub assoc_type_aliases: HashMap<String, Id>,
+    /// Impl 块 ID
+    pub impl_id: Id,
+}
+
 /// IR 图:整个程序的中间表示
 #[derive(Debug)]
 pub struct IrGraph {
@@ -340,6 +354,9 @@ pub struct IrGraph {
     /// 用于解析泛型约束
     pub trait_impls: HashMap<Id, Vec<Id>>,
 
+    /// Trait 实现详细信息列表
+    pub trait_impl_details: Vec<TraitImpl>,
+
     /// 原始解析数据
     parsed_crate: ParsedCrate,
 }
@@ -352,8 +369,20 @@ impl IrGraph {
             operations: Vec::new(),
             type_names: HashMap::new(),
             trait_impls: parsed_crate.trait_implementations.clone(),
+            trait_impl_details: Vec::new(),
             parsed_crate,
         }
+    }
+
+    /// 添加 Trait 实现关系
+    pub fn add_trait_impl(&mut self, trait_impl: TraitImpl) {
+        log::debug!(
+            "添加 Trait 实现: 类型 {:?} 实现 Trait {:?}, 关联类型: {:?}",
+            trait_impl.for_type,
+            trait_impl.trait_id,
+            trait_impl.assoc_type_aliases
+        );
+        self.trait_impl_details.push(trait_impl);
     }
 
     /// 添加类型节点

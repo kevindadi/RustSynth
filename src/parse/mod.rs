@@ -15,7 +15,7 @@ pub struct ParsedCrate {
     pub crate_data: Crate,
     /// 类型索引:Id -> Item
     pub type_index: HashMap<Id, Item>,
-    /// Trait 实现映射:Trait Id -> 实现该 Trait 的类型 Id 列表
+    /// Trait 实现映射:类型 Id -> 它实现的 Trait Id 列表
     pub trait_implementations: HashMap<Id, Vec<Id>>,
     /// 函数列表:(函数 Id, 函数信息)
     pub functions: Vec<FunctionInfo>,
@@ -44,6 +44,9 @@ pub struct ImplBlockInfo {
     pub items: Vec<Id>,
     /// Impl 的泛型参数
     pub generics: Vec<String>,
+    /// 关联类型映射 (关联类型名 -> 具体类型 ID)
+    /// 例如: "Config" -> GeneralPurposeConfig 的 ID
+    pub assoc_types: std::collections::HashMap<String, Id>,
 }
 
 /// Trait 信息
@@ -104,6 +107,8 @@ pub struct TypeInfo {
     /// 枚举的变体(仅对 Enum 有效)
     pub variants: Vec<VariantInfo>,
     /// 完整路径 (例如: "crate::module::Type")
+    /// 后续可能用于 use 导入
+    #[allow(unused)]
     pub path: Option<String>,
 }
 
@@ -267,23 +272,50 @@ impl ParsedCrate {
                         .iter()
                         .map(|g| g.name.clone())
                         .collect();
+
+                    // 提取关联类型映射
+                    let mut assoc_types = std::collections::HashMap::new();
+                    for &item_id in &impl_item.items {
+                        if let Some(item) = self.crate_data.index.get(&item_id) {
+                            if let ItemEnum::AssocType { type_, .. } = &item.inner {
+                                // type_ 是 Option<Type>，需要先解包
+                                if let Some(actual_type) = type_ {
+                                    if let Some(type_id) = Self::extract_type_id(actual_type) {
+                                        let assoc_name = item
+                                            .name
+                                            .as_ref()
+                                            .map(|s| s.as_str())
+                                            .unwrap_or("unknown")
+                                            .to_string();
+                                        assoc_types.insert(assoc_name, type_id);
+                                        log::debug!(
+                                            "关联类型: {} -> {:?}",
+                                            item.name.as_ref().unwrap(),
+                                            type_id
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     self.impl_blocks.push(ImplBlockInfo {
                         id,
                         trait_id,
                         for_type: canonical_for_type,
                         items: impl_item.items.clone(),
                         generics: generics,
+                        assoc_types,
                     });
                 }
             }
         }
     }
 
-    /// Pass 1: 构建 TraitMap
+    /// Pass 1: 构建 TraitMap (类型 -> 它实现的 Trait 列表)
     fn extract_trait_implementations(&mut self) {
         for (_id, item) in &self.crate_data.index {
             if let ItemEnum::Impl(impl_item) = &item.inner {
-                // 过滤:检查 Auto Trait 和 Blanket Implementation
                 use crate::support_types::{TRAIT_BLACKLIST, should_filter_impl};
                 if should_filter_impl(impl_item, item.crate_id, TRAIT_BLACKLIST) {
                     continue;
@@ -291,22 +323,20 @@ impl ParsedCrate {
 
                 // 只处理 Trait 实现(不是固有实现)
                 if let Some(trait_ref) = &impl_item.trait_ {
-                    // 过滤:检查 Trait 黑名单(额外检查)
                     if Self::is_blacklisted_trait(trait_ref) {
                         continue;
                     }
 
                     let trait_id = trait_ref.id;
 
-                    // 提取实现该 Trait 的类型
                     if let Some(implementor_id) = Self::extract_type_id(&impl_item.for_) {
-                        // 解析到规范 ID(跟随 pub use 链)
                         let canonical_implementor = self.resolve_root_id(implementor_id);
 
+                        // 存储: 类型 -> 它实现的 Trait 列表
                         self.trait_implementations
-                            .entry(trait_id)
+                            .entry(canonical_implementor)
                             .or_insert_with(Vec::new)
-                            .push(canonical_implementor);
+                            .push(trait_id);
                     }
                 }
             }
@@ -319,12 +349,10 @@ impl ParsedCrate {
             if let ItemEnum::Function(func) = &item.inner {
                 let name = item.name.as_deref().unwrap_or("anonymous").to_string();
 
-                // 过滤:检查方法黑名单
                 if Self::is_blacklisted_method(&name) {
                     continue;
                 }
 
-                // 提取输入参数类型
                 let inputs: Vec<TypeRef> = func
                     .sig
                     .inputs
@@ -332,14 +360,12 @@ impl ParsedCrate {
                     .map(|(_, ty)| Self::extract_type_ref(ty))
                     .collect();
 
-                // 提取输出类型
                 let output = func
                     .sig
                     .output
                     .as_ref()
                     .map(|ty| Self::extract_type_ref(ty));
 
-                // 提取泛型约束(从函数声明中)
                 let generic_constraints = Self::extract_generic_constraints_from_item(item);
 
                 self.functions.push(FunctionInfo {
@@ -393,7 +419,6 @@ impl ParsedCrate {
             if let Some(kind) = kind {
                 let name = item.name.as_deref().unwrap_or("anonymous").to_string();
 
-                // 构建完整路径
                 let path = Some(self.build_item_path(id));
 
                 self.types.push(TypeInfo {
@@ -615,18 +640,6 @@ impl ParsedCrate {
 
     /// 解析 ID 到其规范定义(跟随 pub use 链)
     ///
-    /// # 参数
-    /// - `id`: 待解析的 ID(可能是重导出)
-    ///
-    /// # 返回值
-    /// - 规范定义的 ID(Struct/Enum/Union/Trait 等的实际定义 ID)
-    ///
-    /// # 行为
-    /// - 如果 `id` 指向 `ItemEnum::Use`,递归跟随到实际定义
-    /// - 如果 `id` 指向实际定义(Struct/Enum 等),直接返回
-    /// - 如果遇到外部 crate 的重导出(无 target ID),返回当前 ID
-    /// - 设置递归深度限制防止循环引用
-    ///
     /// # 示例
     /// ```ignore
     /// // Item A (ID: 100) 是 struct RealType
@@ -689,7 +702,6 @@ impl ParsedCrate {
         current_id
     }
 
-    /// 打印解析统计信息
     pub fn print_stats(&self) {
         println!("=== Rustdoc 解析统计 ===");
         println!("总 Item 数: {}", self.type_index.len());
@@ -724,16 +736,222 @@ impl ParsedCrate {
         println!("  - Trait 方法总数: {}", trait_method_count);
     }
 
+    /// 打印类型和 Trait 实现的详细摘要
+    pub fn print_type_trait_summary(&self) {
+        println!("\n=== 类型和 Trait 实现摘要 ===\n");
+
+        // 1. 打印所有 Struct
+        println!("【结构体 (Struct)】");
+        let structs: Vec<_> = self
+            .types
+            .iter()
+            .filter(|t| t.kind == TypeKind::Struct)
+            .collect();
+        println!("总数: {}\n", structs.len());
+
+        for type_info in structs.iter().take(20) {
+            println!("  • {}", type_info.name);
+            // 查找实现的 trait
+            if let Some(trait_ids) = self.trait_implementations.get(&type_info.id) {
+                for trait_id in trait_ids {
+                    if let Some(trait_info) = self.traits.iter().find(|t| &t.id == trait_id) {
+                        print!("    ├─ impl {}", trait_info.name);
+
+                        // 查找 impl 块的详细信息
+                        if let Some(impl_block) = self.impl_blocks.iter().find(|ib| {
+                            ib.for_type == type_info.id && ib.trait_id == Some(*trait_id)
+                        }) {
+                            // 显示关联类型
+                            if !impl_block.assoc_types.is_empty() {
+                                print!(" {{");
+                                let assoc_strs: Vec<String> = impl_block
+                                    .assoc_types
+                                    .iter()
+                                    .map(|(name, type_id)| {
+                                        let type_name = self.get_type_name(type_id).unwrap_or("?");
+                                        format!("{} = {}", name, type_name)
+                                    })
+                                    .collect();
+                                print!(" {} ", assoc_strs.join(", "));
+                                print!("}}");
+                            }
+                            println!();
+
+                            // 显示实现的方法（包括显式重写的和 provided 的）
+                            let mut all_methods = Vec::new();
+
+                            // 1. 显式重写的方法
+                            let explicit_methods: Vec<String> = impl_block
+                                .items
+                                .iter()
+                                .filter_map(|&item_id| {
+                                    let item = self.type_index.get(&item_id)?;
+                                    // 只显示函数（方法），跳过关联类型
+                                    if matches!(item.inner, rustdoc_types::ItemEnum::Function(_)) {
+                                        item.name.clone()
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .collect();
+
+                            all_methods.extend(explicit_methods);
+
+                            // 2. Trait provided 的默认方法
+                            if let Some(impl_item) = self.type_index.get(&impl_block.id) {
+                                if let rustdoc_types::ItemEnum::Impl(impl_data) = &impl_item.inner {
+                                    all_methods.extend(impl_data.provided_trait_methods.clone());
+                                }
+                            }
+
+                            if !all_methods.is_empty() {
+                                let display_count = all_methods.len().min(10);
+                                println!(
+                                    "      方法 ({}个): {}",
+                                    all_methods.len(),
+                                    all_methods
+                                        .iter()
+                                        .take(display_count)
+                                        .cloned()
+                                        .collect::<Vec<_>>()
+                                        .join(", ")
+                                );
+                                if all_methods.len() > 10 {
+                                    println!("      ... 还有 {} 个方法", all_methods.len() - 10);
+                                }
+                            }
+                        } else {
+                            println!();
+                        }
+                    }
+                }
+            }
+        }
+        if structs.len() > 20 {
+            println!("  ... 还有 {} 个结构体未显示", structs.len() - 20);
+        }
+
+        // 2. 打印所有 Enum
+        println!("\n【枚举 (Enum)】");
+        let enums: Vec<_> = self
+            .types
+            .iter()
+            .filter(|t| t.kind == TypeKind::Enum)
+            .collect();
+        println!("总数: {}\n", enums.len());
+
+        for type_info in enums.iter().take(10) {
+            println!("  • {}", type_info.name);
+            // 查找实现的 trait
+            if let Some(trait_ids) = self.trait_implementations.get(&type_info.id) {
+                for trait_id in trait_ids {
+                    if let Some(trait_info) = self.traits.iter().find(|t| &t.id == trait_id) {
+                        println!("    ├─ impl {}", trait_info.name);
+                    }
+                }
+            }
+        }
+        if enums.len() > 10 {
+            println!("  ... 还有 {} 个枚举未显示", enums.len() - 10);
+        }
+
+        // 3. 打印所有 Trait
+        println!("\n【Trait】");
+        println!("总数: {}\n", self.traits.len());
+
+        for trait_info in self.traits.iter().take(10) {
+            println!("  • {}", trait_info.name);
+
+            // 显示 trait 中定义的方法
+            let trait_methods: Vec<String> = trait_info
+                .methods
+                .iter()
+                .filter_map(|&method_id| {
+                    let item = self.type_index.get(&method_id)?;
+                    item.name.clone()
+                })
+                .take(8)
+                .collect();
+
+            if !trait_methods.is_empty() {
+                println!("    定义的方法: {}", trait_methods.join(", "));
+                if trait_info.methods.len() > 8 {
+                    println!("    ... 还有 {} 个方法", trait_info.methods.len() - 8);
+                }
+            }
+
+            // 查找实现此 trait 的类型
+            let implementors: Vec<String> = self
+                .trait_implementations
+                .iter()
+                .filter(|(_, traits)| traits.contains(&trait_info.id))
+                .filter_map(|(type_id, _)| {
+                    self.types
+                        .iter()
+                        .find(|t| &t.id == type_id)
+                        .map(|t| t.name.clone())
+                })
+                .take(5)
+                .collect();
+
+            if !implementors.is_empty() {
+                println!("    实现者: {}", implementors.join(", "));
+                let total_implementors = self
+                    .trait_implementations
+                    .iter()
+                    .filter(|(_, traits)| traits.contains(&trait_info.id))
+                    .count();
+                if total_implementors > 5 {
+                    println!("    ... 还有 {} 个实现者", total_implementors - 5);
+                }
+            }
+        }
+        if self.traits.len() > 10 {
+            println!("  ... 还有 {} 个 trait 未显示", self.traits.len() - 10);
+        }
+
+        // 4. 打印 Constants
+        if !self.constants.is_empty() {
+            println!("\n【Constants】");
+            println!("总数: {}\n", self.constants.len());
+            for const_info in self.constants.iter().take(10) {
+                let type_name = self.get_type_name(&const_info.type_id).unwrap_or("?");
+                println!("  • {} : {}", const_info.name, type_name);
+                if const_info.path != const_info.name {
+                    println!("    路径: {}", const_info.path);
+                }
+            }
+            if self.constants.len() > 10 {
+                println!("  ... 还有 {} 个常量未显示", self.constants.len() - 10);
+            }
+        }
+
+        // 5. 打印 Statics
+        if !self.statics.is_empty() {
+            println!("\n【Statics】");
+            println!("总数: {}\n", self.statics.len());
+            for static_info in self.statics.iter().take(5) {
+                let type_name = self.get_type_name(&static_info.type_id).unwrap_or("?");
+                let mutability = if static_info.is_mutable { "mut " } else { "" };
+                println!(
+                    "  • {}static {} : {}",
+                    mutability, static_info.name, type_name
+                );
+            }
+            if self.statics.len() > 5 {
+                println!("  ... 还有 {} 个静态变量未显示", self.statics.len() - 5);
+            }
+        }
+
+        println!("\n=== 摘要结束 ===\n");
+    }
+
     /// 检查方法是否在黑名单中
-    ///
-    /// 委托给 support_types 模块
     fn is_blacklisted_method(name: &str) -> bool {
         crate::support_types::is_blacklisted_method(name)
     }
 
     /// 检查 Trait 是否在黑名单中
-    ///
-    /// 委托给 support_types 模块
     fn is_blacklisted_trait(trait_path: &rustdoc_types::Path) -> bool {
         crate::support_types::is_blacklisted_trait_path(trait_path)
     }

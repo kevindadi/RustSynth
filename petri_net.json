@@ -4,42 +4,14 @@
       "index": 0,
       "is_raw_ptr": false,
       "kind": "Ref",
-      "source": 4913680949674908313,
-      "target": 7991007273124547738
+      "source": 13793481312019477503,
+      "target": 6415952798859902697
     },
     {
       "index": 0,
       "is_raw_ptr": false,
       "kind": "Ref",
       "source": 12212904672885981174,
-      "target": 6415952798859902697
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Ref",
-      "source": 14196016665844631692,
-      "target": 6415952798859902697
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Ref",
-      "source": 3029817185155380901,
-      "target": 6415952798859902697
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Ref",
-      "source": 9209386490000609728,
-      "target": 4464154666114426859
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Ref",
-      "source": 13793481312019477503,
       "target": 6415952798859902697
     },
     {
@@ -67,8 +39,8 @@
       "index": 0,
       "is_raw_ptr": false,
       "kind": "Ref",
-      "source": 8714291857038988458,
-      "target": 4464154666114426859
+      "source": 3029817185155380901,
+      "target": 6415952798859902697
     },
     {
       "index": 0,
@@ -81,15 +53,8 @@
       "index": 0,
       "is_raw_ptr": false,
       "kind": "Ref",
-      "source": 15012500490789711121,
-      "target": 7991007273124547738
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Ref",
-      "source": 9102160940864017684,
-      "target": 6415952798859902697
+      "source": 16395453281936696805,
+      "target": 4464154666114426859
     },
     {
       "index": 0,
@@ -102,21 +67,14 @@
       "index": 0,
       "is_raw_ptr": false,
       "kind": "Ref",
-      "source": 16395453281936696805,
-      "target": 4464154666114426859
+      "source": 14196016665844631692,
+      "target": 6415952798859902697
     },
     {
       "index": 0,
       "is_raw_ptr": false,
       "kind": "Ref",
-      "source": 7789276924026640769,
-      "target": 7991007273124547738
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Ref",
-      "source": 14947674597681000100,
+      "source": 15012500490789711121,
       "target": 7991007273124547738
     },
     {
@@ -130,43 +88,43 @@
       "index": 0,
       "is_raw_ptr": false,
       "kind": "Ref",
-      "source": 2146469600568118527,
-      "target": 9753788142392116480
-    },
-    {
-      "index": 1,
-      "is_raw_ptr": false,
-      "kind": "MutRef",
-      "source": 6240093653558240571,
-      "target": 3840437007841331067
+      "source": 14947674597681000100,
+      "target": 7991007273124547738
     },
     {
       "index": 0,
       "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 15508352870254018516,
-      "target": 9738056950506608443
-    },
-    {
-      "index": 1,
-      "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 15508352870254018516,
-      "target": 6547238509722300142
+      "kind": "Ref",
+      "source": 8714291857038988458,
+      "target": 4464154666114426859
     },
     {
       "index": 0,
       "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 665373941718427294,
-      "target": 4560876000829646283
+      "kind": "Ref",
+      "source": 7789276924026640769,
+      "target": 7991007273124547738
     },
     {
       "index": 0,
       "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 4560876000829646283,
-      "target": 665373941718427294
+      "kind": "Ref",
+      "source": 4913680949674908313,
+      "target": 7991007273124547738
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Ref",
+      "source": 9209386490000609728,
+      "target": 4464154666114426859
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Ref",
+      "source": 9102160940864017684,
+      "target": 6415952798859902697
     },
     {
       "index": 0,
@@ -214,15 +172,36 @@
       "index": 0,
       "is_raw_ptr": false,
       "kind": "Move",
-      "source": 16807096184167937487,
-      "target": 6240093653558240571
+      "source": 665373941718427294,
+      "target": 4560876000829646283
     },
     {
       "index": 0,
       "is_raw_ptr": false,
       "kind": "Move",
-      "source": 5847937171756422491,
-      "target": 6240093653558240571
+      "source": 4560876000829646283,
+      "target": 665373941718427294
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Ref",
+      "source": 2146469600568118527,
+      "target": 9753788142392116480
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 15508352870254018516,
+      "target": 9738056950506608443
+    },
+    {
+      "index": 1,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 15508352870254018516,
+      "target": 6547238509722300142
     },
     {
       "index": 1,
@@ -246,20 +225,6 @@
       "target": 6243031848768727703
     },
     {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 2811334481320774060,
-      "target": 9738056950506608443
-    },
-    {
-      "index": 1,
-      "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 2811334481320774060,
-      "target": 6547238509722300142
-    },
-    {
       "index": 1,
       "is_raw_ptr": false,
       "kind": "MutRef",
@@ -279,6 +244,76 @@
       "kind": "Move",
       "source": 18353702433596840582,
       "target": 6547238509722300142
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 2811334481320774060,
+      "target": 9738056950506608443
+    },
+    {
+      "index": 1,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 2811334481320774060,
+      "target": 6547238509722300142
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 16807096184167937487,
+      "target": 6240093653558240571
+    },
+    {
+      "index": 1,
+      "is_raw_ptr": false,
+      "kind": "MutRef",
+      "source": 6240093653558240571,
+      "target": 3840437007841331067
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 5847937171756422491,
+      "target": 6240093653558240571
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 9630556658037502472,
+      "target": 7879051788259116088
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 9865137227579872223,
+      "target": 7879051788259116088
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 1688309485500806566,
+      "target": 7879051788259116088
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 4265572827452622877,
+      "target": 6243031848768727703
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 13851937387014822874,
+      "target": 6243031848768727703
     },
     {
       "index": 0,
@@ -346,51 +381,121 @@
     {
       "index": 0,
       "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 9630556658037502472,
-      "target": 7879051788259116088
+      "kind": "Ref",
+      "source": 4464154666114426859,
+      "target": 13556016301777530600
     },
     {
       "index": 0,
       "is_raw_ptr": false,
       "kind": "Move",
-      "source": 9865137227579872223,
-      "target": 7879051788259116088
+      "source": 13556016301777530600,
+      "target": 6474122208152276879
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Ref",
+      "source": 6415952798859902697,
+      "target": 2097756806010358252
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Ref",
+      "source": 2097756806010358252,
+      "target": 13788507874569196026
     },
     {
       "index": 0,
       "is_raw_ptr": false,
       "kind": "Move",
-      "source": 1688309485500806566,
-      "target": 7879051788259116088
+      "source": 17258056980923715393,
+      "target": 7884162033521563644
     },
     {
       "index": 0,
       "is_raw_ptr": false,
       "kind": "Move",
-      "source": 4265572827452622877,
-      "target": 6243031848768727703
+      "source": 7884162033521563644,
+      "target": 8177786066974464708
     },
     {
       "index": 0,
       "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 13851937387014822874,
-      "target": 6243031848768727703
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 6796667025961897532,
-      "target": 6337583537840307025
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Move",
+      "kind": "MutRef",
       "source": 6337583537840307025,
-      "target": 15042720617947887434
+      "target": 15818208776807171099
+    },
+    {
+      "index": 1,
+      "is_raw_ptr": false,
+      "kind": "MutRef",
+      "source": 16996192123203025374,
+      "target": 15818208776807171099
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 15818208776807171099,
+      "target": 665373941718427294
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Ref",
+      "source": 2146469600568118527,
+      "target": 4516467648889009817
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 4516467648889009817,
+      "target": 7991007273124547738
+    },
+    {
+      "index": 1,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 4516467648889009817,
+      "target": 17189642964525760362
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Ref",
+      "source": 7991007273124547738,
+      "target": 18434173669229437910
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Ref",
+      "source": 18434173669229437910,
+      "target": 2146469600568118527
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Ref",
+      "source": 7991007273124547738,
+      "target": 2299874300971949029
+    },
+    {
+      "index": 1,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 4464154666114426859,
+      "target": 2299874300971949029
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 2299874300971949029,
+      "target": 6415952798859902697
     },
     {
       "index": 0,
@@ -426,6 +531,27 @@
       "kind": "Move",
       "source": 14742726060958110447,
       "target": 4199625609901051029
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 14991883211822224068,
+      "target": 318004552278808542
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "MutRef",
+      "source": 318004552278808542,
+      "target": 11082847621557389877
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
+      "source": 318004552278808542,
+      "target": 8098767115281790549
     },
     {
       "index": 0,
@@ -501,134 +627,36 @@
       "index": 0,
       "is_raw_ptr": false,
       "kind": "Move",
-      "source": 14991883211822224068,
-      "target": 318004552278808542
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "MutRef",
-      "source": 318004552278808542,
-      "target": 11082847621557389877
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 318004552278808542,
-      "target": 8098767115281790549
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Move",
       "source": 6116043695408751637,
       "target": 7884162033521563644
     },
     {
       "index": 0,
       "is_raw_ptr": false,
-      "kind": "MutRef",
+      "kind": "Move",
+      "source": 6796667025961897532,
+      "target": 6337583537840307025
+    },
+    {
+      "index": 0,
+      "is_raw_ptr": false,
+      "kind": "Move",
       "source": 6337583537840307025,
-      "target": 15818208776807171099
+      "target": 15042720617947887434
     },
     {
-      "index": 1,
+      "index": 0,
       "is_raw_ptr": false,
       "kind": "MutRef",
-      "source": 16996192123203025374,
-      "target": 15818208776807171099
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 15818208776807171099,
-      "target": 665373941718427294
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Ref",
-      "source": 7991007273124547738,
-      "target": 2299874300971949029
+      "source": 6240093653558240571,
+      "target": 9360307763093369135
     },
     {
       "index": 1,
-      "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 4464154666114426859,
-      "target": 2299874300971949029
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 2299874300971949029,
-      "target": 6415952798859902697
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Ref",
-      "source": 4464154666114426859,
-      "target": 13556016301777530600
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 13556016301777530600,
-      "target": 6474122208152276879
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 17258056980923715393,
-      "target": 7884162033521563644
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 7884162033521563644,
-      "target": 8177786066974464708
-    },
-    {
-      "index": 0,
       "is_raw_ptr": false,
       "kind": "Ref",
       "source": 2146469600568118527,
-      "target": 4516467648889009817
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 4516467648889009817,
-      "target": 7991007273124547738
-    },
-    {
-      "index": 1,
-      "is_raw_ptr": false,
-      "kind": "Move",
-      "source": 4516467648889009817,
-      "target": 17189642964525760362
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Ref",
-      "source": 7991007273124547738,
-      "target": 18434173669229437910
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Ref",
-      "source": 18434173669229437910,
-      "target": 2146469600568118527
+      "target": 9360307763093369135
     },
     {
       "index": 0,
@@ -678,43 +706,9 @@
       "kind": "Move",
       "source": 11501215378107816346,
       "target": 4199625609901051029
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Ref",
-      "source": 6415952798859902697,
-      "target": 2097756806010358252
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "Ref",
-      "source": 2097756806010358252,
-      "target": 13788507874569196026
-    },
-    {
-      "index": 0,
-      "is_raw_ptr": false,
-      "kind": "MutRef",
-      "source": 6240093653558240571,
-      "target": 9360307763093369135
-    },
-    {
-      "index": 1,
-      "is_raw_ptr": false,
-      "kind": "Ref",
-      "source": 2146469600568118527,
-      "target": 9360307763093369135
     }
   ],
   "places": [
-    {
-      "id": 7991007273124547738,
-      "is_copy": false,
-      "is_source": false,
-      "type_name": "Alphabet"
-    },
     {
       "id": 6415952798859902697,
       "is_copy": false,
@@ -722,34 +716,16 @@
       "type_name": "GeneralPurpose"
     },
     {
+      "id": 7991007273124547738,
+      "is_copy": false,
+      "is_source": false,
+      "type_name": "Alphabet"
+    },
+    {
       "id": 4464154666114426859,
       "is_copy": false,
       "is_source": false,
       "type_name": "GeneralPurposeConfig"
-    },
-    {
-      "id": 2146469600568118527,
-      "is_copy": false,
-      "is_source": true,
-      "type_name": "str"
-    },
-    {
-      "id": 6240093653558240571,
-      "is_copy": false,
-      "is_source": false,
-      "type_name": "String"
-    },
-    {
-      "id": 9738056950506608443,
-      "is_copy": false,
-      "is_source": false,
-      "type_name": "Vec<u8>"
-    },
-    {
-      "id": 6547238509722300142,
-      "is_copy": false,
-      "is_source": false,
-      "type_name": "DecodeError"
     },
     {
       "id": 665373941718427294,
@@ -776,6 +752,24 @@
       "type_name": "EncodeSliceError"
     },
     {
+      "id": 2146469600568118527,
+      "is_copy": false,
+      "is_source": true,
+      "type_name": "str"
+    },
+    {
+      "id": 9738056950506608443,
+      "is_copy": false,
+      "is_source": false,
+      "type_name": "Vec<u8>"
+    },
+    {
+      "id": 6547238509722300142,
+      "is_copy": false,
+      "is_source": false,
+      "type_name": "DecodeError"
+    },
+    {
       "id": 6243031848768727703,
       "is_copy": false,
       "is_source": false,
@@ -788,10 +782,10 @@
       "type_name": "()"
     },
     {
-      "id": 17189642964525760362,
+      "id": 6240093653558240571,
       "is_copy": false,
       "is_source": false,
-      "type_name": "ParseAlphabetError"
+      "type_name": "String"
     },
     {
       "id": 7879051788259116088,
@@ -800,16 +794,28 @@
       "type_name": "DecodePaddingMode"
     },
     {
-      "id": 6337583537840307025,
+      "id": 17189642964525760362,
       "is_copy": false,
       "is_source": false,
-      "type_name": "DecoderReader"
+      "type_name": "ParseAlphabetError"
+    },
+    {
+      "id": 13788507874569196026,
+      "is_copy": false,
+      "is_source": false,
+      "type_name": "Config"
     },
     {
       "id": 7884162033521563644,
       "is_copy": false,
       "is_source": false,
       "type_name": "EncoderStringWriter"
+    },
+    {
+      "id": 6337583537840307025,
+      "is_copy": false,
+      "is_source": false,
+      "type_name": "DecoderReader"
     },
     {
       "id": 318004552278808542,
@@ -822,49 +828,19 @@
       "is_copy": false,
       "is_source": false,
       "type_name": "Base64Display"
-    },
-    {
-      "id": 13788507874569196026,
-      "is_copy": false,
-      "is_source": false,
-      "type_name": "Config"
     }
   ],
   "transitions": [
     {
-      "func_name": "get_CRYPT",
+      "func_name": "get_STANDARD_PAD_INDIFFERENT",
       "generic_map": {},
-      "id": 4913680949674908313,
+      "id": 13793481312019477503,
       "kind": "ConstantAlias"
     },
     {
       "func_name": "get_URL_SAFE_NO_PAD",
       "generic_map": {},
       "id": 12212904672885981174,
-      "kind": "ConstantAlias"
-    },
-    {
-      "func_name": "get_URL_SAFE_NO_PAD_INDIFFERENT",
-      "generic_map": {},
-      "id": 14196016665844631692,
-      "kind": "ConstantAlias"
-    },
-    {
-      "func_name": "get_STANDARD_NO_PAD_INDIFFERENT",
-      "generic_map": {},
-      "id": 3029817185155380901,
-      "kind": "ConstantAlias"
-    },
-    {
-      "func_name": "get_NO_PAD_INDIFFERENT",
-      "generic_map": {},
-      "id": 9209386490000609728,
-      "kind": "ConstantAlias"
-    },
-    {
-      "func_name": "get_STANDARD_PAD_INDIFFERENT",
-      "generic_map": {},
-      "id": 13793481312019477503,
       "kind": "ConstantAlias"
     },
     {
@@ -886,9 +862,9 @@
       "kind": "ConstantAlias"
     },
     {
-      "func_name": "get_PAD",
+      "func_name": "get_STANDARD_NO_PAD_INDIFFERENT",
       "generic_map": {},
-      "id": 8714291857038988458,
+      "id": 3029817185155380901,
       "kind": "ConstantAlias"
     },
     {
@@ -898,15 +874,9 @@
       "kind": "ConstantAlias"
     },
     {
-      "func_name": "get_IMAP_MUTF7",
+      "func_name": "get_NO_PAD",
       "generic_map": {},
-      "id": 15012500490789711121,
-      "kind": "ConstantAlias"
-    },
-    {
-      "func_name": "get_URL_SAFE_PAD_INDIFFERENT",
-      "generic_map": {},
-      "id": 9102160940864017684,
+      "id": 16395453281936696805,
       "kind": "ConstantAlias"
     },
     {
@@ -916,21 +886,15 @@
       "kind": "ConstantAlias"
     },
     {
-      "func_name": "get_NO_PAD",
+      "func_name": "get_URL_SAFE_NO_PAD_INDIFFERENT",
       "generic_map": {},
-      "id": 16395453281936696805,
+      "id": 14196016665844631692,
       "kind": "ConstantAlias"
     },
     {
-      "func_name": "get_BIN_HEX",
+      "func_name": "get_IMAP_MUTF7",
       "generic_map": {},
-      "id": 7789276924026640769,
-      "kind": "ConstantAlias"
-    },
-    {
-      "func_name": "get_URL_SAFE",
-      "generic_map": {},
-      "id": 14947674597681000100,
+      "id": 15012500490789711121,
       "kind": "ConstantAlias"
     },
     {
@@ -940,28 +904,40 @@
       "kind": "ConstantAlias"
     },
     {
-      "func_name": "consume",
+      "func_name": "get_URL_SAFE",
       "generic_map": {},
-      "id": 9753788142392116480,
-      "kind": "FnCall"
+      "id": 14947674597681000100,
+      "kind": "ConstantAlias"
     },
     {
-      "func_name": "encode_engine_string",
+      "func_name": "get_PAD",
       "generic_map": {},
-      "id": 3840437007841331067,
-      "kind": "FnCall"
+      "id": 8714291857038988458,
+      "kind": "ConstantAlias"
     },
     {
-      "func_name": "decode_engine",
+      "func_name": "get_BIN_HEX",
       "generic_map": {},
-      "id": 15508352870254018516,
-      "kind": "FnCall"
+      "id": 7789276924026640769,
+      "kind": "ConstantAlias"
     },
     {
-      "func_name": "decoded_len_estimate",
+      "func_name": "get_CRYPT",
       "generic_map": {},
-      "id": 4560876000829646283,
-      "kind": "FnCall"
+      "id": 4913680949674908313,
+      "kind": "ConstantAlias"
+    },
+    {
+      "func_name": "get_NO_PAD_INDIFFERENT",
+      "generic_map": {},
+      "id": 9209386490000609728,
+      "kind": "ConstantAlias"
+    },
+    {
+      "func_name": "get_URL_SAFE_PAD_INDIFFERENT",
+      "generic_map": {},
+      "id": 9102160940864017684,
+      "kind": "ConstantAlias"
     },
     {
       "func_name": "encoded_len",
@@ -976,15 +952,21 @@
       "kind": "FnCall"
     },
     {
-      "func_name": "encode",
+      "func_name": "decoded_len_estimate",
       "generic_map": {},
-      "id": 16807096184167937487,
+      "id": 4560876000829646283,
       "kind": "FnCall"
     },
     {
-      "func_name": "encode_engine",
+      "func_name": "consume",
       "generic_map": {},
-      "id": 5847937171756422491,
+      "id": 9753788142392116480,
+      "kind": "FnCall"
+    },
+    {
+      "func_name": "decode_engine",
+      "generic_map": {},
+      "id": 15508352870254018516,
       "kind": "FnCall"
     },
     {
@@ -994,16 +976,64 @@
       "kind": "FnCall"
     },
     {
+      "func_name": "decode_engine_vec",
+      "generic_map": {},
+      "id": 18353702433596840582,
+      "kind": "FnCall"
+    },
+    {
       "func_name": "decode",
       "generic_map": {},
       "id": 2811334481320774060,
       "kind": "FnCall"
     },
     {
-      "func_name": "decode_engine_vec",
+      "func_name": "encode",
       "generic_map": {},
-      "id": 18353702433596840582,
+      "id": 16807096184167937487,
       "kind": "FnCall"
+    },
+    {
+      "func_name": "encode_engine_string",
+      "generic_map": {},
+      "id": 3840437007841331067,
+      "kind": "FnCall"
+    },
+    {
+      "func_name": "encode_engine",
+      "generic_map": {},
+      "id": 5847937171756422491,
+      "kind": "FnCall"
+    },
+    {
+      "func_name": "DecodePaddingMode::Indifferent",
+      "generic_map": {},
+      "id": 9630556658037502472,
+      "kind": "VariantCtor"
+    },
+    {
+      "func_name": "DecodePaddingMode::RequireCanonical",
+      "generic_map": {},
+      "id": 9865137227579872223,
+      "kind": "VariantCtor"
+    },
+    {
+      "func_name": "DecodePaddingMode::RequireNone",
+      "generic_map": {},
+      "id": 1688309485500806566,
+      "kind": "VariantCtor"
+    },
+    {
+      "func_name": "DecodeSliceError::DecodeError",
+      "generic_map": {},
+      "id": 4265572827452622877,
+      "kind": "VariantCtor"
+    },
+    {
+      "func_name": "DecodeSliceError::OutputSliceTooSmall",
+      "generic_map": {},
+      "id": 13851937387014822874,
+      "kind": "VariantCtor"
     },
     {
       "func_name": "DecodeError::InvalidByte",
@@ -1060,46 +1090,52 @@
       "kind": "VariantCtor"
     },
     {
-      "func_name": "DecodePaddingMode::Indifferent",
+      "func_name": "encode_padding",
       "generic_map": {},
-      "id": 9630556658037502472,
-      "kind": "VariantCtor"
+      "id": 13556016301777530600,
+      "kind": "MethodCall"
     },
     {
-      "func_name": "DecodePaddingMode::RequireCanonical",
+      "func_name": "config",
       "generic_map": {},
-      "id": 9865137227579872223,
-      "kind": "VariantCtor"
+      "id": 2097756806010358252,
+      "kind": "MethodCall"
     },
     {
-      "func_name": "DecodePaddingMode::RequireNone",
+      "func_name": "from_consumer",
       "generic_map": {},
-      "id": 1688309485500806566,
-      "kind": "VariantCtor"
-    },
-    {
-      "func_name": "DecodeSliceError::DecodeError",
-      "generic_map": {},
-      "id": 4265572827452622877,
-      "kind": "VariantCtor"
-    },
-    {
-      "func_name": "DecodeSliceError::OutputSliceTooSmall",
-      "generic_map": {},
-      "id": 13851937387014822874,
-      "kind": "VariantCtor"
-    },
-    {
-      "func_name": "new",
-      "generic_map": {},
-      "id": 6796667025961897532,
+      "id": 17258056980923715393,
       "kind": "AssocFn"
     },
     {
       "func_name": "into_inner",
       "generic_map": {},
-      "id": 15042720617947887434,
+      "id": 8177786066974464708,
       "kind": "MethodCall"
+    },
+    {
+      "func_name": "read",
+      "generic_map": {},
+      "id": 15818208776807171099,
+      "kind": "MethodCall"
+    },
+    {
+      "func_name": "new",
+      "generic_map": {},
+      "id": 4516467648889009817,
+      "kind": "AssocFn"
+    },
+    {
+      "func_name": "as_str",
+      "generic_map": {},
+      "id": 18434173669229437910,
+      "kind": "MethodCall"
+    },
+    {
+      "func_name": "new",
+      "generic_map": {},
+      "id": 2299874300971949029,
+      "kind": "AssocFn"
     },
     {
       "func_name": "write",
@@ -1111,6 +1147,24 @@
       "func_name": "flush",
       "generic_map": {},
       "id": 14742726060958110447,
+      "kind": "MethodCall"
+    },
+    {
+      "func_name": "new",
+      "generic_map": {},
+      "id": 14991883211822224068,
+      "kind": "AssocFn"
+    },
+    {
+      "func_name": "finish",
+      "generic_map": {},
+      "id": 11082847621557389877,
+      "kind": "MethodCall"
+    },
+    {
+      "func_name": "into_inner",
+      "generic_map": {},
+      "id": 8098767115281790549,
       "kind": "MethodCall"
     },
     {
@@ -1140,67 +1194,25 @@
     {
       "func_name": "new",
       "generic_map": {},
-      "id": 14991883211822224068,
-      "kind": "AssocFn"
-    },
-    {
-      "func_name": "finish",
-      "generic_map": {},
-      "id": 11082847621557389877,
-      "kind": "MethodCall"
-    },
-    {
-      "func_name": "into_inner",
-      "generic_map": {},
-      "id": 8098767115281790549,
-      "kind": "MethodCall"
-    },
-    {
-      "func_name": "new",
-      "generic_map": {},
       "id": 6116043695408751637,
       "kind": "AssocFn"
     },
     {
-      "func_name": "read",
-      "generic_map": {},
-      "id": 15818208776807171099,
-      "kind": "MethodCall"
-    },
-    {
       "func_name": "new",
       "generic_map": {},
-      "id": 2299874300971949029,
-      "kind": "AssocFn"
-    },
-    {
-      "func_name": "encode_padding",
-      "generic_map": {},
-      "id": 13556016301777530600,
-      "kind": "MethodCall"
-    },
-    {
-      "func_name": "from_consumer",
-      "generic_map": {},
-      "id": 17258056980923715393,
+      "id": 6796667025961897532,
       "kind": "AssocFn"
     },
     {
       "func_name": "into_inner",
       "generic_map": {},
-      "id": 8177786066974464708,
+      "id": 15042720617947887434,
       "kind": "MethodCall"
     },
     {
-      "func_name": "new",
+      "func_name": "consume",
       "generic_map": {},
-      "id": 4516467648889009817,
-      "kind": "AssocFn"
-    },
-    {
-      "func_name": "as_str",
-      "generic_map": {},
-      "id": 18434173669229437910,
+      "id": 9360307763093369135,
       "kind": "MethodCall"
     },
     {
@@ -1219,18 +1231,6 @@
       "func_name": "flush",
       "generic_map": {},
       "id": 11501215378107816346,
-      "kind": "MethodCall"
-    },
-    {
-      "func_name": "config",
-      "generic_map": {},
-      "id": 2097756806010358252,
-      "kind": "MethodCall"
-    },
-    {
-      "func_name": "consume",
-      "generic_map": {},
-      "id": 9360307763093369135,
       "kind": "MethodCall"
     }
   ]
