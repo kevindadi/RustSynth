@@ -28,6 +28,25 @@ pub enum TypeNode {
     TraitObject(Option<Id>),
     MultiTrait(Vec<Id>),
 
+    /// Constant 节点 (指向其类型)
+    /// 例如: pub const STANDARD: Alphabet
+    Constant {
+        id: Id,
+        name: String,
+        type_id: Id,
+        path: String,
+    },
+
+    /// Static 节点 (指向其类型)
+    /// 例如: pub static mut GLOBAL: Config
+    Static {
+        id: Id,
+        name: String,
+        type_id: Id,
+        path: String,
+        is_mutable: bool,
+    },
+
     /// 泛型参数节点(作用域化的一等类型)
     ///
     /// 例如:impl<T: Clone> Container<T> 中的 T
@@ -212,6 +231,18 @@ pub enum OpKind {
     AssocFn {
         /// 关联的类型
         assoc_type: Id,
+    },
+
+    /// Constant 别名操作
+    /// 提供对 constant 的访问，返回其指向的类型
+    ConstantAlias { const_id: Id, const_path: String },
+
+    /// Static 别名操作
+    /// 提供对 static 的访问，返回其指向的类型
+    StaticAlias {
+        static_id: Id,
+        static_path: String,
+        is_mutable: bool,
     },
 }
 
@@ -436,6 +467,10 @@ impl IrGraph {
                     "unknown".to_string()
                 }
                 TypeNode::Opaque(name) => name.clone(),
+
+                // Constant 和 Static 使用其路径作为名称
+                TypeNode::Constant { path, .. } => path.clone(),
+                TypeNode::Static { path, .. } => path.clone(),
 
                 // 尝试解析 Struct/Enum/Union/TraitObject 的名称,即便是外部类型
                 TypeNode::Struct(id)

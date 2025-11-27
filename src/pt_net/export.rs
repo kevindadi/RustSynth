@@ -61,6 +61,8 @@ impl PetriNet {
                     TransitionKind::MethodCall => "lightblue",
                     TransitionKind::FieldAccessor => "wheat",
                     TransitionKind::AssocFn => "lavender",
+                    TransitionKind::ConstantAlias => "lightsalmon",
+                    TransitionKind::StaticAlias => "lightcoral",
                 };
 
                 // 构建标签: 函数名 + 泛型信息

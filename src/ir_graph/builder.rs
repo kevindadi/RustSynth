@@ -131,13 +131,16 @@ impl IrGraphBuilder {
         // Step 1: 添加所有类型节点
         self.build_type_nodes();
 
-        // Step 2: 构建操作节点(函数,带泛型作用域)
+        // Step 2: 添加 Constant 和 Static 节点
+        self.build_constants_and_statics();
+
+        // Step 3: 构建操作节点(函数,带泛型作用域)
         self.build_function_operations();
 
-        // Step 3: 构建构造器操作, pub 字段默认可以构造一个复合类型
+        // Step 4: 构建构造器操作, pub 字段默认可以构造一个复合类型
         self.build_constructor_operations();
 
-        // Step 4: 处理 impl 块中的方法
+        // Step 5: 处理 impl 块中的方法
         self.build_impl_methods();
 
         self.graph
@@ -190,6 +193,98 @@ impl IrGraphBuilder {
 
         // 注意:不预先添加基本类型(i32, u64, str 等)
         // 它们会在实际使用时(通过 add_operation)自动添加到 type_nodes
+    }
+
+    /// 构建 Constant 和 Static 节点及其别名操作
+    fn build_constants_and_statics(&mut self) {
+        // 添加 Constant 节点和别名操作
+        for constant in &self.graph.parsed_crate().constants.clone() {
+            let const_node = TypeNode::Constant {
+                id: constant.id,
+                name: constant.name.clone(),
+                type_id: constant.type_id,
+                path: constant.path.clone(),
+            };
+            self.graph
+                .add_type(const_node.clone(), constant.name.clone());
+
+            // 创建目标类型节点
+            let target_type = self.create_type_node_from_id(constant.type_id);
+
+            // 创建别名操作: () -> TargetType
+            // Constant 的访问不需要输入，直接返回其类型的引用
+            let alias_op = OpNode {
+                id: constant.id,
+                name: format!("get_{}", constant.name),
+                kind: OpKind::ConstantAlias {
+                    const_id: constant.id,
+                    const_path: constant.path.clone(),
+                },
+                inputs: vec![],
+                output: Some(DataEdge {
+                    type_node: target_type,
+                    mode: EdgeMode::Ref, // Constant 通常返回引用
+                    name: None,
+                }),
+                error_output: None,
+                generic_constraints: HashMap::new(),
+                docs: None,
+                is_unsafe: false,
+                is_const: true,
+                is_public: true,
+                is_fallible: false,
+            };
+
+            self.graph.add_operation(alias_op);
+        }
+
+        // 添加 Static 节点和别名操作
+        for static_info in &self.graph.parsed_crate().statics.clone() {
+            let static_node = TypeNode::Static {
+                id: static_info.id,
+                name: static_info.name.clone(),
+                type_id: static_info.type_id,
+                path: static_info.path.clone(),
+                is_mutable: static_info.is_mutable,
+            };
+            self.graph
+                .add_type(static_node.clone(), static_info.name.clone());
+
+            // 创建目标类型节点
+            let target_type = self.create_type_node_from_id(static_info.type_id);
+
+            // 创建别名操作: () -> &TargetType 或 () -> &mut TargetType
+            let mode = if static_info.is_mutable {
+                EdgeMode::MutRef
+            } else {
+                EdgeMode::Ref
+            };
+
+            let alias_op = OpNode {
+                id: static_info.id,
+                name: format!("get_{}", static_info.name),
+                kind: OpKind::StaticAlias {
+                    static_id: static_info.id,
+                    static_path: static_info.path.clone(),
+                    is_mutable: static_info.is_mutable,
+                },
+                inputs: vec![],
+                output: Some(DataEdge {
+                    type_node: target_type,
+                    mode,
+                    name: None,
+                }),
+                error_output: None,
+                generic_constraints: HashMap::new(),
+                docs: None,
+                is_unsafe: static_info.is_mutable, // mutable static 访问是 unsafe 的
+                is_const: false,
+                is_public: true,
+                is_fallible: false,
+            };
+
+            self.graph.add_operation(alias_op);
+        }
     }
 
     /// 构建函数操作

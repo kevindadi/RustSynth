@@ -1,5 +1,5 @@
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use std::path::PathBuf;
 
 mod analysis;
@@ -14,152 +14,101 @@ mod support_types;
 use crate::config::Config;
 use crate::pipeline::Pipeline;
 
-/// SyPetype: 从 Rust API 文档自动生成 Fuzz Target
 #[derive(Parser)]
 #[command(name = "sypetype")]
-#[command(about = "从 Rust API 文档自动生成 Fuzz Target", long_about = None)]
+#[command(about = "SyPetype: 从 Rust API 文档自动生成 Fuzz Target", long_about = None)]
+#[command(version)]
 struct Cli {
-    #[command(subcommand)]
-    command: Commands,
-}
+    /// rustdoc JSON 文件路径   
+    #[arg(value_name = "INPUT")]
+    input: PathBuf,
 
-#[derive(Subcommand)]
-enum Commands {
-    /// 运行完整的工作流（从 JSON 到 Fuzz Target）
-    Run {
-        /// 配置文件路径（TOML 或 JSON 格式）
-        #[arg(short, long, value_name = "FILE")]
-        config: Option<PathBuf>,
+    /// 目标 crate 名称
+    #[arg(short, long, value_name = "NAME")]
+    target: String,
 
-        /// rustdoc JSON 文件路径（覆盖配置文件）
-        #[arg(short, long, value_name = "FILE")]
-        input: Option<PathBuf>,
+    /// 输出目录
+    #[arg(short, long, value_name = "DIR", default_value = ".")]
+    output: PathBuf,
 
-        /// 目标 crate 名称（覆盖配置文件）
-        #[arg(short, long, value_name = "NAME")]
-        target: Option<String>,
+    /// 导出 IR Graph (DOT 和 JSON 格式)
+    #[arg(long)]
+    ir_graph: bool,
 
-        /// 输出目录（覆盖配置文件）
-        #[arg(short, long, value_name = "DIR")]
-        output: Option<PathBuf>,
+    /// 导出 Petri Net (DOT 和 JSON 格式)
+    #[arg(long)]
+    petri_net: bool,
 
-        /// 导出 IR Graph DOT 文件
-        #[arg(long)]
-        export_ir_dot: bool,
+    /// 生成 Fuzz Target (默认开启，使用 --no-fuzz 禁用)
+    #[arg(long, default_value = "true", action = clap::ArgAction::Set)]
+    fuzz: bool,
 
-        /// 导出 IR Graph JSON 文件
-        #[arg(long)]
-        export_ir_json: bool,
+    /// Fuzz target 名称
+    #[arg(long, value_name = "NAME", default_value = "fuzz_target_1")]
+    fuzz_name: String,
 
-        /// 导出 Petri Net DOT 文件
-        #[arg(long)]
-        export_petri_dot: bool,
-
-        /// 导出 Petri Net JSON 文件
-        #[arg(long)]
-        export_petri_json: bool,
-
-        /// 静默模式（不打印统计信息）
-        #[arg(short, long)]
-        quiet: bool,
-    },
-
-    /// 生成示例配置文件
-    GenConfig {
-        /// 输出配置文件路径
-        #[arg(short, long, value_name = "FILE", default_value = "sypetype.toml")]
-        output: PathBuf,
-    },
+    /// 静默模式（不打印统计信息）
+    #[arg(short, long)]
+    quiet: bool,
 }
 
 fn main() -> Result<()> {
-    // 初始化日志
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let cli = Cli::parse();
 
-    match cli.command {
-        Commands::Run {
-            config,
-            input,
-            target,
-            output,
-            export_ir_dot,
-            export_ir_json,
-            export_petri_dot,
-            export_petri_json,
-            quiet,
-        } => {
-            // 加载配置
-            let mut cfg = if let Some(config_path) = config {
-                load_config(&config_path)?
-            } else {
-                log::info!("未指定配置文件，使用默认配置");
-                Config::default()
-            };
+    let cfg = Config {
+        input_json: cli.input,
+        target_crate: cli.target,
+        output: config::OutputConfig {
+            output_dir: cli.output,
+            fuzz_dir: PathBuf::from("fuzz"),
+            fuzz_target_name: cli.fuzz_name,
+        },
+        export: config::ExportConfig {
+            export_ir_graph_dot: cli.ir_graph,
+            ir_graph_dot_name: "ir_graph.dot".to_string(),
+            export_ir_graph_json: cli.ir_graph,
+            ir_graph_json_name: "ir_graph.json".to_string(),
+            export_petri_net_dot: cli.petri_net,
+            petri_net_dot_name: "petri_net.dot".to_string(),
+            export_petri_net_json: cli.petri_net,
+            petri_net_json_name: "petri_net.json".to_string(),
+            print_stats: !cli.quiet,
+        },
+    };
 
-            // 命令行参数覆盖配置文件
-            if let Some(input_path) = input {
-                cfg.input_json = input_path;
-            }
-            if let Some(target_name) = target {
-                cfg.target_crate = target_name;
-            }
-            if let Some(output_dir) = output {
-                cfg.output.output_dir = output_dir;
-            }
-            if export_ir_dot {
-                cfg.export.export_ir_graph_dot = true;
-            }
-            if export_ir_json {
-                cfg.export.export_ir_graph_json = true;
-            }
-            if export_petri_dot {
-                cfg.export.export_petri_net_dot = true;
-            }
-            if export_petri_json {
-                cfg.export.export_petri_net_json = true;
-            }
-            if quiet {
-                cfg.export.print_stats = false;
-            }
+    if !cli.fuzz {
+        log::info!("已禁用 Fuzz Target 生成");
+    }
 
-            // 运行工作流
-            let pipeline = Pipeline::new(cfg);
-            pipeline.run()?;
+    let pipeline = Pipeline::new(cfg.clone());
+    pipeline.run()?;
 
-            log::info!("✓ 工作流执行成功！");
-        }
-
-        Commands::GenConfig { output } => {
-            Config::create_example_config(&output)?;
-            log::info!("✓ 示例配置文件已生成: {}", output.display());
-            log::info!(
-                "  请编辑配置文件，然后运行: sypetype run --config {}",
-                output.display()
-            );
-        }
+    log::info!("✓ 完成！");
+    if cli.ir_graph {
+        log::info!(
+            "  IR Graph 已导出到: {}",
+            cfg.output.output_dir.join("ir_graph.dot").display()
+        );
+    }
+    if cli.petri_net {
+        log::info!(
+            "  Petri Net 已导出到: {}",
+            cfg.output.output_dir.join("petri_net.dot").display()
+        );
+    }
+    if cli.fuzz {
+        log::info!(
+            "  Fuzz Target 已生成到: {}",
+            cfg.fuzz_targets_dir().display()
+        );
+        log::info!(
+            "  运行: cd {} && cargo fuzz run {}",
+            cfg.fuzz_dir_path().display(),
+            cfg.output.fuzz_target_name
+        );
     }
 
     Ok(())
-}
-
-/// 加载配置文件（自动识别 TOML 或 JSON 格式）
-fn load_config(path: &PathBuf) -> Result<Config> {
-    log::info!("从配置文件加载: {}", path.display());
-
-    let extension = path.extension().and_then(|s| s.to_str()).unwrap_or("");
-
-    match extension {
-        "toml" => Config::from_toml_file(path),
-        "json" => Config::from_json_file(path),
-        _ => {
-            // 尝试自动检测格式
-            if let Ok(config) = Config::from_toml_file(path) {
-                Ok(config)
-            } else {
-                Config::from_json_file(path)
-            }
-        }
-    }
 }

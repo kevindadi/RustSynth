@@ -81,7 +81,37 @@ use {};
     }
 
     fn sanitize_type_name(&self, type_name: &str) -> String {
-        type_name
+        let mut result = type_name.to_string();
+
+        // 处理元组类型 (T1, T2, ...) -> tuple_T1_T2_...
+        if result.starts_with('(') && result.ends_with(')') {
+            result = result
+                .trim_start_matches('(')
+                .trim_end_matches(')')
+                .to_string();
+            result = format!("tuple_{}", result);
+        }
+
+        // 处理切片类型 [T] -> array_T
+        if result.starts_with('[') && result.ends_with(']') && !result.contains(';') {
+            result = result
+                .trim_start_matches('[')
+                .trim_end_matches(']')
+                .to_string();
+            result = format!("array_{}", result);
+        }
+
+        // 处理固定大小数组 [T; N] -> array_T_N
+        if result.starts_with('[') && result.contains(';') && result.ends_with(']') {
+            result = result
+                .trim_start_matches('[')
+                .trim_end_matches(']')
+                .to_string();
+            result = format!("array_{}", result);
+        }
+
+        // 通用的符号替换
+        result
             .replace("::", "_")
             .replace("<", "_")
             .replace(">", "")
@@ -89,8 +119,11 @@ use {};
             .replace(",", "_")
             .replace("&", "")
             .replace("mut", "")
-            .replace("[]", "slice") // 简单处理
-            .replace("()", "unit")
+            .replace("[", "")
+            .replace("]", "")
+            .replace("(", "")
+            .replace(")", "")
+            .replace(";", "_")
     }
 
     fn sanitize_func_name(&self, func_name: &str) -> String {

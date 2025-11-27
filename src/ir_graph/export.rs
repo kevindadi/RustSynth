@@ -1,4 +1,4 @@
-use super::structure::{IrGraph, TypeNode};
+use super::structure::{IrGraph, OpKind, TypeNode};
 /// IR Graph 导出功能
 use serde_json;
 
@@ -26,6 +26,8 @@ impl IrGraph {
                     TypeNode::QualifiedPath { .. } => "qualified_path",
                     TypeNode::GenericInstance { .. } => "generic_instance",
                     TypeNode::Opaque(_) => "opaque",
+                    TypeNode::Constant { .. } => "constant",
+                    TypeNode::Static { .. } => "static",
                     TypeNode::Unknown => "unknown",
                 };
 
@@ -44,6 +46,25 @@ impl IrGraph {
                     json["owner_id"] = serde_json::json!(owner_id.0);
                     json["trait_bounds"] =
                         serde_json::json!(trait_bounds.iter().map(|id| id.0).collect::<Vec<_>>());
+                }
+
+                // 为 Constant 和 Static 添加额外信息
+                match node {
+                    TypeNode::Constant { path, type_id, .. } => {
+                        json["path"] = serde_json::json!(path);
+                        json["type_id"] = serde_json::json!(type_id.0);
+                    }
+                    TypeNode::Static {
+                        path,
+                        type_id,
+                        is_mutable,
+                        ..
+                    } => {
+                        json["path"] = serde_json::json!(path);
+                        json["type_id"] = serde_json::json!(type_id.0);
+                        json["is_mutable"] = serde_json::json!(is_mutable);
+                    }
+                    _ => {}
                 }
 
                 json
@@ -145,6 +166,20 @@ impl IrGraph {
                     let name = self.get_type_name(node).unwrap_or("unknown");
                     (name.to_string(), "lavender")
                 }
+                TypeNode::Constant { name, path, .. } => {
+                    let label = format!("const {}\\n{}", name, path);
+                    (label, "lightsalmon")
+                }
+                TypeNode::Static {
+                    name,
+                    path,
+                    is_mutable,
+                    ..
+                } => {
+                    let prefix = if *is_mutable { "static mut" } else { "static" };
+                    let label = format!("{} {}\\n{}", prefix, name, path);
+                    (label, "lightcoral")
+                }
                 TypeNode::GenericParam {
                     name,
                     owner_name,
@@ -210,7 +245,13 @@ impl IrGraph {
                 }
                 TypeNode::Unit => ("()".to_string(), "white"),
                 TypeNode::Never => ("!".to_string(), "white"),
-                _ => {
+                TypeNode::MultiTrait(_)
+                | TypeNode::FnPointer { .. }
+                | TypeNode::Unit
+                | TypeNode::Never
+                | TypeNode::QualifiedPath { .. }
+                | TypeNode::Opaque(_)
+                | TypeNode::Unknown => {
                     let name = self.get_type_name(node);
                     if name.is_none() {
                         log::warn!("DOT导出: 发现未命名类型节点 (显示为unknown): {:?}", node);
@@ -249,6 +290,20 @@ impl IrGraph {
 
             // 构建标签
             let mut label = op.name.clone();
+
+            // 为别名操作添加特殊标记
+            if let OpKind::ConstantAlias { const_path, .. } = &op.kind {
+                label = format!("🔗 {}\n{}", label, const_path);
+            } else if let OpKind::StaticAlias {
+                static_path,
+                is_mutable,
+                ..
+            } = &op.kind
+            {
+                let prefix = if *is_mutable { "static mut" } else { "static" };
+                label = format!("🔗 {} {}\n{}", prefix, label, static_path);
+            }
+
             if op.is_unsafe {
                 label = format!("⚠️ {}", label);
             }
@@ -391,6 +446,37 @@ impl IrGraph {
                         }
                     }
                 }
+            }
+        }
+
+        // Constant 和 Static 的别名边
+        dot.push_str("\n  // Constant and Static alias edges\n\n");
+        for (const_idx, node) in self.type_nodes.iter().enumerate() {
+            match node {
+                TypeNode::Constant { type_id, .. } | TypeNode::Static { type_id, .. } => {
+                    // 查找目标类型的节点索引
+                    if let Some(target_idx) = self.type_nodes.iter().position(|n| {
+                        matches!(
+                            n,
+                            TypeNode::Struct(Some(id))
+                            | TypeNode::Enum(Some(id))
+                            | TypeNode::Union(Some(id))
+                            | TypeNode::TraitObject(Some(id))
+                            if id == type_id
+                        )
+                    }) {
+                        let label = if matches!(node, TypeNode::Static { .. }) {
+                            "static_alias"
+                        } else {
+                            "const_alias"
+                        };
+                        dot.push_str(&format!(
+                            "  type_{} -> type_{} [label=\"{}\", color=orange, style=bold, constraint=false];\n",
+                            const_idx, target_idx, label
+                        ));
+                    }
+                }
+                _ => {}
             }
         }
 

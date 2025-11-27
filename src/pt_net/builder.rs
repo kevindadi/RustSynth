@@ -269,6 +269,8 @@ impl<'a> BuilderContext<'a> {
             OpKind::FieldAccessor { .. } => TransitionKind::FieldAccessor,
             OpKind::MethodCall { .. } => TransitionKind::MethodCall,
             OpKind::AssocFn { .. } => TransitionKind::AssocFn,
+            OpKind::ConstantAlias { .. } => TransitionKind::ConstantAlias,
+            OpKind::StaticAlias { .. } => TransitionKind::StaticAlias,
         };
 
         // Convert generic_map to String->String for serialization/display

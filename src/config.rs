@@ -76,7 +76,7 @@ pub struct ExportConfig {
 
 // 默认值函数
 fn default_output_dir() -> PathBuf {
-    PathBuf::from("./output")
+    PathBuf::from(".")
 }
 
 fn default_fuzz_dir() -> PathBuf {

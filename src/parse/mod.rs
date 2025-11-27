@@ -25,6 +25,10 @@ pub struct ParsedCrate {
     pub impl_blocks: Vec<ImplBlockInfo>,
     /// Trait 信息列表
     pub traits: Vec<TraitInfo>,
+    /// Constant 列表
+    pub constants: Vec<ConstantInfo>,
+    /// Static 列表
+    pub statics: Vec<StaticInfo>,
 }
 
 /// Impl 块信息
@@ -99,6 +103,27 @@ pub struct TypeInfo {
     pub fields: Vec<FieldInfo>,
     /// 枚举的变体(仅对 Enum 有效)
     pub variants: Vec<VariantInfo>,
+    /// 完整路径 (例如: "crate::module::Type")
+    pub path: Option<String>,
+}
+
+/// Constant 信息
+#[derive(Debug, Clone)]
+pub struct ConstantInfo {
+    pub id: Id,
+    pub name: String,
+    pub type_id: Id,
+    pub path: String,
+}
+
+/// Static 信息
+#[derive(Debug, Clone)]
+pub struct StaticInfo {
+    pub id: Id,
+    pub name: String,
+    pub type_id: Id,
+    pub path: String,
+    pub is_mutable: bool,
 }
 
 /// 字段信息
@@ -170,6 +195,8 @@ impl ParsedCrate {
             types: Vec::new(),
             impl_blocks: Vec::new(),
             traits: Vec::new(),
+            constants: Vec::new(),
+            statics: Vec::new(),
         };
 
         // 1. 提取 Trait 信息
@@ -186,6 +213,9 @@ impl ParsedCrate {
 
         // 5. 提取 Impl 块信息
         parsed.extract_impl_blocks();
+
+        // 6. 提取 Constant 和 Static
+        parsed.extract_constants_and_statics();
 
         parsed
     }
@@ -355,36 +385,84 @@ impl ParsedCrate {
                     (Some(TypeKind::Union), fields, Vec::new())
                 }
                 ItemEnum::TypeAlias(_) => (Some(TypeKind::TypeAlias), Vec::new(), Vec::new()),
-                // Constant 和 Static 也可能指向类型
-                ItemEnum::Constant { type_, .. } => {
-                    // 从 constant 的类型中提取类型信息
-                    if let Some(type_id) = Self::extract_type_id(type_) {
-                        log::debug!("发现 constant {:?} 指向类型 {:?}", item.name, type_id);
-                    }
-                    (None, Vec::new(), Vec::new())
-                }
-                // Static 包含 type_ 字段
-                ItemEnum::Static(static_data) => {
-                    // 从 static 的类型中提取类型信息
-                    if let Some(type_id) = Self::extract_type_id(&static_data.type_) {
-                        log::debug!("发现 static {:?} 指向类型 {:?}", item.name, type_id);
-                    }
-                    (None, Vec::new(), Vec::new())
-                }
+                // Constant 和 Static 在单独的函数中处理
+                ItemEnum::Constant { .. } | ItemEnum::Static(_) => (None, Vec::new(), Vec::new()),
                 _ => (None, Vec::new(), Vec::new()),
             };
 
             if let Some(kind) = kind {
                 let name = item.name.as_deref().unwrap_or("anonymous").to_string();
+
+                // 构建完整路径
+                let path = Some(self.build_item_path(id));
+
                 self.types.push(TypeInfo {
                     id,
                     name,
                     kind,
                     fields,
                     variants,
+                    path,
                 });
             }
         }
+    }
+
+    /// 提取 Constant 和 Static
+    fn extract_constants_and_statics(&mut self) {
+        for (&id, item) in &self.crate_data.index {
+            match &item.inner {
+                ItemEnum::Constant { type_, .. } => {
+                    if let Some(type_id) = Self::extract_type_id(type_) {
+                        let name = item.name.as_deref().unwrap_or("anonymous").to_string();
+                        let path = self.build_item_path(id);
+
+                        log::debug!("提取 constant: {} -> {:?}", &path, type_id);
+
+                        self.constants.push(ConstantInfo {
+                            id,
+                            name,
+                            type_id,
+                            path,
+                        });
+                    }
+                }
+                ItemEnum::Static(static_data) => {
+                    if let Some(type_id) = Self::extract_type_id(&static_data.type_) {
+                        let name = item.name.as_deref().unwrap_or("anonymous").to_string();
+                        let path = self.build_item_path(id);
+
+                        log::debug!("提取 static: {} -> {:?}", &path, type_id);
+
+                        self.statics.push(StaticInfo {
+                            id,
+                            name,
+                            type_id,
+                            path,
+                            is_mutable: static_data.is_mutable,
+                        });
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// 构建 Item 的完整路径
+    fn build_item_path(&self, id: Id) -> String {
+        // 尝试从 paths 中获取路径
+        if let Some(summary) = self.crate_data.paths.get(&id) {
+            return summary.path.join("::");
+        }
+
+        // 如果没有，尝试从 item 名称构建
+        if let Some(item) = self.type_index.get(&id) {
+            if let Some(name) = &item.name {
+                return name.clone();
+            }
+        }
+
+        format!("unknown_{:?}", id)
     }
 
     /// 提取 Plain struct 字段

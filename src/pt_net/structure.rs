@@ -29,6 +29,10 @@ pub enum TransitionKind {
     FieldAccessor,
     MethodCall,
     AssocFn,
+    /// Constant 别名变迁
+    ConstantAlias,
+    /// Static 别名变迁
+    StaticAlias,
 }
 
 /// Place 节点数据: 代表具体的类型
