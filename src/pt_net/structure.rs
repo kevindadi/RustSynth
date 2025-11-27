@@ -91,7 +91,7 @@ pub struct EdgeData {
     pub is_raw_ptr: bool,
 }
 
-/// Petri Net 图容器
+/// Petri Net
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PetriNet {
     /// 底层的 petgraph DiGraph

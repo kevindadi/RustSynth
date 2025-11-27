@@ -355,6 +355,22 @@ impl ParsedCrate {
                     (Some(TypeKind::Union), fields, Vec::new())
                 }
                 ItemEnum::TypeAlias(_) => (Some(TypeKind::TypeAlias), Vec::new(), Vec::new()),
+                // Constant 和 Static 也可能指向类型
+                ItemEnum::Constant { type_, .. } => {
+                    // 从 constant 的类型中提取类型信息
+                    if let Some(type_id) = Self::extract_type_id(type_) {
+                        log::debug!("发现 constant {:?} 指向类型 {:?}", item.name, type_id);
+                    }
+                    (None, Vec::new(), Vec::new())
+                }
+                // Static 包含 type_ 字段
+                ItemEnum::Static(static_data) => {
+                    // 从 static 的类型中提取类型信息
+                    if let Some(type_id) = Self::extract_type_id(&static_data.type_) {
+                        log::debug!("发现 static {:?} 指向类型 {:?}", item.name, type_id);
+                    }
+                    (None, Vec::new(), Vec::new())
+                }
                 _ => (None, Vec::new(), Vec::new()),
             };
 

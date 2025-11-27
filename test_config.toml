@@ -1,0 +1,18 @@
+input_json = "base64.json"
+target_crate = "base64"
+
+[output]
+output_dir = "./output"
+fuzz_dir = "fuzz"
+fuzz_target_name = "fuzz_target_1"
+
+[export]
+export_ir_graph_dot = true
+ir_graph_dot_name = "ir_graph.dot"
+export_ir_graph_json = true
+ir_graph_json_name = "ir_graph.json"
+export_petri_net_dot = true
+petri_net_dot_name = "petri_net.dot"
+export_petri_net_json = true
+petri_net_json_name = "petri_net.json"
+print_stats = true

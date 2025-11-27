@@ -1,173 +1,165 @@
 use anyhow::Result;
-use rustdoc_types::{Crate, Id};
-use std::collections::HashMap;
+use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 
 mod analysis;
+mod config;
 mod generate;
 mod ir_graph;
 mod parse;
+mod pipeline;
 mod pt_net;
 mod support_types;
 
-use crate::generate::FuzzTargetGenerator;
-use crate::ir_graph::structure::{DataEdge, EdgeMode, IrGraph, OpKind, OpNode, TypeNode};
-use crate::pt_net::builder::PetriNetBuilder;
+use crate::config::Config;
+use crate::pipeline::Pipeline;
+
+/// SyPetype: 从 Rust API 文档自动生成 Fuzz Target
+#[derive(Parser)]
+#[command(name = "sypetype")]
+#[command(about = "从 Rust API 文档自动生成 Fuzz Target", long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// 运行完整的工作流（从 JSON 到 Fuzz Target）
+    Run {
+        /// 配置文件路径（TOML 或 JSON 格式）
+        #[arg(short, long, value_name = "FILE")]
+        config: Option<PathBuf>,
+
+        /// rustdoc JSON 文件路径（覆盖配置文件）
+        #[arg(short, long, value_name = "FILE")]
+        input: Option<PathBuf>,
+
+        /// 目标 crate 名称（覆盖配置文件）
+        #[arg(short, long, value_name = "NAME")]
+        target: Option<String>,
+
+        /// 输出目录（覆盖配置文件）
+        #[arg(short, long, value_name = "DIR")]
+        output: Option<PathBuf>,
+
+        /// 导出 IR Graph DOT 文件
+        #[arg(long)]
+        export_ir_dot: bool,
+
+        /// 导出 IR Graph JSON 文件
+        #[arg(long)]
+        export_ir_json: bool,
+
+        /// 导出 Petri Net DOT 文件
+        #[arg(long)]
+        export_petri_dot: bool,
+
+        /// 导出 Petri Net JSON 文件
+        #[arg(long)]
+        export_petri_json: bool,
+
+        /// 静默模式（不打印统计信息）
+        #[arg(short, long)]
+        quiet: bool,
+    },
+
+    /// 生成示例配置文件
+    GenConfig {
+        /// 输出配置文件路径
+        #[arg(short, long, value_name = "FILE", default_value = "sypetype.toml")]
+        output: PathBuf,
+    },
+}
 
 fn main() -> Result<()> {
-    println!("=== SyPetype Pipeline Integration Test ===");
+    // 初始化日志
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    // 1. Construct Mock IrGraph
-    println!("1. Constructing Mock IrGraph...");
-    let ir = create_mock_ir()?;
+    let cli = Cli::parse();
 
-    // 2. Build PetriNet
-    println!("2. Building PetriNet...");
-    let net = PetriNetBuilder::from_ir(&ir);
+    match cli.command {
+        Commands::Run {
+            config,
+            input,
+            target,
+            output,
+            export_ir_dot,
+            export_ir_json,
+            export_petri_dot,
+            export_petri_json,
+            quiet,
+        } => {
+            // 加载配置
+            let mut cfg = if let Some(config_path) = config {
+                load_config(&config_path)?
+            } else {
+                log::info!("未指定配置文件，使用默认配置");
+                Config::default()
+            };
 
-    // 3. Generate Fuzz Target
-    println!("3. Generating Fuzz Target...");
-    let generator = FuzzTargetGenerator::new("my_crate".to_string());
-    let source_code = generator.generate(&net);
+            // 命令行参数覆盖配置文件
+            if let Some(input_path) = input {
+                cfg.input_json = input_path;
+            }
+            if let Some(target_name) = target {
+                cfg.target_crate = target_name;
+            }
+            if let Some(output_dir) = output {
+                cfg.output.output_dir = output_dir;
+            }
+            if export_ir_dot {
+                cfg.export.export_ir_graph_dot = true;
+            }
+            if export_ir_json {
+                cfg.export.export_ir_graph_json = true;
+            }
+            if export_petri_dot {
+                cfg.export.export_petri_net_dot = true;
+            }
+            if export_petri_json {
+                cfg.export.export_petri_net_json = true;
+            }
+            if quiet {
+                cfg.export.print_stats = false;
+            }
 
-    println!("\n=== Generated Code ===\n");
-    println!("{}", source_code);
-    println!("======================");
+            // 运行工作流
+            let pipeline = Pipeline::new(cfg);
+            pipeline.run()?;
+
+            log::info!("✓ 工作流执行成功！");
+        }
+
+        Commands::GenConfig { output } => {
+            Config::create_example_config(&output)?;
+            log::info!("✓ 示例配置文件已生成: {}", output.display());
+            log::info!(
+                "  请编辑配置文件，然后运行: sypetype run --config {}",
+                output.display()
+            );
+        }
+    }
 
     Ok(())
 }
 
-fn create_mock_ir() -> Result<IrGraph> {
-    // Create a dummy ParsedCrate using serde_json to avoid specifying all fields manually
-    // and to be robust against struct changes if we include enough fields.
-    // If 'target' field is missing in JSON but required, serde might fail or use default if Option.
-    // We try to provide a minimal valid JSON for Crate.
-    let json = r#"{
-        "root": 0,
-        "crate_version": null,
-        "includes_private": false,
-        "index": {},
-        "paths": {},
-        "external_crates": {},
-        "format_version": 0
-    }"#;
+/// 加载配置文件（自动识别 TOML 或 JSON 格式）
+fn load_config(path: &PathBuf) -> Result<Config> {
+    log::info!("从配置文件加载: {}", path.display());
 
-    // We try to deserialize. If it fails due to missing field, we might need to add it.
-    // But since we can't see the error easily without running, we hope this is enough or 'target' is optional.
-    // Actually, to be safe, let's assume we can construct it manually if we knew the fields.
-    // But since we saw a compile error about missing 'target', we know it exists.
-    // Let's try to construct manually with what we know, and use a hack for 'target' if we can't find its type.
-    // But I cannot see the type of 'target' without docs.
-    // However, I can try to use serde_json::from_str which is dynamic.
+    let extension = path.extension().and_then(|s| s.to_str()).unwrap_or("");
 
-    let crate_data: Crate = match serde_json::from_str(json) {
-        Ok(c) => c,
-        Err(_) => {
-            // If failed, maybe 'target' is required. Let's try adding it.
-            // Assuming target is a string (triplet).
-            let json2 = r#"{
-                "root": 0,
-                "crate_version": null,
-                "includes_private": false,
-                "index": {},
-                "paths": {},
-                "external_crates": {},
-                "format_version": 0,
-                "is_proc_macro": false,
-                "proc_macro_derive_resolution_fallback": false,
-                "target": {
-                    "triple": "x86_64-unknown-linux-gnu",
-                    "target_features": [],
-                    "abi": "",
-                    "arch": "x86_64",
-                    "vendor": "unknown",
-                    "os": "linux",
-                    "env": "gnu",
-                    "pointer_width": "64",
-                    "endian": "little"
-                }
-            }"#;
-            serde_json::from_str(json2).unwrap_or_else(|e| {
-                panic!("Failed to create dummy crate: {}", e);
-            })
+    match extension {
+        "toml" => Config::from_toml_file(path),
+        "json" => Config::from_json_file(path),
+        _ => {
+            // 尝试自动检测格式
+            if let Ok(config) = Config::from_toml_file(path) {
+                Ok(config)
+            } else {
+                Config::from_json_file(path)
+            }
         }
-    };
-
-    let dummy_crate = crate::parse::ParsedCrate {
-        crate_data,
-        type_index: HashMap::new(),
-        trait_implementations: HashMap::new(),
-        functions: Vec::new(),
-        types: Vec::new(),
-        impl_blocks: Vec::new(),
-        traits: Vec::new(),
-    };
-
-    let mut ir = IrGraph::new(dummy_crate);
-
-    // --- Types ---
-    // Use u32 for Ids
-
-    // 1. u8
-    let u8_node = TypeNode::Primitive("u8".to_string());
-    ir.add_type(u8_node.clone(), "u8".to_string());
-
-    // 2. Vec<u8>
-    let vec_id = Id(1);
-    let vec_node = TypeNode::GenericInstance {
-        base_id: vec_id.clone(),
-        path: "Vec".to_string(),
-        type_args: vec![u8_node.clone()],
-    };
-    ir.add_type(vec_node.clone(), "Vec<u8>".to_string());
-
-    // 3. Context
-    let ctx_id = Id(2);
-    let ctx_node = TypeNode::Struct(Some(ctx_id.clone()));
-    ir.add_type(ctx_node.clone(), "Context".to_string());
-
-    // --- Operations ---
-
-    // 1. Vec::push: fn push(&mut Vec<u8>, value: u8)
-    let push_op = OpNode {
-        id: Id(3),
-        name: "Vec::push".to_string(),
-        kind: OpKind::MethodCall {
-            self_type: vec_node.clone(),
-        },
-        inputs: vec![
-            DataEdge::mut_ref_edge(vec_node.clone(), Some("self".to_string())),
-            DataEdge::move_edge(u8_node.clone(), Some("value".to_string())),
-        ],
-        output: None, // Returns ()
-        error_output: None,
-        generic_constraints: HashMap::new(),
-        docs: None,
-        is_unsafe: false,
-        is_const: false,
-        is_public: true,
-        is_fallible: false,
-    };
-    ir.add_operation(push_op);
-
-    // 2. Context::new: fn new(data: Vec<u8>) -> Context
-    let new_op = OpNode {
-        id: Id(4),
-        name: "Context::new".to_string(),
-        kind: OpKind::FnCall,
-        inputs: vec![DataEdge::move_edge(
-            vec_node.clone(),
-            Some("data".to_string()),
-        )],
-        output: Some(DataEdge::move_edge(ctx_node.clone(), None)),
-        error_output: None,
-        generic_constraints: HashMap::new(),
-        docs: None,
-        is_unsafe: false,
-        is_const: false,
-        is_public: true,
-        is_fallible: false,
-    };
-    ir.add_operation(new_op);
-
-    Ok(ir)
+    }
 }

@@ -1,4 +1,6 @@
 pub mod builder;
+pub mod export;
+pub mod shim;
 pub mod structure;
 
 pub use builder::PetriNetBuilder;

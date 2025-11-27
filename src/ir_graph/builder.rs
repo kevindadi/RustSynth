@@ -93,6 +93,30 @@ impl IrGraphBuilder {
                     );
                 }
 
+                // Constant: 提取它指向的类型
+                rustdoc_types::ItemEnum::Constant { type_, .. } => {
+                    log::debug!("处理 constant {:?}, 提取其类型", item.name);
+                    if let Some((type_node, _)) = self.extract_type_and_mode(type_) {
+                        return type_node;
+                    }
+                    warn!(
+                        "无法提取 constant 的类型: Id={:?}, name={:?}",
+                        canonical_id, item.name
+                    );
+                }
+
+                // Static 包含 type_ 字段
+                rustdoc_types::ItemEnum::Static(static_data) => {
+                    log::debug!("处理 static {:?}, 提取其类型", item.name);
+                    if let Some((type_node, _)) = self.extract_type_and_mode(&static_data.type_) {
+                        return type_node;
+                    }
+                    warn!(
+                        "无法提取 static 的类型: Id={:?}, name={:?}",
+                        canonical_id, item.name
+                    );
+                }
+
                 _ => {
                     warn!("无法确定类型种类,默认为 Struct: Id={:?}", canonical_id);
                 }
