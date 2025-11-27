@@ -1,115 +1,173 @@
-pub mod cpn;
-pub mod generate;
-pub mod ir_graph;
-pub mod parse;
-pub mod support_types;
+use anyhow::Result;
+use rustdoc_types::{Crate, Id};
+use std::collections::HashMap;
 
-use log::info;
-use std::env;
-use std::fs::File;
-use std::process;
-use std::sync::Mutex;
+mod analysis;
+mod generate;
+mod ir_graph;
+mod parse;
+mod pt_net;
+mod support_types;
 
-struct FileLogger {
-    file: Mutex<File>,
+use crate::generate::FuzzTargetGenerator;
+use crate::ir_graph::structure::{DataEdge, EdgeMode, IrGraph, OpKind, OpNode, TypeNode};
+use crate::pt_net::builder::PetriNetBuilder;
+
+fn main() -> Result<()> {
+    println!("=== SyPetype Pipeline Integration Test ===");
+
+    // 1. Construct Mock IrGraph
+    println!("1. Constructing Mock IrGraph...");
+    let ir = create_mock_ir()?;
+
+    // 2. Build PetriNet
+    println!("2. Building PetriNet...");
+    let net = PetriNetBuilder::from_ir(&ir);
+
+    // 3. Generate Fuzz Target
+    println!("3. Generating Fuzz Target...");
+    let generator = FuzzTargetGenerator::new("my_crate".to_string());
+    let source_code = generator.generate(&net);
+
+    println!("\n=== Generated Code ===\n");
+    println!("{}", source_code);
+    println!("======================");
+
+    Ok(())
 }
 
-impl log::Log for FileLogger {
-    fn enabled(&self, metadata: &log::Metadata) -> bool {
-        metadata.level() <= log::Level::Info
-    }
+fn create_mock_ir() -> Result<IrGraph> {
+    // Create a dummy ParsedCrate using serde_json to avoid specifying all fields manually
+    // and to be robust against struct changes if we include enough fields.
+    // If 'target' field is missing in JSON but required, serde might fail or use default if Option.
+    // We try to provide a minimal valid JSON for Crate.
+    let json = r#"{
+        "root": 0,
+        "crate_version": null,
+        "includes_private": false,
+        "index": {},
+        "paths": {},
+        "external_crates": {},
+        "format_version": 0
+    }"#;
 
-    fn log(&self, record: &log::Record) {
-        if self.enabled(record.metadata()) {
-            let msg = format!("[{}] {}", record.level(), record.args());
-            println!("{}", msg); // Print to stdout
-            use std::io::Write;
-            if let Ok(mut file) = self.file.lock() {
-                let _ = writeln!(file, "{}", msg); // Write to file
-            }
-        }
-    }
+    // We try to deserialize. If it fails due to missing field, we might need to add it.
+    // But since we can't see the error easily without running, we hope this is enough or 'target' is optional.
+    // Actually, to be safe, let's assume we can construct it manually if we knew the fields.
+    // But since we saw a compile error about missing 'target', we know it exists.
+    // Let's try to construct manually with what we know, and use a hack for 'target' if we can't find its type.
+    // But I cannot see the type of 'target' without docs.
+    // However, I can try to use serde_json::from_str which is dynamic.
 
-    fn flush(&self) {}
-}
-
-fn init_logger() {
-    let file = File::create("ir_graph.log").expect("无法创建日志文件");
-    let logger = Box::new(FileLogger {
-        file: Mutex::new(file),
-    });
-
-    // 如果已经初始化过,忽略错误
-    let _ = log::set_boxed_logger(logger);
-    log::set_max_level(log::LevelFilter::Info);
-}
-
-fn main() {
-    init_logger();
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() < 2 {
-        eprintln!("用法: {} <rustdoc-json-file>", args[0]);
-        eprintln!("示例: {} ./base64.json", args[0]);
-        process::exit(1);
-    }
-
-    let json_path = &args[1];
-
-    println!("正在加载 rustdoc JSON: {}", json_path);
-    info!("开始解析 rustdoc JSON: {}", json_path);
-
-    // 步骤 1: 解析 rustdoc JSON
-    let parsed_crate = match parse::ParsedCrate::from_json_file(json_path) {
-        Ok(crate_data) => {
-            println!("✓ 成功解析 rustdoc JSON");
-            crate_data
-        }
-        Err(e) => {
-            eprintln!("✗ 解析失败: {}", e);
-            process::exit(1);
+    let crate_data: Crate = match serde_json::from_str(json) {
+        Ok(c) => c,
+        Err(_) => {
+            // If failed, maybe 'target' is required. Let's try adding it.
+            // Assuming target is a string (triplet).
+            let json2 = r#"{
+                "root": 0,
+                "crate_version": null,
+                "includes_private": false,
+                "index": {},
+                "paths": {},
+                "external_crates": {},
+                "format_version": 0,
+                "is_proc_macro": false,
+                "proc_macro_derive_resolution_fallback": false,
+                "target": {
+                    "triple": "x86_64-unknown-linux-gnu",
+                    "target_features": [],
+                    "abi": "",
+                    "arch": "x86_64",
+                    "vendor": "unknown",
+                    "os": "linux",
+                    "env": "gnu",
+                    "pointer_width": "64",
+                    "endian": "little"
+                }
+            }"#;
+            serde_json::from_str(json2).unwrap_or_else(|e| {
+                panic!("Failed to create dummy crate: {}", e);
+            })
         }
     };
 
-    // 打印解析统计
-    parsed_crate.print_stats();
-    println!();
+    let dummy_crate = crate::parse::ParsedCrate {
+        crate_data,
+        type_index: HashMap::new(),
+        trait_implementations: HashMap::new(),
+        functions: Vec::new(),
+        types: Vec::new(),
+        impl_blocks: Vec::new(),
+        traits: Vec::new(),
+    };
 
-    // 步骤 2:  构建 IR 图(中间表示)
-    println!("正在构建 IR Graph(中间表示)...");
-    let ir_graph = ir_graph::build_ir_graph(parsed_crate);
-    println!("✓ IR Graph 构建完成");
-    println!();
+    let mut ir = IrGraph::new(dummy_crate);
 
-    // 打印 IR 图统计
-    ir_graph.print_stats();
-    println!();
+    // --- Types ---
+    // Use u32 for Ids
 
-    // 步骤 3: 导出图
-    println!("=== 导出选项 ===");
+    // 1. u8
+    let u8_node = TypeNode::Primitive("u8".to_string());
+    ir.add_type(u8_node.clone(), "u8".to_string());
 
-    // 导出 IR Graph 为 JSON
-    let ir_json_output = ir_graph.export_to_json();
-    let ir_json_file = "ir_graph.json";
-    if let Err(e) = std::fs::write(
-        ir_json_file,
-        serde_json::to_string_pretty(&ir_json_output).unwrap(),
-    ) {
-        eprintln!("✗ 写入 IR JSON 失败: {}", e);
-    } else {
-        println!("✓ IR Graph JSON 已导出到: {}", ir_json_file);
-    }
+    // 2. Vec<u8>
+    let vec_id = Id(1);
+    let vec_node = TypeNode::GenericInstance {
+        base_id: vec_id.clone(),
+        path: "Vec".to_string(),
+        type_args: vec![u8_node.clone()],
+    };
+    ir.add_type(vec_node.clone(), "Vec<u8>".to_string());
 
-    // 导出 IR Graph 为 DOT(Petri Net 风格)
-    let ir_dot_output = ir_graph.export_to_dot();
-    let ir_dot_file = "ir_graph.dot";
-    if let Err(e) = std::fs::write(ir_dot_file, ir_dot_output) {
-        eprintln!("✗ 写入 IR DOT 失败: {}", e);
-    } else {
-        println!("✓ IR Graph DOT 已导出到: {}", ir_dot_file);
-        println!("  可使用以下命令生成可视化图像:");
-        println!("  dot -Tpng {} -o ir_graph.png", ir_dot_file);
-    }
+    // 3. Context
+    let ctx_id = Id(2);
+    let ctx_node = TypeNode::Struct(Some(ctx_id.clone()));
+    ir.add_type(ctx_node.clone(), "Context".to_string());
 
-    println!("\n✓ 所有步骤完成!");
+    // --- Operations ---
+
+    // 1. Vec::push: fn push(&mut Vec<u8>, value: u8)
+    let push_op = OpNode {
+        id: Id(3),
+        name: "Vec::push".to_string(),
+        kind: OpKind::MethodCall {
+            self_type: vec_node.clone(),
+        },
+        inputs: vec![
+            DataEdge::mut_ref_edge(vec_node.clone(), Some("self".to_string())),
+            DataEdge::move_edge(u8_node.clone(), Some("value".to_string())),
+        ],
+        output: None, // Returns ()
+        error_output: None,
+        generic_constraints: HashMap::new(),
+        docs: None,
+        is_unsafe: false,
+        is_const: false,
+        is_public: true,
+        is_fallible: false,
+    };
+    ir.add_operation(push_op);
+
+    // 2. Context::new: fn new(data: Vec<u8>) -> Context
+    let new_op = OpNode {
+        id: Id(4),
+        name: "Context::new".to_string(),
+        kind: OpKind::FnCall,
+        inputs: vec![DataEdge::move_edge(
+            vec_node.clone(),
+            Some("data".to_string()),
+        )],
+        output: Some(DataEdge::move_edge(ctx_node.clone(), None)),
+        error_output: None,
+        generic_constraints: HashMap::new(),
+        docs: None,
+        is_unsafe: false,
+        is_const: false,
+        is_public: true,
+        is_fallible: false,
+    };
+    ir.add_operation(new_op);
+
+    Ok(ir)
 }

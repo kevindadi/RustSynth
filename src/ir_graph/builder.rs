@@ -2,7 +2,7 @@
 ///
 /// 负责将 ParsedCrate 转换为 IR Graph
 /// 将 BorrowedRef 和 RawPointer 映射到 EdgeMode
-use rustdoc_types::{GenericBound, GenericParamDefKind, Id, Type};
+use rustdoc_types::{GenericBound, GenericParamDefKind, Id, Type, Visibility};
 use std::collections::HashMap;
 
 use super::generic_scope::GenericScope;
@@ -270,6 +270,11 @@ impl IrGraphBuilder {
         // 提取文档注释: 如果链接到 llm 给它用的
         let docs = func_item.docs.clone();
 
+        // 从 rustdoc 获取函数属性
+        let is_unsafe = rustdoc_func.header.is_unsafe;
+        let is_const = rustdoc_func.header.is_const;
+        let is_public = matches!(func_item.visibility, Visibility::Public);
+
         Some(OpNode {
             id: func.id,
             name: func.name.clone(),
@@ -279,9 +284,9 @@ impl IrGraphBuilder {
             error_output,
             generic_constraints,
             docs,
-            is_unsafe: false, // TODO: 从 rustdoc 获取
-            is_const: false,  // TODO: 从 rustdoc 获取
-            is_public: true,  // TODO: 从 rustdoc 获取
+            is_unsafe,
+            is_const,
+            is_public,
             is_fallible,
         })
     }
