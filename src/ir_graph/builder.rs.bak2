@@ -186,7 +186,13 @@ impl IrGraphBuilder {
                 }
             };
 
-            self.graph.add_type(node, type_info.name.clone());
+            // 使用完整路径（如果可用）
+            let path = type_info
+                .path
+                .clone()
+                .unwrap_or_else(|| type_info.name.clone());
+            self.graph
+                .add_type_with_path(node, type_info.name.clone(), path);
 
             // 为 Struct/Enum/Union 的泛型参数创建节点
             if matches!(
@@ -229,8 +235,12 @@ impl IrGraphBuilder {
                 type_id: constant.type_id,
                 path: constant.path.clone(),
             };
-            self.graph
-                .add_type(const_node.clone(), constant.name.clone());
+            // 使用完整路径
+            self.graph.add_type_with_path(
+                const_node.clone(),
+                constant.name.clone(),
+                constant.path.clone(),
+            );
 
             // 创建目标类型节点
             let target_type = self.create_type_node_from_id(constant.type_id);
@@ -249,6 +259,7 @@ impl IrGraphBuilder {
                     type_node: target_type,
                     mode: EdgeMode::Ref, // Constant 通常返回引用
                     name: None,
+                    param_index: None,
                     param_index: None,
                 }),
                 error_output: None,
@@ -272,8 +283,12 @@ impl IrGraphBuilder {
                 path: static_info.path.clone(),
                 is_mutable: static_info.is_mutable,
             };
-            self.graph
-                .add_type(static_node.clone(), static_info.name.clone());
+            // 使用完整路径
+            self.graph.add_type_with_path(
+                static_node.clone(),
+                static_info.name.clone(),
+                static_info.path.clone(),
+            );
 
             // 创建目标类型节点
             let target_type = self.create_type_node_from_id(static_info.type_id);
@@ -385,15 +400,15 @@ impl IrGraphBuilder {
                 } else {
                     Some(format!("arg{}", i))
                 };
-                self.extract_data_edge_from_type(ty, name)
+                self.extract_data_edge_from_type(ty, name, Some(i))
             })
             .collect();
 
         // Step 3: 解析输出(在泛型作用域中)- 提取 Result 的成功和错误分支
         let (output, error_output, is_fallible) = if let Some(ty) = &rustdoc_func.sig.output {
             let (success_ty, error_ty) = self.extract_result_branches(ty);
-            let output = self.extract_data_edge_from_type(success_ty, None);
-            let error_output = error_ty.and_then(|e| self.extract_data_edge_from_type(e, None));
+            let output = self.extract_data_edge_from_type(success_ty, None, None);
+            let error_output = error_ty.and_then(|e| self.extract_data_edge_from_type(e, None, None));
             let is_fallible = error_ty.is_some();
             (output, error_output, is_fallible)
         } else {
@@ -605,7 +620,7 @@ impl IrGraphBuilder {
                 type_node: struct_type_node.clone(),
                 mode: EdgeMode::Move,
                 name: None,
-                param_index: None,
+                    param_index: None,
             });
 
             let ctor_op = OpNode {
@@ -642,13 +657,11 @@ impl IrGraphBuilder {
                         type_node: struct_type_node.clone(),
                         mode: EdgeMode::Ref,
                         name: Some("self".to_string()),
-                        param_index: None,
                     }],
                     output: Some(DataEdge {
                         type_node: field_edge.type_node.clone(),
                         mode: EdgeMode::Ref,
                         name: Some(field.name.clone()),
-                        param_index: None,
                     }),
                     error_output: None,
                     generic_constraints: HashMap::new(),
@@ -673,13 +686,11 @@ impl IrGraphBuilder {
                         type_node: struct_type_node.clone(),
                         mode: EdgeMode::MutRef,
                         name: Some("self".to_string()),
-                        param_index: None,
                     }],
                     output: Some(DataEdge {
                         type_node: field_edge.type_node.clone(),
                         mode: EdgeMode::MutRef,
                         name: Some(field.name.clone()),
-                        param_index: None,
                     }),
                     error_output: None,
                     generic_constraints: HashMap::new(),
@@ -856,16 +867,17 @@ impl IrGraphBuilder {
             .sig
             .inputs
             .iter()
-            .filter_map(|(param_name, ty)| {
-                self.extract_data_edge_from_type(ty, Some(param_name.clone()))
+            .enumerate()
+            .filter_map(|(i, (param_name, ty))| {
+                self.extract_data_edge_from_type(ty, Some(param_name.clone()), Some(i))
             })
             .collect();
 
         // 解析输出 - 提取 Result 的成功和错误分支
         let (output, error_output, is_fallible) = if let Some(ty) = &func.sig.output {
             let (success_ty, error_ty) = self.extract_result_branches(ty);
-            let output = self.extract_data_edge_from_type(success_ty, None);
-            let error_output = error_ty.and_then(|e| self.extract_data_edge_from_type(e, None));
+            let output = self.extract_data_edge_from_type(success_ty, None, None);
+            let error_output = error_ty.and_then(|e| self.extract_data_edge_from_type(e, None, None));
             let is_fallible = error_ty.is_some();
             (output, error_output, is_fallible)
         } else {
@@ -1080,14 +1092,14 @@ impl IrGraphBuilder {
     }
 
     /// 从 rustdoc Type 提取 DataEdge(处理 Self 解析)
-    fn extract_data_edge_from_type(&self, ty: &Type, name: Option<String>) -> Option<DataEdge> {
+    fn extract_data_edge_from_type(&self, ty: &Type, name: Option<String>, param_index: Option<usize>) -> Option<DataEdge> {
         let (type_node, mode) = self.extract_type_and_mode_with_self(ty, &self.generic_scope)?;
 
         Some(DataEdge {
             type_node,
             mode,
             name,
-            param_index: None,
+            param_index,
         })
     }
 
@@ -1144,7 +1156,7 @@ impl IrGraphBuilder {
                 type_node: enum_type_node.clone(),
                 mode: EdgeMode::Move,
                 name: None,
-                param_index: None,
+                    param_index: None,
             });
 
             let variant_ctor = OpNode {
@@ -1188,7 +1200,7 @@ impl IrGraphBuilder {
                 type_node: union_type_node.clone(),
                 mode: EdgeMode::Move,
                 name: None,
-                param_index: None,
+                    param_index: None,
             });
 
             let union_ctor = OpNode {
@@ -1224,13 +1236,11 @@ impl IrGraphBuilder {
                         type_node: union_type_node.clone(),
                         mode: EdgeMode::Ref,
                         name: Some("self".to_string()),
-                        param_index: None,
                     }],
                     output: Some(DataEdge {
                         type_node: field_edge.type_node.clone(),
                         mode: EdgeMode::Ref,
                         name: Some(field.name.clone()),
-                        param_index: None,
                     }),
                     error_output: None,
                     generic_constraints: HashMap::new(),
@@ -1255,13 +1265,11 @@ impl IrGraphBuilder {
                         type_node: union_type_node.clone(),
                         mode: EdgeMode::MutRef,
                         name: Some("self".to_string()),
-                        param_index: None,
                     }],
                     output: Some(DataEdge {
                         type_node: field_edge.type_node,
                         mode: EdgeMode::MutRef,
                         name: Some(field.name.clone()),
-                        param_index: None,
                     }),
                     error_output: None,
                     generic_constraints: HashMap::new(),
@@ -1292,7 +1300,6 @@ impl IrGraphBuilder {
                     type_node: self.create_type_node_from_id(*id),
                     mode: EdgeMode::Move,
                     name,
-                    param_index: None,
                 })
             }
 
@@ -1300,7 +1307,6 @@ impl IrGraphBuilder {
                 type_node: TypeNode::Primitive(prim_name.clone()),
                 mode: EdgeMode::Move,
                 name,
-                param_index: None,
             }),
 
             TypeRef::Generic(param_name) => {
@@ -1311,7 +1317,6 @@ impl IrGraphBuilder {
                     type_node,
                     mode: EdgeMode::Move,
                     name,
-                    param_index: None,
                 })
             }
 
@@ -1327,7 +1332,6 @@ impl IrGraphBuilder {
                     },
                     mode: EdgeMode::Move,
                     name,
-                    param_index: None,
                 })
             }
 
@@ -1341,7 +1345,6 @@ impl IrGraphBuilder {
                         type_node: TypeNode::Array(Box::new(inner_edge.type_node)),
                         mode: EdgeMode::Move, // 注意:引用信息在 TypeRef 中已丢失
                         name,
-                        param_index: None,
                     })
                 } else if inner_types.is_empty() {
                     // 空复合类型(不太可能出现)
@@ -1360,7 +1363,6 @@ impl IrGraphBuilder {
                         type_node: TypeNode::Tuple(nodes),
                         mode: EdgeMode::Move,
                         name,
-                        param_index: None,
                     })
                 }
             }

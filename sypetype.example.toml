@@ -1,10 +1,10 @@
 # SyPetype 配置文件示例
 
 # 输入: rustdoc JSON 文件路径
-input_json = "./target/doc/my_crate.json"
+input_json = "base64.json"
 
 # 目标 crate 名称 (用于生成 fuzz target)
-target_crate = "my_crate"
+target_crate = "base64"
 
 [output]
 # 输出目录 (所有生成文件的根目录)
@@ -43,4 +43,3 @@ petri_net_json_name = "petri_net.json"
 
 # 是否打印统计信息
 print_stats = true
-

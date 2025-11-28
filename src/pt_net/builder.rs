@@ -404,9 +404,13 @@ impl<'a> BuilderContext<'a> {
         let is_source = matches!(type_node, TypeNode::Primitive(_));
         let is_copy = self.check_is_copy(type_node);
 
+        // 获取完整路径
+        let resolved_path = self.ir.get_type_path(type_node).map(|s| s.to_string());
+
         PlaceData {
             id,
             type_name,
+            resolved_path,
             is_source,
             is_copy,
         }

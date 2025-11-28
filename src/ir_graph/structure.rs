@@ -26,6 +26,11 @@ pub enum TypeNode {
 
     /// Trait 对象 (dyn Trait)
     TraitObject(Option<Id>),
+
+    /// TODO: 多重 Trait 实现
+    /// 如 impl<T> MyTrait for T + MyOtherTrait for T
+    /// 如 where T: MyTrait + MyOtherTrait
+    #[allow(unused)]
     MultiTrait(Vec<Id>),
 
     /// Constant 节点 (指向其类型)
@@ -112,7 +117,7 @@ pub enum TypeNode {
 
 /// 边的模式:定义数据如何传递
 ///
-/// 这是设计的核心:所有权信息存储在这里,而不是类型节点
+/// 所有权信息存储在这里,而不是类型节点
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EdgeMode {
     /// 按值移动(所有权转移)
@@ -142,7 +147,7 @@ impl EdgeMode {
         matches!(self, EdgeMode::RawPtr | EdgeMode::MutRawPtr)
     }
 
-    /// 判断是否可变
+    #[allow(unused)]
     pub fn is_mutable(&self) -> bool {
         matches!(self, EdgeMode::MutRef | EdgeMode::MutRawPtr)
     }
@@ -153,7 +158,7 @@ impl EdgeMode {
 /// 包含类型信息和所有权模式
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DataEdge {
-    /// 指向的类型节点(规范类型)
+    /// 指向的类型节点
     pub type_node: TypeNode,
 
     /// 数据传递方式
@@ -161,6 +166,11 @@ pub struct DataEdge {
 
     /// 可选的名称(参数名)
     pub name: Option<String>,
+
+    /// 参数位置索引（用于函数调用时排列参数）
+    /// 对于输入边：表示这是第几个参数（从 0 开始）
+    /// 对于输出边：None 或 Some(0) 表示主返回值
+    pub param_index: Option<usize>,
 }
 
 impl DataEdge {
@@ -171,6 +181,7 @@ impl DataEdge {
             type_node,
             mode: EdgeMode::Move,
             name,
+            param_index: None,
         }
     }
 
@@ -181,6 +192,7 @@ impl DataEdge {
             type_node,
             mode: EdgeMode::Ref,
             name,
+            param_index: None,
         }
     }
 
@@ -191,6 +203,7 @@ impl DataEdge {
             type_node,
             mode: EdgeMode::MutRef,
             name,
+            param_index: None,
         }
     }
 }
@@ -349,6 +362,9 @@ pub struct IrGraph {
 
     /// 类型名称映射(用于调试和导出)
     pub type_names: HashMap<TypeNode, String>,
+    
+    /// 类型路径映射(用于代码生成)
+    pub type_paths: HashMap<TypeNode, String>,
 
     /// Trait 实现映射(类型 -> 它实现的 Trait 列表)
     /// 用于解析泛型约束
@@ -368,6 +384,7 @@ impl IrGraph {
             type_nodes: HashSet::new(),
             operations: Vec::new(),
             type_names: HashMap::new(),
+            type_paths: HashMap::new(),
             trait_impls: parsed_crate.trait_implementations.clone(),
             trait_impl_details: Vec::new(),
             parsed_crate,
@@ -390,6 +407,19 @@ impl IrGraph {
         log::debug!("Creating TypeNode: {:?} (ID/Name: {})", node, name);
         self.type_nodes.insert(node.clone());
         self.type_names.insert(node, name);
+    }
+    
+    /// 添加类型并指定完整路径
+    pub fn add_type_with_path(&mut self, node: TypeNode, name: String, path: String) {
+        log::debug!("Creating TypeNode: {:?} (Name: {}, Path: {})", node, name, path);
+        self.type_nodes.insert(node.clone());
+        self.type_names.insert(node.clone(), name);
+        self.type_paths.insert(node, path);
+    }
+    
+    /// 获取类型的完整路径
+    pub fn get_type_path(&self, node: &TypeNode) -> Option<&str> {
+        self.type_paths.get(node).map(|s| s.as_str())
     }
 
     /// 添加操作节点

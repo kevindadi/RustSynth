@@ -622,7 +622,7 @@ impl ParsedCrate {
             .and_then(|item| item.name.as_deref())
     }
 
-    /// 获取 Trait 的所有实现者
+    /// 获取 Trait 的所有实现者 Trait implementations
     pub fn get_trait_implementors(&self, trait_id: &Id) -> Option<&Vec<Id>> {
         self.trait_implementations.get(trait_id)
     }

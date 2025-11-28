@@ -8,6 +8,11 @@ pub struct Config {
 
     /// 目标 crate 名称（用于生成 fuzz target）
     pub target_crate: String,
+
+    /// 被测库的路径（相对于 fuzz 目录，用于 Cargo.toml 依赖）
+    /// 如果为 None，则使用 crates.io 依赖
+    pub lib_path: Option<String>,
+
     pub output: OutputConfig,
     pub export: ExportConfig,
 }
@@ -30,48 +35,43 @@ pub struct OutputConfig {
 /// 导出配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExportConfig {
-    /// 是否导出 IR Graph 的 DOT 文件
+    /// IR Graph Export
     #[serde(default)]
     pub export_ir_graph_dot: bool,
-
-    /// IR Graph DOT 文件名（如果导出）
     #[serde(default = "default_ir_dot_name")]
     pub ir_graph_dot_name: String,
-
-    /// 是否导出 IR Graph 的 JSON 文件
     #[serde(default)]
     pub export_ir_graph_json: bool,
-
-    /// IR Graph JSON 文件名（如果导出）
     #[serde(default = "default_ir_json_name")]
     pub ir_graph_json_name: String,
 
-    /// 是否导出 Petri Net 的 DOT 文件
+    /// PT-Net (Place/Transition Net) Export
     #[serde(default)]
     pub export_petri_net_dot: bool,
-
-    /// Petri Net DOT 文件名（如果导出）
     #[serde(default = "default_petri_dot_name")]
     pub petri_net_dot_name: String,
-
-    /// 是否导出 Petri Net 的 JSON 文件
     #[serde(default)]
     pub export_petri_net_json: bool,
-
-    /// Petri Net JSON 文件名（如果导出）
     #[serde(default = "default_petri_json_name")]
     pub petri_net_json_name: String,
 
-    /// 是否打印统计信息
+    /// CP-Net (Colored Petri Net with Trait Hub) Export
+    #[serde(default)]
+    pub export_cp_net_dot: bool,
+    #[serde(default = "default_cp_net_dot_name")]
+    pub cp_net_dot_name: String,
+    #[serde(default)]
+    pub export_cp_net_json: bool,
+    #[serde(default = "default_cp_net_json_name")]
+    pub cp_net_json_name: String,
+
     #[serde(default = "default_true")]
     pub print_stats: bool,
 
-    /// 是否打印类型和 Trait 实现的详细摘要
     #[serde(default)]
     pub print_type_summary: bool,
 }
 
-// 默认值函数
 fn default_output_dir() -> PathBuf {
     PathBuf::from(".")
 }
@@ -100,6 +100,14 @@ fn default_petri_json_name() -> String {
     "petri_net.json".to_string()
 }
 
+fn default_cp_net_dot_name() -> String {
+    "cp_net.dot".to_string()
+}
+
+fn default_cp_net_json_name() -> String {
+    "cp_net.json".to_string()
+}
+
 fn default_true() -> bool {
     true
 }
@@ -109,6 +117,7 @@ impl Default for Config {
         Self {
             input_json: PathBuf::from("./target/doc/my_crate.json"),
             target_crate: "my_crate".to_string(),
+            lib_path: None,
             output: OutputConfig::default(),
             export: ExportConfig::default(),
         }
@@ -136,6 +145,10 @@ impl Default for ExportConfig {
             petri_net_dot_name: default_petri_dot_name(),
             export_petri_net_json: false,
             petri_net_json_name: default_petri_json_name(),
+            export_cp_net_dot: false,
+            cp_net_dot_name: default_cp_net_dot_name(),
+            export_cp_net_json: false,
+            cp_net_json_name: default_cp_net_json_name(),
             print_stats: false,
             print_type_summary: false,
         }
@@ -150,23 +163,9 @@ impl Config {
         Ok(config)
     }
 
-    /// 从 JSON 文件加载配置
-    pub fn from_json_file(path: &std::path::Path) -> anyhow::Result<Self> {
-        let content = std::fs::read_to_string(path)?;
-        let config: Config = serde_json::from_str(&content)?;
-        Ok(config)
-    }
-
     /// 保存配置到 TOML 文件
     pub fn save_toml(&self, path: &std::path::Path) -> anyhow::Result<()> {
         let content = toml::to_string_pretty(self)?;
-        std::fs::write(path, content)?;
-        Ok(())
-    }
-
-    /// 保存配置到 JSON 文件
-    pub fn save_json(&self, path: &std::path::Path) -> anyhow::Result<()> {
-        let content = serde_json::to_string_pretty(self)?;
         std::fs::write(path, content)?;
         Ok(())
     }
@@ -179,33 +178,5 @@ impl Config {
     /// 获取 fuzz targets 目录路径
     pub fn fuzz_targets_dir(&self) -> PathBuf {
         self.fuzz_dir_path().join("fuzz_targets")
-    }
-
-    /// 创建示例配置文件
-    pub fn create_example_config(path: &std::path::Path) -> anyhow::Result<()> {
-        let config = Config {
-            input_json: PathBuf::from("base64.json"),
-            target_crate: "base64".to_string(),
-            output: OutputConfig {
-                output_dir: PathBuf::from("./output"),
-                fuzz_dir: PathBuf::from("fuzz"),
-                fuzz_target_name: "fuzz_target_1".to_string(),
-            },
-            export: ExportConfig {
-                export_ir_graph_dot: true,
-                ir_graph_dot_name: "ir_graph.dot".to_string(),
-                export_ir_graph_json: true,
-                ir_graph_json_name: "ir_graph.json".to_string(),
-                export_petri_net_dot: true,
-                petri_net_dot_name: "petri_net.dot".to_string(),
-                export_petri_net_json: true,
-                petri_net_json_name: "petri_net.json".to_string(),
-                print_stats: true,
-                print_type_summary: false,
-            },
-        };
-
-        config.save_toml(path)?;
-        Ok(())
     }
 }

@@ -1,3 +1,5 @@
+use crate::ir_graph::structure::IrGraph;
+use crate::petri_net_traits::{FromIrGraph, PetriNetKind};
 use petgraph::graph::{DiGraph, NodeIndex};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -40,8 +42,11 @@ pub enum TransitionKind {
 pub struct PlaceData {
     /// 唯一标识 (TypeNode 的 hash)
     pub id: PlaceId,
-    /// 规范的具体类型名称 (e.g., "std::vec::Vec<u8>")
+    /// 规范的具体类型名称 (e.g., "Vec<u8>")
     pub type_name: String,
+    /// 完整的路径 (e.g., "base64::engine::general_purpose::GeneralPurpose")
+    /// 用于生成代码时的正确导入
+    pub resolved_path: Option<String>,
     /// 是否为 fuzzing 原语 (如 u8, usize)
     pub is_source: bool,
     /// 是否实现了 Copy trait
@@ -164,5 +169,21 @@ impl PetriNet {
 impl Default for PetriNet {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl FromIrGraph for PetriNet {
+    fn from_ir_graph(ir: &IrGraph) -> Self {
+        crate::pt_net::builder::PetriNetBuilder::from_ir(ir)
+    }
+}
+
+impl PetriNetKind for PetriNet {
+    fn kind_name() -> &'static str {
+        "PT-Net"
+    }
+
+    fn description() -> &'static str {
+        "Place/Transition Net with Monomorphized Generics"
     }
 }

@@ -4,9 +4,11 @@ use std::path::PathBuf;
 
 mod analysis;
 mod config;
+mod cp_net;
 mod generate;
 mod ir_graph;
 mod parse;
+mod petri_net_traits;
 mod pipeline;
 mod pt_net;
 mod support_types;
@@ -23,21 +25,29 @@ struct Cli {
     #[arg(value_name = "INPUT")]
     input: PathBuf,
 
-    /// 目标 crate 名称
+    /// 目标 crate 名称, 用于 USE: crate::target_crate::...
     #[arg(short, long, value_name = "NAME")]
     target: String,
+
+    /// 被测库的路径 (相对于输出目录的 fuzz 文件夹)
+    #[arg(long, value_name = "PATH")]
+    lib_path: Option<String>,
 
     /// 输出目录
     #[arg(short, long, value_name = "DIR", default_value = ".")]
     output: PathBuf,
 
-    /// 导出 IR Graph (DOT 和 JSON 格式)
+    /// 导出 IR Graph (DOT + JSON)
     #[arg(long)]
     ir_graph: bool,
 
-    /// 导出 Petri Net (DOT 和 JSON 格式)
+    /// 导出 PT-Net (Place/Transition Net, DOT + JSON)
     #[arg(long)]
     petri_net: bool,
+
+    /// 导出 CP-Net (Colored Petri Net with Trait Hub, DOT + JSON)
+    #[arg(long)]
+    cp_net: bool,
 
     /// 生成 Fuzz Target (默认开启，使用 --no-fuzz 禁用)
     #[arg(long, default_value = "true", action = clap::ArgAction::Set)]
@@ -47,11 +57,9 @@ struct Cli {
     #[arg(long, value_name = "NAME", default_value = "fuzz_target_1")]
     fuzz_name: String,
 
-    /// 静默模式（不打印统计信息）
     #[arg(short, long)]
     quiet: bool,
 
-    /// 打印类型和 Trait 实现的详细摘要
     #[arg(long)]
     print_summary: bool,
 }
@@ -64,6 +72,7 @@ fn main() -> Result<()> {
     let cfg = Config {
         input_json: cli.input,
         target_crate: cli.target,
+        lib_path: cli.lib_path,
         output: config::OutputConfig {
             output_dir: cli.output,
             fuzz_dir: PathBuf::from("fuzz"),
@@ -78,6 +87,10 @@ fn main() -> Result<()> {
             petri_net_dot_name: "petri_net.dot".to_string(),
             export_petri_net_json: cli.petri_net,
             petri_net_json_name: "petri_net.json".to_string(),
+            export_cp_net_dot: cli.cp_net,
+            cp_net_dot_name: "cp_net.dot".to_string(),
+            export_cp_net_json: cli.cp_net,
+            cp_net_json_name: "cp_net.json".to_string(),
             print_stats: !cli.quiet,
             print_type_summary: cli.print_summary,
         },
@@ -99,8 +112,14 @@ fn main() -> Result<()> {
     }
     if cli.petri_net {
         log::info!(
-            "  Petri Net 已导出到: {}",
+            "  PT-Net 已导出到: {}",
             cfg.output.output_dir.join("petri_net.dot").display()
+        );
+    }
+    if cli.cp_net {
+        log::info!(
+            "  CP-Net 已导出到: {}",
+            cfg.output.output_dir.join("cp_net.dot").display()
         );
     }
     if cli.fuzz {

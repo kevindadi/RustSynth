@@ -39,12 +39,16 @@ impl FuzzTargetGenerator {
         // 所以我们需要按 type_name 聚合。
 
         let mut type_to_pool_name: HashMap<String, String> = HashMap::new();
-        let mut unique_types: HashMap<String, String> = HashMap::new(); // type_name -> sanitized_name
+        // type_name -> (resolved_path, sanitized_name)
+        let mut unique_types: HashMap<String, (Option<String>, String)> = HashMap::new();
 
         for place in &complex_places {
             if !unique_types.contains_key(&place.type_name) {
                 let sanitized = self.sanitize_type_name(&place.type_name);
-                unique_types.insert(place.type_name.clone(), sanitized.clone());
+                unique_types.insert(
+                    place.type_name.clone(),
+                    (place.resolved_path.clone(), sanitized.clone()),
+                );
                 type_to_pool_name.insert(place.type_name.clone(), format!("pool_{}", sanitized));
             }
         }
@@ -69,14 +73,14 @@ impl FuzzTargetGenerator {
     }
 
     fn generate_imports(&self) -> String {
+        // 注意：现在我们使用完整路径，不再需要简单的 use crate_name 导入
+        // 但为了兼容性，保留 prelude 导入
         format!(
             r#"#![no_main]
 use libfuzzer_sys::fuzz_target;
 use arbitrary::Arbitrary;
-use {};
 
-"#,
-            self.target_crate
+"#
         )
     }
 
@@ -141,17 +145,21 @@ use {};
             .collect()
     }
 
-    fn generate_fuzz_state(&self, unique_types: &HashMap<String, String>) -> String {
+    fn generate_fuzz_state(
+        &self,
+        unique_types: &HashMap<String, (Option<String>, String)>,
+    ) -> String {
         let mut code = String::from("#[derive(Default)]\nstruct FuzzState {\n");
 
         // 按名称排序以保持生成代码的稳定性
         let mut sorted_types: Vec<_> = unique_types.iter().collect();
         sorted_types.sort_by_key(|(k, _)| *k);
 
-        for (type_name, sanitized) in sorted_types {
-            // 生成: pool_XXX: Vec<Type>
-            // 如果 type_name 包含泛型，直接作为 Rust 类型字符串应该是合法的 (只要所有部分都可见)
-            code.push_str(&format!("    pool_{}: Vec<{}>,\n", sanitized, type_name));
+        for (type_name, (resolved_path, sanitized)) in sorted_types {
+            // 优先使用完整路径，否则使用简单类型名
+            let type_path = resolved_path.as_ref().unwrap_or(type_name);
+            // 生成: pool_XXX: Vec<完整路径>
+            code.push_str(&format!("    pool_{}: Vec<{}>,\n", sanitized, type_path));
         }
 
         code.push_str("}\n\n");
@@ -162,7 +170,7 @@ use {};
         &self,
         net: &PetriNet,
         transitions: &[&TransitionData],
-        _unique_types: &HashMap<String, String>,
+        _unique_types: &HashMap<String, (Option<String>, String)>,
     ) -> String {
         let mut code = String::from("#[derive(Arbitrary, Debug)]\nenum Action {\n");
 
@@ -205,7 +213,7 @@ use {};
         &self,
         net: &PetriNet,
         transitions: &[&TransitionData],
-        unique_types: &HashMap<String, String>,
+        unique_types: &HashMap<String, (Option<String>, String)>,
     ) -> String {
         let mut code = String::from(
             r#"fuzz_target!(|actions: Vec<Action>| {
@@ -350,7 +358,7 @@ use {};
                         if let NodePayload::Place(place) = target_node {
                             if !place.is_source {
                                 // 只存储复杂类型
-                                let sanitized = unique_types.get(&place.type_name).unwrap(); // 应该存在
+                                let (_, sanitized) = unique_types.get(&place.type_name).unwrap(); // 应该存在
                                 code.push_str(&format!(
                                     "                    Ok(res) => state.pool_{}.push(res),\n",
                                     sanitized
@@ -368,7 +376,7 @@ use {};
                         let target_node = net.graph.node_weight(err_edge.target()).unwrap();
                         if let NodePayload::Place(place) = target_node {
                             if !place.is_source {
-                                let sanitized = unique_types.get(&place.type_name).unwrap();
+                                let (_, sanitized) = unique_types.get(&place.type_name).unwrap();
                                 code.push_str(&format!(
                                     "                    Err(err) => state.pool_{}.push(err),\n",
                                     sanitized
@@ -388,7 +396,7 @@ use {};
                     let target_node = net.graph.node_weight(edge.target()).unwrap();
                     if let NodePayload::Place(place) = target_node {
                         if !place.is_source {
-                            let sanitized = unique_types.get(&place.type_name).unwrap();
+                            let (_, sanitized) = unique_types.get(&place.type_name).unwrap();
                             code.push_str(&format!("                let res = {};\n", call_expr));
                             code.push_str(&format!(
                                 "                state.pool_{}.push(res);\n",

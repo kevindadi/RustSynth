@@ -1,5 +1,6 @@
 /// Petri Net 导出功能
 use super::structure::{EdgeKind, PetriNet, TransitionKind};
+use crate::petri_net_traits::PetriNetExport;
 use petgraph::visit::EdgeRef;
 
 impl PetriNet {
@@ -238,4 +239,25 @@ fn escape_dot_label(s: &str) -> String {
     s.replace('\\', "\\\\")
         .replace('"', "\\\"")
         .replace('\n', "\\n")
+}
+
+// ============ PetriNetExport Trait 实现 ============
+
+impl PetriNetExport for PetriNet {
+    fn to_dot(&self) -> String {
+        self.export_to_dot()
+    }
+    
+    fn to_json(&self) -> Result<String, serde_json::Error> {
+        let json_data = self.export_to_json();
+        serde_json::to_string_pretty(&json_data)
+    }
+    
+    fn print_stats(&self) {
+        println!("{}", self.export_stats());
+    }
+    
+    fn get_stats_string(&self) -> String {
+        self.export_stats()
+    }
 }
