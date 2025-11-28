@@ -1,0 +1,3526 @@
+{
+  "types": [
+    {
+      "id": "Id(214)",
+      "name": "DecodePaddingMode",
+      "kind": "enum",
+      "path": [
+        "base64",
+        "engine",
+        "DecodePaddingMode"
+      ],
+      "generics": [],
+      "fields": [],
+      "variants": [
+        {
+          "name": "Indifferent",
+          "kind": "plain",
+          "fields": []
+        },
+        {
+          "name": "RequireCanonical",
+          "kind": "plain",
+          "fields": []
+        },
+        {
+          "name": "RequireNone",
+          "kind": "plain",
+          "fields": []
+        }
+      ],
+      "methods": [
+        {
+          "name": "from",
+          "signature": "fn(t: T) -> T",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "to_owned",
+          "signature": "fn(self: &Self) -> T",
+          "generics": []
+        },
+        {
+          "name": "clone_into",
+          "signature": "fn(self: &Self, target: &mut T)",
+          "generics": []
+        },
+        {
+          "name": "type_id",
+          "signature": "fn(self: &Self) -> TypeId",
+          "generics": []
+        },
+        {
+          "name": "clone",
+          "signature": "fn(self: &Self) -> DecodePaddingMode",
+          "generics": []
+        },
+        {
+          "name": "into",
+          "signature": "fn(self: Self) -> U",
+          "generics": []
+        },
+        {
+          "name": "try_into",
+          "signature": "fn(self: Self) -> Result<U, <U as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "clone_to_uninit",
+          "signature": "fn(self: &Self, dest: *mut u8)",
+          "generics": []
+        },
+        {
+          "name": "try_from",
+          "signature": "fn(value: U) -> Result<T, <T as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "borrow",
+          "signature": "fn(self: &Self) -> &T",
+          "generics": []
+        },
+        {
+          "name": "eq",
+          "signature": "fn(self: &Self, other: &DecodePaddingMode) -> bool",
+          "generics": []
+        },
+        {
+          "name": "borrow_mut",
+          "signature": "fn(self: &mut Self) -> &mut T",
+          "generics": []
+        }
+      ],
+      "implemented_traits": [
+        {
+          "trait_name": "RefUnwindSafe",
+          "trait_id": "Id(16)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Copy",
+          "trait_id": "Id(234)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Debug",
+          "trait_id": "Id(87)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "ToOwned",
+          "trait_id": "Id(195)",
+          "associated_types": {
+            "Owned": "T"
+          }
+        },
+        {
+          "trait_name": "Any",
+          "trait_id": "Id(45)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Clone",
+          "trait_id": "Id(184)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Unpin",
+          "trait_id": "Id(14)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Into",
+          "trait_id": "Id(29)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Eq",
+          "trait_id": "Id(306)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryInto",
+          "trait_id": "Id(37)",
+          "associated_types": {
+            "Error": "<U as TryFrom>::Error"
+          }
+        },
+        {
+          "trait_name": "CloneToUninit",
+          "trait_id": "Id(185)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "UnwindSafe",
+          "trait_id": "Id(17)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Freeze",
+          "trait_id": "Id(12)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Send",
+          "trait_id": "Id(8)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "StructuralPartialEq",
+          "trait_id": "Id(301)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "Infallible"
+          }
+        },
+        {
+          "trait_name": "Borrow",
+          "trait_id": "Id(22)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Sync",
+          "trait_id": "Id(10)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "PartialEq",
+          "trait_id": "Id(304)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "BorrowMut",
+          "trait_id": "Id(25)",
+          "associated_types": {}
+        }
+      ]
+    },
+    {
+      "id": "Id(101)",
+      "name": "EncoderWriter",
+      "kind": "struct",
+      "path": [
+        "base64",
+        "write",
+        "encoder",
+        "EncoderWriter"
+      ],
+      "generics": [
+        {
+          "name": "'e",
+          "kind": "lifetime",
+          "bounds": []
+        },
+        {
+          "name": "E",
+          "kind": "type",
+          "bounds": [
+            "Engine"
+          ]
+        },
+        {
+          "name": "W",
+          "kind": "type",
+          "bounds": [
+            "io::Write"
+          ]
+        }
+      ],
+      "fields": [],
+      "variants": [],
+      "methods": [
+        {
+          "name": "borrow",
+          "signature": "fn(self: &Self) -> &T",
+          "generics": []
+        },
+        {
+          "name": "drop",
+          "signature": "fn(self: &mut Self)",
+          "generics": []
+        },
+        {
+          "name": "write",
+          "signature": "fn(self: &mut Self, input: &[u8]) -> Result<usize>",
+          "generics": []
+        },
+        {
+          "name": "flush",
+          "signature": "fn(self: &mut Self) -> Result<()>",
+          "generics": []
+        },
+        {
+          "name": "into",
+          "signature": "fn(self: Self) -> U",
+          "generics": []
+        },
+        {
+          "name": "new",
+          "signature": "fn(delegate: W, engine: &'e E) -> EncoderWriter<'e, E, W>",
+          "generics": []
+        },
+        {
+          "name": "finish",
+          "signature": "fn(self: &mut Self) -> Result<W>",
+          "generics": []
+        },
+        {
+          "name": "into_inner",
+          "signature": "fn(self: Self) -> W",
+          "generics": []
+        },
+        {
+          "name": "try_into",
+          "signature": "fn(self: Self) -> Result<U, <U as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "try_from",
+          "signature": "fn(value: U) -> Result<T, <T as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "from",
+          "signature": "fn(t: T) -> T",
+          "generics": []
+        },
+        {
+          "name": "type_id",
+          "signature": "fn(self: &Self) -> TypeId",
+          "generics": []
+        },
+        {
+          "name": "borrow_mut",
+          "signature": "fn(self: &mut Self) -> &mut T",
+          "generics": []
+        }
+      ],
+      "implemented_traits": [
+        {
+          "trait_name": "Borrow",
+          "trait_id": "Id(22)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Drop",
+          "trait_id": "Id(128)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Send",
+          "trait_id": "Id(8)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Write",
+          "trait_id": "Id(102)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Into",
+          "trait_id": "Id(29)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Unpin",
+          "trait_id": "Id(14)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "RefUnwindSafe",
+          "trait_id": "Id(16)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Freeze",
+          "trait_id": "Id(12)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryInto",
+          "trait_id": "Id(37)",
+          "associated_types": {
+            "Error": "<U as TryFrom>::Error"
+          }
+        },
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "Infallible"
+          }
+        },
+        {
+          "trait_name": "Debug",
+          "trait_id": "Id(87)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Sync",
+          "trait_id": "Id(10)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Any",
+          "trait_id": "Id(45)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "BorrowMut",
+          "trait_id": "Id(25)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "UnwindSafe",
+          "trait_id": "Id(17)",
+          "associated_types": {}
+        }
+      ]
+    },
+    {
+      "id": "Id(3)",
+      "name": "Base64Display",
+      "kind": "struct",
+      "path": [
+        "base64",
+        "display",
+        "Base64Display"
+      ],
+      "generics": [
+        {
+          "name": "'a",
+          "kind": "lifetime",
+          "bounds": []
+        },
+        {
+          "name": "'e",
+          "kind": "lifetime",
+          "bounds": []
+        },
+        {
+          "name": "E",
+          "kind": "type",
+          "bounds": [
+            "Engine"
+          ]
+        }
+      ],
+      "fields": [],
+      "variants": [],
+      "methods": [
+        {
+          "name": "type_id",
+          "signature": "fn(self: &Self) -> TypeId",
+          "generics": []
+        },
+        {
+          "name": "from",
+          "signature": "fn(t: T) -> T",
+          "generics": []
+        },
+        {
+          "name": "new",
+          "signature": "fn(bytes: &'a [u8], engine: &'e E) -> Base64Display<'a, 'e, E>",
+          "generics": []
+        },
+        {
+          "name": "try_into",
+          "signature": "fn(self: Self) -> Result<U, <U as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "to_string",
+          "signature": "fn(self: &Self) -> String",
+          "generics": []
+        },
+        {
+          "name": "try_from",
+          "signature": "fn(value: U) -> Result<T, <T as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "borrow_mut",
+          "signature": "fn(self: &mut Self) -> &mut T",
+          "generics": []
+        },
+        {
+          "name": "into",
+          "signature": "fn(self: Self) -> U",
+          "generics": []
+        },
+        {
+          "name": "borrow",
+          "signature": "fn(self: &Self) -> &T",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, formatter: &mut Formatter<'_>) -> Result<(), fmt::Error>",
+          "generics": []
+        }
+      ],
+      "implemented_traits": [
+        {
+          "trait_name": "Freeze",
+          "trait_id": "Id(12)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Any",
+          "trait_id": "Id(45)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Unpin",
+          "trait_id": "Id(14)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Sync",
+          "trait_id": "Id(10)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "UnwindSafe",
+          "trait_id": "Id(17)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Send",
+          "trait_id": "Id(8)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryInto",
+          "trait_id": "Id(37)",
+          "associated_types": {
+            "Error": "<U as TryFrom>::Error"
+          }
+        },
+        {
+          "trait_name": "ToString",
+          "trait_id": "Id(50)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "RefUnwindSafe",
+          "trait_id": "Id(16)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "Infallible"
+          }
+        },
+        {
+          "trait_name": "BorrowMut",
+          "trait_id": "Id(25)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Into",
+          "trait_id": "Id(29)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Borrow",
+          "trait_id": "Id(22)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Display",
+          "trait_id": "Id(49)",
+          "associated_types": {}
+        }
+      ]
+    },
+    {
+      "id": "Id(274)",
+      "name": "DecodeSliceError",
+      "kind": "enum",
+      "path": [
+        "base64",
+        "decode",
+        "DecodeSliceError"
+      ],
+      "generics": [],
+      "fields": [],
+      "variants": [
+        {
+          "name": "DecodeError",
+          "kind": "tuple",
+          "fields": [
+            {
+              "name": "0",
+              "type_": "DecodeError",
+              "is_public": true
+            }
+          ]
+        },
+        {
+          "name": "OutputSliceTooSmall",
+          "kind": "plain",
+          "fields": []
+        }
+      ],
+      "methods": [
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "from",
+          "signature": "fn(t: T) -> T",
+          "generics": []
+        },
+        {
+          "name": "borrow_mut",
+          "signature": "fn(self: &mut Self) -> &mut T",
+          "generics": []
+        },
+        {
+          "name": "eq",
+          "signature": "fn(self: &Self, other: &DecodeSliceError) -> bool",
+          "generics": []
+        },
+        {
+          "name": "try_from",
+          "signature": "fn(value: U) -> Result<T, <T as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "borrow",
+          "signature": "fn(self: &Self) -> &T",
+          "generics": []
+        },
+        {
+          "name": "try_into",
+          "signature": "fn(self: Self) -> Result<U, <U as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "type_id",
+          "signature": "fn(self: &Self) -> TypeId",
+          "generics": []
+        },
+        {
+          "name": "to_owned",
+          "signature": "fn(self: &Self) -> T",
+          "generics": []
+        },
+        {
+          "name": "clone_into",
+          "signature": "fn(self: &Self, target: &mut T)",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "from",
+          "signature": "fn(e: DecodeError) -> Self",
+          "generics": []
+        },
+        {
+          "name": "to_string",
+          "signature": "fn(self: &Self) -> String",
+          "generics": []
+        },
+        {
+          "name": "source",
+          "signature": "fn(self: &Self) -> Option<&?>",
+          "generics": []
+        },
+        {
+          "name": "clone_to_uninit",
+          "signature": "fn(self: &Self, dest: *mut u8)",
+          "generics": []
+        },
+        {
+          "name": "clone",
+          "signature": "fn(self: &Self) -> DecodeSliceError",
+          "generics": []
+        },
+        {
+          "name": "into",
+          "signature": "fn(self: Self) -> U",
+          "generics": []
+        }
+      ],
+      "implemented_traits": [
+        {
+          "trait_name": "Display",
+          "trait_id": "Id(49)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Freeze",
+          "trait_id": "Id(12)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Send",
+          "trait_id": "Id(8)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "BorrowMut",
+          "trait_id": "Id(25)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "RefUnwindSafe",
+          "trait_id": "Id(16)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "PartialEq",
+          "trait_id": "Id(304)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "Infallible"
+          }
+        },
+        {
+          "trait_name": "Borrow",
+          "trait_id": "Id(22)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Eq",
+          "trait_id": "Id(306)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "StructuralPartialEq",
+          "trait_id": "Id(301)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryInto",
+          "trait_id": "Id(37)",
+          "associated_types": {
+            "Error": "<U as TryFrom>::Error"
+          }
+        },
+        {
+          "trait_name": "Any",
+          "trait_id": "Id(45)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "ToOwned",
+          "trait_id": "Id(195)",
+          "associated_types": {
+            "Owned": "T"
+          }
+        },
+        {
+          "trait_name": "Debug",
+          "trait_id": "Id(87)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "UnwindSafe",
+          "trait_id": "Id(17)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "ToString",
+          "trait_id": "Id(50)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Error",
+          "trait_id": "Id(391)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Unpin",
+          "trait_id": "Id(14)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "CloneToUninit",
+          "trait_id": "Id(185)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Clone",
+          "trait_id": "Id(184)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Sync",
+          "trait_id": "Id(10)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Into",
+          "trait_id": "Id(29)",
+          "associated_types": {}
+        }
+      ]
+    },
+    {
+      "id": "Id(169)",
+      "name": "GeneralPurpose",
+      "kind": "struct",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "GeneralPurpose"
+      ],
+      "generics": [],
+      "fields": [],
+      "variants": [],
+      "methods": [
+        {
+          "name": "try_from",
+          "signature": "fn(value: U) -> Result<T, <T as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "clone_to_uninit",
+          "signature": "fn(self: &Self, dest: *mut u8)",
+          "generics": []
+        },
+        {
+          "name": "new",
+          "signature": "fn(alphabet: &Alphabet, config: GeneralPurposeConfig) -> Self",
+          "generics": []
+        },
+        {
+          "name": "clone",
+          "signature": "fn(self: &Self) -> GeneralPurpose",
+          "generics": []
+        },
+        {
+          "name": "from",
+          "signature": "fn(t: T) -> T",
+          "generics": []
+        },
+        {
+          "name": "borrow",
+          "signature": "fn(self: &Self) -> &T",
+          "generics": []
+        },
+        {
+          "name": "config",
+          "signature": "fn(self: &Self) -> &<Self as >::Config",
+          "generics": []
+        },
+        {
+          "name": "try_into",
+          "signature": "fn(self: Self) -> Result<U, <U as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "type_id",
+          "signature": "fn(self: &Self) -> TypeId",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "borrow_mut",
+          "signature": "fn(self: &mut Self) -> &mut T",
+          "generics": []
+        },
+        {
+          "name": "into",
+          "signature": "fn(self: Self) -> U",
+          "generics": []
+        },
+        {
+          "name": "to_owned",
+          "signature": "fn(self: &Self) -> T",
+          "generics": []
+        },
+        {
+          "name": "clone_into",
+          "signature": "fn(self: &Self, target: &mut T)",
+          "generics": []
+        }
+      ],
+      "implemented_traits": [
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "Infallible"
+          }
+        },
+        {
+          "trait_name": "CloneToUninit",
+          "trait_id": "Id(185)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Clone",
+          "trait_id": "Id(184)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Sync",
+          "trait_id": "Id(10)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Send",
+          "trait_id": "Id(8)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Borrow",
+          "trait_id": "Id(22)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Engine",
+          "trait_id": "Id(4)",
+          "associated_types": {
+            "Config": "GeneralPurposeConfig",
+            "DecodeEstimate": "GeneralPurposeEstimate"
+          }
+        },
+        {
+          "trait_name": "Freeze",
+          "trait_id": "Id(12)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "UnwindSafe",
+          "trait_id": "Id(17)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryInto",
+          "trait_id": "Id(37)",
+          "associated_types": {
+            "Error": "<U as TryFrom>::Error"
+          }
+        },
+        {
+          "trait_name": "Any",
+          "trait_id": "Id(45)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Debug",
+          "trait_id": "Id(87)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "BorrowMut",
+          "trait_id": "Id(25)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Into",
+          "trait_id": "Id(29)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "RefUnwindSafe",
+          "trait_id": "Id(16)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Unpin",
+          "trait_id": "Id(14)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "ToOwned",
+          "trait_id": "Id(195)",
+          "associated_types": {
+            "Owned": "T"
+          }
+        }
+      ]
+    },
+    {
+      "id": "Id(66)",
+      "name": "DecoderReader",
+      "kind": "struct",
+      "path": [
+        "base64",
+        "read",
+        "decoder",
+        "DecoderReader"
+      ],
+      "generics": [
+        {
+          "name": "'e",
+          "kind": "lifetime",
+          "bounds": []
+        },
+        {
+          "name": "E",
+          "kind": "type",
+          "bounds": [
+            "Engine"
+          ]
+        },
+        {
+          "name": "R",
+          "kind": "type",
+          "bounds": [
+            "io::Read"
+          ]
+        }
+      ],
+      "fields": [],
+      "variants": [],
+      "methods": [
+        {
+          "name": "new",
+          "signature": "fn(reader: R, engine: &'e E) -> Self",
+          "generics": []
+        },
+        {
+          "name": "into_inner",
+          "signature": "fn(self: Self) -> R",
+          "generics": []
+        },
+        {
+          "name": "try_from",
+          "signature": "fn(value: U) -> Result<T, <T as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "try_into",
+          "signature": "fn(self: Self) -> Result<U, <U as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "read",
+          "signature": "fn(self: &mut Self, buf: &mut [u8]) -> io::Result<usize>",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "borrow_mut",
+          "signature": "fn(self: &mut Self) -> &mut T",
+          "generics": []
+        },
+        {
+          "name": "type_id",
+          "signature": "fn(self: &Self) -> TypeId",
+          "generics": []
+        },
+        {
+          "name": "borrow",
+          "signature": "fn(self: &Self) -> &T",
+          "generics": []
+        },
+        {
+          "name": "into",
+          "signature": "fn(self: Self) -> U",
+          "generics": []
+        },
+        {
+          "name": "from",
+          "signature": "fn(t: T) -> T",
+          "generics": []
+        }
+      ],
+      "implemented_traits": [
+        {
+          "trait_name": "Unpin",
+          "trait_id": "Id(14)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "RefUnwindSafe",
+          "trait_id": "Id(16)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "Infallible"
+          }
+        },
+        {
+          "trait_name": "UnwindSafe",
+          "trait_id": "Id(17)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryInto",
+          "trait_id": "Id(37)",
+          "associated_types": {
+            "Error": "<U as TryFrom>::Error"
+          }
+        },
+        {
+          "trait_name": "Read",
+          "trait_id": "Id(67)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Send",
+          "trait_id": "Id(8)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Debug",
+          "trait_id": "Id(87)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Freeze",
+          "trait_id": "Id(12)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "BorrowMut",
+          "trait_id": "Id(25)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Sync",
+          "trait_id": "Id(10)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Any",
+          "trait_id": "Id(45)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Borrow",
+          "trait_id": "Id(22)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Into",
+          "trait_id": "Id(29)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        }
+      ]
+    },
+    {
+      "id": "Id(266)",
+      "name": "EncodeSliceError",
+      "kind": "enum",
+      "path": [
+        "base64",
+        "encode",
+        "EncodeSliceError"
+      ],
+      "generics": [],
+      "fields": [],
+      "variants": [
+        {
+          "name": "OutputSliceTooSmall",
+          "kind": "plain",
+          "fields": []
+        }
+      ],
+      "methods": [
+        {
+          "name": "clone_to_uninit",
+          "signature": "fn(self: &Self, dest: *mut u8)",
+          "generics": []
+        },
+        {
+          "name": "to_string",
+          "signature": "fn(self: &Self) -> String",
+          "generics": []
+        },
+        {
+          "name": "borrow_mut",
+          "signature": "fn(self: &mut Self) -> &mut T",
+          "generics": []
+        },
+        {
+          "name": "from",
+          "signature": "fn(t: T) -> T",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "eq",
+          "signature": "fn(self: &Self, other: &EncodeSliceError) -> bool",
+          "generics": []
+        },
+        {
+          "name": "try_into",
+          "signature": "fn(self: Self) -> Result<U, <U as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "clone",
+          "signature": "fn(self: &Self) -> EncodeSliceError",
+          "generics": []
+        },
+        {
+          "name": "try_from",
+          "signature": "fn(value: U) -> Result<T, <T as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "to_owned",
+          "signature": "fn(self: &Self) -> T",
+          "generics": []
+        },
+        {
+          "name": "clone_into",
+          "signature": "fn(self: &Self, target: &mut T)",
+          "generics": []
+        },
+        {
+          "name": "into",
+          "signature": "fn(self: Self) -> U",
+          "generics": []
+        },
+        {
+          "name": "type_id",
+          "signature": "fn(self: &Self) -> TypeId",
+          "generics": []
+        },
+        {
+          "name": "borrow",
+          "signature": "fn(self: &Self) -> &T",
+          "generics": []
+        }
+      ],
+      "implemented_traits": [
+        {
+          "trait_name": "UnwindSafe",
+          "trait_id": "Id(17)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "CloneToUninit",
+          "trait_id": "Id(185)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "ToString",
+          "trait_id": "Id(50)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "BorrowMut",
+          "trait_id": "Id(25)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "StructuralPartialEq",
+          "trait_id": "Id(301)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Debug",
+          "trait_id": "Id(87)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Display",
+          "trait_id": "Id(49)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Freeze",
+          "trait_id": "Id(12)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "PartialEq",
+          "trait_id": "Id(304)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Eq",
+          "trait_id": "Id(306)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Error",
+          "trait_id": "Id(391)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryInto",
+          "trait_id": "Id(37)",
+          "associated_types": {
+            "Error": "<U as TryFrom>::Error"
+          }
+        },
+        {
+          "trait_name": "Clone",
+          "trait_id": "Id(184)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Unpin",
+          "trait_id": "Id(14)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "RefUnwindSafe",
+          "trait_id": "Id(16)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "Infallible"
+          }
+        },
+        {
+          "trait_name": "Sync",
+          "trait_id": "Id(10)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "ToOwned",
+          "trait_id": "Id(195)",
+          "associated_types": {
+            "Owned": "T"
+          }
+        },
+        {
+          "trait_name": "Send",
+          "trait_id": "Id(8)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Into",
+          "trait_id": "Id(29)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Any",
+          "trait_id": "Id(45)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Borrow",
+          "trait_id": "Id(22)",
+          "associated_types": {}
+        }
+      ]
+    },
+    {
+      "id": "Id(309)",
+      "name": "DecodeMetadata",
+      "kind": "struct",
+      "path": [
+        "base64",
+        "engine",
+        "DecodeMetadata"
+      ],
+      "generics": [],
+      "fields": [],
+      "variants": [],
+      "methods": [
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "eq",
+          "signature": "fn(self: &Self, other: &DecodeMetadata) -> bool",
+          "generics": []
+        },
+        {
+          "name": "try_into",
+          "signature": "fn(self: Self) -> Result<U, <U as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "type_id",
+          "signature": "fn(self: &Self) -> TypeId",
+          "generics": []
+        },
+        {
+          "name": "borrow_mut",
+          "signature": "fn(self: &mut Self) -> &mut T",
+          "generics": []
+        },
+        {
+          "name": "into",
+          "signature": "fn(self: Self) -> U",
+          "generics": []
+        },
+        {
+          "name": "borrow",
+          "signature": "fn(self: &Self) -> &T",
+          "generics": []
+        },
+        {
+          "name": "from",
+          "signature": "fn(t: T) -> T",
+          "generics": []
+        },
+        {
+          "name": "try_from",
+          "signature": "fn(value: U) -> Result<T, <T as TryFrom>::Error>",
+          "generics": []
+        }
+      ],
+      "implemented_traits": [
+        {
+          "trait_name": "Debug",
+          "trait_id": "Id(87)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "PartialEq",
+          "trait_id": "Id(304)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryInto",
+          "trait_id": "Id(37)",
+          "associated_types": {
+            "Error": "<U as TryFrom>::Error"
+          }
+        },
+        {
+          "trait_name": "Unpin",
+          "trait_id": "Id(14)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Send",
+          "trait_id": "Id(8)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "StructuralPartialEq",
+          "trait_id": "Id(301)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Eq",
+          "trait_id": "Id(306)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Any",
+          "trait_id": "Id(45)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "BorrowMut",
+          "trait_id": "Id(25)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Into",
+          "trait_id": "Id(29)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Sync",
+          "trait_id": "Id(10)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Borrow",
+          "trait_id": "Id(22)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "UnwindSafe",
+          "trait_id": "Id(17)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "RefUnwindSafe",
+          "trait_id": "Id(16)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Freeze",
+          "trait_id": "Id(12)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "Infallible"
+          }
+        }
+      ]
+    },
+    {
+      "id": "Id(170)",
+      "name": "Alphabet",
+      "kind": "struct",
+      "path": [
+        "base64",
+        "alphabet",
+        "Alphabet"
+      ],
+      "generics": [],
+      "fields": [],
+      "variants": [],
+      "methods": [
+        {
+          "name": "to_owned",
+          "signature": "fn(self: &Self) -> T",
+          "generics": []
+        },
+        {
+          "name": "clone_into",
+          "signature": "fn(self: &Self, target: &mut T)",
+          "generics": []
+        },
+        {
+          "name": "from",
+          "signature": "fn(t: T) -> T",
+          "generics": []
+        },
+        {
+          "name": "clone",
+          "signature": "fn(self: &Self) -> Alphabet",
+          "generics": []
+        },
+        {
+          "name": "try_into",
+          "signature": "fn(self: Self) -> Result<U, <U as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "try_from",
+          "signature": "fn(value: U) -> Result<T, <T as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "new",
+          "signature": "fn(alphabet: &str) -> Result<Self, ParseAlphabetError>",
+          "generics": []
+        },
+        {
+          "name": "as_str",
+          "signature": "fn(self: &Self) -> &str",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "clone_to_uninit",
+          "signature": "fn(self: &Self, dest: *mut u8)",
+          "generics": []
+        },
+        {
+          "name": "try_from",
+          "signature": "fn(value: &str) -> Result<Self, <Self as >::Error>",
+          "generics": []
+        },
+        {
+          "name": "borrow_mut",
+          "signature": "fn(self: &mut Self) -> &mut T",
+          "generics": []
+        },
+        {
+          "name": "eq",
+          "signature": "fn(self: &Self, other: &Alphabet) -> bool",
+          "generics": []
+        },
+        {
+          "name": "borrow",
+          "signature": "fn(self: &Self) -> &T",
+          "generics": []
+        },
+        {
+          "name": "type_id",
+          "signature": "fn(self: &Self) -> TypeId",
+          "generics": []
+        },
+        {
+          "name": "into",
+          "signature": "fn(self: Self) -> U",
+          "generics": []
+        }
+      ],
+      "implemented_traits": [
+        {
+          "trait_name": "Unpin",
+          "trait_id": "Id(14)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "ToOwned",
+          "trait_id": "Id(195)",
+          "associated_types": {
+            "Owned": "T"
+          }
+        },
+        {
+          "trait_name": "StructuralPartialEq",
+          "trait_id": "Id(301)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "UnwindSafe",
+          "trait_id": "Id(17)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "RefUnwindSafe",
+          "trait_id": "Id(16)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Clone",
+          "trait_id": "Id(184)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Freeze",
+          "trait_id": "Id(12)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Sync",
+          "trait_id": "Id(10)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryInto",
+          "trait_id": "Id(37)",
+          "associated_types": {
+            "Error": "<U as TryFrom>::Error"
+          }
+        },
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "Infallible"
+          }
+        },
+        {
+          "trait_name": "Eq",
+          "trait_id": "Id(306)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Debug",
+          "trait_id": "Id(87)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "CloneToUninit",
+          "trait_id": "Id(185)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "ParseAlphabetError"
+          }
+        },
+        {
+          "trait_name": "Send",
+          "trait_id": "Id(8)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "BorrowMut",
+          "trait_id": "Id(25)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "PartialEq",
+          "trait_id": "Id(304)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Borrow",
+          "trait_id": "Id(22)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Any",
+          "trait_id": "Id(45)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Into",
+          "trait_id": "Id(29)",
+          "associated_types": {}
+        }
+      ]
+    },
+    {
+      "id": "Id(132)",
+      "name": "EncoderStringWriter",
+      "kind": "struct",
+      "path": [
+        "base64",
+        "write",
+        "encoder_string_writer",
+        "EncoderStringWriter"
+      ],
+      "generics": [
+        {
+          "name": "'e",
+          "kind": "lifetime",
+          "bounds": []
+        },
+        {
+          "name": "E",
+          "kind": "type",
+          "bounds": [
+            "Engine"
+          ]
+        },
+        {
+          "name": "S",
+          "kind": "type",
+          "bounds": [
+            "StrConsumer"
+          ]
+        }
+      ],
+      "fields": [],
+      "variants": [],
+      "methods": [
+        {
+          "name": "write",
+          "signature": "fn(self: &mut Self, buf: &[u8]) -> io::Result<usize>",
+          "generics": []
+        },
+        {
+          "name": "flush",
+          "signature": "fn(self: &mut Self) -> io::Result<()>",
+          "generics": []
+        },
+        {
+          "name": "type_id",
+          "signature": "fn(self: &Self) -> TypeId",
+          "generics": []
+        },
+        {
+          "name": "try_from",
+          "signature": "fn(value: U) -> Result<T, <T as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "borrow_mut",
+          "signature": "fn(self: &mut Self) -> &mut T",
+          "generics": []
+        },
+        {
+          "name": "into",
+          "signature": "fn(self: Self) -> U",
+          "generics": []
+        },
+        {
+          "name": "borrow",
+          "signature": "fn(self: &Self) -> &T",
+          "generics": []
+        },
+        {
+          "name": "try_into",
+          "signature": "fn(self: Self) -> Result<U, <U as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "new",
+          "signature": "fn(engine: &'e E) -> Self",
+          "generics": []
+        },
+        {
+          "name": "from",
+          "signature": "fn(t: T) -> T",
+          "generics": []
+        },
+        {
+          "name": "from_consumer",
+          "signature": "fn(str_consumer: S, engine: &'e E) -> Self",
+          "generics": []
+        },
+        {
+          "name": "into_inner",
+          "signature": "fn(self: Self) -> S",
+          "generics": []
+        }
+      ],
+      "implemented_traits": [
+        {
+          "trait_name": "Sync",
+          "trait_id": "Id(10)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Write",
+          "trait_id": "Id(102)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Any",
+          "trait_id": "Id(45)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "Infallible"
+          }
+        },
+        {
+          "trait_name": "BorrowMut",
+          "trait_id": "Id(25)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Into",
+          "trait_id": "Id(29)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Borrow",
+          "trait_id": "Id(22)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryInto",
+          "trait_id": "Id(37)",
+          "associated_types": {
+            "Error": "<U as TryFrom>::Error"
+          }
+        },
+        {
+          "trait_name": "Unpin",
+          "trait_id": "Id(14)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Send",
+          "trait_id": "Id(8)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "RefUnwindSafe",
+          "trait_id": "Id(16)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Freeze",
+          "trait_id": "Id(12)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "UnwindSafe",
+          "trait_id": "Id(17)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        }
+      ]
+    },
+    {
+      "id": "Id(172)",
+      "name": "GeneralPurposeConfig",
+      "kind": "struct",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "GeneralPurposeConfig"
+      ],
+      "generics": [],
+      "fields": [],
+      "variants": [],
+      "methods": [
+        {
+          "name": "try_from",
+          "signature": "fn(value: U) -> Result<T, <T as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "type_id",
+          "signature": "fn(self: &Self) -> TypeId",
+          "generics": []
+        },
+        {
+          "name": "borrow_mut",
+          "signature": "fn(self: &mut Self) -> &mut T",
+          "generics": []
+        },
+        {
+          "name": "default",
+          "signature": "fn() -> Self",
+          "generics": []
+        },
+        {
+          "name": "try_into",
+          "signature": "fn(self: Self) -> Result<U, <U as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "to_owned",
+          "signature": "fn(self: &Self) -> T",
+          "generics": []
+        },
+        {
+          "name": "clone_into",
+          "signature": "fn(self: &Self, target: &mut T)",
+          "generics": []
+        },
+        {
+          "name": "clone_to_uninit",
+          "signature": "fn(self: &Self, dest: *mut u8)",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "clone",
+          "signature": "fn(self: &Self) -> GeneralPurposeConfig",
+          "generics": []
+        },
+        {
+          "name": "into",
+          "signature": "fn(self: Self) -> U",
+          "generics": []
+        },
+        {
+          "name": "borrow",
+          "signature": "fn(self: &Self) -> &T",
+          "generics": []
+        },
+        {
+          "name": "encode_padding",
+          "signature": "fn(self: &Self) -> bool",
+          "generics": []
+        },
+        {
+          "name": "from",
+          "signature": "fn(t: T) -> T",
+          "generics": []
+        },
+        {
+          "name": "new",
+          "signature": "fn() -> Self",
+          "generics": []
+        },
+        {
+          "name": "with_encode_padding",
+          "signature": "fn(self: Self, padding: bool) -> Self",
+          "generics": []
+        },
+        {
+          "name": "with_decode_allow_trailing_bits",
+          "signature": "fn(self: Self, allow: bool) -> Self",
+          "generics": []
+        },
+        {
+          "name": "with_decode_padding_mode",
+          "signature": "fn(self: Self, mode: DecodePaddingMode) -> Self",
+          "generics": []
+        }
+      ],
+      "implemented_traits": [
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "Infallible"
+          }
+        },
+        {
+          "trait_name": "Any",
+          "trait_id": "Id(45)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Sync",
+          "trait_id": "Id(10)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "BorrowMut",
+          "trait_id": "Id(25)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Default",
+          "trait_id": "Id(239)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryInto",
+          "trait_id": "Id(37)",
+          "associated_types": {
+            "Error": "<U as TryFrom>::Error"
+          }
+        },
+        {
+          "trait_name": "ToOwned",
+          "trait_id": "Id(195)",
+          "associated_types": {
+            "Owned": "T"
+          }
+        },
+        {
+          "trait_name": "UnwindSafe",
+          "trait_id": "Id(17)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "CloneToUninit",
+          "trait_id": "Id(185)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Debug",
+          "trait_id": "Id(87)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Clone",
+          "trait_id": "Id(184)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Send",
+          "trait_id": "Id(8)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Copy",
+          "trait_id": "Id(234)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Into",
+          "trait_id": "Id(29)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Freeze",
+          "trait_id": "Id(12)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "RefUnwindSafe",
+          "trait_id": "Id(16)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Borrow",
+          "trait_id": "Id(22)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Config",
+          "trait_id": "Id(242)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Unpin",
+          "trait_id": "Id(14)",
+          "associated_types": {}
+        }
+      ]
+    },
+    {
+      "id": "Id(269)",
+      "name": "DecodeError",
+      "kind": "enum",
+      "path": [
+        "base64",
+        "decode",
+        "DecodeError"
+      ],
+      "generics": [],
+      "fields": [],
+      "variants": [
+        {
+          "name": "InvalidByte",
+          "kind": "tuple",
+          "fields": [
+            {
+              "name": "0",
+              "type_": "usize",
+              "is_public": true
+            },
+            {
+              "name": "1",
+              "type_": "u8",
+              "is_public": true
+            }
+          ]
+        },
+        {
+          "name": "InvalidLength",
+          "kind": "tuple",
+          "fields": [
+            {
+              "name": "0",
+              "type_": "usize",
+              "is_public": true
+            }
+          ]
+        },
+        {
+          "name": "InvalidLastSymbol",
+          "kind": "tuple",
+          "fields": [
+            {
+              "name": "0",
+              "type_": "usize",
+              "is_public": true
+            },
+            {
+              "name": "1",
+              "type_": "u8",
+              "is_public": true
+            }
+          ]
+        },
+        {
+          "name": "InvalidPadding",
+          "kind": "plain",
+          "fields": []
+        }
+      ],
+      "methods": [
+        {
+          "name": "eq",
+          "signature": "fn(self: &Self, other: &DecodeError) -> bool",
+          "generics": []
+        },
+        {
+          "name": "borrow",
+          "signature": "fn(self: &Self) -> &T",
+          "generics": []
+        },
+        {
+          "name": "clone_to_uninit",
+          "signature": "fn(self: &Self, dest: *mut u8)",
+          "generics": []
+        },
+        {
+          "name": "try_into",
+          "signature": "fn(self: Self) -> Result<U, <U as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "from",
+          "signature": "fn(t: T) -> T",
+          "generics": []
+        },
+        {
+          "name": "to_string",
+          "signature": "fn(self: &Self) -> String",
+          "generics": []
+        },
+        {
+          "name": "borrow_mut",
+          "signature": "fn(self: &mut Self) -> &mut T",
+          "generics": []
+        },
+        {
+          "name": "type_id",
+          "signature": "fn(self: &Self) -> TypeId",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "try_from",
+          "signature": "fn(value: U) -> Result<T, <T as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "into",
+          "signature": "fn(self: Self) -> U",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "to_owned",
+          "signature": "fn(self: &Self) -> T",
+          "generics": []
+        },
+        {
+          "name": "clone_into",
+          "signature": "fn(self: &Self, target: &mut T)",
+          "generics": []
+        },
+        {
+          "name": "clone",
+          "signature": "fn(self: &Self) -> DecodeError",
+          "generics": []
+        }
+      ],
+      "implemented_traits": [
+        {
+          "trait_name": "PartialEq",
+          "trait_id": "Id(304)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Borrow",
+          "trait_id": "Id(22)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Send",
+          "trait_id": "Id(8)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Unpin",
+          "trait_id": "Id(14)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "CloneToUninit",
+          "trait_id": "Id(185)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryInto",
+          "trait_id": "Id(37)",
+          "associated_types": {
+            "Error": "<U as TryFrom>::Error"
+          }
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "UnwindSafe",
+          "trait_id": "Id(17)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Sync",
+          "trait_id": "Id(10)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "ToString",
+          "trait_id": "Id(50)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Error",
+          "trait_id": "Id(391)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "RefUnwindSafe",
+          "trait_id": "Id(16)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Freeze",
+          "trait_id": "Id(12)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "BorrowMut",
+          "trait_id": "Id(25)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Eq",
+          "trait_id": "Id(306)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Any",
+          "trait_id": "Id(45)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Debug",
+          "trait_id": "Id(87)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "Infallible"
+          }
+        },
+        {
+          "trait_name": "Into",
+          "trait_id": "Id(29)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Display",
+          "trait_id": "Id(49)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "StructuralPartialEq",
+          "trait_id": "Id(301)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "ToOwned",
+          "trait_id": "Id(195)",
+          "associated_types": {
+            "Owned": "T"
+          }
+        },
+        {
+          "trait_name": "Clone",
+          "trait_id": "Id(184)",
+          "associated_types": {}
+        }
+      ]
+    },
+    {
+      "id": "Id(332)",
+      "name": "ParseAlphabetError",
+      "kind": "enum",
+      "path": [
+        "base64",
+        "alphabet",
+        "ParseAlphabetError"
+      ],
+      "generics": [],
+      "fields": [],
+      "variants": [
+        {
+          "name": "InvalidLength",
+          "kind": "plain",
+          "fields": []
+        },
+        {
+          "name": "DuplicatedByte",
+          "kind": "tuple",
+          "fields": [
+            {
+              "name": "0",
+              "type_": "u8",
+              "is_public": true
+            }
+          ]
+        },
+        {
+          "name": "UnprintableByte",
+          "kind": "tuple",
+          "fields": [
+            {
+              "name": "0",
+              "type_": "u8",
+              "is_public": true
+            }
+          ]
+        },
+        {
+          "name": "ReservedByte",
+          "kind": "tuple",
+          "fields": [
+            {
+              "name": "0",
+              "type_": "u8",
+              "is_public": true
+            }
+          ]
+        }
+      ],
+      "methods": [
+        {
+          "name": "type_id",
+          "signature": "fn(self: &Self) -> TypeId",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "into",
+          "signature": "fn(self: Self) -> U",
+          "generics": []
+        },
+        {
+          "name": "from",
+          "signature": "fn(t: T) -> T",
+          "generics": []
+        },
+        {
+          "name": "try_from",
+          "signature": "fn(value: U) -> Result<T, <T as TryFrom>::Error>",
+          "generics": []
+        },
+        {
+          "name": "borrow",
+          "signature": "fn(self: &Self) -> &T",
+          "generics": []
+        },
+        {
+          "name": "fmt",
+          "signature": "fn(self: &Self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+          "generics": []
+        },
+        {
+          "name": "eq",
+          "signature": "fn(self: &Self, other: &ParseAlphabetError) -> bool",
+          "generics": []
+        },
+        {
+          "name": "to_string",
+          "signature": "fn(self: &Self) -> String",
+          "generics": []
+        },
+        {
+          "name": "borrow_mut",
+          "signature": "fn(self: &mut Self) -> &mut T",
+          "generics": []
+        },
+        {
+          "name": "try_into",
+          "signature": "fn(self: Self) -> Result<U, <U as TryFrom>::Error>",
+          "generics": []
+        }
+      ],
+      "implemented_traits": [
+        {
+          "trait_name": "Send",
+          "trait_id": "Id(8)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Any",
+          "trait_id": "Id(45)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "UnwindSafe",
+          "trait_id": "Id(17)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Display",
+          "trait_id": "Id(49)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Into",
+          "trait_id": "Id(29)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "From",
+          "trait_id": "Id(26)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Freeze",
+          "trait_id": "Id(12)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "StructuralPartialEq",
+          "trait_id": "Id(301)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Unpin",
+          "trait_id": "Id(14)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "RefUnwindSafe",
+          "trait_id": "Id(16)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryFrom",
+          "trait_id": "Id(33)",
+          "associated_types": {
+            "Error": "Infallible"
+          }
+        },
+        {
+          "trait_name": "Eq",
+          "trait_id": "Id(306)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Borrow",
+          "trait_id": "Id(22)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Debug",
+          "trait_id": "Id(87)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "PartialEq",
+          "trait_id": "Id(304)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Error",
+          "trait_id": "Id(391)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "Sync",
+          "trait_id": "Id(10)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "ToString",
+          "trait_id": "Id(50)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "BorrowMut",
+          "trait_id": "Id(25)",
+          "associated_types": {}
+        },
+        {
+          "trait_name": "TryInto",
+          "trait_id": "Id(37)",
+          "associated_types": {
+            "Error": "<U as TryFrom>::Error"
+          }
+        }
+      ]
+    }
+  ],
+  "traits": [
+    {
+      "id": "Id(4)",
+      "name": "Engine",
+      "path": [
+        "base64",
+        "engine",
+        "Engine"
+      ],
+      "generics": [],
+      "methods": [
+        {
+          "name": "config",
+          "signature": "fn(self: &Self) -> &<Self as >::Config",
+          "generics": []
+        },
+        {
+          "name": "encode",
+          "signature": "fn(self: &Self, input: T) -> String",
+          "generics": [
+            {
+              "name": "T",
+              "kind": "type",
+              "bounds": [
+                "AsRef"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "encode_string",
+          "signature": "fn(self: &Self, input: T, output_buf: &mut String)",
+          "generics": [
+            {
+              "name": "T",
+              "kind": "type",
+              "bounds": [
+                "AsRef"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "encode_slice",
+          "signature": "fn(self: &Self, input: T, output_buf: &mut [u8]) -> Result<usize, EncodeSliceError>",
+          "generics": [
+            {
+              "name": "T",
+              "kind": "type",
+              "bounds": [
+                "AsRef"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "decode",
+          "signature": "fn(self: &Self, input: T) -> Result<Vec<u8>, DecodeError>",
+          "generics": [
+            {
+              "name": "T",
+              "kind": "type",
+              "bounds": [
+                "AsRef"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "decode_vec",
+          "signature": "fn(self: &Self, input: T, buffer: &mut Vec<u8>) -> Result<(), DecodeError>",
+          "generics": [
+            {
+              "name": "T",
+              "kind": "type",
+              "bounds": [
+                "AsRef"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "decode_slice",
+          "signature": "fn(self: &Self, input: T, output: &mut [u8]) -> Result<usize, DecodeSliceError>",
+          "generics": [
+            {
+              "name": "T",
+              "kind": "type",
+              "bounds": [
+                "AsRef"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "decode_slice_unchecked",
+          "signature": "fn(self: &Self, input: T, output: &mut [u8]) -> Result<usize, DecodeError>",
+          "generics": [
+            {
+              "name": "T",
+              "kind": "type",
+              "bounds": [
+                "AsRef"
+              ]
+            }
+          ]
+        }
+      ],
+      "super_traits": [
+        "Send",
+        "Sync"
+      ]
+    },
+    {
+      "id": "Id(242)",
+      "name": "Config",
+      "path": [
+        "base64",
+        "engine",
+        "Config"
+      ],
+      "generics": [],
+      "methods": [
+        {
+          "name": "encode_padding",
+          "signature": "fn(self: &Self) -> bool",
+          "generics": []
+        }
+      ],
+      "super_traits": []
+    },
+    {
+      "id": "Id(131)",
+      "name": "StrConsumer",
+      "path": [
+        "base64",
+        "write",
+        "encoder_string_writer",
+        "StrConsumer"
+      ],
+      "generics": [],
+      "methods": [
+        {
+          "name": "consume",
+          "signature": "fn(self: &mut Self, buf: &str)",
+          "generics": []
+        }
+      ],
+      "super_traits": []
+    },
+    {
+      "id": "Id(260)",
+      "name": "DecodeEstimate",
+      "path": [
+        "base64",
+        "engine",
+        "DecodeEstimate"
+      ],
+      "generics": [],
+      "methods": [
+        {
+          "name": "decoded_len_estimate",
+          "signature": "fn(self: &Self) -> usize",
+          "generics": []
+        }
+      ],
+      "super_traits": []
+    }
+  ],
+  "functions": [
+    {
+      "id": "Id(398)",
+      "name": "encode_engine",
+      "path": [
+        "base64",
+        "encode",
+        "encode_engine"
+      ],
+      "signature": "fn(input: T, engine: &E) -> alloc::string::String",
+      "generics": [
+        {
+          "name": "E",
+          "kind": "type",
+          "bounds": [
+            "Engine"
+          ]
+        },
+        {
+          "name": "T",
+          "kind": "type",
+          "bounds": [
+            "AsRef"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Id(271)",
+      "name": "decoded_len_estimate",
+      "path": [
+        "base64",
+        "decode",
+        "decoded_len_estimate"
+      ],
+      "signature": "fn(encoded_len: usize) -> usize",
+      "generics": []
+    },
+    {
+      "id": "Id(502)",
+      "name": "decode_engine",
+      "path": [
+        "base64",
+        "decode",
+        "decode_engine"
+      ],
+      "signature": "fn(input: T, engine: &E) -> Result<alloc::vec::Vec<u8>, DecodeError>",
+      "generics": [
+        {
+          "name": "E",
+          "kind": "type",
+          "bounds": [
+            "Engine"
+          ]
+        },
+        {
+          "name": "T",
+          "kind": "type",
+          "bounds": [
+            "AsRef"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Id(401)",
+      "name": "encoded_len",
+      "path": [
+        "base64",
+        "encode",
+        "encoded_len"
+      ],
+      "signature": "fn(bytes_len: usize, padding: bool) -> Option<usize>",
+      "generics": []
+    },
+    {
+      "id": "Id(400)",
+      "name": "encode_engine_slice",
+      "path": [
+        "base64",
+        "encode",
+        "encode_engine_slice"
+      ],
+      "signature": "fn(input: T, output_buf: &mut [u8], engine: &E) -> Result<usize, EncodeSliceError>",
+      "generics": [
+        {
+          "name": "E",
+          "kind": "type",
+          "bounds": [
+            "Engine"
+          ]
+        },
+        {
+          "name": "T",
+          "kind": "type",
+          "bounds": [
+            "AsRef"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Id(504)",
+      "name": "decode_engine_slice",
+      "path": [
+        "base64",
+        "decode",
+        "decode_engine_slice"
+      ],
+      "signature": "fn(input: T, output: &mut [u8], engine: &E) -> Result<usize, DecodeSliceError>",
+      "generics": [
+        {
+          "name": "E",
+          "kind": "type",
+          "bounds": [
+            "Engine"
+          ]
+        },
+        {
+          "name": "T",
+          "kind": "type",
+          "bounds": [
+            "AsRef"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Id(397)",
+      "name": "encode",
+      "path": [
+        "base64",
+        "encode",
+        "encode"
+      ],
+      "signature": "fn(input: T) -> alloc::string::String",
+      "generics": [
+        {
+          "name": "T",
+          "kind": "type",
+          "bounds": [
+            "AsRef"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Id(503)",
+      "name": "decode_engine_vec",
+      "path": [
+        "base64",
+        "decode",
+        "decode_engine_vec"
+      ],
+      "signature": "fn(input: T, buffer: &mut alloc::vec::Vec<u8>, engine: &E) -> Result<(), DecodeError>",
+      "generics": [
+        {
+          "name": "E",
+          "kind": "type",
+          "bounds": [
+            "Engine"
+          ]
+        },
+        {
+          "name": "T",
+          "kind": "type",
+          "bounds": [
+            "AsRef"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Id(501)",
+      "name": "decode",
+      "path": [
+        "base64",
+        "decode",
+        "decode"
+      ],
+      "signature": "fn(input: T) -> Result<alloc::vec::Vec<u8>, DecodeError>",
+      "generics": [
+        {
+          "name": "T",
+          "kind": "type",
+          "bounds": [
+            "AsRef"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Id(399)",
+      "name": "encode_engine_string",
+      "path": [
+        "base64",
+        "encode",
+        "encode_engine_string"
+      ],
+      "signature": "fn(input: T, output_buf: &mut alloc::string::String, engine: &E)",
+      "generics": [
+        {
+          "name": "E",
+          "kind": "type",
+          "bounds": [
+            "Engine"
+          ]
+        },
+        {
+          "name": "T",
+          "kind": "type",
+          "bounds": [
+            "AsRef"
+          ]
+        }
+      ]
+    }
+  ],
+  "constants": [
+    {
+      "id": "Id(253)",
+      "name": "URL_SAFE_NO_PAD",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "URL_SAFE_NO_PAD"
+      ],
+      "type_": "GeneralPurpose"
+    },
+    {
+      "id": "Id(244)",
+      "name": "STANDARD",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "STANDARD"
+      ],
+      "type_": "GeneralPurpose"
+    },
+    {
+      "id": "Id(247)",
+      "name": "STANDARD_NO_PAD",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "STANDARD_NO_PAD"
+      ],
+      "type_": "GeneralPurpose"
+    },
+    {
+      "id": "Id(394)",
+      "name": "IMAP_MUTF7",
+      "path": [
+        "base64",
+        "alphabet",
+        "IMAP_MUTF7"
+      ],
+      "type_": "Alphabet"
+    },
+    {
+      "id": "Id(392)",
+      "name": "CRYPT",
+      "path": [
+        "base64",
+        "alphabet",
+        "CRYPT"
+      ],
+      "type_": "Alphabet"
+    },
+    {
+      "id": "Id(208)",
+      "name": "PAD",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "PAD"
+      ],
+      "type_": "GeneralPurposeConfig"
+    },
+    {
+      "id": "Id(248)",
+      "name": "NO_PAD_INDIFFERENT",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "NO_PAD_INDIFFERENT"
+      ],
+      "type_": "GeneralPurposeConfig"
+    },
+    {
+      "id": "Id(243)",
+      "name": "STANDARD",
+      "path": [
+        "base64",
+        "alphabet",
+        "STANDARD"
+      ],
+      "type_": "Alphabet"
+    },
+    {
+      "id": "Id(251)",
+      "name": "URL_SAFE",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "URL_SAFE"
+      ],
+      "type_": "GeneralPurpose"
+    },
+    {
+      "id": "Id(252)",
+      "name": "URL_SAFE_PAD_INDIFFERENT",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "URL_SAFE_PAD_INDIFFERENT"
+      ],
+      "type_": "GeneralPurpose"
+    },
+    {
+      "id": "Id(249)",
+      "name": "STANDARD_NO_PAD_INDIFFERENT",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "STANDARD_NO_PAD_INDIFFERENT"
+      ],
+      "type_": "GeneralPurpose"
+    },
+    {
+      "id": "Id(209)",
+      "name": "NO_PAD",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "NO_PAD"
+      ],
+      "type_": "GeneralPurposeConfig"
+    },
+    {
+      "id": "Id(395)",
+      "name": "BIN_HEX",
+      "path": [
+        "base64",
+        "alphabet",
+        "BIN_HEX"
+      ],
+      "type_": "Alphabet"
+    },
+    {
+      "id": "Id(246)",
+      "name": "STANDARD_PAD_INDIFFERENT",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "STANDARD_PAD_INDIFFERENT"
+      ],
+      "type_": "GeneralPurpose"
+    },
+    {
+      "id": "Id(393)",
+      "name": "BCRYPT",
+      "path": [
+        "base64",
+        "alphabet",
+        "BCRYPT"
+      ],
+      "type_": "Alphabet"
+    },
+    {
+      "id": "Id(245)",
+      "name": "PAD_INDIFFERENT",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "PAD_INDIFFERENT"
+      ],
+      "type_": "GeneralPurposeConfig"
+    },
+    {
+      "id": "Id(254)",
+      "name": "URL_SAFE_NO_PAD_INDIFFERENT",
+      "path": [
+        "base64",
+        "engine",
+        "general_purpose",
+        "URL_SAFE_NO_PAD_INDIFFERENT"
+      ],
+      "type_": "GeneralPurpose"
+    },
+    {
+      "id": "Id(250)",
+      "name": "URL_SAFE",
+      "path": [
+        "base64",
+        "alphabet",
+        "URL_SAFE"
+      ],
+      "type_": "Alphabet"
+    }
+  ],
+  "statics": [],
+  "uses": [
+    {
+      "id": "Id(512)",
+      "path": [
+        "engine",
+        "Engine"
+      ],
+      "is_public": true,
+      "target_id": "Id(4)",
+      "resolved_target": "Id(4)",
+      "target_kind": "trait",
+      "depth": 0
+    },
+    {
+      "id": "Id(92)",
+      "path": [
+        "self",
+        "decoder",
+        "DecoderReader"
+      ],
+      "is_public": true,
+      "target_id": "Id(66)",
+      "resolved_target": "Id(66)",
+      "target_kind": "struct",
+      "depth": 0
+    },
+    {
+      "id": "Id(509)",
+      "path": [
+        "crate",
+        "engine",
+        "general_purpose",
+        "URL_SAFE"
+      ],
+      "is_public": true,
+      "target_id": "Id(251)",
+      "resolved_target": "Id(251)",
+      "target_kind": "constant",
+      "depth": 0
+    },
+    {
+      "id": "Id(160)",
+      "path": [
+        "self",
+        "encoder",
+        "EncoderWriter"
+      ],
+      "is_public": true,
+      "target_id": "Id(101)",
+      "resolved_target": "Id(101)",
+      "target_kind": "struct",
+      "depth": 0
+    },
+    {
+      "id": "Id(517)",
+      "path": [
+        "crate",
+        "encode",
+        "encoded_len"
+      ],
+      "is_public": true,
+      "target_id": "Id(401)",
+      "resolved_target": "Id(401)",
+      "target_kind": "function",
+      "depth": 0
+    },
+    {
+      "id": "Id(514)",
+      "path": [
+        "crate",
+        "encode",
+        "encode_engine"
+      ],
+      "is_public": true,
+      "target_id": "Id(398)",
+      "resolved_target": "Id(398)",
+      "target_kind": "function",
+      "depth": 0
+    },
+    {
+      "id": "Id(161)",
+      "path": [
+        "self",
+        "encoder_string_writer",
+        "EncoderStringWriter"
+      ],
+      "is_public": true,
+      "target_id": "Id(132)",
+      "resolved_target": "Id(132)",
+      "target_kind": "struct",
+      "depth": 0
+    },
+    {
+      "id": "Id(523)",
+      "path": [
+        "crate",
+        "decode",
+        "decoded_len_estimate"
+      ],
+      "is_public": true,
+      "target_id": "Id(271)",
+      "resolved_target": "Id(271)",
+      "target_kind": "function",
+      "depth": 0
+    },
+    {
+      "id": "Id(506)",
+      "path": [
+        "crate",
+        "engine",
+        "Engine"
+      ],
+      "is_public": true,
+      "target_id": "Id(4)",
+      "resolved_target": "Id(4)",
+      "target_kind": "trait",
+      "depth": 0
+    },
+    {
+      "id": "Id(518)",
+      "path": [
+        "crate",
+        "encode",
+        "EncodeSliceError"
+      ],
+      "is_public": true,
+      "target_id": "Id(266)",
+      "resolved_target": "Id(266)",
+      "target_kind": "enum",
+      "depth": 0
+    },
+    {
+      "id": "Id(522)",
+      "path": [
+        "crate",
+        "decode",
+        "decode_engine_slice"
+      ],
+      "is_public": true,
+      "target_id": "Id(504)",
+      "resolved_target": "Id(504)",
+      "target_kind": "function",
+      "depth": 0
+    },
+    {
+      "id": "Id(524)",
+      "path": [
+        "crate",
+        "decode",
+        "DecodeError"
+      ],
+      "is_public": true,
+      "target_id": "Id(269)",
+      "resolved_target": "Id(269)",
+      "target_kind": "enum",
+      "depth": 0
+    },
+    {
+      "id": "Id(257)",
+      "path": [
+        "general_purpose",
+        "GeneralPurposeConfig"
+      ],
+      "is_public": true,
+      "target_id": "Id(172)",
+      "resolved_target": "Id(172)",
+      "target_kind": "struct",
+      "depth": 0
+    },
+    {
+      "id": "Id(525)",
+      "path": [
+        "crate",
+        "decode",
+        "DecodeSliceError"
+      ],
+      "is_public": true,
+      "target_id": "Id(274)",
+      "resolved_target": "Id(274)",
+      "target_kind": "enum",
+      "depth": 0
+    },
+    {
+      "id": "Id(162)",
+      "path": [
+        "self",
+        "encoder_string_writer",
+        "StrConsumer"
+      ],
+      "is_public": true,
+      "target_id": "Id(131)",
+      "resolved_target": "Id(131)",
+      "target_kind": "trait",
+      "depth": 0
+    },
+    {
+      "id": "Id(519)",
+      "path": [
+        "crate",
+        "decode",
+        "decode"
+      ],
+      "is_public": true,
+      "target_id": "Id(501)",
+      "resolved_target": "Id(501)",
+      "target_kind": "function",
+      "depth": 0
+    },
+    {
+      "id": "Id(516)",
+      "path": [
+        "crate",
+        "encode",
+        "encode_engine_slice"
+      ],
+      "is_public": true,
+      "target_id": "Id(400)",
+      "resolved_target": "Id(400)",
+      "target_kind": "function",
+      "depth": 0
+    },
+    {
+      "id": "Id(256)",
+      "path": [
+        "general_purpose",
+        "GeneralPurpose"
+      ],
+      "is_public": true,
+      "target_id": "Id(169)",
+      "resolved_target": "Id(169)",
+      "target_kind": "struct",
+      "depth": 0
+    },
+    {
+      "id": "Id(515)",
+      "path": [
+        "crate",
+        "encode",
+        "encode_engine_string"
+      ],
+      "is_public": true,
+      "target_id": "Id(399)",
+      "resolved_target": "Id(399)",
+      "target_kind": "function",
+      "depth": 0
+    },
+    {
+      "id": "Id(508)",
+      "path": [
+        "crate",
+        "engine",
+        "general_purpose",
+        "STANDARD_NO_PAD"
+      ],
+      "is_public": true,
+      "target_id": "Id(247)",
+      "resolved_target": "Id(247)",
+      "target_kind": "constant",
+      "depth": 0
+    },
+    {
+      "id": "Id(520)",
+      "path": [
+        "crate",
+        "decode",
+        "decode_engine"
+      ],
+      "is_public": true,
+      "target_id": "Id(502)",
+      "resolved_target": "Id(502)",
+      "target_kind": "function",
+      "depth": 0
+    },
+    {
+      "id": "Id(507)",
+      "path": [
+        "crate",
+        "engine",
+        "general_purpose",
+        "STANDARD"
+      ],
+      "is_public": true,
+      "target_id": "Id(244)",
+      "resolved_target": "Id(244)",
+      "target_kind": "constant",
+      "depth": 0
+    },
+    {
+      "id": "Id(521)",
+      "path": [
+        "crate",
+        "decode",
+        "decode_engine_vec"
+      ],
+      "is_public": true,
+      "target_id": "Id(503)",
+      "resolved_target": "Id(503)",
+      "target_kind": "function",
+      "depth": 0
+    },
+    {
+      "id": "Id(510)",
+      "path": [
+        "crate",
+        "engine",
+        "general_purpose",
+        "URL_SAFE_NO_PAD"
+      ],
+      "is_public": true,
+      "target_id": "Id(253)",
+      "resolved_target": "Id(253)",
+      "target_kind": "constant",
+      "depth": 0
+    },
+    {
+      "id": "Id(513)",
+      "path": [
+        "crate",
+        "encode",
+        "encode"
+      ],
+      "is_public": true,
+      "target_id": "Id(397)",
+      "resolved_target": "Id(397)",
+      "target_kind": "function",
+      "depth": 0
+    }
+  ]
+}

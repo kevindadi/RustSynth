@@ -1,6 +1,5 @@
 /// SyPetype 完整工作流管道
 use crate::config::Config;
-use crate::cp_net::structure::CpPetriNet;
 use crate::generate::FuzzTargetGenerator;
 use crate::ir_graph::builder::build_ir_graph;
 use crate::ir_graph::structure::IrGraph;
@@ -47,13 +46,13 @@ impl Pipeline {
         }
 
         // Step 6: Convert to CP-Net (Colored Petri Net with Trait Hub)
-        if self.config.export.export_cp_net_dot || self.config.export.export_cp_net_json {
-            log::info!("Step 6: Convert to CP-Net");
-            let cp_net = self.build_cp_net(&ir_graph)?;
+        // if self.config.export.export_cp_net_dot || self.config.export.export_cp_net_json {
+        //     log::info!("Step 6: Convert to CP-Net");
+        //     let cp_net = self.build_cp_net(&ir_graph)?;
 
-            log::info!("Step 6.1: Export CP-Net");
-            self.export_cp_net(&cp_net)?;
-        }
+        //     log::info!("Step 6.1: Export CP-Net");
+        //     self.export_cp_net(&cp_net)?;
+        // }
 
         // Step 7: Generate Fuzz Target
         log::info!("Step 7: Generate Fuzz Target");
@@ -163,44 +162,44 @@ impl Pipeline {
         Ok(())
     }
 
-    /// 构建 CP-Net（Colored Petri Net with Trait Hub）
-    fn build_cp_net(&self, ir_graph: &IrGraph) -> Result<CpPetriNet> {
-        let cp_net = CpPetriNet::from_ir_graph(ir_graph);
+    // /// 构建 CP-Net（Colored Petri Net with Trait Hub）
+    // fn build_cp_net(&self, ir_graph: &IrGraph) -> Result<CpPetriNet> {
+    //     let cp_net = CpPetriNet::from_ir_graph(ir_graph);
 
-        if self.config.export.print_stats {
-            log::info!("  CP-Net 统计:");
-            cp_net.print_stats();
-        }
+    //     if self.config.export.print_stats {
+    //         log::info!("  CP-Net 统计:");
+    //         cp_net.print_stats();
+    //     }
 
-        Ok(cp_net)
-    }
+    //     Ok(cp_net)
+    // }
 
-    /// 导出 CP-Net
-    fn export_cp_net(&self, cp_net: &CpPetriNet) -> Result<()> {
-        fs::create_dir_all(&self.config.output.output_dir)?;
+    // /// 导出 CP-Net
+    // fn export_cp_net(&self, cp_net: &CpPetriNet) -> Result<()> {
+    //     fs::create_dir_all(&self.config.output.output_dir)?;
 
-        if self.config.export.export_cp_net_dot {
-            let dot_path = self
-                .config
-                .output
-                .output_dir
-                .join(&self.config.export.cp_net_dot_name);
-            cp_net.export_dot(&dot_path)?;
-            log::info!("  ✓ CP-Net DOT 已导出: {}", dot_path.display());
-        }
+    //     if self.config.export.export_cp_net_dot {
+    //         let dot_path = self
+    //             .config
+    //             .output
+    //             .output_dir
+    //             .join(&self.config.export.cp_net_dot_name);
+    //         cp_net.export_dot(&dot_path)?;
+    //         log::info!("  ✓ CP-Net DOT 已导出: {}", dot_path.display());
+    //     }
 
-        if self.config.export.export_cp_net_json {
-            let json_path = self
-                .config
-                .output
-                .output_dir
-                .join(&self.config.export.cp_net_json_name);
-            cp_net.export_json(&json_path)?;
-            log::info!("  ✓ CP-Net JSON 已导出: {}", json_path.display());
-        }
+    //     if self.config.export.export_cp_net_json {
+    //         let json_path = self
+    //             .config
+    //             .output
+    //             .output_dir
+    //             .join(&self.config.export.cp_net_json_name);
+    //         cp_net.export_json(&json_path)?;
+    //         log::info!("  ✓ CP-Net JSON 已导出: {}", json_path.display());
+    //     }
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     /// 生成 Fuzz Target
     fn generate_fuzz_target(&self, petri_net: &PetriNet) -> Result<()> {

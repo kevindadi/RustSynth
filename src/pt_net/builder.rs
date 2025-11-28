@@ -263,9 +263,6 @@ impl<'a> BuilderContext<'a> {
 
         let kind = match op.kind {
             OpKind::FnCall => TransitionKind::FnCall,
-            OpKind::StructCtor => TransitionKind::StructCtor,
-            OpKind::VariantCtor { .. } => TransitionKind::VariantCtor,
-            OpKind::UnionCtor => TransitionKind::UnionCtor,
             OpKind::FieldAccessor { .. } => TransitionKind::FieldAccessor,
             OpKind::MethodCall { .. } => TransitionKind::MethodCall,
             OpKind::AssocFn { .. } => TransitionKind::AssocFn,

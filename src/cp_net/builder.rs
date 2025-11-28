@@ -292,9 +292,6 @@ impl<'a> CpNetBuilder<'a> {
         // 确定 Transition 类型
         let kind = match &op.kind {
             OpKind::FnCall => TransitionKind::Call,
-            OpKind::StructCtor => TransitionKind::Constructor,
-            OpKind::VariantCtor { .. } => TransitionKind::Constructor,
-            OpKind::UnionCtor => TransitionKind::Constructor,
             OpKind::FieldAccessor { .. } => TransitionKind::FieldAccessor,
             OpKind::MethodCall { .. } => TransitionKind::MethodCall,
             OpKind::AssocFn { .. } => TransitionKind::AssocFn,
