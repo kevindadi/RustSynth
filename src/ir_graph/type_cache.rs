@@ -204,19 +204,22 @@ impl TypeCache {
         self.type_to_node.insert(key, node);
     }
 
-    /// 快速查找：通过 Id 查找节点
+    /// 通过 Id 查找节点
     pub fn get_by_id(&self, id: &Id) -> Option<NodeIndex> {
         self.id_to_node.get(id).copied()
     }
 
-    /// 快速查找：通过基本类型名查找节点
+    /// 通过基本类型名查找节点
     pub fn get_primitive(&self, name: &str) -> Option<NodeIndex> {
         self.primitive_to_node.get(name).copied()
     }
 
+    /// 获取 primitive_to_node 的引用
+    pub fn primitive_to_node(&self) -> &HashMap<String, NodeIndex> {
+        &self.primitive_to_node
+    }
+
     /// 从 rustdoc Type 创建 TypeKey
-    ///
-    /// 这是核心方法，将 rustdoc_types::Type 映射到我们的 TypeKey
     pub fn create_type_key(&self, ty: &Type, context: &TypeContext) -> Option<TypeKey> {
         match ty {
             // 1. 有 ID 的类型：检查是否有泛型参数
