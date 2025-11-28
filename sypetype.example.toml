@@ -1,0 +1,45 @@
+# SyPetype 配置文件示例
+
+# 输入: rustdoc JSON 文件路径
+input_json = "base64.json"
+
+# 目标 crate 名称 (用于生成 fuzz target)
+target_crate = "base64"
+
+[output]
+# 输出目录 (所有生成文件的根目录)
+output_dir = "./output"
+
+# Fuzz target 输出目录 (相对于 output_dir)
+fuzz_dir = "fuzz"
+
+# 生成的 fuzz target 名称
+fuzz_target_name = "fuzz_target_1"
+
+[export]
+# 是否导出 IR Graph 的 DOT 文件
+export_ir_graph_dot = true
+
+# IR Graph DOT 文件名
+ir_graph_dot_name = "ir_graph.dot"
+
+# 是否导出 IR Graph 的 JSON 文件
+export_ir_graph_json = true
+
+# IR Graph JSON 文件名
+ir_graph_json_name = "ir_graph.json"
+
+# 是否导出 Petri Net 的 DOT 文件
+export_petri_net_dot = true
+
+# Petri Net DOT 文件名
+petri_net_dot_name = "petri_net.dot"
+
+# 是否导出 Petri Net 的 JSON 文件
+export_petri_net_json = true
+
+# Petri Net JSON 文件名
+petri_net_json_name = "petri_net.json"
+
+# 是否打印统计信息
+print_stats = true

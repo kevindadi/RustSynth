@@ -1,0 +1,4 @@
+[INFO] 开始解析 rustdoc JSON: base64.json
+[WARN] extract_type_and_mode 遇到泛型参数,应该使用 extract_type_and_mode_with_self: E
+[WARN] extract_type_and_mode 遇到泛型参数,应该使用 extract_type_and_mode_with_self: W
+[WARN] extract_type_and_mode 遇到泛型参数,应该使用 extract_type_and_mode_with_self: E

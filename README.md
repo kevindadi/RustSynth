@@ -1,75 +1,224 @@
-# trustfall-rustdoc
-Trustfall adapter for querying rustdoc JSON data.
+# SyPetype - Rustdoc Petri Net Builder
 
-- [Contributing](https://github.com/obi1kenobi/trustfall-rustdoc-adapter/blob/main/CONTRIBUTING.md)
+基于 Colored Petri Nets (CPN) 的 Rust API Fuzzing 工具.
 
-## CLI 工具
+## 概述
 
-### `petri_synth`
-- 构建 rustdoc JSON 的 Petri 网表示,用于做基于类型的程序合成.
-- 支持将构建的网导出为 JSON 或 Graphviz DOT,便于调试或可视化.
-- 接受初始类型 (`--input`) 与目标类型 (`--goal`),利用 Petri 网搜索可行的调用序列.
+SyPetype 将 Rust 项目的 API 依赖关系解析为图结构,并可转换为着色 Petri 网(CPN),用于智能 Fuzzing 测试.
 
-示例:
+## 架构设计
+
+项目采用模块化设计,职责清晰分离:
+
+### 模块结构
+
 ```
-cargo run --bin petri_synth -- \
-  --rustdoc target/doc/my_crate.json \
-  --input "&str" \
-  --goal "String" \
-  --emit-net petri.json
-```
-
-常用参数:
-- `--rustdoc <path>`:必填,rustdoc JSON 输入文件.
-- `--input <type>`:初始可用类型,可重复指定.
-- `--goal <type>`:目标类型,可重复指定.
-- `--emit-net <path>`:导出 Petri 网(JSON 或 `.dot`).
-- `--max-depth` / `--max-states`:控制搜索深度与状态数上限.
-
-### `rustdoc_llm_export`
-- 将 rustdoc JSON 转换为适合大模型消费的 API 规格(结构化 JSON).
-- 支持仅导出公开 API,或包含私有条目,并可限制文档长度.
-
-示例:
-```
-cargo run --bin rustdoc_llm_export -- \
-  --rustdoc-json target/doc/my_crate.json \
-  --output llm_spec.json \
-  --pretty
+src/
+├── parse/           # 解析模块:处理 rustdoc JSON 输出
+│   └── mod.rs      # 提取类型、函数、Trait 实现关系
+│
+├── api_graph/      # API 图模块:构建依赖图
+│   ├── structure.rs # 图数据结构(Node, Edge, ApiGraph)
+│   ├── builder.rs   # 图构建器
+│   ├── export.rs    # 导出功能(JSON, DOT)
+│   └── mod.rs      # 模块入口
+│
+├── cpn/            # CPN 模块:转换为着色 Petri 网(待实现)
+│   └── mod.rs
+│
+└── main.rs         # 主程序入口
 ```
 
-常用参数:
-- `--rustdoc-json <path>`:必填,rustdoc JSON 输入文件.
-- `--output`/`-o <path>`:输出文件,默认写到 stdout.
-- `--crate-name <name>`:覆盖规格中的 crate 名称.
-- `--public-only` / `--include-private`:控制导出范围.
-- `--max-doc-bytes <n>`:限制 docstring 长度,支持 `none`/`0` 表示不限.
-- `--no-panics-pass`:跳过 panic / error 分析.
+### 核心概念
 
-#### License
+#### 1. Parse 模块
 
-<sup>
-Available under the <a href="LICENSE-APACHE">Apache License, Version
-2.0</a> or <a href="LICENSE-MIT">MIT license</a>, at your option.
-</sup>
+负责解析 `cargo +nightly rustdoc -- --output-format json` 生成的 JSON 文件:
 
-<br>
+- **ParsedCrate**: 解析后的完整 Crate 信息
+- **FunctionInfo**: 函数签名和泛型约束
+- **TypeInfo**: 类型定义(Struct, Enum, Trait 等)
+- **TraitMap**: Trait 实现关系映射
 
-<sup>
-Copyright 2022-present Predrag Gruevski and Contributors.
-</sup>
+#### 2. API Graph 模块
 
-<br>
+将解析后的数据构建为依赖图:
 
-<sub>
-Contributors are defined in the Apache-2.0 license.
-The present date is determined by the timestamp of the most recent commit in the repository.
-</sub>
+- **Node**: 图节点(具体类型或 Trait)
 
-<br>
+  - `ConcreteType`: Struct, Enum 等具体类型
+  - `AbstractTrait`: Trait 抽象类型
 
-<sub>
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in this crate by you, as defined in the Apache-2.0 license, shall
-be dual licensed as above, without any additional terms or conditions.
-</sub>
+- **Edge**: 图的边(函数/方法)
+
+  - 表示从输入类型到输出类型的转换
+  - 携带泛型约束信息
+
+- **ApiGraph**: 完整的 API 依赖图
+  - 提供查询、遍历功能
+  - 支持泛型约束验证
+
+#### 3. 关键特性:Trait 解析
+
+**TraitMap** 是核心数据结构,映射 `TraitId -> Vec<ImplementorId>`:
+
+```rust
+// 示例:如果代码中有
+trait Val {}
+struct User {}
+impl Val for User {}
+fn process(v: impl Val) -> u32 { ... }
+
+// TraitMap 会记录:
+// Val -> [User]
+//
+// 图构建时:
+// User --[process]--> u32
+```
+
+这使得工具能够解析 `impl Trait` 和泛型约束,确定哪些具体类型可以满足函数的泛型要求.
+
+## 使用方法
+
+### 1. 生成 rustdoc JSON
+
+首先为目标项目生成 rustdoc JSON:
+
+```bash
+cd /path/to/target/project
+cargo +nightly rustdoc -- --output-format json
+```
+
+这会在 `target/doc/` 目录下生成 JSON 文件(通常是 `<crate_name>.json`).
+
+### 2. 运行 SyPetype
+
+```bash
+cd /path/to/SyPetype
+cargo run -- /path/to/target/project/target/doc/<crate_name>.json
+```
+
+或使用项目自带的示例:
+
+```bash
+cargo run -- ./base64.json
+```
+
+### 3. 查看输出
+
+程序会生成两个文件:
+
+1. **api_graph.json**: 用于 CPN 生成的 JSON 格式
+
+   ```json
+   {
+     "places": [...],         // 所有类型节点
+     "transitions": [...],    // 所有函数边
+     "trait_implementations": [...]  // Trait 实现关系
+   }
+   ```
+
+2. **api_graph.dot**: 用于 Graphviz 可视化的 DOT 格式
+   ```bash
+   # 生成可视化图像
+   dot -Tpng api_graph.dot -o api_graph.png
+   ```
+
+### 示例输出
+
+```
+正在加载 rustdoc JSON: ./base64.json
+✓ 成功解析 rustdoc JSON
+
+=== Rustdoc 解析统计 ===
+总 Item 数: 1234
+函数数: 56
+类型数: 78
+Trait 实现数: 23
+  - Struct: 45
+  - Enum: 12
+  - Trait: 21
+
+正在构建 API 依赖图...
+✓ 图构建完成
+
+=== API Dependency Graph 统计 ===
+节点数: 78
+边数: 142
+  - 具体类型: 57
+  - Trait: 21
+  - 有泛型约束的边: 18
+
+✓ JSON 已导出到: api_graph.json
+✓ DOT 已导出到: api_graph.dot
+  可使用以下命令生成可视化图像:
+  dot -Tpng api_graph.dot -o api_graph.png
+
+✓ 所有步骤完成!
+```
+
+## API 说明
+
+### Parse 模块
+
+```rust
+use sypetype::parse::ParsedCrate;
+
+// 从 JSON 文件加载
+let parsed = ParsedCrate::from_json_file("path/to/doc.json")?;
+
+// 查询类型名称
+let name = parsed.get_type_name(&type_id);
+
+// 查询 Trait 实现者
+let implementors = parsed.get_trait_implementors(&trait_id);
+
+// 访问函数列表
+for func in &parsed.functions {
+    println!("函数: {}", func.name);
+}
+```
+
+### API Graph 模块
+
+```rust
+use sypetype::api_graph::{build_graph, ExportFormat};
+
+// 构建图
+let graph = build_graph(parsed_crate);
+
+// 查询节点
+let outgoing = graph.outgoing_edges(&node);
+let incoming = graph.incoming_edges(&node);
+
+// 验证约束
+let satisfies = graph.satisfies_constraint(type_id, &constraint);
+
+// 导出
+let json = graph.export(ExportFormat::Json);
+let dot = graph.export(ExportFormat::Dot);
+```
+
+## 开发计划
+
+- [x] Parse 模块:rustdoc JSON 解析
+- [x] API Graph 模块:依赖图构建
+- [x] TraitMap:Trait 实现关系提取
+- [x] 导出功能:JSON 和 DOT 格式
+- [ ] CPN 模块:转换为着色 Petri 网
+- [ ] Fuzzing 引擎:基于 CPN 的智能测试生成
+- [ ] 泛型约束完整支持:处理复杂的生命周期和 where 子句
+
+## 技术栈
+
+- **rustdoc-types 0.57**: rustdoc JSON 格式的类型定义
+- **serde/serde_json**: JSON 序列化/反序列化
+- **petgraph**: 图数据结构(可选,当前使用自定义实现)
+
+## License
+
+Apache-2.0 OR MIT
+## 作者
+
+Kevin Zhang <zhangkaiwenyy@gmail.com>
+

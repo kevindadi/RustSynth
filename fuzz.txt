@@ -1,0 +1,47 @@
+=== SyPetype Pipeline Integration Test ===
+1. Constructing Mock IrGraph...
+2. Building PetriNet...
+3. Generating Fuzz Target...
+
+=== Generated Code ===
+
+#![no_main]
+use libfuzzer_sys::fuzz_target;
+use arbitrary::Arbitrary;
+use my_crate;
+
+#[derive(Default)]
+struct FuzzState {
+    pool_Context: Vec<Context>,
+    pool_Vec_u8: Vec<Vec<u8>>,
+}
+
+#[derive(Arbitrary, Debug)]
+enum Action {
+    VecPush {
+        arg0_idx: usize,
+        arg1: u8,
+    },
+    ContextNew {
+        arg0_idx: usize,
+    },
+}
+
+fuzz_target!(|actions: Vec<Action>| {
+    let mut state = FuzzState::default();
+    for action in actions {
+        match action {
+            Action::VecPush { arg0_idx, arg1, } => {
+                if arg0_idx >= state.pool_Vec_u8.len() { continue; }
+                Vec::push(&mut state.pool_Vec_u8[arg0_idx], arg1);
+            }
+            Action::ContextNew { arg0_idx, } => {
+                if arg0_idx >= state.pool_Vec_u8.len() { continue; }
+                let res = Context::new(state.pool_Vec_u8.remove(arg0_idx));
+                state.pool_Context.push(res);
+            }
+        }
+    }
+});
+
+======================
