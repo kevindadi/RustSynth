@@ -3,7 +3,7 @@ use petgraph::graph::{DiGraph, EdgeIndex, NodeIndex};
 /// IR Graph 数据结构定义  
 ///
 /// 核心设计:使用 rustdoc Id 作为节点标识，详细信息通过 ParsedCrate 查询
-use rustdoc_types::{Id, Item, ItemEnum};
+use rustdoc_types::Id;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -30,19 +30,11 @@ pub enum EdgeMode {
     Include,
     /// 类型别名（Associated Type 或 type alias）
     Alias,
+    /// 实例化关系（Const/Static 是某个类型的实例）
+    Instance,
 }
 
 impl EdgeMode {
-    /// 判断是否是引用类型
-    pub fn is_reference(&self) -> bool {
-        matches!(self, EdgeMode::Ref | EdgeMode::MutRef)
-    }
-
-    /// 判断是否是裸指针
-    pub fn is_raw_pointer(&self) -> bool {
-        matches!(self, EdgeMode::Ptr | EdgeMode::MutPtr)
-    }
-
     #[allow(unused)]
     pub fn is_mutable(&self) -> bool {
         matches!(self, EdgeMode::MutRef | EdgeMode::MutPtr)
@@ -52,7 +44,11 @@ impl EdgeMode {
     pub fn is_relationship(&self) -> bool {
         matches!(
             self,
-            EdgeMode::Implements | EdgeMode::Require | EdgeMode::Include | EdgeMode::Alias
+            EdgeMode::Implements
+                | EdgeMode::Require
+                | EdgeMode::Include
+                | EdgeMode::Alias
+                | EdgeMode::Instance
         )
     }
 }
@@ -258,7 +254,11 @@ impl IrGraph {
                 EdgeMode::MutRef => mut_ref_edges += 1,
                 EdgeMode::Implements => implements_edges += 1,
                 EdgeMode::Require => require_edges += 1,
-                EdgeMode::Include | EdgeMode::Alias | EdgeMode::Ptr | EdgeMode::MutPtr => {}
+                EdgeMode::Include
+                | EdgeMode::Alias
+                | EdgeMode::Instance
+                | EdgeMode::Ptr
+                | EdgeMode::MutPtr => {}
             }
         }
 
@@ -330,6 +330,7 @@ impl IrGraph {
                 EdgeMode::Require => ("purple", "dashed", "requires"),
                 EdgeMode::Include => ("brown", "solid", "has"),
                 EdgeMode::Alias => ("pink", "dashed", "alias"),
+                EdgeMode::Instance => ("cyan", "dotted", "instance"),
                 EdgeMode::Ptr => ("gray", "dotted", "*const"),
                 EdgeMode::MutPtr => ("gray", "dotted", "*mut"),
             };

@@ -4,6 +4,7 @@ use rustdoc_types::{GenericParamDefKind, Generics, Id, ItemEnum, Type};
 use super::builder::IrGraphBuilder;
 use super::structure::{EdgeMode, NodeType, TypeRelation};
 use crate::support_types::method_blacklist::is_blacklisted_method;
+use log::{debug, error};
 
 impl<'ir> IrGraphBuilder<'ir> {
     /// 构建类型实现的方法节点
@@ -479,12 +480,35 @@ impl<'ir> IrGraphBuilder<'ir> {
                 };
 
                 if let Some(type_key) = self.type_cache.create_type_key(ty, &context) {
-                    // 先尝试从 TypeCache 查找
+                    // 先尝试从 type_node_maps 查找（优先使用已存在的节点）
+                    if let Some(&existing_node) = self.type_node_maps.get(&path.id) {
+                        debug!(
+                            "✓ 从 type_node_maps 找到类型: {} (id: {}) -> NodeIndex({:?})",
+                            path.path, path.id.0, existing_node
+                        );
+                        // 确保 TypeCache 中也记录
+                        if self.type_cache.get_node(&type_key).is_none() {
+                            self.type_cache.insert_node(type_key, existing_node);
+                        }
+                        return Some(existing_node);
+                    }
+
+                    // 从 TypeCache 查找
                     if let Some(node) = self.type_cache.get_node(&type_key) {
+                        debug!(
+                            "✓ 从 TypeCache 找到类型: {} (id: {}) -> NodeIndex({:?})",
+                            path.path, path.id.0, node
+                        );
+                        // 更新 type_node_maps
+                        self.type_node_maps.insert(path.id, node);
                         return Some(node);
                     }
 
                     // 如果不存在，创建节点
+                    debug!(
+                        "⚠️  创建新的外部类型节点: {} (id: {})",
+                        path.path, path.id.0
+                    );
                     let type_name = if let Some(args) = &path.args {
                         // 有泛型参数，创建带参数的类型名
                         if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = &**args {
@@ -538,6 +562,19 @@ impl<'ir> IrGraphBuilder<'ir> {
                             .to_string()
                     };
 
+                    // 再次检查 type_node_maps（可能在检查后又被创建了）
+                    if let Some(&existing_node) = self.type_node_maps.get(&path.id) {
+                        debug!(
+                            "⚠️  类型 {} (id: {}) 在创建过程中已存在节点 NodeIndex({:?})，使用已有节点",
+                            type_name, path.id.0, existing_node
+                        );
+                        // 确保 TypeCache 中也记录
+                        if self.type_cache.get_node(&type_key).is_none() {
+                            self.type_cache.insert_node(type_key, existing_node);
+                        }
+                        return Some(existing_node);
+                    }
+
                     let node = self.graph.add_type_node(&type_name);
 
                     // 根据名称推断类型
@@ -551,14 +588,20 @@ impl<'ir> IrGraphBuilder<'ir> {
                     self.graph.node_types.insert(node, node_type);
 
                     // 更新 TypeCache
-                    self.type_cache.insert_node(type_key, node);
+                    self.type_cache.insert_node(type_key.clone(), node);
 
                     // 也更新 type_node_maps（用于快速查找基础类型）
-                    self.type_node_maps.insert(path.id, node);
+                    let old_node = self.type_node_maps.insert(path.id, node);
+                    if let Some(old) = old_node {
+                        error!(
+                            "⚠️  类型 {} (id: {}) 在 type_node_maps 中已有节点 NodeIndex({:?})，被替换为 NodeIndex({:?})",
+                            type_name, path.id.0, old, node
+                        );
+                    }
 
                     debug!(
-                        "创建类型节点: {} (id: {}, 路径: {})",
-                        type_name, path.id.0, path.path
+                        "✓ 创建类型节点: {} (id: {}) -> NodeIndex({:?}), 路径: {}",
+                        type_name, path.id.0, node, path.path
                     );
 
                     Some(node)
@@ -724,9 +767,33 @@ impl<'ir> IrGraphBuilder<'ir> {
                         return Some(assoc_node);
                     }
 
+                    // 如果 type_name 是 "unknown"，尝试从 context_owner_id 获取
+                    if type_name == "unknown" {
+                        if let Some(owner_id) = context_owner_id {
+                            if let Some(owner_item) = self.parsed.crate_data.index.get(&owner_id) {
+                                if let Some(owner_name) = &owner_item.name {
+                                    let owner_assoc_key = format!("{}.{}", owner_name, name);
+                                    if let Some(&assoc_node) =
+                                        self.assoc_type_maps.get(&owner_assoc_key)
+                                    {
+                                        debug!(
+                                            "✓ 找到关联类型: {} (从 context_owner 获取)",
+                                            owner_assoc_key
+                                        );
+                                        return Some(assoc_node);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 最后查找 Trait.AssocType（trait 中定义的默认值）
                     let trait_assoc_key = format!("{}.{}", trait_name, name);
                     if let Some(&assoc_node) = self.assoc_type_maps.get(&trait_assoc_key) {
-                        debug!("✓ 找到 Trait 关联类型: {} (trait 中定义)", trait_assoc_key);
+                        debug!(
+                            "✓ 找到 Trait 关联类型: {} (trait 中定义，作为 fallback)",
+                            trait_assoc_key
+                        );
                         return Some(assoc_node);
                     }
 
@@ -829,16 +896,36 @@ impl<'ir> IrGraphBuilder<'ir> {
 
     /// 获取或创建基本类型节点
     fn get_or_create_primitive_node(&mut self, name: &str) -> NodeIndex {
-        let node_id = format!("prim:{}", name);
+        use super::type_cache::TypeKey;
+        use log::debug;
 
-        if let Some(&idx) = self.other_types.get(&node_id) {
-            idx
-        } else {
-            let idx = self.graph.add_type_node(name);
-            self.graph.node_types.insert(idx, NodeType::Primitive);
-            self.other_types.insert(node_id, idx); // 存储以保证唯一性
-            idx
+        if let Some(&idx) = self.type_cache.primitive_to_node().get(name) {
+            debug!(
+                "✓ 从 TypeCache.primitive_to_node 找到基本类型: {} -> NodeIndex({:?})",
+                name, idx
+            );
+            return idx;
         }
+
+        // 创建 TypeKey 并检查 TypeCache
+        let type_key = TypeKey::Primitive(name.to_string());
+        if let Some(idx) = self.type_cache.get_node(&type_key) {
+            debug!(
+                "✓ 从 TypeCache 找到基本类型: {} -> NodeIndex({:?})",
+                name, idx
+            );
+            return idx;
+        }
+
+        let idx = self.graph.add_type_node(name);
+        self.graph.node_types.insert(idx, NodeType::Primitive);
+
+        // 更新 TypeCache
+        self.type_cache.insert_node(type_key, idx);
+
+        debug!("✓ 创建新基本类型节点: {} -> NodeIndex({:?})", name, idx);
+
+        idx
     }
 
     /// 创建元组节点

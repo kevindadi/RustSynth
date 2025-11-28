@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 use super::structure::{EdgeMode, IrGraph};
 use super::type_cache::{TypeCache, TypeContext, TypeKey};
 use crate::{ir_graph::structure::NodeType, parse::ParsedCrate};
-use log::{debug, info};
+use log::{debug, error, info};
 
 pub struct IrGraphBuilder<'ir> {
     pub(crate) parsed: &'ir ParsedCrate,
@@ -54,7 +54,10 @@ impl<'ir> IrGraphBuilder<'ir> {
         self.build_types();
 
         info!("第二步：处理 Trait 节点...");
-        self.build_traits();
+        self.build_traits_nodes();
+
+        info!("第二步（续）：处理 Trait 的 Associated Type...");
+        self.build_trait_assoc_types();
 
         info!("第三步：处理类型和 Trait 的泛型参数（使用 TypeCache)...");
         self.build_type_generics();
@@ -145,83 +148,72 @@ impl<'ir> IrGraphBuilder<'ir> {
                                             if let Some(trait_ref) = &impl_data.trait_ {
                                                 let trait_id = trait_ref.id;
 
-                                                // 获取类型和 Trait 的名称
-                                                let type_name = self
-                                                    .parsed
-                                                    .crate_data
-                                                    .index
-                                                    .get(&type_id)
-                                                    .and_then(|i| i.name.as_deref())
-                                                    .unwrap_or("unknown");
-
-                                                let trait_name = self
-                                                    .parsed
-                                                    .crate_data
-                                                    .index
-                                                    .get(&trait_id)
-                                                    .and_then(|i| i.name.as_deref())
-                                                    .unwrap_or("unknown");
-
-                                                // 创建 Type.AssocType 节点
-                                                let assoc_type_label =
-                                                    format!("{}.{}", type_name, assoc_type_name);
-                                                let assoc_type_node =
-                                                    self.graph.add_type_node(&assoc_type_label);
-                                                self.graph
-                                                    .node_types
-                                                    .insert(assoc_type_node, NodeType::TypeAlias);
-
-                                                // 存储到 assoc_type_maps
-                                                self.assoc_type_maps.insert(
-                                                    assoc_type_label.clone(),
-                                                    assoc_type_node,
-                                                );
-
                                                 // 解析关联类型的目标类型
-                                                use super::type_cache::TypeContext;
-                                                let context = TypeContext::new();
                                                 if let Some(assoc_type) = type_ {
-                                                    if let Some(type_key) = self
-                                                        .type_cache
-                                                        .create_type_key(assoc_type, &context)
-                                                    {
-                                                        let target_node = self
-                                                            .get_or_create_type_node(
-                                                                &type_key,
-                                                                assoc_type,
-                                                                &assoc_type_label,
-                                                            );
+                                                    match assoc_type {
+                                                        Type::ResolvedPath(path) => {
+                                                            if let Some(type_node) =
+                                                                self.type_node_maps.get(&path.id)
+                                                            {
+                                                                // 获取类型和 Trait 的名称
+                                                                let type_name = self
+                                                                    .parsed
+                                                                    .crate_data
+                                                                    .index
+                                                                    .get(&type_id)
+                                                                    .and_then(|i| i.name.as_deref())
+                                                                    .unwrap_or("unknown");
 
-                                                        // 创建别名边：Type.AssocType -> TargetType
-                                                        self.graph.add_type_relation(
-                                                            assoc_type_node,
-                                                            target_node,
-                                                            EdgeMode::Alias,
-                                                            Some(format!("{} =", assoc_type_name)),
-                                                        );
+                                                                // 创建 Type.AssocType 节点
+                                                                let assoc_type_label = format!(
+                                                                    "{}.{}",
+                                                                    type_name, assoc_type_name
+                                                                );
+                                                                let assoc_type_node =
+                                                                    self.graph.add_type_node(
+                                                                        &assoc_type_label,
+                                                                    );
+                                                                self.graph.node_types.insert(
+                                                                    assoc_type_node,
+                                                                    NodeType::TypeAlias,
+                                                                );
 
-                                                        // 创建 Include 边：Type -> Type.AssocType
-                                                        if let Some(&type_node) =
-                                                            self.type_node_maps.get(&type_id)
-                                                        {
-                                                            self.graph.add_type_relation(
-                                                                type_node,
-                                                                assoc_type_node,
-                                                                EdgeMode::Include,
-                                                                Some(format!(
-                                                                    "has {}",
-                                                                    assoc_type_name
-                                                                )),
-                                                            );
+                                                                // 存储到 assoc_type_maps
+                                                                self.assoc_type_maps.insert(
+                                                                    assoc_type_label.clone(),
+                                                                    assoc_type_node,
+                                                                );
+                                                                // 创建别名边：Type.AssocType -> TargetType
+                                                                self.graph.add_type_relation(
+                                                                    assoc_type_node,
+                                                                    *type_node,
+                                                                    EdgeMode::Alias,
+                                                                    Some(format!(
+                                                                        "{} =",
+                                                                        assoc_type_name
+                                                                    )),
+                                                                );
+
+                                                                // 创建 Include 边：Type -> Type.AssocType
+                                                                if let Some(&source_node) = self
+                                                                    .type_node_maps
+                                                                    .get(&type_id)
+                                                                {
+                                                                    self.graph.add_type_relation(
+                                                                        source_node,
+                                                                        assoc_type_node,
+                                                                        EdgeMode::Include,
+                                                                        Some(format!(
+                                                                            "has {}",
+                                                                            assoc_type_name
+                                                                        )),
+                                                                    );
+                                                                }
+                                                            }
                                                         }
-
-                                                        debug!(
-                                                            "类型 {} impl {} 重新定义 Associated Type: {} = {:?}",
-                                                            type_name,
-                                                            trait_name,
-                                                            assoc_type_name,
-                                                            type_key
-                                                        );
+                                                        _ => {
+                                                            continue;
+                                                        }
                                                     }
                                                 }
                                             }
@@ -347,19 +339,37 @@ impl<'ir> IrGraphBuilder<'ir> {
         ty: &Type,
         label_context: &str,
     ) -> NodeIndex {
+        // 对于 Primitive 类型，先检查 primitive_to_node
+        if let TypeKey::Primitive(name) = type_key {
+            if let Some(&idx) = self.type_cache.primitive_to_node().get(name) {
+                debug!(
+                    "✓ 从 primitive_to_node 找到基本类型: {} -> NodeIndex({:?})",
+                    name, idx
+                );
+                return idx;
+            }
+        }
+
+        // 从 TypeCache 查找
+        // TODO: 全局构建类型缓存系统
         if let Some(idx) = self.type_cache.get_node(type_key) {
+            debug!(
+                "✓ 从 TypeCache 找到类型节点: {:?} -> NodeIndex({:?})",
+                type_key, idx
+            );
             return idx;
         }
 
-        // 创建新节点
         let label = self.format_type_label(ty, label_context);
         let idx = self.graph.add_type_node(&label);
 
-        // 设置节点类型
         self.set_node_type_from_key(type_key, idx);
-
-        // 缓存
         self.type_cache.insert_node(type_key.clone(), idx);
+
+        debug!(
+            "✓ 创建新类型节点: {} (key: {:?}) -> NodeIndex({:?})",
+            label, type_key, idx
+        );
 
         idx
     }
@@ -418,6 +428,12 @@ impl<'ir> IrGraphBuilder<'ir> {
 
     fn build_types(&mut self) {
         self.build_type_fields();
+
+        debug!(
+            "开始构建类型节点，共 {} 个类型",
+            self.parsed.info.types.len()
+        );
+
         for &type_id in &self.parsed.info.types {
             if let Some(item) = self.parsed.crate_data.index.get(&type_id) {
                 match &item.inner {
@@ -445,16 +461,26 @@ impl<'ir> IrGraphBuilder<'ir> {
     }
 
     fn build_struct(&mut self, struct_id: Id, struct_data: &rustdoc_types::Struct) -> NodeIndex {
-        let struct_node_index = self.graph.add_type_node(
-            self.parsed
-                .crate_data
-                .index
-                .get(&struct_id)
-                .unwrap()
-                .name
-                .as_deref()
-                .unwrap_or("unknown"),
-        );
+        let struct_name = self
+            .parsed
+            .crate_data
+            .index
+            .get(&struct_id)
+            .unwrap()
+            .name
+            .as_deref()
+            .unwrap_or("unknown");
+
+        // 检查是否已经存在
+        if let Some(&existing_node) = self.type_node_maps.get(&struct_id) {
+            debug!(
+                "⚠️  Struct {} (id: {}) 已存在节点 {:?}，跳过创建",
+                struct_name, struct_id.0, existing_node
+            );
+            return existing_node;
+        }
+
+        let struct_node_index = self.graph.add_type_node(struct_name);
         self.type_node_maps.insert(struct_id, struct_node_index);
         self.graph
             .node_types
@@ -464,7 +490,11 @@ impl<'ir> IrGraphBuilder<'ir> {
             .entry(struct_id)
             .or_insert_with(HashSet::new)
             .extend(struct_data.impls.iter().map(|&id| id));
-        debug!("构建 Struct: {:?}", self.get_name(&struct_id));
+
+        debug!(
+            "✓ 创建 Struct: {} (id: {}, node: {:?})",
+            struct_name, struct_id.0, struct_node_index
+        );
 
         match &struct_data.kind {
             rustdoc_types::StructKind::Unit => {
@@ -505,16 +535,26 @@ impl<'ir> IrGraphBuilder<'ir> {
     }
 
     fn build_enum(&mut self, enum_id: Id, enum_data: &rustdoc_types::Enum) -> NodeIndex {
-        let enum_node_index = self.graph.add_type_node(
-            self.parsed
-                .crate_data
-                .index
-                .get(&enum_id)
-                .unwrap()
-                .name
-                .as_deref()
-                .unwrap_or("unknown"),
-        );
+        let enum_name = self
+            .parsed
+            .crate_data
+            .index
+            .get(&enum_id)
+            .unwrap()
+            .name
+            .as_deref()
+            .unwrap_or("unknown");
+
+        // 检查是否已经存在
+        if let Some(&existing_node) = self.type_node_maps.get(&enum_id) {
+            debug!(
+                "⚠️  Enum {} (id: {}) 已存在节点 {:?}，跳过创建",
+                enum_name, enum_id.0, existing_node
+            );
+            return existing_node;
+        }
+
+        let enum_node_index = self.graph.add_type_node(enum_name);
         self.type_node_maps.insert(enum_id, enum_node_index);
         self.graph
             .node_types
@@ -524,7 +564,10 @@ impl<'ir> IrGraphBuilder<'ir> {
             .or_insert_with(HashSet::new)
             .extend(enum_data.impls.iter().map(|&id| id));
 
-        debug!("构建 Enum: {:?}", self.get_name(&enum_id));
+        debug!(
+            "✓ 创建 Enum: {} (id: {}, node: {:?})",
+            enum_name, enum_id.0, enum_node_index
+        );
 
         for &variant_id in &enum_data.variants {
             if let Some(variant_item) = self.parsed.crate_data.index.get(&variant_id) {
@@ -718,7 +761,7 @@ impl<'ir> IrGraphBuilder<'ir> {
         }
     }
 
-    fn build_traits(&mut self) {
+    fn build_traits_nodes(&mut self) {
         for &trait_id in &self.parsed.info.traits {
             if let Some(item) = self.parsed.crate_data.index.get(&trait_id) {
                 if let ItemEnum::Trait(trait_data) = &item.inner {
@@ -737,60 +780,129 @@ impl<'ir> IrGraphBuilder<'ir> {
 
                     // 归一化方法级别的泛型：收集所有方法的泛型，合并同名且约束相同的
                     self.normalize_trait_method_generics(trait_id, trait_name, &trait_data.items);
+                }
+            }
+        }
+    }
+
+    fn build_trait_assoc_types(&mut self) {
+        for &trait_id in &self.parsed.info.traits {
+            if let Some(item) = self.parsed.crate_data.index.get(&trait_id) {
+                if let ItemEnum::Trait(trait_data) = &item.inner {
+                    let trait_name = item.name.as_deref().unwrap_or("unknown");
+                    let trait_node = self
+                        .type_node_maps
+                        .get(&trait_id)
+                        .expect("不可能没有")
+                        .clone();
+                    if self.is_blacklisted_trait(trait_name) {
+                        continue;
+                    }
 
                     // 处理 Trait 中定义的 Associated Type
                     for &item_id in &trait_data.items {
                         if let Some(item) = self.parsed.crate_data.index.get(&item_id) {
-                            if let ItemEnum::AssocType { type_, .. } = &item.inner {
+                            if let ItemEnum::AssocType { type_, bounds, .. } = &item.inner {
                                 if let Some(assoc_type_name) = &item.name {
-                                    // 检查是否有类型定义
+                                    // 创建 Trait.AssocType 节点（无论是否有默认值）
+                                    let assoc_type_label =
+                                        format!("{}.{}", trait_name, assoc_type_name);
+                                    let assoc_type_node =
+                                        self.graph.add_type_node(&assoc_type_label);
+                                    self.graph
+                                        .node_types
+                                        .insert(assoc_type_node, NodeType::TypeAlias);
+
+                                    // 存储到 assoc_type_maps
+                                    self.assoc_type_maps
+                                        .insert(assoc_type_label.clone(), assoc_type_node);
+
+                                    // 创建 Include 边：Trait -> Trait.AssocType
+                                    self.graph.add_type_relation(
+                                        trait_node,
+                                        assoc_type_node,
+                                        EdgeMode::Include,
+                                        Some(format!("has {}", assoc_type_name)),
+                                    );
+
+                                    // 如果有默认类型定义，创建别名边
                                     if let Some(assoc_type) = type_ {
-                                        // 创建 Trait.AssocType 节点
-                                        let assoc_type_label =
-                                            format!("{}.{}", trait_name, assoc_type_name);
-                                        let assoc_type_node =
-                                            self.graph.add_type_node(&assoc_type_label);
-                                        self.graph
-                                            .node_types
-                                            .insert(assoc_type_node, NodeType::TypeAlias);
+                                        // 对于 ResolvedPath，直接从 type_node_maps 查找（内部类型）
+                                        if let Type::ResolvedPath(path) = assoc_type {
+                                            if let Some(&target_node) =
+                                                self.type_node_maps.get(&path.id)
+                                            {
+                                                // 创建别名边：Trait.AssocType -> TargetType
+                                                self.graph.add_type_relation(
+                                                    assoc_type_node,
+                                                    target_node,
+                                                    EdgeMode::Alias,
+                                                    Some(format!("{} =", assoc_type_name)),
+                                                );
 
-                                        // 存储到 assoc_type_maps
-                                        self.assoc_type_maps
-                                            .insert(assoc_type_label.clone(), assoc_type_node);
+                                                debug!(
+                                                    "Trait {} 定义 Associated Type: {} = {} (id: {})",
+                                                    trait_name,
+                                                    assoc_type_name,
+                                                    self.get_name(&path.id).unwrap_or("unknown"),
+                                                    path.id.0
+                                                );
+                                            } else {
+                                                error!(
+                                                    "Trait {} 的 Associated Type {} 指向的类型 (id: {}) 未找到节点",
+                                                    trait_name, assoc_type_name, path.id.0
+                                                );
+                                            }
+                                        } else {
+                                            // 对于其他类型（如泛型、基本类型等），使用 TypeCache
+                                            use super::type_cache::TypeContext;
+                                            let context = TypeContext::new();
 
-                                        // 解析关联类型的目标类型
-                                        use super::type_cache::TypeContext;
-                                        let context = TypeContext::new();
-                                        if let Some(type_key) =
-                                            self.type_cache.create_type_key(assoc_type, &context)
-                                        {
-                                            let target_node = self.get_or_create_type_node(
-                                                &type_key,
-                                                assoc_type,
-                                                &assoc_type_label,
-                                            );
+                                            if let Some(type_key) = self
+                                                .type_cache
+                                                .create_type_key(assoc_type, &context)
+                                            {
+                                                let target_node = self.get_or_create_type_node(
+                                                    &type_key,
+                                                    assoc_type,
+                                                    &assoc_type_label,
+                                                );
 
-                                            // 创建别名边：Trait.AssocType -> TargetType
-                                            self.graph.add_type_relation(
-                                                assoc_type_node,
-                                                target_node,
-                                                EdgeMode::Alias,
-                                                Some(format!("{} =", assoc_type_name)),
-                                            );
+                                                // 创建别名边：Trait.AssocType -> TargetType
+                                                self.graph.add_type_relation(
+                                                    assoc_type_node,
+                                                    target_node,
+                                                    EdgeMode::Alias,
+                                                    Some(format!("{} =", assoc_type_name)),
+                                                );
 
-                                            // 创建 Include 边：Trait -> Trait.AssocType
-                                            self.graph.add_type_relation(
-                                                trait_node,
-                                                assoc_type_node,
-                                                EdgeMode::Include,
-                                                Some(format!("has {}", assoc_type_name)),
-                                            );
-
-                                            debug!(
-                                                "Trait {} 定义 Associated Type: {} = {:?}",
-                                                trait_name, assoc_type_name, type_key
-                                            );
+                                                debug!(
+                                                    "Trait {} 定义 Associated Type: {} = {:?}",
+                                                    trait_name, assoc_type_name, type_key
+                                                );
+                                            }
                                         }
+                                    } else {
+                                        // Trait 约束 TODO: 目前仅支持单一 Trait
+                                        for bound in bounds.iter() {
+                                            if let GenericBound::TraitBound { trait_, .. } = bound {
+                                                let trait_id = trait_.id;
+                                                if let Some(&trait_node) =
+                                                    self.type_node_maps.get(&trait_id)
+                                                {
+                                                    self.graph.add_type_relation(
+                                                        assoc_type_node,
+                                                        trait_node,
+                                                        EdgeMode::Alias,
+                                                        Some(format!("{} =", assoc_type_name)),
+                                                    );
+                                                }
+                                            }
+                                        }
+                                        debug!(
+                                            "Trait {} 定义 Associated Type: {} Trait Bound",
+                                            trait_name, assoc_type_name
+                                        );
                                     }
                                 }
                             }
@@ -931,13 +1043,194 @@ impl<'ir> IrGraphBuilder<'ir> {
 
     // ========== 第五步：Constant 和 Static ==========
     fn build_constants_and_statics(&mut self) {
+        use super::type_cache::TypeContext;
+        use log::debug;
+
+        debug!(
+            "开始处理 Constants 和 Statics\n\
+            - Constants: {} 个\n\
+            - Statics: {} 个\n\
+            - 当前 type_node_maps 中有 {} 个类型节点",
+            self.parsed.info.constants.len(),
+            self.parsed.info.statics.len(),
+            self.type_node_maps.len()
+        );
+
+        // 处理 Constants
         for &constant_id in &self.parsed.info.constants {
             if let Some(item) = self.parsed.crate_data.index.get(&constant_id) {
-                if let ItemEnum::Constant { type_, const_, .. } = &item.inner {
+                if let ItemEnum::Constant { type_, .. } = &item.inner {
                     let constant_name = item.name.as_deref().unwrap_or("unknown");
-                    self.type_node_maps
-                        .insert(constant_id, self.graph.add_type_node(constant_name));
+
+                    // 创建 Constant 节点
+                    let constant_node = self.graph.add_type_node(constant_name);
+                    self.graph
+                        .node_types
+                        .insert(constant_node, NodeType::Constant);
+                    self.type_node_maps.insert(constant_id, constant_node);
+
+                    // 解析 Constant 的类型并创建 Instance 边
+                    match type_ {
+                        Type::ResolvedPath(path) => {
+                            let type_name = self
+                                .parsed
+                                .crate_data
+                                .index
+                                .get(&path.id)
+                                .and_then(|item| item.name.as_deref())
+                                .unwrap_or("unknown");
+
+                            debug!(
+                                "处理 Constant: {} -> 类型 {} (id: {})",
+                                constant_name, type_name, path.id.0
+                            );
+
+                            // 查找类型节点
+                            if let Some(&type_node) = self.type_node_maps.get(&path.id) {
+                                debug!(
+                                    "✓ 从 type_node_maps 找到类型节点: {} (id: {}) -> NodeIndex({:?})",
+                                    type_name, path.id.0, type_node
+                                );
+
+                                // 创建 Instance 边：Constant -> Type
+                                self.graph.add_type_relation(
+                                    constant_node,
+                                    type_node,
+                                    EdgeMode::Instance,
+                                    Some("instance of".to_string()),
+                                );
+
+                                debug!(
+                                    "创建 Instance 边: {} (NodeIndex({:?})) -> {} (NodeIndex({:?}))",
+                                    constant_name, constant_node, type_name, type_node
+                                );
+                            } else {
+                                error!(
+                                    "✗ 未找到类型节点: {} (id: {}) 在 type_node_maps 中",
+                                    type_name, path.id.0
+                                );
+                                error!(
+                                    "  当前 type_node_maps 中的键: {:?}",
+                                    self.type_node_maps
+                                        .keys()
+                                        .map(|id| id.0)
+                                        .collect::<Vec<_>>()
+                                );
+
+                                // 尝试通过 TypeCache 查找
+                                use super::type_cache::TypeContext;
+                                let context = TypeContext::new();
+                                if let Some(type_key) =
+                                    self.type_cache.create_type_key(type_, &context)
+                                {
+                                    if let Some(cached_node) = self.type_cache.get_node(&type_key) {
+                                        error!(
+                                            "⚠️  从 TypeCache 找到类型节点: {} (id: {}) -> NodeIndex({:?})\n\
+                                            ⚠️  但该节点不在 type_node_maps 中！这可能导致重复节点。\n\
+                                            ⚠️  正在更新 type_node_maps 以避免后续问题。",
+                                            type_name, path.id.0, cached_node
+                                        );
+
+                                        // 检查是否已经有其他节点映射到这个 ID
+                                        if let Some(&existing_node) =
+                                            self.type_node_maps.get(&path.id)
+                                        {
+                                            error!(
+                                                "❌ 冲突！类型 {} (id: {}) 已经映射到 NodeIndex({:?})，\n\
+                                                但 TypeCache 返回的是 NodeIndex({:?})！\n\
+                                                这会导致重复节点。",
+                                                type_name, path.id.0, existing_node, cached_node
+                                            );
+                                        } else {
+                                            // 更新 type_node_maps
+                                            self.type_node_maps.insert(path.id, cached_node);
+                                            debug!(
+                                                "✓ 已更新 type_node_maps: id {} -> node {:?}",
+                                                path.id.0, cached_node
+                                            );
+                                        }
+
+                                        self.graph.add_type_relation(
+                                            constant_node,
+                                            cached_node,
+                                            EdgeMode::Instance,
+                                            Some("instance of".to_string()),
+                                        );
+                                    } else {
+                                        error!("✗ TypeCache 中也没有找到类型节点: {}", type_name);
+                                    }
+                                } else {
+                                    error!("✗ 无法创建 TypeKey 用于类型: {}", type_name);
+                                }
+                            }
+                        }
+                        _ => {
+                            error!(
+                                "Constant {} 的类型不是 ResolvedPath: {:?}",
+                                constant_name, type_
+                            );
+                            continue;
+                        }
+                    }
                 }
+            }
+        }
+
+        // 处理 Statics
+        for &static_id in &self.parsed.info.statics {
+            if let Some(item) = self.parsed.crate_data.index.get(&static_id) {
+                if let ItemEnum::Static(static_data) = &item.inner {
+                    let static_name = item.name.as_deref().unwrap_or("unknown");
+
+                    // 创建 Static 节点
+                    let static_node = self.graph.add_type_node(static_name);
+                    self.graph.node_types.insert(static_node, NodeType::Static);
+                    self.type_node_maps.insert(static_id, static_node);
+
+                    match &static_data.type_ {
+                        Type::ResolvedPath(path) => {
+                            let type_node = self
+                                .type_node_maps
+                                .get(&path.id)
+                                .expect("不可能没有类型节点");
+                            self.graph.add_type_relation(
+                                static_node,
+                                *type_node,
+                                EdgeMode::Instance,
+                                Some("instance of".to_string()),
+                            );
+                        }
+                        _ => {
+                            error!("Static {} 的类型不是 ResolvedPath", static_name);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 总结：检查是否有重复的类型节点
+        debug!("=== Constants 和 Statics 处理完成 ===");
+        debug!(
+            "最终 type_node_maps 中有 {} 个类型节点",
+            self.type_node_maps.len()
+        );
+
+        // 检查是否有重复的节点（同一个 ID 映射到不同节点）
+        let mut id_to_nodes: HashMap<Id, Vec<NodeIndex>> = HashMap::new();
+        for (&id, &node) in &self.type_node_maps {
+            id_to_nodes.entry(id).or_insert_with(Vec::new).push(node);
+        }
+
+        for (id, nodes) in id_to_nodes {
+            if nodes.len() > 1 {
+                let type_name = self.get_name(&id).unwrap_or("unknown");
+                error!(
+                    "❌ 发现重复节点！类型 {} (id: {}) 映射到 {} 个不同节点: {:?}",
+                    type_name,
+                    id.0,
+                    nodes.len(),
+                    nodes
+                );
             }
         }
     }
