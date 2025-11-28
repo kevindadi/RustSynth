@@ -69,7 +69,6 @@ fn main() -> Result<()> {
 
         let dot_path = cli.output_dir.join("ir_graph.dot");
         let json_path = cli.output_dir.join("ir_graph.json");
-        let debug_path = cli.output_dir.join("ir_graph_debug.txt");
 
         log::info!("正在导出到目录: {}", cli.output_dir.display());
 

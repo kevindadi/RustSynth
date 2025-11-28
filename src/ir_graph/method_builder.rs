@@ -8,6 +8,12 @@ use crate::support_types::method_blacklist::is_blacklisted_method;
 impl<'ir> IrGraphBuilder<'ir> {
     /// 构建类型实现的方法节点
     pub fn build_impl_methods(&mut self) {
+        use log::debug;
+        debug!(
+            "开始构建 impl 方法, TypeCache 中节点数: {}",
+            self.type_cache.total_count()
+        );
+
         let type_impls = self.type_impls.clone();
 
         for (&type_id, method_ids) in &type_impls {
@@ -188,25 +194,47 @@ impl<'ir> IrGraphBuilder<'ir> {
                 self.graph
                     .node_types
                     .insert(generic_node_idx, NodeType::Generic);
+
+                // 插入两个 key：完整名和短名
+                // 1. 完整名（MethodName:GenericName）- 用于精确查找
+                self.generic_node_maps
+                    .insert(generic_name.clone(), generic_node_idx);
+                // 2. 短名（GenericName）- 用于简单查找
                 self.generic_node_maps
                     .insert(param.name.clone(), generic_node_idx);
 
-                debug!("创建方法泛型参数: {}", generic_name);
+                debug!(
+                    "创建方法泛型参数: {} (存储为 {} 和 {})",
+                    generic_name, generic_name, param.name
+                );
 
                 // 处理 Trait 约束
                 for bound in bounds {
                     if let GenericBound::TraitBound { trait_, .. } = bound {
                         let trait_id = trait_.id;
-                        if let Some(&trait_node) = self.type_node_maps.get(&trait_id) {
-                            // 创建 Require 边
-                            self.graph.add_type_relation(
-                                generic_node_idx,
-                                trait_node,
-                                EdgeMode::Require,
-                                Some(format!("{} requires", param.name)),
-                            );
-                            debug!("泛型约束: {} requires trait {}", param.name, trait_id.0);
-                        }
+
+                        // 获取或创建 Trait 节点
+                        let trait_node = if let Some(&node) = self.type_node_maps.get(&trait_id) {
+                            node
+                        } else {
+                            // 外部 Trait，创建节点
+                            let trait_name = trait_.path.split("::").last().unwrap_or(&trait_.path);
+                            let node = self.graph.add_type_node(trait_name);
+                            self.graph.node_types.insert(node, NodeType::Trait);
+                            self.type_node_maps.insert(trait_id, node);
+
+                            debug!("创建外部 Trait 节点: {} (id: {})", trait_name, trait_id.0);
+                            node
+                        };
+
+                        // 创建 Require 边
+                        self.graph.add_type_relation(
+                            generic_node_idx,
+                            trait_node,
+                            EdgeMode::Require,
+                            Some(format!("{} requires", param.name)),
+                        );
+                        debug!("泛型约束: {} requires trait {}", param.name, trait_.path);
                     }
                 }
             }
@@ -262,14 +290,38 @@ impl<'ir> IrGraphBuilder<'ir> {
             if let Some(type_node_idx) =
                 self.resolve_type_node_with_owner(param_type, method_name, owner_id)
             {
+                // 根据参数类型确定 EdgeMode
+                let mode = match param_type {
+                    Type::BorrowedRef { is_mutable, .. } => {
+                        if *is_mutable {
+                            EdgeMode::MutRef
+                        } else {
+                            EdgeMode::Ref
+                        }
+                    }
+                    Type::RawPointer { is_mutable, .. } => {
+                        if *is_mutable {
+                            EdgeMode::MutPtr
+                        } else {
+                            EdgeMode::Ptr
+                        }
+                    }
+                    _ => EdgeMode::Move,
+                };
+
                 // 创建从类型到操作的边（输入边）
                 self.graph.type_graph.add_edge(
                     type_node_idx,
                     op_node_idx,
                     TypeRelation {
-                        mode: EdgeMode::Move,
+                        mode,
                         label: Some(param_name.clone()),
                     },
+                );
+
+                debug!(
+                    "方法 {} 参数: {} -> type_node (mode: {:?})",
+                    method_name, param_name, mode
                 );
             }
         }
@@ -416,7 +468,104 @@ impl<'ir> IrGraphBuilder<'ir> {
     ) -> Option<NodeIndex> {
         match ty {
             // ResolvedPath: 已解析的路径类型（struct, enum, trait 等）
-            Type::ResolvedPath(path) => self.type_node_maps.get(&path.id).copied(),
+            Type::ResolvedPath(path) => {
+                use super::type_cache::TypeContext;
+                use log::debug;
+
+                // 使用 TypeCache 创建 TypeKey（会处理泛型参数）
+                let context = TypeContext {
+                    current_owner: context_owner_id,
+                    generic_scopes: Default::default(), // 简化处理
+                };
+
+                if let Some(type_key) = self.type_cache.create_type_key(ty, &context) {
+                    // 先尝试从 TypeCache 查找
+                    if let Some(node) = self.type_cache.get_node(&type_key) {
+                        return Some(node);
+                    }
+
+                    // 如果不存在，创建节点
+                    let type_name = if let Some(args) = &path.args {
+                        // 有泛型参数，创建带参数的类型名
+                        if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = &**args {
+                            let arg_names: Vec<String> = args
+                                .iter()
+                                .filter_map(|arg| {
+                                    if let rustdoc_types::GenericArg::Type(arg_type) = arg {
+                                        // 简化：只取类型名
+                                        match arg_type {
+                                            Type::Primitive(name) => Some(name.clone()),
+                                            Type::ResolvedPath(p) => Some(
+                                                p.path
+                                                    .split("::")
+                                                    .last()
+                                                    .unwrap_or(&p.path)
+                                                    .to_string(),
+                                            ),
+                                            Type::Generic(name) => Some(name.clone()),
+                                            _ => Some("?".to_string()),
+                                        }
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .collect();
+                            if !arg_names.is_empty() {
+                                format!(
+                                    "{}<{}>",
+                                    path.path.split("::").last().unwrap_or(&path.path),
+                                    arg_names.join(", ")
+                                )
+                            } else {
+                                path.path
+                                    .split("::")
+                                    .last()
+                                    .unwrap_or(&path.path)
+                                    .to_string()
+                            }
+                        } else {
+                            path.path
+                                .split("::")
+                                .last()
+                                .unwrap_or(&path.path)
+                                .to_string()
+                        }
+                    } else {
+                        path.path
+                            .split("::")
+                            .last()
+                            .unwrap_or(&path.path)
+                            .to_string()
+                    };
+
+                    let node = self.graph.add_type_node(&type_name);
+
+                    // 根据名称推断类型
+                    let node_type = if type_name.chars().next().map_or(false, |c| c.is_uppercase())
+                    {
+                        NodeType::Struct
+                    } else {
+                        NodeType::TypeAlias
+                    };
+
+                    self.graph.node_types.insert(node, node_type);
+
+                    // 更新 TypeCache
+                    self.type_cache.insert_node(type_key, node);
+
+                    // 也更新 type_node_maps（用于快速查找基础类型）
+                    self.type_node_maps.insert(path.id, node);
+
+                    debug!(
+                        "创建类型节点: {} (id: {}, 路径: {})",
+                        type_name, path.id.0, path.path
+                    );
+
+                    Some(node)
+                } else {
+                    None
+                }
+            }
 
             // Generic: 泛型参数，包括 Self
             Type::Generic(name) => {
@@ -427,29 +576,59 @@ impl<'ir> IrGraphBuilder<'ir> {
                     }
                 }
 
-                // 先尝试从当前 generic_node_maps 查找（可能是方法的泛型）
-                if let Some(&idx) = self.generic_node_maps.get(name) {
-                    return Some(idx);
+                // 【核心修复】优先使用 TypeCache 查找类型的泛型参数（如 EncoderWriter:E）
+                use super::type_cache::{GenericScope as CacheGenericScope, TypeKey};
+                use log::debug;
+
+                if let Some(owner_id) = context_owner_id {
+                    let type_key = TypeKey::Generic {
+                        name: name.clone(),
+                        scope: CacheGenericScope::Type(owner_id),
+                    };
+
+                    debug!("查找泛型 TypeCache key: {:?}", type_key);
+
+                    if let Some(idx) = self.type_cache.get_node(&type_key) {
+                        debug!(
+                            "✓ TypeCache找到类型泛型: {} (owner: {}, node: {:?})",
+                            name, owner_id.0, idx
+                        );
+                        return Some(idx);
+                    } else {
+                        debug!("✗ TypeCache未找到, key: {:?}", type_key);
+                    }
                 }
 
-                // 尝试从方法泛型中查找
-                let method_generic_key = format!("{}:{}", context_name, name);
-                if let Some(&idx) = self.generic_node_maps.get(&method_generic_key) {
-                    return Some(idx);
-                }
-
-                // 尝试从类型泛型中查找（如果有 owner）
+                // TypeCache 未找到，尝试查找归一化泛型（Trait:GenericName）
                 if let Some(owner_id) = context_owner_id {
                     if let Some(owner_item) = self.parsed.crate_data.index.get(&owner_id) {
                         if let Some(owner_name) = &owner_item.name {
-                            let type_generic_key = format!("{}:{}", owner_name, name);
-                            if let Some(&idx) = self.generic_node_maps.get(&type_generic_key) {
+                            let normalized_key = format!("{}:{}", owner_name, name);
+                            if let Some(&idx) = self.generic_node_maps.get(&normalized_key) {
+                                debug!("✓ 归一化泛型找到: {}", normalized_key);
                                 return Some(idx);
                             }
                         }
                     }
                 }
 
+                // 尝试方法级泛型（如 decode:T）
+                let method_generic_key = format!("{}:{}", context_name, name);
+                if let Some(&idx) = self.generic_node_maps.get(&method_generic_key) {
+                    debug!("✓ 方法级key找到泛型: {}", method_generic_key);
+                    return Some(idx);
+                }
+
+                // 最后尝试短名查找（简单泛型，可能被覆盖）
+                if let Some(&idx) = self.generic_node_maps.get(name) {
+                    debug!("通过短名找到泛型: {}", name);
+                    return Some(idx);
+                }
+
+                debug!(
+                    "未找到泛型: {} (context: {}, owner: {:?})",
+                    name, context_name, context_owner_id
+                );
                 None
             }
 
@@ -464,6 +643,10 @@ impl<'ir> IrGraphBuilder<'ir> {
 
             // Tuple: 元组类型
             Type::Tuple(elements) => {
+                // 空元组 () 统一处理
+                if elements.is_empty() {
+                    return Some(self.get_or_create_primitive_node("()"));
+                }
                 Some(self.create_tuple_node(elements, context_name, context_owner_id))
             }
 
@@ -484,6 +667,78 @@ impl<'ir> IrGraphBuilder<'ir> {
             // DynTrait: trait object (dyn Trait)
             Type::DynTrait(_) => Some(self.create_dyn_trait_node(context_name)),
 
+            // QualifiedPath: 关联类型 <Type as Trait>::AssocType
+            Type::QualifiedPath {
+                name,
+                self_type,
+                trait_,
+                ..
+            } => {
+                use log::debug;
+
+                // 解析 self_type 获取类型 ID（self_type 是 &Box<Type>）
+                let type_id = match self_type.as_ref() {
+                    Type::ResolvedPath(path) => Some(path.id),
+                    Type::Generic(generic_name) if generic_name == "Self" => context_owner_id,
+                    _ => None,
+                };
+
+                if let Some(trait_path) = trait_ {
+                    let trait_id = trait_path.id;
+                    // 获取 trait 名称
+                    let trait_name = self
+                        .parsed
+                        .crate_data
+                        .index
+                        .get(&trait_id)
+                        .and_then(|item| item.name.as_deref())
+                        .unwrap_or("unknown");
+
+                    // 获取类型名称
+                    let type_name = if let Some(tid) = type_id {
+                        self.parsed
+                            .crate_data
+                            .index
+                            .get(&tid)
+                            .and_then(|item| item.name.as_deref())
+                            .unwrap_or("unknown")
+                    } else {
+                        // 如果无法从 self_type 获取，尝试从 context_owner_id 获取
+                        if let Some(owner_id) = context_owner_id {
+                            self.parsed
+                                .crate_data
+                                .index
+                                .get(&owner_id)
+                                .and_then(|item| item.name.as_deref())
+                                .unwrap_or("unknown")
+                        } else {
+                            "unknown"
+                        }
+                    };
+
+                    // 查找关联类型节点
+                    // 优先查找 Type.AssocType（impl 中重新定义的），如果没有则查找 Trait.AssocType（trait 中定义的默认值）
+                    let assoc_type_key = format!("{}.{}", type_name, name);
+                    if let Some(&assoc_node) = self.assoc_type_maps.get(&assoc_type_key) {
+                        debug!("✓ 找到关联类型: {} (impl 中定义)", assoc_type_key);
+                        return Some(assoc_node);
+                    }
+
+                    let trait_assoc_key = format!("{}.{}", trait_name, name);
+                    if let Some(&assoc_node) = self.assoc_type_maps.get(&trait_assoc_key) {
+                        debug!("✓ 找到 Trait 关联类型: {} (trait 中定义)", trait_assoc_key);
+                        return Some(assoc_node);
+                    }
+
+                    debug!(
+                        "✗ 未找到关联类型: {} 或 {}",
+                        assoc_type_key, trait_assoc_key
+                    );
+                }
+
+                None
+            }
+
             _ => None,
         }
     }
@@ -496,18 +751,40 @@ impl<'ir> IrGraphBuilder<'ir> {
     /// 提取 Result<T, E> 的类型
     fn extract_result_types(&self, ty: &Type) -> Option<(Type, Type)> {
         if let Type::ResolvedPath(path) = ty {
-            if let Some(item) = self.parsed.crate_data.index.get(&path.id) {
-                if item.name.as_deref() == Some("Result") {
-                    if let Some(args) = &path.args {
-                        if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = &**args {
-                            if args.len() >= 2 {
-                                if let (
-                                    rustdoc_types::GenericArg::Type(ok_type),
-                                    rustdoc_types::GenericArg::Type(err_type),
-                                ) = (&args[0], &args[1])
-                                {
-                                    return Some((ok_type.clone(), err_type.clone()));
-                                }
+            // 通过 path 识别 Result（可能是 std::result::Result, io::Result 等）
+            let is_result = path.path.ends_with("Result")
+                || path.path == "Result"
+                || path.path.contains("::Result");
+
+            if is_result {
+                if let Some(args) = &path.args {
+                    if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = &**args {
+                        if args.len() >= 2 {
+                            // 标准 Result<T, E>
+                            if let (
+                                rustdoc_types::GenericArg::Type(ok_type),
+                                rustdoc_types::GenericArg::Type(err_type),
+                            ) = (&args[0], &args[1])
+                            {
+                                return Some((ok_type.clone(), err_type.clone()));
+                            }
+                        } else if args.len() == 1 {
+                            // TypeAlias 形式的 Result（如 io::Result<T>），第二个参数被固定
+                            // 提取 T，并创建一个通用的 Error 类型
+                            if let rustdoc_types::GenericArg::Type(ok_type) = &args[0] {
+                                // 根据 path 推断 Error 类型
+                                let error_type = if path.path.contains("io::") {
+                                    // io::Result -> io::Error
+                                    Type::ResolvedPath(rustdoc_types::Path {
+                                        path: "io::Error".to_string(),
+                                        id: path.id, // 使用相同的 id（外部类型）
+                                        args: None,
+                                    })
+                                } else {
+                                    // 其他情况，使用通用 Error
+                                    Type::Generic("Error".to_string())
+                                };
+                                return Some((ok_type.clone(), error_type));
                             }
                         }
                     }
@@ -520,14 +797,17 @@ impl<'ir> IrGraphBuilder<'ir> {
     /// 提取 Option<T> 的类型
     fn extract_option_type(&self, ty: &Type) -> Option<Type> {
         if let Type::ResolvedPath(path) = ty {
-            if let Some(item) = self.parsed.crate_data.index.get(&path.id) {
-                if item.name.as_deref() == Some("Option") {
-                    if let Some(args) = &path.args {
-                        if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = &**args {
-                            if !args.is_empty() {
-                                if let rustdoc_types::GenericArg::Type(some_type) = &args[0] {
-                                    return Some(some_type.clone());
-                                }
+            // 通过 path 识别 Option（可能是 std::option::Option 或 Option）
+            let is_option = path.path.ends_with("Option")
+                || path.path == "Option"
+                || path.path.contains("::Option");
+
+            if is_option {
+                if let Some(args) = &path.args {
+                    if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = &**args {
+                        if !args.is_empty() {
+                            if let rustdoc_types::GenericArg::Type(some_type) = &args[0] {
+                                return Some(some_type.clone());
                             }
                         }
                     }

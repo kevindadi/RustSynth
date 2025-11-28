@@ -26,6 +26,10 @@ pub enum EdgeMode {
     Implements,
     /// 约束关系（泛型需要满足 Trait）
     Require,
+    /// 包含关系（类型包含泛型参数）
+    Include,
+    /// 类型别名（Associated Type 或 type alias）
+    Alias,
 }
 
 impl EdgeMode {
@@ -46,7 +50,10 @@ impl EdgeMode {
 
     /// 判断是否是关系边（不是数据流）
     pub fn is_relationship(&self) -> bool {
-        matches!(self, EdgeMode::Implements | EdgeMode::Require)
+        matches!(
+            self,
+            EdgeMode::Implements | EdgeMode::Require | EdgeMode::Include | EdgeMode::Alias
+        )
     }
 }
 
@@ -251,7 +258,7 @@ impl IrGraph {
                 EdgeMode::MutRef => mut_ref_edges += 1,
                 EdgeMode::Implements => implements_edges += 1,
                 EdgeMode::Require => require_edges += 1,
-                _ => {}
+                EdgeMode::Include | EdgeMode::Alias | EdgeMode::Ptr | EdgeMode::MutPtr => {}
             }
         }
 
@@ -321,6 +328,8 @@ impl IrGraph {
                 EdgeMode::MutRef => ("orange", "dashed", "&mut"),
                 EdgeMode::Implements => ("green", "bold", "impl"),
                 EdgeMode::Require => ("purple", "dashed", "requires"),
+                EdgeMode::Include => ("brown", "solid", "has"),
+                EdgeMode::Alias => ("pink", "dashed", "alias"),
                 EdgeMode::Ptr => ("gray", "dotted", "*const"),
                 EdgeMode::MutPtr => ("gray", "dotted", "*mut"),
             };

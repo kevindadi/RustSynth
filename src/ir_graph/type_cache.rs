@@ -13,8 +13,12 @@ use std::collections::HashMap;
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum TypeKey {
     /// 有 ID 的类型：Struct, Enum, Union, Trait, TypeAlias 等
-    /// 直接使用 rustdoc 的 Id
+    /// 直接使用 rustdoc 的 Id（无泛型参数）
     Resolved(Id),
+
+    /// 有 ID 的类型，带泛型参数实例化
+    /// 例如：Vec<u8>, Vec<u16> 是不同的实例
+    ResolvedWithArgs { id: Id, args: Vec<TypeKey> },
 
     /// 基本类型：u8, i32, bool, str 等
     /// 使用类型名作为标识
@@ -174,11 +178,21 @@ impl TypeCache {
         self.type_to_node.get(key).copied()
     }
 
+    /// 获取 TypeCache 中的节点总数（用于调试）
+    pub fn total_count(&self) -> usize {
+        self.type_to_node.len()
+    }
+
     /// 插入节点映射
     pub fn insert_node(&mut self, key: TypeKey, node: NodeIndex) {
         // 更新辅助映射
         match &key {
             TypeKey::Resolved(id) => {
+                self.id_to_node.insert(*id, node);
+            }
+            TypeKey::ResolvedWithArgs { id, .. } => {
+                // 对于带泛型参数的类型，也更新 id_to_node（用于快速查找基础类型）
+                // 但主要映射在 type_to_node 中
                 self.id_to_node.insert(*id, node);
             }
             TypeKey::Primitive(name) => {
@@ -205,8 +219,35 @@ impl TypeCache {
     /// 这是核心方法，将 rustdoc_types::Type 映射到我们的 TypeKey
     pub fn create_type_key(&self, ty: &Type, context: &TypeContext) -> Option<TypeKey> {
         match ty {
-            // 1. 有 ID 的类型：直接使用 ID
-            Type::ResolvedPath(path) => Some(TypeKey::Resolved(path.id)),
+            // 1. 有 ID 的类型：检查是否有泛型参数
+            Type::ResolvedPath(path) => {
+                // 如果有泛型参数，需要递归处理每个参数
+                if let Some(args) = &path.args {
+                    if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = &**args {
+                        let mut type_args = Vec::new();
+                        for arg in args {
+                            if let rustdoc_types::GenericArg::Type(arg_type) = arg {
+                                if let Some(arg_key) = self.create_type_key(arg_type, context) {
+                                    type_args.push(arg_key);
+                                } else {
+                                    // 如果无法解析某个参数，回退到无参数版本
+                                    return Some(TypeKey::Resolved(path.id));
+                                }
+                            } else {
+                                // 非类型参数（如 lifetime），忽略
+                            }
+                        }
+                        if !type_args.is_empty() {
+                            return Some(TypeKey::ResolvedWithArgs {
+                                id: path.id,
+                                args: type_args,
+                            });
+                        }
+                    }
+                }
+                // 无泛型参数，使用简单版本
+                Some(TypeKey::Resolved(path.id))
+            }
 
             // 2. 基本类型：使用类型名
             Type::Primitive(name) => Some(TypeKey::Primitive(name.clone())),
