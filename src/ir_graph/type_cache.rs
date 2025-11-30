@@ -1,7 +1,6 @@
 //! 类型缓存模块
 //!
 //! 提供统一的类型管理，确保从 rustdoc_types::Type 到 NodeIndex 的唯一映射
-
 use petgraph::graph::NodeIndex;
 use rustdoc_types::{Id, Type};
 use std::collections::HashMap;
@@ -79,6 +78,19 @@ pub enum TypeKey {
         inner: Box<TypeKey>,
         pattern: String,
     },
+
+    /// 操作节点（方法）
+    /// 使用 rustdoc 的 Id 作为标识
+    Operation(Id),
+
+    /// 关联类型节点
+    /// 格式为 "TypeName.AssocTypeName" 或 "TraitName.AssocTypeName"
+    AssociatedType {
+        /// 所属类型或 Trait 的名称
+        owner_name: String,
+        /// 关联类型的名称
+        assoc_name: String,
+    },
 }
 
 /// 泛型参数的作用域
@@ -121,13 +133,6 @@ impl TypeContext {
         }
     }
 
-    pub fn with_owner(owner_id: Id) -> Self {
-        Self {
-            current_owner: Some(owner_id),
-            generic_scopes: HashMap::new(),
-        }
-    }
-
     /// 添加泛型参数到上下文
     pub fn add_generic(&mut self, name: String, scope: GenericScope) {
         self.generic_scopes.insert(name, scope);
@@ -147,12 +152,38 @@ impl TypeContext {
 /// 类型缓存
 ///
 /// 管理所有类型节点的创建和查找，确保同一类型只创建一次
+///
+/// ## 统一管理的节点类型
+///
+/// - **类型节点** (`id_to_node`): Struct, Enum, Union, Trait, TypeAlias, Constant, Static 等
+/// - **操作节点** (`op_to_node`): 方法（ImplMethod, TraitMethod）
+/// - **泛型节点** (`generic_to_node`): 泛型参数，使用 "OwnerName:GenericName" 作为 key
+/// - **关联类型节点** (`assoc_type_to_node`): 关联类型，使用 "OwnerName.AssocTypeName" 作为 key
+/// - **基本类型节点** (`primitive_to_node`): u8, i32, bool, str, () 等
 pub struct TypeCache {
     /// 核心映射：TypeKey -> NodeIndex
     type_to_node: HashMap<TypeKey, NodeIndex>,
 
-    /// 这些是冗余映射，但可以加速查找
+    // ========== 快速查找索引 ==========
+    // 这些是冗余映射，但可以加速查找
+
+    /// 有 ID 的类型节点：Struct, Enum, Union, Trait, TypeAlias, Constant, Static 等
     id_to_node: HashMap<Id, NodeIndex>,
+
+    /// 操作节点（方法）
+    op_to_node: HashMap<Id, NodeIndex>,
+
+    /// 泛型参数节点
+    /// Key 格式：
+    /// - 完整名: "OwnerName:GenericName" (如 "Vec:T", "Iterator:Item")
+    /// - 短名: "GenericName" (如 "T", "Item") - 可能被覆盖
+    generic_to_node: HashMap<String, NodeIndex>,
+
+    /// 关联类型节点
+    /// Key 格式: "OwnerName.AssocTypeName" (如 "Iterator.Item", "MyType.Output")
+    assoc_type_to_node: HashMap<String, NodeIndex>,
+
+    /// 基本类型节点
     primitive_to_node: HashMap<String, NodeIndex>,
 }
 
@@ -161,6 +192,9 @@ impl TypeCache {
         Self {
             type_to_node: HashMap::new(),
             id_to_node: HashMap::new(),
+            op_to_node: HashMap::new(),
+            generic_to_node: HashMap::new(),
+            assoc_type_to_node: HashMap::new(),
             primitive_to_node: HashMap::new(),
         }
     }
@@ -185,7 +219,6 @@ impl TypeCache {
 
     /// 插入节点映射
     pub fn insert_node(&mut self, key: TypeKey, node: NodeIndex) {
-        // 更新辅助映射
         match &key {
             TypeKey::Resolved(id) => {
                 self.id_to_node.insert(*id, node);
@@ -198,20 +231,150 @@ impl TypeCache {
             TypeKey::Primitive(name) => {
                 self.primitive_to_node.insert(name.clone(), node);
             }
+            TypeKey::Operation(id) => {
+                self.op_to_node.insert(*id, node);
+            }
+            TypeKey::Generic { name, scope } => {
+                // 插入完整名（OwnerName:GenericName）
+                let full_key = match scope {
+                    GenericScope::Type(id) | GenericScope::Trait(id) | GenericScope::Method(id) | GenericScope::Function(id) => {
+                        // 这里我们只存储到 generic_to_node，完整 key 需要外部提供
+                        // 因为我们没有 owner_name 信息
+                    }
+                    GenericScope::Global => {}
+                };
+                // 短名也存储（可能被覆盖）
+                self.generic_to_node.insert(name.clone(), node);
+            }
+            TypeKey::AssociatedType { owner_name, assoc_name } => {
+                let key = format!("{}.{}", owner_name, assoc_name);
+                self.assoc_type_to_node.insert(key, node);
+            }
             _ => {}
         }
 
         self.type_to_node.insert(key, node);
     }
 
-    /// 通过 Id 查找节点
+    // ========== 类型节点（有 ID）操作 ==========
+
+    /// 通过 Id 查找类型节点
     pub fn get_by_id(&self, id: &Id) -> Option<NodeIndex> {
         self.id_to_node.get(id).copied()
     }
 
+    /// 插入类型节点（有 ID）
+    pub fn insert_type_by_id(&mut self, id: Id, node: NodeIndex) {
+        self.id_to_node.insert(id, node);
+        self.type_to_node.insert(TypeKey::Resolved(id), node);
+    }
+
+    /// 检查类型节点是否存在
+    pub fn contains_type_id(&self, id: &Id) -> bool {
+        self.id_to_node.contains_key(id)
+    }
+
+    /// 获取所有类型节点的 ID 列表（用于调试）
+    pub fn type_ids(&self) -> impl Iterator<Item = &Id> {
+        self.id_to_node.keys()
+    }
+
+    // ========== 操作节点（方法）操作 ==========
+
+    /// 通过 Id 查找操作节点
+    pub fn get_op_by_id(&self, id: &Id) -> Option<NodeIndex> {
+        self.op_to_node.get(id).copied()
+    }
+
+    /// 插入操作节点
+    pub fn insert_op(&mut self, id: Id, node: NodeIndex) {
+        self.op_to_node.insert(id, node);
+        self.type_to_node.insert(TypeKey::Operation(id), node);
+    }
+
+    /// 检查操作节点是否存在
+    pub fn contains_op_id(&self, id: &Id) -> bool {
+        self.op_to_node.contains_key(id)
+    }
+
+    // ========== 泛型节点操作 ==========
+
+    /// 通过完整名查找泛型节点（如 "Vec:T"）
+    pub fn get_generic(&self, full_name: &str) -> Option<NodeIndex> {
+        self.generic_to_node.get(full_name).copied()
+    }
+
+    /// 通过短名查找泛型节点（如 "T"）
+    /// 注意：短名可能被覆盖，优先使用完整名
+    pub fn get_generic_short(&self, short_name: &str) -> Option<NodeIndex> {
+        self.generic_to_node.get(short_name).copied()
+    }
+
+    /// 插入泛型节点
+    /// - full_name: 完整名，如 "Vec:T"
+    /// - short_name: 短名，如 "T"（可选，可能被覆盖）
+    pub fn insert_generic(&mut self, full_name: String, short_name: Option<String>, node: NodeIndex) {
+        self.generic_to_node.insert(full_name, node);
+        if let Some(short) = short_name {
+            self.generic_to_node.insert(short, node);
+        }
+    }
+
+    /// 插入泛型节点（使用 TypeKey）
+    pub fn insert_generic_with_key(&mut self, key: TypeKey, full_name: String, short_name: Option<String>, node: NodeIndex) {
+        self.generic_to_node.insert(full_name, node);
+        if let Some(short) = short_name {
+            self.generic_to_node.insert(short, node);
+        }
+        self.type_to_node.insert(key, node);
+    }
+
+    /// 检查泛型节点是否存在
+    pub fn contains_generic(&self, name: &str) -> bool {
+        self.generic_to_node.contains_key(name)
+    }
+
+    // ========== 关联类型节点操作 ==========
+
+    /// 通过 key 查找关联类型节点（如 "Iterator.Item"）
+    pub fn get_assoc_type_by_key(&self, key: &str) -> Option<NodeIndex> {
+        self.assoc_type_to_node.get(key).copied()
+    }
+
+    /// 通过 owner_name 和 assoc_name 查找关联类型节点
+    pub fn get_assoc_type(&self, owner_name: &str, assoc_name: &str) -> Option<NodeIndex> {
+        let key = format!("{}.{}", owner_name, assoc_name);
+        self.assoc_type_to_node.get(&key).copied()
+    }
+
+    /// 插入关联类型节点
+    /// - owner_name: 所属类型或 Trait 的名称
+    /// - assoc_name: 关联类型的名称
+    pub fn insert_assoc_type(&mut self, owner_name: &str, assoc_name: &str, node: NodeIndex) {
+        let key = format!("{}.{}", owner_name, assoc_name);
+        self.assoc_type_to_node.insert(key.clone(), node);
+        self.type_to_node.insert(TypeKey::AssociatedType {
+            owner_name: owner_name.to_string(),
+            assoc_name: assoc_name.to_string(),
+        }, node);
+    }
+
+    /// 检查关联类型节点是否存在
+    pub fn contains_assoc_type(&self, key: &str) -> bool {
+        self.assoc_type_to_node.contains_key(key)
+    }
+
+    // ========== 基本类型节点操作 ==========
+
     /// 通过基本类型名查找节点
     pub fn get_primitive(&self, name: &str) -> Option<NodeIndex> {
         self.primitive_to_node.get(name).copied()
+    }
+
+    /// 插入基本类型节点
+    pub fn insert_primitive(&mut self, name: String, node: NodeIndex) {
+        self.primitive_to_node.insert(name.clone(), node);
+        self.type_to_node.insert(TypeKey::Primitive(name), node);
     }
 
     /// 获取 primitive_to_node 的引用
@@ -219,6 +382,33 @@ impl TypeCache {
         &self.primitive_to_node
     }
 
+    // ========== 统计信息 ==========
+
+    /// 获取各类节点的数量统计
+    pub fn stats(&self) -> TypeCacheStats {
+        TypeCacheStats {
+            total: self.type_to_node.len(),
+            types: self.id_to_node.len(),
+            ops: self.op_to_node.len(),
+            generics: self.generic_to_node.len(),
+            assoc_types: self.assoc_type_to_node.len(),
+            primitives: self.primitive_to_node.len(),
+        }
+    }
+}
+
+/// TypeCache 统计信息
+#[derive(Debug, Clone)]
+pub struct TypeCacheStats {
+    pub total: usize,
+    pub types: usize,
+    pub ops: usize,
+    pub generics: usize,
+    pub assoc_types: usize,
+    pub primitives: usize,
+}
+
+impl TypeCache {
     /// 从 rustdoc Type 创建 TypeKey
     pub fn create_type_key(&self, ty: &Type, context: &TypeContext) -> Option<TypeKey> {
         match ty {

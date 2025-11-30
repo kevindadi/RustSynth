@@ -12,19 +12,15 @@ use log::{debug, error, info};
 pub struct IrGraphBuilder<'ir> {
     pub(crate) parsed: &'ir ParsedCrate,
     pub(crate) graph: IrGraph,
-    pub(crate) type_node_maps: HashMap<Id, NodeIndex>,
-    pub(crate) op_node_maps: HashMap<Id, NodeIndex>,
-    pub(crate) generic_node_maps: HashMap<String, NodeIndex>,
-    /// 关联类型映射：格式为 "TypeName.AssocTypeName" 或 "TraitName.AssocTypeName"
-    pub(crate) assoc_type_maps: HashMap<String, NodeIndex>,
-    pub(crate) type_impls: HashMap<Id, HashSet<Id>>,
-    pub(crate) trait_impls: HashMap<Id, HashSet<Id>>,
-    pub(crate) method_impls: HashMap<Id, HashSet<Id>>,
-    pub(crate) other_types: HashMap<String, NodeIndex>,
-    pub(crate) generic_scopes: HashMap<Id, HashSet<String>>,
-    pub(crate) generics_bounds: HashMap<String, Vec<Id>>,
-    /// 类型缓存：确保类型节点的唯一性
+    /// 类型缓存：统一管理所有类型节点的索引
+    /// 包括：类型节点、操作节点、泛型节点、关联类型节点、基本类型节点
     pub(crate) type_cache: TypeCache,
+    /// 类型的 impl 块：类型 ID -> impl 块中的方法 ID 集合
+    pub(crate) type_impls: HashMap<Id, HashSet<Id>>,
+    /// Trait 定义的方法：Trait ID -> 方法 ID 集合
+    pub(crate) method_impls: HashMap<Id, HashSet<Id>>,
+    /// 泛型作用域：类型/Trait ID -> 该作用域内的泛型参数名集合
+    pub(crate) generic_scopes: HashMap<Id, HashSet<String>>,
 }
 
 impl<'ir> IrGraphBuilder<'ir> {
@@ -32,17 +28,10 @@ impl<'ir> IrGraphBuilder<'ir> {
         Self {
             parsed,
             graph: IrGraph::new(),
-            type_node_maps: HashMap::new(),
-            op_node_maps: HashMap::new(),
+            type_cache: TypeCache::new(),
             type_impls: HashMap::new(),
-            other_types: HashMap::new(),
-            generic_node_maps: HashMap::new(),
-            assoc_type_maps: HashMap::new(),
-            trait_impls: HashMap::new(),
             method_impls: HashMap::new(),
             generic_scopes: HashMap::new(),
-            generics_bounds: HashMap::new(),
-            type_cache: TypeCache::new(),
         }
     }
 
@@ -105,9 +94,9 @@ impl<'ir> IrGraphBuilder<'ir> {
 
                             // 检查是否已添加过此 Implements 边
                             if !impl_edges_added.contains(&(type_id, trait_id)) {
-                                if let (Some(&type_node), Some(&trait_node)) = (
-                                    self.type_node_maps.get(&type_id),
-                                    self.type_node_maps.get(&trait_id),
+                                if let (Some(type_node), Some(trait_node)) = (
+                                    self.type_cache.get_by_id(&type_id),
+                                    self.type_cache.get_by_id(&trait_id),
                                 ) {
                                     self.graph.add_type_relation(
                                         type_node,
@@ -153,7 +142,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                                                     match assoc_type {
                                                         Type::ResolvedPath(path) => {
                                                             if let Some(type_node) =
-                                                                self.type_node_maps.get(&path.id)
+                                                                self.type_cache.get_by_id(&path.id)
                                                             {
                                                                 // 获取类型和 Trait 的名称
                                                                 let type_name = self
@@ -178,15 +167,16 @@ impl<'ir> IrGraphBuilder<'ir> {
                                                                     NodeType::TypeAlias,
                                                                 );
 
-                                                                // 存储到 assoc_type_maps
-                                                                self.assoc_type_maps.insert(
-                                                                    assoc_type_label.clone(),
+                                                                // 存储到 type_cache
+                                                                self.type_cache.insert_assoc_type(
+                                                                    &type_name,
+                                                                    assoc_type_name,
                                                                     assoc_type_node,
                                                                 );
                                                                 // 创建别名边：Type.AssocType -> TargetType
                                                                 self.graph.add_type_relation(
                                                                     assoc_type_node,
-                                                                    *type_node,
+                                                                    type_node,
                                                                     EdgeMode::Alias,
                                                                     Some(format!(
                                                                         "{} =",
@@ -195,9 +185,9 @@ impl<'ir> IrGraphBuilder<'ir> {
                                                                 );
 
                                                                 // 创建 Include 边：Type -> Type.AssocType
-                                                                if let Some(&source_node) = self
-                                                                    .type_node_maps
-                                                                    .get(&type_id)
+                                                                if let Some(source_node) = self
+                                                                    .type_cache
+                                                                    .get_by_id(&type_id)
                                                                 {
                                                                     self.graph.add_type_relation(
                                                                         source_node,
@@ -254,7 +244,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                             idx
                         };
 
-                        self.type_node_maps.insert(field_id, node_index);
+                        self.type_cache.insert_type_by_id(field_id, node_index);
                         debug!("处理 struct 字段: {} -> {:?}", field_name, type_key);
                     }
                 }
@@ -272,7 +262,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                         rustdoc_types::VariantKind::Plain => {
                             let node_index = self.graph.add_type_node(variant_name);
                             self.graph.node_types.insert(node_index, NodeType::Variant);
-                            self.type_node_maps.insert(variant_id, node_index);
+                            self.type_cache.insert_type_by_id(variant_id, node_index);
                             debug!("处理 Plain variant: {}", variant_name);
                         }
 
@@ -281,7 +271,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                             // 为 tuple variant 创建一个节点
                             let node_index = self.graph.add_type_node(variant_name);
                             self.graph.node_types.insert(node_index, NodeType::Variant);
-                            self.type_node_maps.insert(variant_id, node_index);
+                            self.type_cache.insert_type_by_id(variant_id, node_index);
 
                             // 为每个元组字段创建类型节点并连接
                             let context = TypeContext::new();
@@ -389,7 +379,7 @@ impl<'ir> IrGraphBuilder<'ir> {
         self.graph.node_types.insert(node_idx, node_type);
     }
 
-    fn format_type_label(&self, ty: &Type, context: &str) -> String {
+    pub(crate) fn format_type_label(&self, ty: &Type, context: &str) -> String {
         match ty {
             Type::Primitive(name) => name.clone(),
             Type::ResolvedPath(path) => {
@@ -452,7 +442,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                         let node_index = self
                             .graph
                             .add_type_node(item.name.as_deref().unwrap_or("unknown"));
-                        self.type_node_maps.insert(type_id, node_index);
+                        self.type_cache.insert_type_by_id(type_id, node_index);
                     }
                     _ => {}
                 }
@@ -472,7 +462,7 @@ impl<'ir> IrGraphBuilder<'ir> {
             .unwrap_or("unknown");
 
         // 检查是否已经存在
-        if let Some(&existing_node) = self.type_node_maps.get(&struct_id) {
+        if let Some(existing_node) = self.type_cache.get_by_id(&struct_id) {
             debug!(
                 "⚠️  Struct {} (id: {}) 已存在节点 {:?}，跳过创建",
                 struct_name, struct_id.0, existing_node
@@ -481,7 +471,7 @@ impl<'ir> IrGraphBuilder<'ir> {
         }
 
         let struct_node_index = self.graph.add_type_node(struct_name);
-        self.type_node_maps.insert(struct_id, struct_node_index);
+        self.type_cache.insert_type_by_id(struct_id, struct_node_index);
         self.graph
             .node_types
             .insert(struct_node_index, NodeType::Struct);
@@ -506,10 +496,10 @@ impl<'ir> IrGraphBuilder<'ir> {
                 for field_id_opt in field_ids {
                     if let Some(field_id) = field_id_opt {
                         let field_node_index =
-                            self.type_node_maps.get(&field_id).expect("不可能没有");
+                            self.type_cache.get_by_id(&field_id).expect("不可能没有");
                         self.graph.add_type_relation(
                             struct_node_index,
-                            *field_node_index,
+                            field_node_index,
                             EdgeMode::Ref,
                             None,
                         );
@@ -519,10 +509,10 @@ impl<'ir> IrGraphBuilder<'ir> {
             }
             rustdoc_types::StructKind::Plain { fields, .. } => {
                 for &field_id in fields {
-                    let field_node_index = self.type_node_maps.get(&field_id).expect("不可能没有");
+                    let field_node_index = self.type_cache.get_by_id(&field_id).expect("不可能没有");
                     self.graph.add_type_relation(
                         struct_node_index,
-                        *field_node_index,
+                        field_node_index,
                         EdgeMode::Ref,
                         None,
                     );
@@ -545,69 +535,127 @@ impl<'ir> IrGraphBuilder<'ir> {
             .as_deref()
             .unwrap_or("unknown");
 
-        // 检查是否已经存在
-        if let Some(&existing_node) = self.type_node_maps.get(&enum_id) {
+        // 获取或创建 enum 节点
+        let enum_node_index = if let Some(existing_node) = self.type_cache.get_by_id(&enum_id) {
             debug!(
-                "⚠️  Enum {} (id: {}) 已存在节点 {:?}，跳过创建",
+                "⚠️  Enum {} (id: {}) 已存在节点 {:?}，继续处理 variant",
                 enum_name, enum_id.0, existing_node
             );
-            return existing_node;
-        }
+            // 更新节点类型为 Enum（可能之前被标记为其他类型）
+            self.graph
+                .node_types
+                .insert(existing_node, NodeType::Enum);
+            existing_node
+        } else {
+            let node_index = self.graph.add_type_node(enum_name);
+            self.type_cache.insert_type_by_id(enum_id, node_index);
+            self.graph
+                .node_types
+                .insert(node_index, NodeType::Enum);
+            debug!(
+                "✓ 创建 Enum: {} (id: {}, node: {:?})",
+                enum_name, enum_id.0, node_index
+            );
+            node_index
+        };
 
-        let enum_node_index = self.graph.add_type_node(enum_name);
-        self.type_node_maps.insert(enum_id, enum_node_index);
-        self.graph
-            .node_types
-            .insert(enum_node_index, NodeType::Enum);
         self.type_impls
             .entry(enum_id)
             .or_insert_with(HashSet::new)
             .extend(enum_data.impls.iter().map(|&id| id));
 
-        debug!(
-            "✓ 创建 Enum: {} (id: {}, node: {:?})",
-            enum_name, enum_id.0, enum_node_index
-        );
-
         for &variant_id in &enum_data.variants {
             if let Some(variant_item) = self.parsed.crate_data.index.get(&variant_id) {
+                let variant_name = variant_item.name.as_deref().unwrap_or("unknown");
                 if let ItemEnum::Variant(variant) = &variant_item.inner {
                     match &variant.kind {
                         rustdoc_types::VariantKind::Plain => {
                             let variant_node_index =
-                                self.type_node_maps.get(&variant_id).expect("不可能没有");
+                                self.type_cache.get_by_id(&variant_id).expect("不可能没有");
+                            // Enum -> Variant: 构造关系
                             self.graph.add_type_relation(
                                 enum_node_index,
-                                *variant_node_index,
+                                variant_node_index,
                                 EdgeMode::Move,
                                 None,
                             );
+                            // Variant -> Enum: variant 可以访问 enum 的方法
+                            self.graph.add_type_relation(
+                                variant_node_index,
+                                enum_node_index,
+                                EdgeMode::Ref,
+                                None,
+                            );
+                            debug!(
+                                "  ✓ Plain variant: {} (id: {}) <-> {:?}",
+                                variant_name, variant_id.0, variant_node_index
+                            );
                         }
-                        rustdoc_types::VariantKind::Tuple(field_ids) => {
-                            for field_id_opt in field_ids {
-                                if let Some(_) = field_id_opt {
-                                    let field_node_index =
-                                        self.type_node_maps.get(&variant_id).expect("不可能没有");
-                                    self.graph.add_type_relation(
-                                        enum_node_index,
-                                        *field_node_index,
-                                        EdgeMode::Ref,
-                                        None,
-                                    );
-                                }
-                            }
+                        rustdoc_types::VariantKind::Tuple(_) => {
+                            // Tuple variant: variant 节点已经在 build_type_fields 中创建
+                            let variant_node_index =
+                                self.type_cache.get_by_id(&variant_id).expect("不可能没有");
+                            // Enum -> Variant: 构造关系
+                            self.graph.add_type_relation(
+                                enum_node_index,
+                                variant_node_index,
+                                EdgeMode::Move,
+                                None,
+                            );
+                            // Variant -> Enum: variant 可以访问 enum 的方法
+                            self.graph.add_type_relation(
+                                variant_node_index,
+                                enum_node_index,
+                                EdgeMode::Ref,
+                                None,
+                            );
+                            debug!(
+                                "  ✓ Tuple variant: {} (id: {}) <-> {:?}",
+                                variant_name, variant_id.0, variant_node_index
+                            );
                         }
                         rustdoc_types::VariantKind::Struct { fields, .. } => {
+                            // 对于 Struct variant，需要先创建 variant 节点
+                            // 然后连接到 enum 和字段
+                            let variant_node_index = if let Some(idx) = self.type_cache.get_by_id(&variant_id) {
+                                idx
+                            } else {
+                                let idx = self.graph.add_type_node(variant_name);
+                                self.graph.node_types.insert(idx, NodeType::Variant);
+                                self.type_cache.insert_type_by_id(variant_id, idx);
+                                idx
+                            };
+
+                            // Enum -> Variant: 构造关系
+                            self.graph.add_type_relation(
+                                enum_node_index,
+                                variant_node_index,
+                                EdgeMode::Move,
+                                None,
+                            );
+                            // Variant -> Enum: variant 可以访问 enum 的方法
+                            self.graph.add_type_relation(
+                                variant_node_index,
+                                enum_node_index,
+                                EdgeMode::Ref,
+                                None,
+                            );
+
+                            // Variant -> Fields: variant 包含这些字段
                             for &field_id in fields {
                                 let field_node_index =
-                                    self.type_node_maps.get(&field_id).expect("不可能没有");
+                                    self.type_cache.get_by_id(&field_id).expect("不可能没有");
                                 self.graph.add_type_relation(
-                                    enum_node_index,
-                                    *field_node_index,
+                                    variant_node_index,
+                                    field_node_index,
                                     EdgeMode::Ref,
                                     None,
                                 );
                             }
+                            debug!(
+                                "  ✓ Struct variant: {} (id: {}) <-> {:?} with {} fields",
+                                variant_name, variant_id.0, variant_node_index, fields.len()
+                            );
                         }
                     }
                 }
@@ -628,7 +676,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                 .as_deref()
                 .unwrap_or("unknown"),
         );
-        self.type_node_maps.insert(union_id, union_node_index);
+        self.type_cache.insert_type_by_id(union_id, union_node_index);
         self.graph
             .node_types
             .insert(union_node_index, NodeType::Union);
@@ -640,9 +688,9 @@ impl<'ir> IrGraphBuilder<'ir> {
         debug!("构建 Union: {:?}", self.get_name(&union_id));
 
         for &field_id in &union_data.fields {
-            let field_node_index = self.type_node_maps.get(&field_id).expect("不可能没有");
+            let field_node_index = self.type_cache.get_by_id(&field_id).expect("不可能没有");
             self.graph
-                .add_type_relation(union_node_index, *field_node_index, EdgeMode::Ref, None);
+                .add_type_relation(union_node_index, field_node_index, EdgeMode::Ref, None);
         }
 
         union_node_index
@@ -706,12 +754,12 @@ impl<'ir> IrGraphBuilder<'ir> {
                     .insert(param.name.clone());
 
                 // 插入两个 key：完整名和短名
-                // 1. 完整名（TypeName:GenericName）- 用于精确查找
-                self.generic_node_maps
-                    .insert(generic_name.clone(), generic_node_index);
-                // 2. 短名（GenericName）- 用于简单查找（可能会被后面的同名泛型覆盖）
-                self.generic_node_maps
-                    .insert(param.name.clone(), generic_node_index);
+                // 使用 type_cache 的 insert_generic 方法
+                self.type_cache.insert_generic(
+                    generic_name.clone(),
+                    Some(param.name.clone()),
+                    generic_node_index,
+                );
 
                 debug!(
                     "创建泛型参数: {} (存储为 {} 和 {}), TypeCache key: {:?}",
@@ -719,7 +767,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                 );
 
                 // 创建 Include 边：类型/Trait -> 泛型参数
-                if let Some(&owner_node) = self.type_node_maps.get(&owner_id) {
+                if let Some(owner_node) = self.type_cache.get_by_id(&owner_id) {
                     self.graph.add_type_relation(
                         owner_node,
                         generic_node_index,
@@ -734,14 +782,14 @@ impl<'ir> IrGraphBuilder<'ir> {
                         let trait_id = trait_.id;
 
                         // 获取或创建 Trait 节点
-                        let trait_node = if let Some(&node) = self.type_node_maps.get(&trait_id) {
+                        let trait_node = if let Some(node) = self.type_cache.get_by_id(&trait_id) {
                             node
                         } else {
                             // Trait 不在本 crate 中（外部 Trait），创建节点
                             let trait_name = trait_.path.split("::").last().unwrap_or(&trait_.path);
                             let node = self.graph.add_type_node(trait_name);
                             self.graph.node_types.insert(node, NodeType::Trait);
-                            self.type_node_maps.insert(trait_id, node);
+                            self.type_cache.insert_type_by_id(trait_id, node);
 
                             debug!("创建外部 Trait 节点: {} (id: {})", trait_name, trait_id.0);
                             node
@@ -773,7 +821,7 @@ impl<'ir> IrGraphBuilder<'ir> {
 
                     let trait_node = self.graph.add_type_node(trait_name);
                     self.graph.node_types.insert(trait_node, NodeType::Trait);
-                    self.type_node_maps.insert(trait_id, trait_node);
+                    self.type_cache.insert_type_by_id(trait_id, trait_node);
 
                     // 创建 Trait 自身的泛型参数
                     self.create_generics(trait_id, &trait_data.generics, trait_name);
@@ -791,10 +839,9 @@ impl<'ir> IrGraphBuilder<'ir> {
                 if let ItemEnum::Trait(trait_data) = &item.inner {
                     let trait_name = item.name.as_deref().unwrap_or("unknown");
                     let trait_node = self
-                        .type_node_maps
-                        .get(&trait_id)
-                        .expect("不可能没有")
-                        .clone();
+                        .type_cache
+                        .get_by_id(&trait_id)
+                        .expect("不可能没有");
                     if self.is_blacklisted_trait(trait_name) {
                         continue;
                     }
@@ -813,9 +860,12 @@ impl<'ir> IrGraphBuilder<'ir> {
                                         .node_types
                                         .insert(assoc_type_node, NodeType::TypeAlias);
 
-                                    // 存储到 assoc_type_maps
-                                    self.assoc_type_maps
-                                        .insert(assoc_type_label.clone(), assoc_type_node);
+                                    // 存储到 type_cache
+                                    self.type_cache.insert_assoc_type(
+                                        trait_name,
+                                        assoc_type_name,
+                                        assoc_type_node,
+                                    );
 
                                     // 创建 Include 边：Trait -> Trait.AssocType
                                     self.graph.add_type_relation(
@@ -827,10 +877,10 @@ impl<'ir> IrGraphBuilder<'ir> {
 
                                     // 如果有默认类型定义，创建别名边
                                     if let Some(assoc_type) = type_ {
-                                        // 对于 ResolvedPath，直接从 type_node_maps 查找（内部类型）
+                                        // 对于 ResolvedPath，直接从 type_cache 查找（内部类型）
                                         if let Type::ResolvedPath(path) = assoc_type {
-                                            if let Some(&target_node) =
-                                                self.type_node_maps.get(&path.id)
+                                            if let Some(target_node) =
+                                                self.type_cache.get_by_id(&path.id)
                                             {
                                                 // 创建别名边：Trait.AssocType -> TargetType
                                                 self.graph.add_type_relation(
@@ -887,8 +937,8 @@ impl<'ir> IrGraphBuilder<'ir> {
                                         for bound in bounds.iter() {
                                             if let GenericBound::TraitBound { trait_, .. } = bound {
                                                 let trait_id = trait_.id;
-                                                if let Some(&trait_node) =
-                                                    self.type_node_maps.get(&trait_id)
+                                                if let Some(trait_node) =
+                                                    self.type_cache.get_by_id(&trait_id)
                                                 {
                                                     self.graph.add_type_relation(
                                                         assoc_type_node,
@@ -996,14 +1046,17 @@ impl<'ir> IrGraphBuilder<'ir> {
                     idx
                 };
 
-                // 注册到 generic_node_maps，使用 trait_name:T 作为 key
-                self.generic_node_maps
-                    .insert(normalized_name.clone(), generic_node_index);
+                // 注册到 type_cache，使用 trait_name:T 作为 key
+                self.type_cache.insert_generic(
+                    normalized_name.clone(),
+                    None,
+                    generic_node_index,
+                );
 
                 // 创建 Require 边
                 for trait_path in &trait_bounds {
                     // 获取或创建 Trait 节点
-                    let trait_node = if let Some(&node) = self.type_node_maps.get(&trait_path.id) {
+                    let trait_node = if let Some(node) = self.type_cache.get_by_id(&trait_path.id) {
                         node
                     } else {
                         // 外部 Trait，创建节点
@@ -1014,7 +1067,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                             .unwrap_or(&trait_path.path);
                         let node = self.graph.add_type_node(trait_name);
                         self.graph.node_types.insert(node, NodeType::Trait);
-                        self.type_node_maps.insert(trait_path.id, node);
+                        self.type_cache.insert_type_by_id(trait_path.id, node);
 
                         debug!(
                             "创建外部 Trait 节点: {} (id: {}, 用于归一化泛型约束)",
@@ -1043,17 +1096,15 @@ impl<'ir> IrGraphBuilder<'ir> {
 
     // ========== 第五步：Constant 和 Static ==========
     fn build_constants_and_statics(&mut self) {
-        use super::type_cache::TypeContext;
-        use log::debug;
-
+        let stats = self.type_cache.stats();
         debug!(
             "开始处理 Constants 和 Statics\n\
             - Constants: {} 个\n\
             - Statics: {} 个\n\
-            - 当前 type_node_maps 中有 {} 个类型节点",
+            - 当前 type_cache 中有 {} 个类型节点",
             self.parsed.info.constants.len(),
             self.parsed.info.statics.len(),
-            self.type_node_maps.len()
+            stats.types
         );
 
         // 处理 Constants
@@ -1067,7 +1118,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                     self.graph
                         .node_types
                         .insert(constant_node, NodeType::Constant);
-                    self.type_node_maps.insert(constant_id, constant_node);
+                    self.type_cache.insert_type_by_id(constant_id, constant_node);
 
                     // 解析 Constant 的类型并创建 Instance 边
                     match type_ {
@@ -1086,9 +1137,9 @@ impl<'ir> IrGraphBuilder<'ir> {
                             );
 
                             // 查找类型节点
-                            if let Some(&type_node) = self.type_node_maps.get(&path.id) {
+                            if let Some(type_node) = self.type_cache.get_by_id(&path.id) {
                                 debug!(
-                                    "✓ 从 type_node_maps 找到类型节点: {} (id: {}) -> NodeIndex({:?})",
+                                    "✓ 从 type_cache 找到类型节点: {} (id: {}) -> NodeIndex({:?})",
                                     type_name, path.id.0, type_node
                                 );
 
@@ -1106,18 +1157,15 @@ impl<'ir> IrGraphBuilder<'ir> {
                                 );
                             } else {
                                 error!(
-                                    "✗ 未找到类型节点: {} (id: {}) 在 type_node_maps 中",
+                                    "✗ 未找到类型节点: {} (id: {}) 在 type_cache 中",
                                     type_name, path.id.0
                                 );
                                 error!(
-                                    "  当前 type_node_maps 中的键: {:?}",
-                                    self.type_node_maps
-                                        .keys()
-                                        .map(|id| id.0)
-                                        .collect::<Vec<_>>()
+                                    "  当前 type_cache 中的类型 ID: {:?}",
+                                    self.type_cache.type_ids().collect::<Vec<_>>()
                                 );
 
-                                // 尝试通过 TypeCache 查找
+                                // 尝试通过 TypeCache 的 TypeKey 查找
                                 use super::type_cache::TypeContext;
                                 let context = TypeContext::new();
                                 if let Some(type_key) =
@@ -1125,15 +1173,15 @@ impl<'ir> IrGraphBuilder<'ir> {
                                 {
                                     if let Some(cached_node) = self.type_cache.get_node(&type_key) {
                                         error!(
-                                            "⚠️  从 TypeCache 找到类型节点: {} (id: {}) -> NodeIndex({:?})\n\
-                                            ⚠️  但该节点不在 type_node_maps 中！这可能导致重复节点。\n\
-                                            ⚠️  正在更新 type_node_maps 以避免后续问题。",
+                                            "⚠️  从 TypeCache 通过 TypeKey 找到类型节点: {} (id: {}) -> NodeIndex({:?})\n\
+                                            ⚠️  但该节点不在 id_to_node 中！这可能导致重复节点。\n\
+                                            ⚠️  正在更新 type_cache 以避免后续问题。",
                                             type_name, path.id.0, cached_node
                                         );
 
                                         // 检查是否已经有其他节点映射到这个 ID
-                                        if let Some(&existing_node) =
-                                            self.type_node_maps.get(&path.id)
+                                        if let Some(existing_node) =
+                                            self.type_cache.get_by_id(&path.id)
                                         {
                                             error!(
                                                 "❌ 冲突！类型 {} (id: {}) 已经映射到 NodeIndex({:?})，\n\
@@ -1142,10 +1190,10 @@ impl<'ir> IrGraphBuilder<'ir> {
                                                 type_name, path.id.0, existing_node, cached_node
                                             );
                                         } else {
-                                            // 更新 type_node_maps
-                                            self.type_node_maps.insert(path.id, cached_node);
+                                            // 更新 type_cache
+                                            self.type_cache.insert_type_by_id(path.id, cached_node);
                                             debug!(
-                                                "✓ 已更新 type_node_maps: id {} -> node {:?}",
+                                                "✓ 已更新 type_cache: id {} -> node {:?}",
                                                 path.id.0, cached_node
                                             );
                                         }
@@ -1185,17 +1233,17 @@ impl<'ir> IrGraphBuilder<'ir> {
                     // 创建 Static 节点
                     let static_node = self.graph.add_type_node(static_name);
                     self.graph.node_types.insert(static_node, NodeType::Static);
-                    self.type_node_maps.insert(static_id, static_node);
+                    self.type_cache.insert_type_by_id(static_id, static_node);
 
                     match &static_data.type_ {
                         Type::ResolvedPath(path) => {
                             let type_node = self
-                                .type_node_maps
-                                .get(&path.id)
+                                .type_cache
+                                .get_by_id(&path.id)
                                 .expect("不可能没有类型节点");
                             self.graph.add_type_relation(
                                 static_node,
-                                *type_node,
+                                type_node,
                                 EdgeMode::Instance,
                                 Some("instance of".to_string()),
                             );
@@ -1209,16 +1257,19 @@ impl<'ir> IrGraphBuilder<'ir> {
         }
 
         // 总结：检查是否有重复的类型节点
+        let stats = self.type_cache.stats();
         debug!("=== Constants 和 Statics 处理完成 ===");
         debug!(
-            "最终 type_node_maps 中有 {} 个类型节点",
-            self.type_node_maps.len()
+            "最终 type_cache 中有 {} 个类型节点",
+            stats.types
         );
 
         // 检查是否有重复的节点（同一个 ID 映射到不同节点）
         let mut id_to_nodes: HashMap<Id, Vec<NodeIndex>> = HashMap::new();
-        for (&id, &node) in &self.type_node_maps {
-            id_to_nodes.entry(id).or_insert_with(Vec::new).push(node);
+        for id in self.type_cache.type_ids() {
+            if let Some(node) = self.type_cache.get_by_id(id) {
+                id_to_nodes.entry(*id).or_insert_with(Vec::new).push(node);
+            }
         }
 
         for (id, nodes) in id_to_nodes {
