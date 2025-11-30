@@ -4,6 +4,7 @@ use rustdoc_types::{GenericParamDefKind, Generics, Id, ItemEnum, Type, GenericBo
 use super::builder::IrGraphBuilder;
 use super::structure::{EdgeMode, NodeType, TypeRelation};
 use super::type_cache::TypeContext;
+use super::node_info::{MethodInfo, MethodKind, ParamInfo, ReturnInfo, NodeInfo};
 use crate::support_types::method_blacklist::is_blacklisted_method;
 use log::{debug, error};
 
@@ -40,7 +41,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                         self.process_method_generics(method_id, &func.generics, method_name);
 
                         // 处理输入参数（识别 self 并连接到类型）
-                        self.process_function_inputs_with_self(
+                        let params = self.process_function_inputs_with_self(
                             op_node_idx,
                             &func.sig.inputs,
                             method_name,
@@ -48,14 +49,38 @@ impl<'ir> IrGraphBuilder<'ir> {
                         );
 
                         // 处理返回值
-                        if let Some(output) = &func.sig.output {
+                        let return_info = if let Some(output) = &func.sig.output {
                             self.process_function_output(
                                 op_node_idx,
                                 output,
                                 method_name,
                                 Some(type_id),
-                            );
-                        }
+                            )
+                        } else {
+                            ReturnInfo {
+                                type_node: None,
+                                wrapper: None,
+                                unwrap_node: None,
+                                type_str: "()".to_string(),
+                            }
+                        };
+
+                        // 获取 owner 节点
+                        let owner_node = self.type_cache.get_by_id(&type_id);
+
+                        // 创建 MethodInfo
+                        let method_info = MethodInfo {
+                            name: method_name.to_string(),
+                            owner: owner_node,
+                            params,
+                            return_info,
+                            generics: Vec::new(),  // TODO: 收集泛型节点
+                            is_const: func.header.is_const,
+                            is_async: func.header.is_async,
+                            is_unsafe: func.header.is_unsafe,
+                            method_kind: MethodKind::Inherent,
+                        };
+                        self.graph.node_infos.insert(op_node_idx, NodeInfo::Method(method_info));
                     }
                 }
             }
@@ -106,7 +131,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                         }
 
                         // 处理输入参数（识别 self 并连接到 trait）
-                        self.process_function_inputs_with_self(
+                        let params = self.process_function_inputs_with_self(
                             op_node_idx,
                             &func.sig.inputs,
                             method_name,
@@ -114,14 +139,38 @@ impl<'ir> IrGraphBuilder<'ir> {
                         );
 
                         // 处理返回值
-                        if let Some(output) = &func.sig.output {
+                        let return_info = if let Some(output) = &func.sig.output {
                             self.process_function_output(
                                 op_node_idx,
                                 output,
                                 method_name,
                                 Some(trait_id),
-                            );
-                        }
+                            )
+                        } else {
+                            ReturnInfo {
+                                type_node: None,
+                                wrapper: None,
+                                unwrap_node: None,
+                                type_str: "()".to_string(),
+                            }
+                        };
+
+                        // 获取 owner 节点
+                        let owner_node = self.type_cache.get_by_id(&trait_id);
+
+                        // 创建 MethodInfo
+                        let method_info: MethodInfo = MethodInfo {
+                            name: method_name.to_string(),
+                            owner: owner_node,
+                            params,
+                            return_info,
+                            generics: Vec::new(),  // TODO: 收集泛型节点
+                            is_const: func.header.is_const,
+                            is_async: func.header.is_async,
+                            is_unsafe: func.header.is_unsafe,
+                            method_kind: MethodKind::TraitDef,
+                        };
+                        self.graph.node_infos.insert(op_node_idx, NodeInfo::Method(method_info));
                     }
                 }
             }
@@ -136,16 +185,12 @@ impl<'ir> IrGraphBuilder<'ir> {
         method_name: &str,
         trait_name: &str,
     ) {
-        use log::debug;
-        use rustdoc_types::GenericBound;
-
         for param in &generics.params {
             if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
                 // 检查是否存在归一化的泛型节点
                 let normalized_key = format!("{}:{}", trait_name, param.name);
 
                 if self.type_cache.contains_generic(&normalized_key) {
-                    // 使用归一化的泛型节点（已在 Trait 级别创建）
                     debug!(
                         "使用归一化泛型: {} (来自 Trait {})",
                         normalized_key, trait_name
@@ -245,14 +290,16 @@ impl<'ir> IrGraphBuilder<'ir> {
     }
 
     /// 处理函数输入参数（识别 self 并连接到类型/Trait）
+    /// 返回参数信息列表
     fn process_function_inputs_with_self(
         &mut self,
         op_node_idx: NodeIndex,
         inputs: &[(String, Type)],
         method_name: &str,
         owner_id: Option<Id>, // 类型或 Trait 的 ID
-    ) {
+    ) -> Vec<ParamInfo> {
         use log::debug;
+        let mut params = Vec::new();
 
         for (param_name, param_type) in inputs {
             // 识别 self 参数
@@ -284,34 +331,43 @@ impl<'ir> IrGraphBuilder<'ir> {
                             "连接方法 {} 到所属类型/Trait (mode: {:?})",
                             method_name, mode
                         );
+
+                        // 添加 self 参数信息
+                        params.push(ParamInfo {
+                            name: "self".to_string(),
+                            type_node: Some(owner_node),
+                            borrow_mode: mode,
+                            is_self: true,
+                            type_str: format!("{:?}", param_type),
+                        });
                         continue;
                     }
                 }
             }
 
             // 处理其他参数
-            if let Some(type_node_idx) =
-                self.resolve_type_node_with_owner(param_type, method_name, owner_id)
-            {
-                // 根据参数类型确定 EdgeMode
-                let mode = match param_type {
-                    Type::BorrowedRef { is_mutable, .. } => {
-                        if *is_mutable {
-                            EdgeMode::MutRef
-                        } else {
-                            EdgeMode::Ref
-                        }
-                    }
-                    Type::RawPointer { is_mutable, .. } => {
-                        if *is_mutable {
-                            EdgeMode::MutPtr
-                        } else {
-                            EdgeMode::Ptr
-                        }
-                    }
-                    _ => EdgeMode::Move,
-                };
+            let type_node_idx = self.resolve_type_node_with_owner(param_type, method_name, owner_id);
 
+            // 根据参数类型确定 EdgeMode
+            let mode = match param_type {
+                Type::BorrowedRef { is_mutable, .. } => {
+                    if *is_mutable {
+                        EdgeMode::MutRef
+                    } else {
+                        EdgeMode::Ref
+                    }
+                }
+                Type::RawPointer { is_mutable, .. } => {
+                    if *is_mutable {
+                        EdgeMode::MutPtr
+                    } else {
+                        EdgeMode::Ptr
+                    }
+                }
+                _ => EdgeMode::Move,
+            };
+
+            if let Some(type_node_idx) = type_node_idx {
                 // 创建从类型到操作的边（输入边）
                 self.graph.type_graph.add_edge(
                     type_node_idx,
@@ -327,39 +383,31 @@ impl<'ir> IrGraphBuilder<'ir> {
                     method_name, param_name, mode
                 );
             }
-        }
-    }
 
-    /// 处理函数输入参数
-    fn process_function_inputs(
-        &mut self,
-        op_node_idx: NodeIndex,
-        inputs: &[(String, Type)],
-        method_name: &str,
-    ) {
-        for (param_name, param_type) in inputs {
-            if let Some(type_node_idx) = self.resolve_type_node(param_type, method_name) {
-                // 创建从类型到操作的边（输入边）
-                self.graph.type_graph.add_edge(
-                    type_node_idx,
-                    op_node_idx,
-                    TypeRelation {
-                        mode: EdgeMode::Move,
-                        label: Some(param_name.clone()),
-                    },
-                );
-            }
+            // 添加参数信息
+            params.push(ParamInfo {
+                name: param_name.clone(),
+                type_node: type_node_idx,
+                borrow_mode: mode,
+                is_self: false,
+                type_str: format!("{:?}", param_type),
+            });
         }
+
+        params
     }
 
     /// 处理函数返回值
+    /// 返回 ReturnInfo
     fn process_function_output(
         &mut self,
         op_node_idx: NodeIndex,
         output: &Type,
         method_name: &str,
         owner_id: Option<Id>,
-    ) {
+    ) -> ReturnInfo {
+        use super::node_info::WrapperType;
+
         // 检查是否是 Result<T, E>
         if let Some((ok_type, err_type)) = self.extract_result_types(output) {
             // 创建 Result 展开节点
@@ -376,9 +424,8 @@ impl<'ir> IrGraphBuilder<'ir> {
             );
 
             // unwrap -> Ok(T)
-            if let Some(ok_node) =
-                self.resolve_type_node_with_owner(&ok_type, method_name, owner_id)
-            {
+            let ok_node = self.resolve_type_node_with_owner(&ok_type, method_name, owner_id);
+            if let Some(ok_node) = ok_node {
                 self.graph.type_graph.add_edge(
                     unwrap_node,
                     ok_node,
@@ -390,9 +437,8 @@ impl<'ir> IrGraphBuilder<'ir> {
             }
 
             // unwrap -> Err(E)
-            if let Some(err_node) =
-                self.resolve_type_node_with_owner(&err_type, method_name, owner_id)
-            {
+            let err_node = self.resolve_type_node_with_owner(&err_type, method_name, owner_id);
+            if let Some(err_node) = err_node {
                 self.graph.type_graph.add_edge(
                     unwrap_node,
                     err_node,
@@ -402,6 +448,16 @@ impl<'ir> IrGraphBuilder<'ir> {
                     },
                 );
             }
+
+            return ReturnInfo {
+                type_node: ok_node,  // 主要返回类型是 Ok 类型
+                wrapper: Some(WrapperType::Result {
+                    ok_type: ok_node,
+                    err_type: err_node,
+                }),
+                unwrap_node: Some(unwrap_node),
+                type_str: format!("{:?}", output),
+            };
         }
         // 检查是否是 Option<T>
         else if let Some(some_type) = self.extract_option_type(output) {
@@ -419,9 +475,8 @@ impl<'ir> IrGraphBuilder<'ir> {
             );
 
             // unwrap -> Some(T)
-            if let Some(some_node) =
-                self.resolve_type_node_with_owner(&some_type, method_name, owner_id)
-            {
+            let some_node = self.resolve_type_node_with_owner(&some_type, method_name, owner_id);
+            if let Some(some_node) = some_node {
                 self.graph.type_graph.add_edge(
                     unwrap_node,
                     some_node,
@@ -442,12 +497,18 @@ impl<'ir> IrGraphBuilder<'ir> {
                     label: Some("None".to_string()),
                 },
             );
+
+            return ReturnInfo {
+                type_node: some_node,  // 主要返回类型是 Some 类型
+                wrapper: Some(WrapperType::Option { some_type: some_node }),
+                unwrap_node: Some(unwrap_node),
+                type_str: format!("{:?}", output),
+            };
         }
         // 普通返回类型
         else {
-            if let Some(type_node_idx) =
-                self.resolve_type_node_with_owner(output, method_name, owner_id)
-            {
+            let type_node_idx = self.resolve_type_node_with_owner(output, method_name, owner_id);
+            if let Some(type_node_idx) = type_node_idx {
                 // 创建从操作到类型的边（输出边）
                 self.graph.type_graph.add_edge(
                     op_node_idx,
@@ -458,6 +519,13 @@ impl<'ir> IrGraphBuilder<'ir> {
                     },
                 );
             }
+
+            return ReturnInfo {
+                type_node: type_node_idx,
+                wrapper: None,
+                unwrap_node: None,
+                type_str: format!("{:?}", output),
+            };
         }
     }
 
@@ -810,11 +878,6 @@ impl<'ir> IrGraphBuilder<'ir> {
 
             _ => None,
         }
-    }
-
-    /// 解析类型节点（兼容旧接口）
-    fn resolve_type_node(&mut self, ty: &Type, context_name: &str) -> Option<NodeIndex> {
-        self.resolve_type_node_with_owner(ty, context_name, None)
     }
 
     /// 提取 Result<T, E> 的类型

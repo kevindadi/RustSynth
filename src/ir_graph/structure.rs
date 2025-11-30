@@ -1,11 +1,12 @@
-use petgraph::dot::{Config, Dot};
 use petgraph::graph::{DiGraph, EdgeIndex, NodeIndex};
 /// IR Graph 数据结构定义  
 ///
-/// 核心设计:使用 rustdoc Id 作为节点标识，详细信息通过 ParsedCrate 查询
-use rustdoc_types::Id;
+/// 使用 rustdoc Id 作为节点标识，详细信息通过 ParsedCrate 查询
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use petgraph::visit::EdgeRef;
+use std::fmt::Write;
+use crate::ir_graph::NodeInfo;
 
 /// 边的模式:定义数据如何传递或关系
 ///
@@ -41,6 +42,7 @@ impl EdgeMode {
     }
 
     /// 判断是否是关系边（不是数据流）
+    #[allow(unused)]
     pub fn is_relationship(&self) -> bool {
         matches!(
             self,
@@ -60,123 +62,6 @@ pub struct TypeRelation {
     pub mode: EdgeMode,
     /// 可选的标签（例如字段名、变体名等）
     pub label: Option<String>,
-}
-
-/// 数据流边:操作节点和类型节点之间的连接
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DataEdge {
-    /// 目标类型的 Id
-    pub type_id: Id,
-
-    /// 数据传递模式
-    pub mode: EdgeMode,
-
-    /// 参数名称（如果有）
-    pub name: Option<String>,
-}
-
-/// 操作类型
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum OpKind {
-    /// 函数调用（包括构造函数如 new()）
-    FnCall,
-
-    /// 字段访问器
-    /// 表示类型之间的"持有"关系：struct A { field: B }
-    /// 在类型 A 和类型 B 之间创建边，边上标注字段名
-    FieldAccessor { field_name: String },
-
-    /// 方法调用
-    MethodCall {
-        /// self 参数的类型 Id
-        self_id: Id,
-    },
-
-    /// 关联函数(Associated function)
-    AssocFn {
-        /// 关联的类型 Id
-        assoc_id: Id,
-    },
-
-    /// Constant 别名操作
-    /// 提供对 constant 的访问，返回其指向的类型
-    ConstantAlias { const_id: Id, const_path: String },
-
-    /// Static 别名操作
-    StaticAlias {
-        static_id: Id,
-        static_path: String,
-        is_mutable: bool,
-    },
-
-    /// Trait 方法调用
-    TraitMethodCall { trait_id: Id, method_name: String },
-}
-
-/// 操作节点：表示可调用的操作(函数/方法/构造器/字段访问等)
-#[derive(Debug, Clone)]
-pub struct OpNode {
-    /// 操作的唯一标识符(来自 rustdoc Item Id)
-    pub id: Id,
-
-    /// 操作名称
-    pub name: String,
-
-    /// 操作类型
-    pub kind: OpKind,
-
-    /// 输入参数
-    pub inputs: Vec<DataEdge>,
-
-    /// 输出类型（成功情况）
-    pub output: Option<DataEdge>,
-
-    /// 错误输出类型（失败情况）
-    pub error_output: Option<DataEdge>,
-
-    /// 泛型约束
-    pub generic_constraints: Vec<(String, Vec<Id>)>, // (泛型参数名, trait bounds)
-
-    /// 文档注释
-    pub docs: Option<String>,
-
-    /// 是否不安全
-    pub is_unsafe: bool,
-
-    /// 是否 const
-    pub is_const: bool,
-
-    /// 是否公开
-    pub is_public: bool,
-
-    /// 是否可能失败（有 Result 返回值）
-    pub is_fallible: bool,
-}
-
-impl OpNode {
-    /// 是否是泛型函数/方法
-    pub fn is_generic(&self) -> bool {
-        !self.generic_constraints.is_empty()
-    }
-
-    /// 是否是字段访问器
-    pub fn is_field_accessor(&self) -> bool {
-        matches!(self.kind, OpKind::FieldAccessor { .. })
-    }
-}
-
-/// Trait 实现关系
-#[derive(Debug, Clone)]
-pub struct TraitImpl {
-    /// 实现 Trait 的类型 ID
-    pub for_type: Id,
-    /// Trait ID
-    pub trait_id: Id,
-    /// 关联类型别名映射 (关联类型名 -> 具体类型 ID)
-    /// 例如: "Config" -> GeneralPurposeConfig 的 ID
-    pub assoc_type_aliases: HashMap<String, Id>,
-    /// Impl 块 ID
-    pub impl_id: Id,
 }
 
 /// 节点类型
@@ -206,14 +91,15 @@ pub struct IrGraph {
     /// 节点是字符串（Id.0.to_string()），边是 TypeRelation
     pub type_graph: DiGraph<String, TypeRelation>,
     pub node_types: HashMap<NodeIndex, NodeType>,
+    pub node_infos: HashMap<NodeIndex, NodeInfo>,
 }
 
 impl IrGraph {
-    /// 创建新的 IR 图
     pub fn new() -> Self {
         Self {
             type_graph: DiGraph::new(),
             node_types: HashMap::new(),
+            node_infos: HashMap::new(),
         }
     }
 
@@ -272,12 +158,9 @@ impl IrGraph {
 
     pub fn export_dot<P: AsRef<std::path::Path>>(
         &self,
-        parsed_crate: &crate::parse::ParsedCrate,
+        _: &crate::parse::ParsedCrate,
         path: P,
     ) -> std::io::Result<()> {
-        use petgraph::visit::EdgeRef;
-        use std::fmt::Write;
-
         let mut dot = String::from("digraph IrGraph {\n");
         dot.push_str("  rankdir=LR;\n");
         dot.push_str("  node [style=filled];\n\n");
@@ -355,10 +238,17 @@ impl IrGraph {
     }
 
     pub fn export_json<P: AsRef<std::path::Path>>(&self, path: P) -> std::io::Result<()> {
+        // 将 NodeIndex 转换为 usize 以便序列化
+        let node_infos_serializable: std::collections::HashMap<usize, &crate::ir_graph::NodeInfo> =
+            self.node_infos.iter()
+                .map(|(k, v)| (k.index(), v))
+                .collect();
+
         let json = serde_json::json!({
             "nodes": self.type_graph.node_count(),
             "edges": self.type_graph.edge_count(),
             "node_types": self.node_types.len(),
+            "node_infos": node_infos_serializable,
         });
 
         let json_str = serde_json::to_string_pretty(&json)

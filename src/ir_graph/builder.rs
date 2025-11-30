@@ -4,6 +4,10 @@ use petgraph::graph::NodeIndex;
 use rustdoc_types::{GenericBound, GenericParamDefKind, Id, ItemEnum, Type};
 use std::collections::{HashMap, HashSet};
 
+use super::node_info::{
+    EnumInfo, FieldInfo, GenericInfo, NodeInfo, PathInfo, StructInfo, TraitImplInfo,
+    TraitInfo, UnionInfo, VariantInfo, VariantKind, Visibility, ConstantInfo, StaticInfo,
+};
 use super::structure::{EdgeMode, IrGraph};
 use super::type_cache::{TypeCache, TypeContext, TypeKey};
 use crate::{ir_graph::structure::NodeType, parse::ParsedCrate};
@@ -451,15 +455,8 @@ impl<'ir> IrGraphBuilder<'ir> {
     }
 
     fn build_struct(&mut self, struct_id: Id, struct_data: &rustdoc_types::Struct) -> NodeIndex {
-        let struct_name = self
-            .parsed
-            .crate_data
-            .index
-            .get(&struct_id)
-            .unwrap()
-            .name
-            .as_deref()
-            .unwrap_or("unknown");
+        let item = self.parsed.crate_data.index.get(&struct_id).unwrap();
+        let struct_name = item.name.as_deref().unwrap_or("unknown");
 
         // 检查是否已经存在
         if let Some(existing_node) = self.type_cache.get_by_id(&struct_id) {
@@ -481,34 +478,33 @@ impl<'ir> IrGraphBuilder<'ir> {
             .or_insert_with(HashSet::new)
             .extend(struct_data.impls.iter().map(|&id| id));
 
-        debug!(
-            "✓ 创建 Struct: {} (id: {}, node: {:?})",
-            struct_name, struct_id.0, struct_node_index
-        );
-
-        match &struct_data.kind {
-            rustdoc_types::StructKind::Unit => {
-                // Unit struct: 自引用
-                // self.add_relation(type_node.clone(), type_node.clone(), EdgeMode::Move);
-                debug!("Unit struct: {:?}", self.get_name(&struct_id));
-            }
+        // 构建字段信息
+        let mut fields = Vec::new();
+        let (is_tuple_struct, is_unit_struct) = match &struct_data.kind {
+            rustdoc_types::StructKind::Unit => (false, true),
             rustdoc_types::StructKind::Tuple(field_ids) => {
-                for field_id_opt in field_ids {
+                for (idx, field_id_opt) in field_ids.iter().enumerate() {
                     if let Some(field_id) = field_id_opt {
                         let field_node_index =
-                            self.type_cache.get_by_id(&field_id).expect("不可能没有");
+                            self.type_cache.get_by_id(field_id).expect("不可能没有");
                         self.graph.add_type_relation(
                             struct_node_index,
                             field_node_index,
                             EdgeMode::Ref,
                             None,
                         );
+                        fields.push(FieldInfo {
+                            name: idx.to_string(),
+                            type_node: Some(field_node_index),
+                            type_str: self.graph.type_graph[field_node_index].clone(),
+                            visibility: Visibility::Public,
+                        });
                     }
                 }
-                debug!("Tuple struct: {:?}", self.get_name(&struct_id));
+                (true, false)
             }
-            rustdoc_types::StructKind::Plain { fields, .. } => {
-                for &field_id in fields {
+            rustdoc_types::StructKind::Plain { fields: field_ids, .. } => {
+                for &field_id in field_ids {
                     let field_node_index = self.type_cache.get_by_id(&field_id).expect("不可能没有");
                     self.graph.add_type_relation(
                         struct_node_index,
@@ -516,47 +512,63 @@ impl<'ir> IrGraphBuilder<'ir> {
                         EdgeMode::Ref,
                         None,
                     );
+                    let field_name = self.get_name(&field_id).unwrap_or("unknown").to_string();
+                    fields.push(FieldInfo {
+                        name: field_name,
+                        type_node: Some(field_node_index),
+                        type_str: self.graph.type_graph[field_node_index].clone(),
+                        visibility: Visibility::Public,
+                    });
                 }
-                debug!("Plain struct: {:?}", self.get_name(&struct_id));
+                (false, false)
             }
-        }
+        };
+
+        // 创建 StructInfo 并插入
+        let crate_name = self.get_crate_name();
+        let struct_info = StructInfo {
+            path: PathInfo::new(
+                &format!("{}::{}", crate_name, struct_name),
+                struct_name,
+            ),
+            fields,
+            generics: Vec::new(),     // 后续在 build_type_generics 中填充
+            trait_impls: Vec::new(),  // 后续在 expand_impl_blocks 中填充
+            methods: Vec::new(),      // 后续在 build_impl_methods 中填充
+            is_tuple_struct,
+            is_unit_struct,
+        };
+        self.graph.node_infos.insert(struct_node_index, NodeInfo::Struct(struct_info));
+
+        debug!(
+            "✓ 创建 Struct: {} (id: {}, node: {:?})",
+            struct_name, struct_id.0, struct_node_index
+        );
 
         struct_node_index
     }
 
     fn build_enum(&mut self, enum_id: Id, enum_data: &rustdoc_types::Enum) -> NodeIndex {
-        let enum_name = self
-            .parsed
-            .crate_data
-            .index
-            .get(&enum_id)
-            .unwrap()
-            .name
-            .as_deref()
-            .unwrap_or("unknown");
+        let item = self.parsed.crate_data.index.get(&enum_id).unwrap();
+        let enum_name = item.name.as_deref().unwrap_or("unknown");
 
         // 获取或创建 enum 节点
-        let enum_node_index = if let Some(existing_node) = self.type_cache.get_by_id(&enum_id) {
+        let (enum_node_index, is_new) = if let Some(existing_node) = self.type_cache.get_by_id(&enum_id) {
             debug!(
                 "⚠️  Enum {} (id: {}) 已存在节点 {:?}，继续处理 variant",
                 enum_name, enum_id.0, existing_node
             );
-            // 更新节点类型为 Enum（可能之前被标记为其他类型）
-            self.graph
-                .node_types
-                .insert(existing_node, NodeType::Enum);
-            existing_node
+            self.graph.node_types.insert(existing_node, NodeType::Enum);
+            (existing_node, false)
         } else {
             let node_index = self.graph.add_type_node(enum_name);
             self.type_cache.insert_type_by_id(enum_id, node_index);
-            self.graph
-                .node_types
-                .insert(node_index, NodeType::Enum);
+            self.graph.node_types.insert(node_index, NodeType::Enum);
             debug!(
                 "✓ 创建 Enum: {} (id: {}, node: {:?})",
                 enum_name, enum_id.0, node_index
             );
-            node_index
+            (node_index, true)
         };
 
         self.type_impls
@@ -564,59 +576,37 @@ impl<'ir> IrGraphBuilder<'ir> {
             .or_insert_with(HashSet::new)
             .extend(enum_data.impls.iter().map(|&id| id));
 
+        // 收集 variant 信息
+        let mut variants = Vec::new();
+
         for &variant_id in &enum_data.variants {
             if let Some(variant_item) = self.parsed.crate_data.index.get(&variant_id) {
                 let variant_name = variant_item.name.as_deref().unwrap_or("unknown");
                 if let ItemEnum::Variant(variant) = &variant_item.inner {
-                    match &variant.kind {
+                    let (variant_node_index, variant_kind) = match &variant.kind {
                         rustdoc_types::VariantKind::Plain => {
                             let variant_node_index =
                                 self.type_cache.get_by_id(&variant_id).expect("不可能没有");
-                            // Enum -> Variant: 构造关系
-                            self.graph.add_type_relation(
-                                enum_node_index,
-                                variant_node_index,
-                                EdgeMode::Move,
-                                None,
-                            );
-                            // Variant -> Enum: variant 可以访问 enum 的方法
-                            self.graph.add_type_relation(
-                                variant_node_index,
-                                enum_node_index,
-                                EdgeMode::Ref,
-                                None,
-                            );
-                            debug!(
-                                "  ✓ Plain variant: {} (id: {}) <-> {:?}",
-                                variant_name, variant_id.0, variant_node_index
-                            );
+                            self.graph.add_type_relation(enum_node_index, variant_node_index, EdgeMode::Move, None);
+                            self.graph.add_type_relation(variant_node_index, enum_node_index, EdgeMode::Ref, None);
+                            debug!("  ✓ Plain variant: {} (id: {}) <-> {:?}", variant_name, variant_id.0, variant_node_index);
+                            (variant_node_index, VariantKind::Unit)
                         }
-                        rustdoc_types::VariantKind::Tuple(_) => {
-                            // Tuple variant: variant 节点已经在 build_type_fields 中创建
+                        rustdoc_types::VariantKind::Tuple(field_ids) => {
                             let variant_node_index =
                                 self.type_cache.get_by_id(&variant_id).expect("不可能没有");
-                            // Enum -> Variant: 构造关系
-                            self.graph.add_type_relation(
-                                enum_node_index,
-                                variant_node_index,
-                                EdgeMode::Move,
-                                None,
-                            );
-                            // Variant -> Enum: variant 可以访问 enum 的方法
-                            self.graph.add_type_relation(
-                                variant_node_index,
-                                enum_node_index,
-                                EdgeMode::Ref,
-                                None,
-                            );
-                            debug!(
-                                "  ✓ Tuple variant: {} (id: {}) <-> {:?}",
-                                variant_name, variant_id.0, variant_node_index
-                            );
+                            self.graph.add_type_relation(enum_node_index, variant_node_index, EdgeMode::Move, None);
+                            self.graph.add_type_relation(variant_node_index, enum_node_index, EdgeMode::Ref, None);
+
+                            let field_nodes: Vec<NodeIndex> = field_ids.iter()
+                                .filter_map(|fid_opt| {
+                                    fid_opt.as_ref().and_then(|fid| self.type_cache.get_by_id(fid))
+                                })
+                                .collect();
+                            debug!("  ✓ Tuple variant: {} (id: {}) <-> {:?}", variant_name, variant_id.0, variant_node_index);
+                            (variant_node_index, VariantKind::Tuple(field_nodes))
                         }
-                        rustdoc_types::VariantKind::Struct { fields, .. } => {
-                            // 对于 Struct variant，需要先创建 variant 节点
-                            // 然后连接到 enum 和字段
+                        rustdoc_types::VariantKind::Struct { fields: field_ids, .. } => {
                             let variant_node_index = if let Some(idx) = self.type_cache.get_by_id(&variant_id) {
                                 idx
                             } else {
@@ -626,60 +616,62 @@ impl<'ir> IrGraphBuilder<'ir> {
                                 idx
                             };
 
-                            // Enum -> Variant: 构造关系
-                            self.graph.add_type_relation(
-                                enum_node_index,
-                                variant_node_index,
-                                EdgeMode::Move,
-                                None,
-                            );
-                            // Variant -> Enum: variant 可以访问 enum 的方法
-                            self.graph.add_type_relation(
-                                variant_node_index,
-                                enum_node_index,
-                                EdgeMode::Ref,
-                                None,
-                            );
+                            self.graph.add_type_relation(enum_node_index, variant_node_index, EdgeMode::Move, None);
+                            self.graph.add_type_relation(variant_node_index, enum_node_index, EdgeMode::Ref, None);
 
-                            // Variant -> Fields: variant 包含这些字段
-                            for &field_id in fields {
-                                let field_node_index =
-                                    self.type_cache.get_by_id(&field_id).expect("不可能没有");
-                                self.graph.add_type_relation(
-                                    variant_node_index,
-                                    field_node_index,
-                                    EdgeMode::Ref,
-                                    None,
-                                );
-                            }
-                            debug!(
-                                "  ✓ Struct variant: {} (id: {}) <-> {:?} with {} fields",
-                                variant_name, variant_id.0, variant_node_index, fields.len()
-                            );
+                            // 收集字段节点索引
+                            let field_nodes: Vec<NodeIndex> = field_ids.iter()
+                                .map(|&fid| {
+                                    let field_node_index = self.type_cache.get_by_id(&fid).expect("不可能没有");
+                                    self.graph.add_type_relation(variant_node_index, field_node_index, EdgeMode::Ref, None);
+                                    field_node_index
+                                })
+                                .collect();
+                            debug!("  ✓ Struct variant: {} (id: {}) <-> {:?} with {} fields", variant_name, variant_id.0, variant_node_index, field_nodes.len());
+                            (variant_node_index, VariantKind::Struct(field_nodes))
                         }
-                    }
+                    };
+
+                    // 为 variant 创建 NodeInfo
+                    let variant_info = VariantInfo {
+                        name: variant_name.to_string(),
+                        parent_enum: Some(enum_node_index),
+                        kind: variant_kind,
+                        discriminant: variant.discriminant.as_ref().map(|d| d.value.clone()),
+                    };
+                    self.graph.node_infos.insert(variant_node_index, NodeInfo::Variant(variant_info));
+
+                    variants.push(variant_node_index);
                 }
             }
+        }
+
+        // 创建 EnumInfo（仅在新创建时）
+        if is_new {
+            let crate_name = self.get_crate_name();
+            let enum_info = EnumInfo {
+                path: PathInfo::new(
+                    &format!("{}::{}", crate_name, enum_name),
+                    enum_name,
+                ),
+                variants,
+                generics: Vec::new(),
+                trait_impls: Vec::new(),
+                methods: Vec::new(),
+            };
+            self.graph.node_infos.insert(enum_node_index, NodeInfo::Enum(enum_info));
         }
 
         enum_node_index
     }
 
     fn build_union(&mut self, union_id: Id, union_data: &rustdoc_types::Union) -> NodeIndex {
-        let union_node_index = self.graph.add_type_node(
-            self.parsed
-                .crate_data
-                .index
-                .get(&union_id)
-                .unwrap()
-                .name
-                .as_deref()
-                .unwrap_or("unknown"),
-        );
+        let item = self.parsed.crate_data.index.get(&union_id).unwrap();
+        let union_name = item.name.as_deref().unwrap_or("unknown");
+
+        let union_node_index = self.graph.add_type_node(union_name);
         self.type_cache.insert_type_by_id(union_id, union_node_index);
-        self.graph
-            .node_types
-            .insert(union_node_index, NodeType::Union);
+        self.graph.node_types.insert(union_node_index, NodeType::Union);
         self.type_impls
             .entry(union_id)
             .or_insert_with(HashSet::new)
@@ -687,11 +679,34 @@ impl<'ir> IrGraphBuilder<'ir> {
 
         debug!("构建 Union: {:?}", self.get_name(&union_id));
 
+        // 收集字段信息
+        let mut fields = Vec::new();
         for &field_id in &union_data.fields {
             let field_node_index = self.type_cache.get_by_id(&field_id).expect("不可能没有");
-            self.graph
-                .add_type_relation(union_node_index, field_node_index, EdgeMode::Ref, None);
+            self.graph.add_type_relation(union_node_index, field_node_index, EdgeMode::Ref, None);
+
+            let field_name = self.get_name(&field_id).unwrap_or("unknown").to_string();
+            fields.push(FieldInfo {
+                name: field_name,
+                type_node: Some(field_node_index),
+                type_str: self.graph.type_graph[field_node_index].clone(),
+                visibility: Visibility::Public,
+            });
         }
+
+        // 创建 UnionInfo
+        let crate_name = self.get_crate_name();
+        let union_info = UnionInfo {
+            path: PathInfo::new(
+                &format!("{}::{}", crate_name, union_name),
+                union_name,
+            ),
+            fields,
+            generics: Vec::new(),
+            trait_impls: Vec::new(),
+            methods: Vec::new(),
+        };
+        self.graph.node_infos.insert(union_node_index, NodeInfo::Union(union_info));
 
         union_node_index
     }
@@ -737,14 +752,14 @@ impl<'ir> IrGraphBuilder<'ir> {
                 };
 
                 // 检查是否已存在
-                let generic_node_index = if let Some(idx) = self.type_cache.get_node(&type_key) {
-                    idx
+                let (generic_node_index, is_new) = if let Some(idx) = self.type_cache.get_node(&type_key) {
+                    (idx, false)
                 } else {
                     // 创建新节点
                     let idx = self.graph.add_type_node(&generic_name);
                     self.graph.node_types.insert(idx, NodeType::Generic);
                     self.type_cache.insert_node(type_key.clone(), idx);
-                    idx
+                    (idx, true)
                 };
 
                 self.generic_scopes.insert(owner_id, HashSet::new());
@@ -766,10 +781,14 @@ impl<'ir> IrGraphBuilder<'ir> {
                     generic_name, generic_name, param.name, type_key
                 );
 
+                // 收集 trait bounds
+                let mut bound_nodes = Vec::new();
+
                 // 创建 Include 边：类型/Trait -> 泛型参数
-                if let Some(owner_node) = self.type_cache.get_by_id(&owner_id) {
+                let owner_node = self.type_cache.get_by_id(&owner_id);
+                if let Some(owner) = owner_node {
                     self.graph.add_type_relation(
-                        owner_node,
+                        owner,
                         generic_node_index,
                         EdgeMode::Include,
                         Some(format!("has generic {}", param.name)),
@@ -795,6 +814,8 @@ impl<'ir> IrGraphBuilder<'ir> {
                             node
                         };
 
+                        bound_nodes.push(trait_node);
+
                         // 创建 Require 边：泛型参数 -> Trait
                         self.graph.add_type_relation(
                             generic_node_index,
@@ -805,11 +826,24 @@ impl<'ir> IrGraphBuilder<'ir> {
                         debug!("泛型约束: {} requires trait {}", param.name, trait_.path);
                     }
                 }
+
+                // 创建 GenericInfo（仅在新创建时）
+                if is_new {
+                    let generic_info = GenericInfo {
+                        name: param.name.clone(),
+                        owner: owner_node,
+                        bounds: bound_nodes,
+                        default_type: None,  // TODO: 处理默认类型
+                    };
+                    self.graph.node_infos.insert(generic_node_index, NodeInfo::Generic(generic_info));
+                }
             }
         }
     }
 
     fn build_traits_nodes(&mut self) {
+        let crate_name = self.get_crate_name();
+
         for &trait_id in &self.parsed.info.traits {
             if let Some(item) = self.parsed.crate_data.index.get(&trait_id) {
                 if let ItemEnum::Trait(trait_data) = &item.inner {
@@ -822,6 +856,22 @@ impl<'ir> IrGraphBuilder<'ir> {
                     let trait_node = self.graph.add_type_node(trait_name);
                     self.graph.node_types.insert(trait_node, NodeType::Trait);
                     self.type_cache.insert_type_by_id(trait_id, trait_node);
+
+                    // 创建 TraitInfo
+                    let trait_info = TraitInfo {
+                        path: PathInfo::new(
+                            &format!("{}::{}", crate_name, trait_name),
+                            trait_name,
+                        ),
+                        associated_types: Vec::new(),  // 后续在 build_trait_assoc_types 中填充
+                        associated_consts: Vec::new(),
+                        methods: Vec::new(),           // 后续在 build_trait_defined_methods 中填充
+                        supertraits: Vec::new(),       // TODO: 处理 supertrait bounds
+                        generics: Vec::new(),          // 后续在 create_generics 中填充
+                        is_auto: trait_data.is_auto,
+                        is_unsafe: trait_data.is_unsafe,
+                    };
+                    self.graph.node_infos.insert(trait_node, NodeInfo::Trait(trait_info));
 
                     // 创建 Trait 自身的泛型参数
                     self.create_generics(trait_id, &trait_data.generics, trait_name);
@@ -1107,10 +1157,12 @@ impl<'ir> IrGraphBuilder<'ir> {
             stats.types
         );
 
+        let crate_name = self.get_crate_name();
+
         // 处理 Constants
         for &constant_id in &self.parsed.info.constants {
             if let Some(item) = self.parsed.crate_data.index.get(&constant_id) {
-                if let ItemEnum::Constant { type_, .. } = &item.inner {
+                if let ItemEnum::Constant { type_, const_ } = &item.inner {
                     let constant_name = item.name.as_deref().unwrap_or("unknown");
 
                     // 创建 Constant 节点
@@ -1119,6 +1171,18 @@ impl<'ir> IrGraphBuilder<'ir> {
                         .node_types
                         .insert(constant_node, NodeType::Constant);
                     self.type_cache.insert_type_by_id(constant_id, constant_node);
+
+                    // 创建 ConstantInfo
+                    let constant_info = ConstantInfo {
+                        path: PathInfo::new(
+                            &format!("{}::{}", crate_name, constant_name),
+                            constant_name,
+                        ),
+                        type_node: None,  // 后续填充
+                        type_str: format!("{:?}", type_),
+                        init_value: const_.value.clone(),
+                    };
+                    self.graph.node_infos.insert(constant_node, NodeInfo::Constant(constant_info));
 
                     // 解析 Constant 的类型并创建 Instance 边
                     match type_ {
@@ -1150,6 +1214,11 @@ impl<'ir> IrGraphBuilder<'ir> {
                                     EdgeMode::Instance,
                                     Some("instance of".to_string()),
                                 );
+
+                                // 更新 ConstantInfo 的 type_node
+                                if let Some(NodeInfo::Constant(info)) = self.graph.node_infos.get_mut(&constant_node) {
+                                    info.type_node = Some(type_node);
+                                }
 
                                 debug!(
                                     "创建 Instance 边: {} (NodeIndex({:?})) -> {} (NodeIndex({:?}))",
@@ -1235,18 +1304,36 @@ impl<'ir> IrGraphBuilder<'ir> {
                     self.graph.node_types.insert(static_node, NodeType::Static);
                     self.type_cache.insert_type_by_id(static_id, static_node);
 
+                    // 创建 StaticInfo
+                    let static_info = StaticInfo {
+                        path: PathInfo::new(
+                            &format!("{}::{}", crate_name, static_name),
+                            static_name,
+                        ),
+                        type_node: None,  // 后续填充
+                        type_str: format!("{:?}", static_data.type_),
+                        is_mutable: static_data.is_mutable,
+                        init_value: Some(static_data.expr.clone()),
+                    };
+                    self.graph.node_infos.insert(static_node, NodeInfo::Static(static_info));
+
                     match &static_data.type_ {
                         Type::ResolvedPath(path) => {
-                            let type_node = self
-                                .type_cache
-                                .get_by_id(&path.id)
-                                .expect("不可能没有类型节点");
-                            self.graph.add_type_relation(
-                                static_node,
-                                type_node,
-                                EdgeMode::Instance,
-                                Some("instance of".to_string()),
-                            );
+                            if let Some(type_node) = self.type_cache.get_by_id(&path.id) {
+                                self.graph.add_type_relation(
+                                    static_node,
+                                    type_node,
+                                    EdgeMode::Instance,
+                                    Some("instance of".to_string()),
+                                );
+
+                                // 更新 StaticInfo 的 type_node
+                                if let Some(NodeInfo::Static(info)) = self.graph.node_infos.get_mut(&static_node) {
+                                    info.type_node = Some(type_node);
+                                }
+                            } else {
+                                error!("Static {} 的类型节点未找到", static_name);
+                            }
                         }
                         _ => {
                             error!("Static {} 的类型不是 ResolvedPath", static_name);
@@ -1285,10 +1372,20 @@ impl<'ir> IrGraphBuilder<'ir> {
             }
         }
     }
-    // ========== 第六步：泛型约束 ==========
 
     fn get_name(&self, id: &Id) -> Option<&str> {
         self.parsed.crate_data.index.get(id)?.name.as_deref()
+    }
+
+    /// 获取 crate 名称
+    fn get_crate_name(&self) -> String {
+        self.parsed
+            .crate_data
+            .index
+            .get(&self.parsed.crate_data.root)
+            .and_then(|item| item.name.as_deref())
+            .unwrap_or("crate")
+            .to_string()
     }
 
     fn is_blacklisted_trait(&self, name: &str) -> bool {

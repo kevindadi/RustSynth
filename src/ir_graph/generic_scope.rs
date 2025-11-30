@@ -21,7 +21,7 @@ struct ScopeFrame {
     owner_id: Id,
     /// 泛型参数映射:名称 -> Id
     generics: HashMap<String, Id>,
-    /// Self 类型的具体 Id(用于 impl 块)
+    /// Self 类型的具体的 Id (用于 impl 块)
     ///
     /// 例如:impl MyTrait for MyStruct { ... }
     /// 在这个作用域中,self_type = Some(MyStruct_Id)

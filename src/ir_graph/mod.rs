@@ -1,6 +1,7 @@
 pub mod builder;
 pub mod generic_scope;
 pub mod method_builder;
+pub mod node_info;
 pub mod type_cache;
 /// IR Graph 模块:中间表示层
 ///
@@ -11,5 +12,6 @@ pub mod type_cache;
 pub mod structure;
 
 pub use builder::IrGraphBuilder;
+pub use node_info::*;
 pub use structure::{EdgeMode, IrGraph, NodeType, TypeRelation};
 pub use type_cache::{GenericScope, TypeCache, TypeContext, TypeKey};
