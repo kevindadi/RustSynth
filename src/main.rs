@@ -10,10 +10,11 @@ mod ir_graph;
 mod parse;
 mod petri_net_traits;
 // mod pipeline;
-// mod pt_net;
+mod label_pt_net;
 mod support_types;
 
 use crate::ir_graph::builder::IrGraphBuilder;
+use crate::label_pt_net::{ExportFormat, convert_ir_to_lpn};
 use crate::parse::ParsedCrate;
 
 #[derive(Parser)]
@@ -43,7 +44,6 @@ fn main() -> Result<()> {
 
     let cli = Cli::parse();
 
-    // 从 JSON 文件解析
     log::info!("正在解析 rustdoc JSON: {}", cli.input.display());
     let parsed_crate = ParsedCrate::from_json_file(&cli.input)?;
 
@@ -52,7 +52,6 @@ fn main() -> Result<()> {
         parsed_crate.print_stats();
     }
 
-    // 构建 IR Graph
     log::info!("正在构建 IR Graph...");
     let builder = IrGraphBuilder::new(&parsed_crate);
     let ir_graph = builder.build();
@@ -62,7 +61,20 @@ fn main() -> Result<()> {
         ir_graph.print_stats();
     }
 
-    // 导出
+    // 转换为 Labeled Petri Net
+    log::info!("正在转换为 Labeled Petri Net...");
+    let lpn = convert_ir_to_lpn(&ir_graph);
+    let lpn_stats = lpn.stats();
+    log::info!(
+        "  Places: {}, Transitions: {}, Arcs: {} (input: {}, output: {}), Initial tokens: {}",
+        lpn_stats.place_count,
+        lpn_stats.transition_count,
+        lpn_stats.input_arc_count + lpn_stats.output_arc_count,
+        lpn_stats.input_arc_count,
+        lpn_stats.output_arc_count,
+        lpn_stats.total_initial_tokens
+    );
+
     if !cli.no_export {
         // 创建输出目录
         std::fs::create_dir_all(&cli.output_dir)?;
@@ -73,10 +85,24 @@ fn main() -> Result<()> {
         log::info!("正在导出到目录: {}", cli.output_dir.display());
 
         ir_graph.export_dot(&parsed_crate, &dot_path)?;
-        log::info!("  ✓ DOT: {}", dot_path.display());
+        log::info!("  ✓ IR Graph DOT: {}", dot_path.display());
 
         ir_graph.export_json(&json_path)?;
-        log::info!("  ✓ JSON: {}", json_path.display());
+        log::info!("  ✓ IR Graph JSON: {}", json_path.display());
+
+        // 导出 Petri Net
+        let lpn_dot_path = cli.output_dir.join("petri_net.dot");
+        let lpn_pnml_path = cli.output_dir.join("petri_net.pnml");
+        let lpn_json_path = cli.output_dir.join("petri_net.json");
+
+        lpn.save_to_file(&lpn_dot_path, ExportFormat::Dot)?;
+        log::info!("  ✓ Petri Net DOT: {}", lpn_dot_path.display());
+
+        lpn.save_to_file(&lpn_pnml_path, ExportFormat::Pnml)?;
+        log::info!("  ✓ Petri Net PNML: {}", lpn_pnml_path.display());
+
+        lpn.save_to_file(&lpn_json_path, ExportFormat::Json)?;
+        log::info!("  ✓ Petri Net JSON: {}", lpn_json_path.display());
 
         log::info!("✓ 完成!");
     }

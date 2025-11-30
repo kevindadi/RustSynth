@@ -91,6 +91,15 @@ pub enum TypeKey {
         /// 关联类型的名称
         assoc_name: String,
     },
+
+    /// 带具体类型参数的 Trait
+    /// 例如：AsRef<[u8]> 与 AsRef<str> 是不同的节点
+    TraitWithArgs {
+        /// Trait 的 ID
+        trait_id: Id,
+        /// 参数的字符串表示（用于区分不同实例）
+        args_repr: String,
+    },
 }
 
 /// 泛型参数的作用域
@@ -166,7 +175,6 @@ pub struct TypeCache {
 
     // ========== 快速查找索引 ==========
     // 这些是冗余映射，但可以加速查找
-
     /// 有 ID 的类型节点：Struct, Enum, Union, Trait, TypeAlias, Constant, Static 等
     id_to_node: HashMap<Id, NodeIndex>,
 
@@ -237,7 +245,10 @@ impl TypeCache {
             TypeKey::Generic { name, scope } => {
                 // 插入完整名（OwnerName:GenericName）
                 let full_key = match scope {
-                    GenericScope::Type(id) | GenericScope::Trait(id) | GenericScope::Method(id) | GenericScope::Function(id) => {
+                    GenericScope::Type(id)
+                    | GenericScope::Trait(id)
+                    | GenericScope::Method(id)
+                    | GenericScope::Function(id) => {
                         // 这里我们只存储到 generic_to_node，完整 key 需要外部提供
                         // 因为我们没有 owner_name 信息
                     }
@@ -246,7 +257,10 @@ impl TypeCache {
                 // 短名也存储（可能被覆盖）
                 self.generic_to_node.insert(name.clone(), node);
             }
-            TypeKey::AssociatedType { owner_name, assoc_name } => {
+            TypeKey::AssociatedType {
+                owner_name,
+                assoc_name,
+            } => {
                 let key = format!("{}.{}", owner_name, assoc_name);
                 self.assoc_type_to_node.insert(key, node);
             }
@@ -313,7 +327,12 @@ impl TypeCache {
     /// 插入泛型节点
     /// - full_name: 完整名，如 "Vec:T"
     /// - short_name: 短名，如 "T"（可选，可能被覆盖）
-    pub fn insert_generic(&mut self, full_name: String, short_name: Option<String>, node: NodeIndex) {
+    pub fn insert_generic(
+        &mut self,
+        full_name: String,
+        short_name: Option<String>,
+        node: NodeIndex,
+    ) {
         self.generic_to_node.insert(full_name, node);
         if let Some(short) = short_name {
             self.generic_to_node.insert(short, node);
@@ -321,7 +340,13 @@ impl TypeCache {
     }
 
     /// 插入泛型节点（使用 TypeKey）
-    pub fn insert_generic_with_key(&mut self, key: TypeKey, full_name: String, short_name: Option<String>, node: NodeIndex) {
+    pub fn insert_generic_with_key(
+        &mut self,
+        key: TypeKey,
+        full_name: String,
+        short_name: Option<String>,
+        node: NodeIndex,
+    ) {
         self.generic_to_node.insert(full_name, node);
         if let Some(short) = short_name {
             self.generic_to_node.insert(short, node);
@@ -353,10 +378,13 @@ impl TypeCache {
     pub fn insert_assoc_type(&mut self, owner_name: &str, assoc_name: &str, node: NodeIndex) {
         let key = format!("{}.{}", owner_name, assoc_name);
         self.assoc_type_to_node.insert(key.clone(), node);
-        self.type_to_node.insert(TypeKey::AssociatedType {
-            owner_name: owner_name.to_string(),
-            assoc_name: assoc_name.to_string(),
-        }, node);
+        self.type_to_node.insert(
+            TypeKey::AssociatedType {
+                owner_name: owner_name.to_string(),
+                assoc_name: assoc_name.to_string(),
+            },
+            node,
+        );
     }
 
     /// 检查关联类型节点是否存在
