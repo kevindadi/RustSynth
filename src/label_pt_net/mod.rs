@@ -19,7 +19,15 @@
 //! - `Implements` 边：Trait 约束检查
 //! - `UnwrapOp`：Result/Option 分支选择
 //!
-//! 当前实现不包含模拟逻辑，仅生成静态的 Petri 网结构。
+//! ## 分析功能
+//! - 可达性分析：检查目标状态是否可达
+//! - 活性检查：检查所有变迁是否都能触发
+//! - 有界性检查：检查 token 数量是否有界
+//! - API 序列生成：生成有效的 API 调用序列用于 fuzz 测试
+
+pub mod analysis;
+
+pub use analysis::{AnalysisResult, ApiSequence, FuzzInputParser};
 
 use petgraph::graph::NodeIndex;
 use petgraph::visit::EdgeRef;
@@ -45,6 +53,10 @@ pub struct LabeledPetriNet {
     pub arcs: Vec<Arc>,
     /// 初始标记：每个 place 的初始 token 数量
     pub initial_marking: Vec<usize>,
+    /// Transition 到原 IrGraph NodeIndex 的映射（用于 fuzz 测试）
+    pub trans_to_node: HashMap<usize, NodeIndex>,
+    /// Place 到原 IrGraph NodeIndex 的映射
+    pub place_to_node: HashMap<usize, NodeIndex>,
 }
 
 /// 变迁属性
@@ -84,6 +96,8 @@ impl LabeledPetriNet {
             transition_attrs: Vec::new(),
             arcs: Vec::new(),
             initial_marking: Vec::new(),
+            trans_to_node: HashMap::new(),
+            place_to_node: HashMap::new(),
         }
     }
 
@@ -254,7 +268,9 @@ pub fn convert_ir_to_lpn(ir: &IrGraph) -> LabeledPetriNet {
         };
 
         let lpn_idx = if is_place {
-            lpn.add_place(node_label.clone())
+            let idx = lpn.add_place(node_label.clone());
+            lpn.place_to_node.insert(idx, node_idx);
+            idx
         } else {
             // 获取方法属性（is_const, is_async, is_unsafe）
             let attr = if let Some(node_info) = ir.node_infos.get(&node_idx) {
@@ -269,7 +285,9 @@ pub fn convert_ir_to_lpn(ir: &IrGraph) -> LabeledPetriNet {
             } else {
                 TransitionAttr::default()
             };
-            lpn.add_transition_with_attr(node_label.clone(), attr)
+            let idx = lpn.add_transition_with_attr(node_label.clone(), attr);
+            lpn.trans_to_node.insert(idx, node_idx);
+            idx
         };
 
         node_mapping.insert(node_idx, (is_place, lpn_idx));

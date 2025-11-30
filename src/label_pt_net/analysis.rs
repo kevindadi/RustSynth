@@ -1,19 +1,18 @@
 //! Petri 网分析模块
 //!
-//! 提供 LabeledPetriNet 的分析功能，支持 fuzz 测试用例生成：
-//! - 守卫逻辑检查
+//! 提供 LabeledPetriNet 的分析功能，支持 cargo-fuzz 测试用例生成：
+//! - 守卫逻辑检查（Rust 借用语义）
 //! - 可达性分析
 //! - 活性检查
 //! - 有界性检查
-//! - API 调用序列生成
+//! - API 调用序列生成（基于 fuzz_input 确定性选择）
+//! - 基本类型 shims 支持
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use petgraph::graph::NodeIndex;
-use rand::prelude::*;
-
 use super::{Arc, EdgeMode, LabeledPetriNet};
-use crate::ir_graph::{IrGraph, NodeInfo};
+use crate::ir_graph::{IrGraph, NodeInfo, NodeType};
+use crate::support_types::primitives::{PRIMITIVE_DEFAULT_TRAITS, PRIMITIVE_TYPES};
 
 /// 分析结果
 #[derive(Debug, Clone)]
@@ -39,16 +38,276 @@ pub struct ApiSequence {
     pub final_marking: Vec<usize>,
 }
 
+/// Fuzz 输入解析器
+///
+/// 用于从 &[u8] 确定性地派生路径选择
+#[derive(Debug)]
+pub struct FuzzInputParser<'a> {
+    data: &'a [u8],
+    pos: usize,
+}
+
+impl<'a> FuzzInputParser<'a> {
+    /// 创建新的解析器
+    pub fn new(data: &'a [u8]) -> Self {
+        Self { data, pos: 0 }
+    }
+
+    /// 获取下一个字节，循环使用
+    pub fn next_byte(&mut self) -> u8 {
+        if self.data.is_empty() {
+            return 0;
+        }
+        let byte = self.data[self.pos % self.data.len()];
+        self.pos += 1;
+        byte
+    }
+
+    /// 从可选项中选择一个（确定性）
+    pub fn choose<T: Clone>(&mut self, options: &[T]) -> Option<T> {
+        if options.is_empty() {
+            return None;
+        }
+        let idx = self.next_byte() as usize % options.len();
+        Some(options[idx].clone())
+    }
+
+    /// 返回一个 0.0-1.0 之间的概率值
+    pub fn probability(&mut self) -> f64 {
+        self.next_byte() as f64 / 255.0
+    }
+
+    /// 检查是否应该选择（基于阈值）
+    pub fn should_choose(&mut self, threshold: f64) -> bool {
+        self.probability() < threshold
+    }
+
+    /// 获取剩余数据长度
+    pub fn remaining(&self) -> usize {
+        if self.data.is_empty() {
+            0
+        } else {
+            self.data.len().saturating_sub(self.pos % self.data.len())
+        }
+    }
+}
+
 impl LabeledPetriNet {
+    // ========== 基本类型 Shims ==========
+
+    /// 添加基本类型 shims
+    ///
+    /// 为常见基本类型（i32, bool, f64, String 等）添加模拟 places，
+    /// 并链接它们的默认 Trait 实现。
+    ///
+    /// # 参数
+    /// - `ir`: IrGraph 引用，用于查找 Trait 节点
+    ///
+    /// # 功能
+    /// 1. 为每个基本类型创建 shim place（如 "shim_i32"）
+    /// 2. 设置初始标记为 1（表示类型可用）
+    /// 3. 链接默认 Trait（如 Copy, Clone, Debug 等）
+    /// 4. 如果 ir 中存在对应的 Generic 节点，添加 Instance 弧
+    pub fn add_primitive_shims(&mut self, ir: &IrGraph) {
+        // 收集 ir 中已存在的 Primitive 节点名称
+        let existing_primitives: HashSet<String> = ir
+            .node_infos
+            .iter()
+            .filter_map(|(_, info)| {
+                if let NodeInfo::Primitive(prim_info) = info {
+                    Some(prim_info.name.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        // 收集 ir 中的 Trait 节点（名称 -> place 索引）
+        let trait_places: HashMap<String, usize> = self
+            .places
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, name)| {
+                // 检查是否是 Trait place
+                if let Some(&node_idx) = self.place_to_node.iter()
+                    .find(|(place_idx, _)| **place_idx == idx)
+                    .map(|(_, node_idx)| node_idx)
+                {
+                    if let Some(NodeType::Trait) = ir.node_types.get(&node_idx) {
+                        // 提取 Trait 名称（可能是完整路径）
+                        let trait_name = name.split("::").last().unwrap_or(name);
+                        return Some((trait_name.to_string(), idx));
+                    }
+                }
+                None
+            })
+            .collect();
+
+        // 收集 ir 中的 Generic 节点（用于链接）
+        let generic_places: Vec<(usize, Vec<String>)> = self
+            .places
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, _)| {
+                if let Some(&node_idx) = self.place_to_node.iter()
+                    .find(|(place_idx, _)| **place_idx == idx)
+                    .map(|(_, node_idx)| node_idx)
+                {
+                    if let Some(NodeInfo::Generic(gen_info)) = ir.node_infos.get(&node_idx) {
+                        // 获取 bounds 的名称
+                        let bound_names: Vec<String> = gen_info
+                            .bounds
+                            .iter()
+                            .filter_map(|bound_idx| {
+                                ir.node_infos.get(bound_idx).map(|info| info.name().to_string())
+                            })
+                            .collect();
+                        return Some((idx, bound_names));
+                    }
+                }
+                None
+            })
+            .collect();
+
+        // 为每个基本类型添加 shim
+        for prim_name in PRIMITIVE_TYPES.iter() {
+            let shim_name = format!("shim_{}", prim_name);
+
+            // 检查是否已存在
+            if self.places.contains(&shim_name) {
+                continue;
+            }
+
+            // 如果 ir 中已有该 Primitive，跳过
+            if existing_primitives.contains(*prim_name) {
+                continue;
+            }
+
+            // 添加 shim place
+            let shim_idx = self.add_place(shim_name.clone());
+            self.set_initial_marking(shim_idx, 1); // 初始标记为 1
+
+            // 获取该类型的默认 Trait
+            if let Some(default_traits) = PRIMITIVE_DEFAULT_TRAITS.get(*prim_name) {
+                for trait_name in default_traits.iter() {
+                    // 查找对应的 Trait place
+                    if let Some(&trait_place_idx) = trait_places.get(*trait_name) {
+                        // 添加 Implements 弧：shim -> trait
+                        self.add_output_arc(
+                            shim_idx, // 这里我们创建一个虚拟 transition
+                            trait_place_idx,
+                            EdgeMode::Implements,
+                            1,
+                            Some(format!("{} implements {}", prim_name, trait_name)),
+                        );
+                    }
+                }
+
+                // 链接到满足 bounds 的 Generic places
+                for (gen_place_idx, bounds) in &generic_places {
+                    // 检查 shim 是否满足所有 bounds
+                    let satisfies_all = bounds.iter().all(|bound| {
+                        default_traits.contains(&bound.as_str())
+                    });
+
+                    if satisfies_all && !bounds.is_empty() {
+                        // 创建虚拟 transition 连接 shim 到 generic
+                        let virtual_trans_name = format!(
+                            "{}_instance_{}",
+                            prim_name,
+                            self.places.get(*gen_place_idx).map(|s| s.as_str()).unwrap_or("?")
+                        );
+                        let trans_idx = self.add_transition(virtual_trans_name);
+
+                        // shim -> transition (输入)
+                        self.add_input_arc(
+                            shim_idx,
+                            trans_idx,
+                            EdgeMode::Ref, // 使用 Ref 不消耗 token
+                            1,
+                            None,
+                        );
+
+                        // transition -> generic (输出)
+                        self.add_output_arc(
+                            trans_idx,
+                            *gen_place_idx,
+                            EdgeMode::Instance,
+                            1,
+                            None,
+                        );
+                    }
+                }
+            }
+        }
+
+        // 额外添加 String shim（不是 primitive 但常用）
+        self.add_string_shim(&trait_places, &generic_places);
+    }
+
+    /// 添加 String 类型 shim
+    fn add_string_shim(
+        &mut self,
+        trait_places: &HashMap<String, usize>,
+        generic_places: &[(usize, Vec<String>)],
+    ) {
+        let shim_name = "shim_String".to_string();
+
+        if self.places.contains(&shim_name) {
+            return;
+        }
+
+        let shim_idx = self.add_place(shim_name);
+        self.set_initial_marking(shim_idx, 1);
+
+        // String 的默认 Trait
+        let string_traits = [
+            "Clone", "Debug", "Display", "PartialEq", "Eq", "PartialOrd", "Ord",
+            "Hash", "Default", "Send", "Sync", "Sized", "From", "Into",
+            "AsRef", "Deref", "Borrow",
+        ];
+
+        for trait_name in string_traits.iter() {
+            if let Some(&trait_place_idx) = trait_places.get(*trait_name) {
+                self.add_output_arc(
+                    shim_idx,
+                    trait_place_idx,
+                    EdgeMode::Implements,
+                    1,
+                    Some(format!("String implements {}", trait_name)),
+                );
+            }
+        }
+
+        // 链接到 Generic places
+        for (gen_place_idx, bounds) in generic_places {
+            let satisfies_all = bounds.iter().all(|bound| {
+                string_traits.contains(&bound.as_str())
+            });
+
+            if satisfies_all && !bounds.is_empty() {
+                let virtual_trans_name = format!(
+                    "String_instance_{}",
+                    self.places.get(*gen_place_idx).map(|s| s.as_str()).unwrap_or("?")
+                );
+                let trans_idx = self.add_transition(virtual_trans_name);
+
+                self.add_input_arc(shim_idx, trans_idx, EdgeMode::Ref, 1, None);
+                self.add_output_arc(trans_idx, *gen_place_idx, EdgeMode::Instance, 1, None);
+            }
+        }
+    }
+
     // ========== 守卫逻辑 ==========
 
     /// 检查变迁的守卫条件是否满足
     ///
-    /// 根据输入弧的标签检查：
-    /// - MutRef：需要输入 place token == 1（独占访问）
-    /// - Ref：允许多个共享引用
-    /// - Move：需要至少有 weight 个 token
-    /// - Implements/Require：约束检查（简化为 true）
+    /// 根据输入弧的标签检查 Rust 借用语义：
+    /// - MutRef：需要独占访问（token >= 1，且无其他引用）
+    /// - Ref：允许多个共享引用（token >= weight，但不能与 MutRef 共存）
+    /// - Move：需要至少有 weight 个 token（消耗性）
+    /// - Implements/Require：Trait 约束检查（基于 shim 链接）
+    /// - UnwrapOk/UnwrapErr/UnwrapNone：分支选择
     pub fn guard_satisfied(&self, trans_idx: usize, marking: &[usize]) -> bool {
         // 收集该变迁的所有输入弧
         let input_arcs: Vec<&Arc> = self
@@ -263,5 +522,434 @@ impl LabeledPetriNet {
 
         (true, max_tokens)
     }
+
+    // ========== API 序列生成（cargo-fuzz 兼容） ==========
+
+    /// 生成 API 调用序列（用于 cargo-fuzz 测试）
+    ///
+    /// # 参数
+    /// - `max_depth`: 最大序列长度
+    /// - `fuzz_input`: fuzz 输入字节，用于确定性路径选择
+    /// - `ir`: IrGraph 引用，用于获取方法签名
+    ///
+    /// # 返回
+    /// API 调用字符串序列的列表（1-5 个序列，基于 input 长度）
+    pub fn generate_api_sequences(
+        &self,
+        max_depth: usize,
+        fuzz_input: &[u8],
+        ir: &IrGraph,
+    ) -> Vec<Vec<String>> {
+        let mut parser = FuzzInputParser::new(fuzz_input);
+        let mut sequences: Vec<Vec<String>> = Vec::new();
+
+        // 根据输入长度决定生成序列数量（1-5）
+        let num_sequences = if fuzz_input.is_empty() {
+            1
+        } else {
+            1 + (fuzz_input.len() % 5)
+        };
+
+        for _ in 0..num_sequences {
+            let seq = self.generate_single_sequence_fuzz(max_depth, ir, &mut parser);
+            if !seq.is_empty() {
+                sequences.push(seq);
+            }
+        }
+
+        sequences
+    }
+
+    /// 生成带详细信息的 API 序列（cargo-fuzz 兼容）
+    pub fn generate_api_sequences_detailed(
+        &self,
+        max_depth: usize,
+        fuzz_input: &[u8],
+        ir: &IrGraph,
+    ) -> Vec<ApiSequence> {
+        let mut parser = FuzzInputParser::new(fuzz_input);
+        let mut sequences: Vec<ApiSequence> = Vec::new();
+
+        let num_sequences = if fuzz_input.is_empty() {
+            1
+        } else {
+            1 + (fuzz_input.len() % 5)
+        };
+
+        for _ in 0..num_sequences {
+            if let Some(seq) = self.generate_single_sequence_detailed_fuzz(max_depth, ir, &mut parser) {
+                sequences.push(seq);
+            }
+        }
+
+        sequences
+    }
+
+    /// 生成单个 API 序列（使用 fuzz 输入）
+    fn generate_single_sequence_fuzz(
+        &self,
+        max_depth: usize,
+        ir: &IrGraph,
+        parser: &mut FuzzInputParser,
+    ) -> Vec<String> {
+        let mut marking = self.initial_marking.clone();
+        let mut api_calls: Vec<String> = Vec::new();
+
+        for _ in 0..max_depth {
+            let enabled = self.enabled_transitions(&marking);
+            if enabled.is_empty() {
+                break;
+            }
+
+            // 使用 fuzz 输入选择变迁
+            let trans_idx = self.select_transition_fuzz(&enabled, &marking, parser);
+
+            // 获取 API 签名
+            if let Some(api_str) = self.get_api_signature(trans_idx, ir) {
+                api_calls.push(api_str);
+            } else {
+                // 如果无法获取签名，使用变迁名称
+                api_calls.push(self.transitions[trans_idx].clone());
+            }
+
+            // 触发变迁
+            marking = self.fire_transition(trans_idx, &marking);
+        }
+
+        api_calls
+    }
+
+    /// 生成单个带详细信息的 API 序列（使用 fuzz 输入）
+    fn generate_single_sequence_detailed_fuzz(
+        &self,
+        max_depth: usize,
+        ir: &IrGraph,
+        parser: &mut FuzzInputParser,
+    ) -> Option<ApiSequence> {
+        let mut marking = self.initial_marking.clone();
+        let mut transition_indices: Vec<usize> = Vec::new();
+        let mut api_calls: Vec<String> = Vec::new();
+
+        for _ in 0..max_depth {
+            let enabled = self.enabled_transitions(&marking);
+            if enabled.is_empty() {
+                break;
+            }
+
+            // 优先选择"有趣"的变迁（如 unwrap 操作）
+            let trans_idx = self.select_transition_fuzz(&enabled, &marking, parser);
+
+            transition_indices.push(trans_idx);
+
+            if let Some(api_str) = self.get_api_signature(trans_idx, ir) {
+                api_calls.push(api_str);
+            } else {
+                api_calls.push(self.transitions[trans_idx].clone());
+            }
+
+            marking = self.fire_transition(trans_idx, &marking);
+        }
+
+        if transition_indices.is_empty() {
+            None
+        } else {
+            Some(ApiSequence {
+                transition_indices,
+                api_calls,
+                final_marking: marking,
+            })
+        }
+    }
+
+    /// 选择变迁（使用 fuzz 输入，确定性）
+    ///
+    /// 优先选择：
+    /// 1. 可能导致 unwrap failure 的变迁（30% 概率）
+    /// 2. 涉及 MutRef 的变迁（20% 概率）
+    /// 3. 基于 fuzz 输入选择
+    fn select_transition_fuzz(
+        &self,
+        enabled: &[usize],
+        _marking: &[usize],
+        parser: &mut FuzzInputParser,
+    ) -> usize {
+        // 检查是否有 unwrap 相关的变迁
+        let unwrap_transitions: Vec<usize> = enabled
+            .iter()
+            .copied()
+            .filter(|&t| {
+                let name = &self.transitions[t];
+                name.contains("unwrap") || name.contains("expect") || name.contains("?")
+            })
+            .collect();
+
+        if !unwrap_transitions.is_empty() && parser.should_choose(0.3) {
+            if let Some(idx) = parser.choose(&unwrap_transitions) {
+                return idx;
+            }
+        }
+
+        // 检查是否有涉及 MutRef 的变迁
+        let mut_ref_transitions: Vec<usize> = enabled
+            .iter()
+            .copied()
+            .filter(|&t| {
+                self.arcs
+                    .iter()
+                    .any(|arc| arc.is_input_arc && arc.to_idx == t && arc.label == EdgeMode::MutRef)
+            })
+            .collect();
+
+        if !mut_ref_transitions.is_empty() && parser.should_choose(0.2) {
+            if let Some(idx) = parser.choose(&mut_ref_transitions) {
+                return idx;
+            }
+        }
+
+        // 检查是否有 UnwrapErr/UnwrapNone 输出弧的变迁（failure 路径）
+        let failure_transitions: Vec<usize> = enabled
+            .iter()
+            .copied()
+            .filter(|&t| {
+                self.arcs.iter().any(|arc| {
+                    !arc.is_input_arc
+                        && arc.from_idx == t
+                        && matches!(arc.label, EdgeMode::UnwrapErr | EdgeMode::UnwrapNone)
+                })
+            })
+            .collect();
+
+        if !failure_transitions.is_empty() && parser.should_choose(0.15) {
+            if let Some(idx) = parser.choose(&failure_transitions) {
+                return idx;
+            }
+        }
+
+        // 基于 fuzz 输入选择
+        parser.choose(enabled).unwrap_or(enabled[0])
+    }
+
+    /// 获取变迁对应的 API 签名
+    fn get_api_signature(&self, trans_idx: usize, ir: &IrGraph) -> Option<String> {
+        let node_idx = self.trans_to_node.get(&trans_idx)?;
+        let node_info = ir.node_infos.get(node_idx)?;
+
+        match node_info {
+            NodeInfo::Method(method_info) => {
+                let owner_name = method_info
+                    .owner
+                    .and_then(|o| ir.node_infos.get(&o))
+                    .map(|info| info.name())
+                    .unwrap_or("?");
+
+                // 构建方法签名
+                let params: Vec<String> = method_info
+                    .params
+                    .iter()
+                    .map(|p| {
+                        if p.is_self {
+                            match p.borrow_mode {
+                                EdgeMode::MutRef => "&mut self".to_string(),
+                                EdgeMode::Ref => "&self".to_string(),
+                                EdgeMode::Move => "self".to_string(),
+                                _ => p.type_str.clone(),
+                            }
+                        } else {
+                            format!("{}: {}", p.name, p.type_str)
+                        }
+                    })
+                    .collect();
+
+                let return_str = if method_info.return_info.type_str.is_empty() {
+                    String::new()
+                } else {
+                    format!(" -> {}", method_info.return_info.type_str)
+                };
+
+                Some(format!(
+                    "{}::{}({}){}",
+                    owner_name,
+                    method_info.name,
+                    params.join(", "),
+                    return_str
+                ))
+            }
+            NodeInfo::Function(func_info) => {
+                let params: Vec<String> = func_info
+                    .params
+                    .iter()
+                    .map(|p| format!("{}: {}", p.name, p.type_str))
+                    .collect();
+
+                let return_str = if func_info.return_info.type_str.is_empty() {
+                    String::new()
+                } else {
+                    format!(" -> {}", func_info.return_info.type_str)
+                };
+
+                Some(format!(
+                    "{}({}){}",
+                    func_info.path.name,
+                    params.join(", "),
+                    return_str
+                ))
+            }
+            NodeInfo::UnwrapOp(unwrap_info) => {
+                let op_name = format!("{:?}", unwrap_info.op_kind);
+                Some(format!("unwrap_op::{}", op_name))
+            }
+            _ => None,
+        }
+    }
+
+    /// 生成针对特定目标状态的 API 序列（使用 fuzz 输入）
+    ///
+    /// 使用引导式搜索，尝试到达目标 marking
+    pub fn generate_targeted_sequences(
+        &self,
+        target_place: usize,
+        target_tokens: usize,
+        max_depth: usize,
+        fuzz_input: &[u8],
+        ir: &IrGraph,
+    ) -> Vec<Vec<String>> {
+        let mut parser = FuzzInputParser::new(fuzz_input);
+        let mut sequences: Vec<Vec<String>> = Vec::new();
+
+        // 根据输入长度决定尝试次数
+        let num_attempts = if fuzz_input.is_empty() {
+            1
+        } else {
+            1 + (fuzz_input.len() % 10)
+        };
+
+        for _ in 0..num_attempts {
+            let mut marking = self.initial_marking.clone();
+            let mut api_calls: Vec<String> = Vec::new();
+
+            for _ in 0..max_depth {
+                // 检查是否达到目标
+                if marking.get(target_place).copied().unwrap_or(0) >= target_tokens {
+                    if !api_calls.is_empty() {
+                        sequences.push(api_calls.clone());
+                    }
+                    break;
+                }
+
+                let enabled = self.enabled_transitions(&marking);
+                if enabled.is_empty() {
+                    break;
+                }
+
+                // 优先选择可能增加目标 place token 的变迁
+                let preferred: Vec<usize> = enabled
+                    .iter()
+                    .copied()
+                    .filter(|&t| {
+                        self.arcs.iter().any(|arc| {
+                            !arc.is_input_arc && arc.from_idx == t && arc.to_idx == target_place
+                        })
+                    })
+                    .collect();
+
+                let trans_idx = if !preferred.is_empty() && parser.should_choose(0.7) {
+                    parser.choose(&preferred).unwrap_or(enabled[0])
+                } else {
+                    parser.choose(&enabled).unwrap_or(enabled[0])
+                };
+
+                if let Some(api_str) = self.get_api_signature(trans_idx, ir) {
+                    api_calls.push(api_str);
+                } else {
+                    api_calls.push(self.transitions[trans_idx].clone());
+                }
+
+                marking = self.fire_transition(trans_idx, &marking);
+            }
+        }
+
+        sequences
+    }
+
+    /// 检查是否有"有趣"的状态（failure place 有 token）
+    pub fn has_interesting_state(&self, marking: &[usize]) -> bool {
+        // 检查是否有 failure 相关的 place 有 token
+        for (idx, &tokens) in marking.iter().enumerate() {
+            if tokens > 0 {
+                let place_name = &self.places[idx];
+                if place_name.contains("Err")
+                    || place_name.contains("None")
+                    || place_name.contains("failure")
+                    || place_name.contains("panic")
+                {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    /// 获取所有 failure places 的索引
+    pub fn get_failure_places(&self) -> Vec<usize> {
+        self.places
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, name)| {
+                if name.contains("Err")
+                    || name.contains("None")
+                    || name.contains("failure")
+                    || name.contains("Error")
+                {
+                    Some(idx)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    /// 完整分析：返回 AnalysisResult
+    pub fn analyze(&self, max_states: usize, k_bound: usize) -> AnalysisResult {
+        let (live, _) = self.check_liveness_with_limit(max_states);
+        let (bounded, _) = self.check_boundedness_with_limit(k_bound, max_states);
+
+        AnalysisResult {
+            reachable: true, // 初始状态总是可达的
+            live,
+            bounded,
+            states_explored: max_states,
+        }
+    }
+}
+
+// ========== cargo-fuzz 集成示例 ==========
+
+/// cargo-fuzz 目标函数示例
+///
+/// 在 fuzz/fuzz_targets/ 目录下创建文件使用此函数
+///
+/// ```rust,ignore
+/// #![no_main]
+/// use libfuzzer_sys::fuzz_target;
+/// use rustdoc_petri_net_builder::label_pt_net::{convert_ir_to_lpn, LabeledPetriNet};
+/// use rustdoc_petri_net_builder::ir_graph::IrGraph;
+///
+/// fuzz_target!(|data: &[u8]| {
+///     // 假设 ir_graph 已预加载（可以使用 lazy_static 或 once_cell）
+///     // let ir = load_ir_graph();
+///     // let mut lpn = convert_ir_to_lpn(&ir);
+///     // lpn.add_primitive_shims(&ir);
+///     // let seqs = lpn.generate_api_sequences(20, data, &ir);
+///     //
+///     // // 验证生成的序列
+///     // for seq in seqs {
+///     //     // 可以生成 Rust 测试代码或直接执行
+///     //     validate_api_sequence(&seq);
+///     // }
+/// });
+/// ```
+#[cfg(feature = "fuzz")]
+pub fn fuzz_api_sequences(data: &[u8], lpn: &LabeledPetriNet, ir: &IrGraph) -> Vec<Vec<String>> {
+    lpn.generate_api_sequences(20, data, ir)
 }
 
