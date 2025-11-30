@@ -14,16 +14,14 @@
 use rustdoc_types::Id;
 use std::collections::HashMap;
 
-use super::structure::TypeNode;
-
 /// 泛型作用域栈帧
 #[derive(Debug, Clone)]
 struct ScopeFrame {
     /// 作用域所有者(Struct/Enum/Fn/Impl 的 Id)
     owner_id: Id,
-    /// 泛型参数映射:名称 -> TypeNode
-    generics: HashMap<String, crate::ir_graph::TypeNode>,
-    /// Self 类型的具体 Id(用于 impl 块)
+    /// 泛型参数映射:名称 -> Id
+    generics: HashMap<String, Id>,
+    /// Self 类型的具体的 Id (用于 impl 块)
     ///
     /// 例如:impl MyTrait for MyStruct { ... }
     /// 在这个作用域中,self_type = Some(MyStruct_Id)
@@ -48,7 +46,7 @@ impl GenericScope {
     /// 参数:
     /// - owner_id: 作用域所有者 ID
     /// - generics: 泛型参数映射(名称 -> TypeNode)
-    pub fn push_scope(&mut self, owner_id: Id, generics: HashMap<String, TypeNode>) {
+    pub fn push_scope(&mut self, owner_id: Id, generics: HashMap<String, Id>) {
         self.stack.push(ScopeFrame {
             owner_id,
             generics,
@@ -62,7 +60,7 @@ impl GenericScope {
     pub fn push_scope_with_self(
         &mut self,
         owner_id: Id,
-        generics: HashMap<String, TypeNode>,
+        generics: HashMap<String, Id>,
         self_type: Id,
     ) {
         self.stack.push(ScopeFrame {
@@ -79,15 +77,15 @@ impl GenericScope {
 
     /// 解析泛型参数
     ///
-    /// 从栈顶向下查找泛型参数名,返回对应的 TypeNode
+    /// 从栈顶向下查找泛型参数名,返回对应的 Id
     ///
     /// 参数:
     /// - name: 泛型参数名(如 "T")
     ///
     /// 返回:
-    /// - Some(TypeNode): 找到对应的泛型节点
+    /// - Some(Id): 找到对应的泛型 Id
     /// - None: 未找到(可能是未定义的泛型)
-    pub fn resolve(&self, name: &str) -> Option<TypeNode> {
+    pub fn resolve(&self, name: &str) -> Option<Id> {
         // 从栈顶向下查找(最内层作用域优先)
         for frame in self.stack.iter().rev() {
             if let Some(node) = frame.generics.get(name) {

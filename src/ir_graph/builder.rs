@@ -1,1794 +1,1395 @@
-/// IR Graph 构建器
+use petgraph::graph::NodeIndex;
 ///
-/// 负责将 ParsedCrate 转换为 IR Graph
-/// 将 BorrowedRef 和 RawPointer 映射到 EdgeMode
-use rustdoc_types::{GenericBound, GenericParamDefKind, Id, Type, Visibility};
-use std::collections::HashMap;
+/// 直接使用 ParsedCrate 引用，避免重复查询
+use rustdoc_types::{GenericBound, GenericParamDefKind, Id, ItemEnum, Type};
+use std::collections::{HashMap, HashSet};
 
-use super::generic_scope::GenericScope;
-use super::structure::{DataEdge, EdgeMode, IrGraph, OpKind, OpNode, TraitImpl, TypeNode};
-use crate::parse::{FunctionInfo, ParsedCrate, TypeKind, TypeRef};
-use log::warn;
+use super::node_info::{
+    EnumInfo, FieldInfo, GenericInfo, NodeInfo, PathInfo, StructInfo, TraitImplInfo,
+    TraitInfo, UnionInfo, VariantInfo, VariantKind, Visibility, ConstantInfo, StaticInfo,
+};
+use super::structure::{EdgeMode, IrGraph};
+use super::type_cache::{TypeCache, TypeContext, TypeKey};
+use crate::{ir_graph::structure::NodeType, parse::ParsedCrate};
+use log::{debug, error, info};
 
-pub struct IrGraphBuilder {
-    graph: IrGraph,
-    /// 泛型作用域管理器, 链接到类型定义的泛型
-    generic_scope: GenericScope,
-    /// 实例化类型的 ID 生成器, 用于 Vec<u8> 等已经实例化类型
-    #[allow(dead_code)]
-    next_synthetic_id: u32,
+pub struct IrGraphBuilder<'ir> {
+    pub(crate) parsed: &'ir ParsedCrate,
+    pub(crate) graph: IrGraph,
+    /// 类型缓存：统一管理所有类型节点的索引
+    /// 包括：类型节点、操作节点、泛型节点、关联类型节点、基本类型节点
+    pub(crate) type_cache: TypeCache,
+    /// 类型的 impl 块：类型 ID -> impl 块中的方法 ID 集合
+    pub(crate) type_impls: HashMap<Id, HashSet<Id>>,
+    /// Trait 定义的方法：Trait ID -> 方法 ID 集合
+    pub(crate) method_impls: HashMap<Id, HashSet<Id>>,
+    /// 泛型作用域：类型/Trait ID -> 该作用域内的泛型参数名集合
+    pub(crate) generic_scopes: HashMap<Id, HashSet<String>>,
 }
 
-impl IrGraphBuilder {
-    pub fn new(parsed_crate: ParsedCrate) -> Self {
+impl<'ir> IrGraphBuilder<'ir> {
+    pub fn new(parsed: &'ir ParsedCrate) -> Self {
         Self {
-            graph: IrGraph::new(parsed_crate),
-            generic_scope: GenericScope::new(),
-            next_synthetic_id: u32::MAX,
+            parsed,
+            graph: IrGraph::new(),
+            type_cache: TypeCache::new(),
+            type_impls: HashMap::new(),
+            method_impls: HashMap::new(),
+            generic_scopes: HashMap::new(),
         }
     }
 
-    fn is_blacklisted_method(&self, name: &str) -> bool {
-        crate::support_types::is_blacklisted_method(name)
-    }
-
-    /// 检查方法是否来自黑名单 trait
-    fn is_method_from_blacklisted_trait(&self, method_id: &Id) -> bool {
-        // 查找这个方法所属的 trait
-        for trait_info in &self.graph.parsed_crate().traits {
-            if trait_info.methods.contains(method_id) {
-                // 找到了方法所属的 trait，检查这个 trait 是否在黑名单中
-                if let Some(trait_item) = self.graph.parsed_crate().type_index.get(&trait_info.id) {
-                    let trait_name = trait_item.name.as_deref().unwrap_or("");
-
-                    // 使用黑名单检查
-                    use crate::support_types::TRAIT_BLACKLIST;
-                    if TRAIT_BLACKLIST.contains(&trait_name) {
-                        return true;
-                    }
-                }
-                break;
-            }
-        }
-        false
-    }
-
-    /// 根据 Id 创建正确的 TypeNode
-    ///
-    /// 查询 parsed_crate.types 来确定实际的类型种类 (Struct/Enum/Union/Trait)
-    /// 自动解析重导出(pub use)到规范定义
-    fn create_type_node_from_id(&self, id: Id) -> TypeNode {
-        let canonical_id = self.graph.parsed_crate().resolve_root_id(id);
-
-        for type_info in &self.graph.parsed_crate().types {
-            if type_info.id == canonical_id {
-                return match type_info.kind {
-                    TypeKind::Struct => TypeNode::Struct(Some(canonical_id)),
-                    TypeKind::Enum => TypeNode::Enum(Some(canonical_id)),
-                    TypeKind::Union => TypeNode::Union(Some(canonical_id)),
-                    TypeKind::Trait => TypeNode::TraitObject(Some(canonical_id)),
-                    TypeKind::TypeAlias => {
-                        warn!("TypeAlias 暂时映射为 Struct: {:?}", type_info.name);
-                        TypeNode::Struct(Some(canonical_id))
-                    }
-                };
-            }
-        }
-
-        // 如果在 types 中找不到,尝试在 type_index 中查找
-        if let Some(item) = self.graph.parsed_crate().type_index.get(&canonical_id) {
-            match &item.inner {
-                rustdoc_types::ItemEnum::Struct(_) => return TypeNode::Struct(Some(canonical_id)),
-                rustdoc_types::ItemEnum::Enum(_) => return TypeNode::Enum(Some(canonical_id)),
-                rustdoc_types::ItemEnum::Union(_) => return TypeNode::Union(Some(canonical_id)),
-                rustdoc_types::ItemEnum::Trait(_) => {
-                    return TypeNode::TraitObject(Some(canonical_id));
-                }
-
-                // 关联类型:需要解析到实际类型
-                rustdoc_types::ItemEnum::AssocType { type_, bounds, .. } => {
-                    // 如果关联类型有具体的 type,使用它
-                    if let Some(actual_type) = type_ {
-                        if let Some((type_node, _)) = self.extract_type_and_mode(actual_type) {
-                            log::debug!("关联类型 {:?} 解析到实际类型: {:?}", item.name, type_node);
-                            return type_node;
-                        }
-                    }
-
-                    // 如果没有具体类型,查看 bounds
-                    // 取第一个 trait bound 作为类型约束
-                    for bound in bounds {
-                        if let rustdoc_types::GenericBound::TraitBound { trait_, .. } = bound {
-                            log::debug!(
-                                "关联类型 {:?} 通过 trait bound 解析: Id({:?})",
-                                item.name,
-                                trait_.id
-                            );
-                            return TypeNode::TraitObject(Some(trait_.id));
-                        }
-                    }
-
-                    warn!(
-                        "关联类型无法解析,默认为 Struct: Id={:?}, name={:?}",
-                        canonical_id, item.name
-                    );
-                }
-
-                // Constant: 提取它指向的类型
-                rustdoc_types::ItemEnum::Constant { type_, .. } => {
-                    log::debug!("处理 constant {:?}, 提取其类型", item.name);
-                    if let Some((type_node, _)) = self.extract_type_and_mode(type_) {
-                        return type_node;
-                    }
-                    warn!(
-                        "无法提取 constant 的类型: Id={:?}, name={:?}",
-                        canonical_id, item.name
-                    );
-                }
-
-                // Static 包含 type_ 字段
-                rustdoc_types::ItemEnum::Static(static_data) => {
-                    log::debug!("处理 static {:?}, 提取其类型", item.name);
-                    if let Some((type_node, _)) = self.extract_type_and_mode(&static_data.type_) {
-                        return type_node;
-                    }
-                    warn!(
-                        "无法提取 static 的类型: Id={:?}, name={:?}",
-                        canonical_id, item.name
-                    );
-                }
-
-                _ => {
-                    warn!("无法确定类型种类,默认为 Struct: Id={:?}", canonical_id);
-                }
-            }
-        }
-
-        TypeNode::Struct(Some(canonical_id))
-    }
-
-    /// 构建 IR 图
+    /// 构建 IR 图 - 按步骤执行
     pub fn build(mut self) -> IrGraph {
-        // Step 1: 添加所有类型节点
-        self.build_type_nodes();
+        info!("=== 开始构建 IR Graph ===");
 
-        // Step 2: 添加 Constant 和 Static 节点
-        self.build_constants_and_statics();
+        info!("第一步：处理类型节点及其字段/变体...");
+        self.build_types();
 
-        // Step 3: 构建操作节点(函数,带泛型作用域)
-        self.build_function_operations();
+        info!("第二步：处理 Trait 节点...");
+        self.build_traits_nodes();
 
-        // Step 4: 构建构造器操作, pub 字段默认可以构造一个复合类型
-        self.build_constructor_operations();
+        info!("第二步（续）：处理 Trait 的 Associated Type...");
+        self.build_trait_assoc_types();
 
-        // Step 5: 处理 impl 块中的方法
+        info!("第三步：处理类型和 Trait 的泛型参数（使用 TypeCache)...");
+        self.build_type_generics();
+
+        info!("第四步：构建 Trait 定义的方法...");
+        self.build_trait_defined_methods();
+
+        info!("第五步：展开 impl 块为方法 ID...");
+        self.expand_impl_blocks();
+
+        info!("第六步：构建类型实现的方法节点...");
         self.build_impl_methods();
 
-        // Step 6: 构建 Trait 实现关系
-        self.build_trait_implementations();
+        info!("第七步：处理 Constant 和 Static...");
+        self.build_constants_and_statics();
 
+        info!("=== IR Graph 构建完成 ===");
         self.graph
     }
 
-    /// 构建类型节点
-    fn build_type_nodes(&mut self) {
-        let types = self.graph.parsed_crate().types.clone();
-
-        for type_info in &types {
-            let node = match type_info.kind {
-                TypeKind::Struct => TypeNode::Struct(Some(type_info.id)),
-                TypeKind::Enum => TypeNode::Enum(Some(type_info.id)),
-                TypeKind::Union => TypeNode::Union(Some(type_info.id)),
-                TypeKind::Trait => TypeNode::TraitObject(Some(type_info.id)),
-                TypeKind::TypeAlias => {
-                    warn!("遇到 TypeAlias,暂时标记为 Unknown: {:?}", type_info);
-                    continue;
-                }
-            };
-
-            self.graph.add_type(node, type_info.name.clone());
-
-            // 为 Struct/Enum/Union 的泛型参数创建节点
-            if matches!(
-                type_info.kind,
-                TypeKind::Struct | TypeKind::Enum | TypeKind::Union
-            ) {
-                if let Some(item) = self.graph.parsed_crate().type_index.get(&type_info.id) {
-                    let generics = match &item.inner {
-                        rustdoc_types::ItemEnum::Struct(s) => Some(&s.generics),
-                        rustdoc_types::ItemEnum::Enum(e) => Some(&e.generics),
-                        rustdoc_types::ItemEnum::Union(u) => Some(&u.generics),
-                        _ => None,
-                    };
-
-                    if let Some(generics) = generics {
-                        let generic_nodes =
-                            self.create_generic_nodes(type_info.id, &type_info.name, generics);
-                        for (param_name, generic_node) in generic_nodes {
-                            self.graph.add_type(generic_node, param_name);
-                        }
-                    }
-                }
-            }
-        }
-
-        // 注意: ItemEnum::Use 在 extract_types 阶段已被过滤掉
-        // 因为它们不会生成 TypeInfo,只有实际定义才会
-
-        // 注意:不预先添加基本类型(i32, u64, str 等)
-        // 它们会在实际使用时(通过 add_operation)自动添加到 type_nodes
-    }
-
-    /// 构建 Constant 和 Static 节点及其别名操作
-    fn build_constants_and_statics(&mut self) {
-        // 添加 Constant 节点和别名操作
-        for constant in &self.graph.parsed_crate().constants.clone() {
-            let const_node = TypeNode::Constant {
-                id: constant.id,
-                name: constant.name.clone(),
-                type_id: constant.type_id,
-                path: constant.path.clone(),
-            };
-            self.graph
-                .add_type(const_node.clone(), constant.name.clone());
-
-            // 创建目标类型节点
-            let target_type = self.create_type_node_from_id(constant.type_id);
-
-            // 创建别名操作: () -> TargetType
-            // Constant 的访问不需要输入，直接返回其类型的引用
-            let alias_op = OpNode {
-                id: constant.id,
-                name: format!("get_{}", constant.name),
-                kind: OpKind::ConstantAlias {
-                    const_id: constant.id,
-                    const_path: constant.path.clone(),
-                },
-                inputs: vec![],
-                output: Some(DataEdge {
-                    type_node: target_type,
-                    mode: EdgeMode::Ref, // Constant 通常返回引用
-                    name: None,
-                    param_index: None,
-                }),
-                error_output: None,
-                generic_constraints: HashMap::new(),
-                docs: None,
-                is_unsafe: false,
-                is_const: true,
-                is_public: true,
-                is_fallible: false,
-            };
-
-            self.graph.add_operation(alias_op);
-        }
-
-        // 添加 Static 节点和别名操作
-        for static_info in &self.graph.parsed_crate().statics.clone() {
-            let static_node = TypeNode::Static {
-                id: static_info.id,
-                name: static_info.name.clone(),
-                type_id: static_info.type_id,
-                path: static_info.path.clone(),
-                is_mutable: static_info.is_mutable,
-            };
-            self.graph
-                .add_type(static_node.clone(), static_info.name.clone());
-
-            // 创建目标类型节点
-            let target_type = self.create_type_node_from_id(static_info.type_id);
-
-            // 创建别名操作: () -> &TargetType 或 () -> &mut TargetType
-            let mode = if static_info.is_mutable {
-                EdgeMode::MutRef
-            } else {
-                EdgeMode::Ref
-            };
-
-            let alias_op = OpNode {
-                id: static_info.id,
-                name: format!("get_{}", static_info.name),
-                kind: OpKind::StaticAlias {
-                    static_id: static_info.id,
-                    static_path: static_info.path.clone(),
-                    is_mutable: static_info.is_mutable,
-                },
-                inputs: vec![],
-                output: Some(DataEdge {
-                    type_node: target_type,
-                    mode,
-                    name: None,
-                    param_index: None,
-                }),
-                error_output: None,
-                generic_constraints: HashMap::new(),
-                docs: None,
-                is_unsafe: static_info.is_mutable, // mutable static 访问是 unsafe 的
-                is_const: false,
-                is_public: true,
-                is_fallible: false,
-            };
-
-            self.graph.add_operation(alias_op);
-        }
-    }
-
-    /// 构建函数操作
-    fn build_function_operations(&mut self) {
-        let functions = self.graph.parsed_crate().functions.clone();
-
-        // 收集所有在 impl 块中的函数 ID
-        // 这些函数将在 build_impl_methods 中处理,避免重复
-        let impl_method_ids: std::collections::HashSet<Id> = self
-            .graph
-            .parsed_crate()
-            .impl_blocks
+    /// 展开 impl 块 ID 为方法 ID
+    /// struct_data.impls 存的是 impl 块 ID，需要展开为方法 ID
+    fn expand_impl_blocks(&mut self) {
+        // 克隆 type_impls 以避免借用冲突
+        let type_impls_clone: Vec<_> = self
+            .type_impls
             .iter()
-            .flat_map(|impl_block| impl_block.items.iter().copied())
+            .map(|(k, v)| (*k, v.clone()))
             .collect();
 
-        for func_info in functions {
-            // 跳过 Trait 定义中的抽象方法
-            if self.graph.parsed_crate().is_trait_method(&func_info.id) {
-                log::debug!(
-                    "跳过 Trait 抽象方法: {} (ID: {:?})",
-                    func_info.name,
-                    func_info.id
-                );
-                continue;
-            }
+        // 清空，准备重新填充展开后的方法 ID
+        self.type_impls.clear();
 
-            // 跳过 impl 块中的方法,它们会在 build_impl_methods 中处理
-            if impl_method_ids.contains(&func_info.id) {
-                log::debug!(
-                    "跳过 impl 块方法(将在 impl 处理阶段创建): {} (ID: {:?})",
-                    func_info.name,
-                    func_info.id
-                );
-                continue;
-            }
+        // 追踪已添加的 Implements 关系，避免重复
+        let mut impl_edges_added: HashSet<(Id, Id)> = HashSet::new();
 
-            if let Some(op) = self.build_operation_from_function(&func_info) {
-                self.graph.add_operation(op);
-            }
-        }
-    }
+        for (type_id, impl_ids) in type_impls_clone {
+            for impl_id in impl_ids {
+                // impl_id 是 impl 块的 ID，解析它获取方法
+                if let Some(item) = self.parsed.crate_data.index.get(&impl_id) {
+                    if let ItemEnum::Impl(impl_data) = &item.inner {
+                        // 如果是 trait impl，只添加一次 Implements 边
+                        if let Some(trait_ref) = &impl_data.trait_ {
+                            let trait_id = trait_ref.id;
 
-    /// 从函数信息构建操作节点
-    fn build_operation_from_function(&mut self, func: &FunctionInfo) -> Option<OpNode> {
-        // Step 1: 创建泛型作用域
-        // 从 rustdoc 获取函数的泛型参数定义
-        let func_item = self.graph.parsed_crate().type_index.get(&func.id)?;
-        let rustdoc_func = if let rustdoc_types::ItemEnum::Function(f) = &func_item.inner {
-            f
-        } else {
-            return None;
-        };
-        let generics = &rustdoc_func.generics;
+                            // 检查是否已添加过此 Implements 边
+                            if !impl_edges_added.contains(&(type_id, trait_id)) {
+                                if let (Some(type_node), Some(trait_node)) = (
+                                    self.type_cache.get_by_id(&type_id),
+                                    self.type_cache.get_by_id(&trait_id),
+                                ) {
+                                    self.graph.add_type_relation(
+                                        type_node,
+                                        trait_node,
+                                        EdgeMode::Implements,
+                                        None,
+                                    );
+                                    impl_edges_added.insert((type_id, trait_id));
 
-        // 对于独立函数,将泛型参数解析为它们约束的 Trait(不创建 GenericParam 节点)
-        let generic_nodes = self.create_generic_nodes(func.id, &func.name, generics);
-        self.generic_scope.push_scope(func.id, generic_nodes);
-
-        // Step 2: 解析输入参数(在泛型作用域中)
-        // 直接从 rustdoc Type 解析,保留完整的引用和所有权信息
-        let inputs: Vec<DataEdge> = rustdoc_func
-            .sig
-            .inputs
-            .iter()
-            .enumerate()
-            .filter_map(|(i, (param_name, ty))| {
-                let name = if param_name == "self" {
-                    Some("self".to_string())
-                } else if !param_name.is_empty() {
-                    Some(param_name.clone())
-                } else {
-                    Some(format!("arg{}", i))
-                };
-                self.extract_data_edge_from_type(ty, name)
-            })
-            .collect();
-
-        // Step 3: 解析输出(在泛型作用域中)- 提取 Result 的成功和错误分支
-        let (output, error_output, is_fallible) = if let Some(ty) = &rustdoc_func.sig.output {
-            let (success_ty, error_ty) = self.extract_result_branches(ty);
-            let output = self.extract_data_edge_from_type(success_ty, None);
-            let error_output = error_ty.and_then(|e| self.extract_data_edge_from_type(e, None));
-            let is_fallible = error_ty.is_some();
-            (output, error_output, is_fallible)
-        } else {
-            (None, None, false)
-        };
-
-        // Step 4: 构建泛型约束映射
-        let mut generic_constraints: HashMap<String, Vec<Id>> = HashMap::new();
-        for constraint in &func.generic_constraints {
-            generic_constraints
-                .entry(constraint.param_name.clone())
-                .or_insert_with(Vec::new)
-                .push(constraint.required_trait);
-        }
-
-        // Step 5: 弹出作用域
-        self.generic_scope.pop_scope();
-
-        // 提取文档注释: 如果链接到 llm 给它用的
-        let docs = func_item.docs.clone();
-
-        // 从 rustdoc 获取函数属性
-        let is_unsafe = rustdoc_func.header.is_unsafe;
-        let is_const = rustdoc_func.header.is_const;
-        let is_public = matches!(func_item.visibility, Visibility::Public);
-
-        Some(OpNode {
-            id: func.id,
-            name: func.name.clone(),
-            kind: OpKind::FnCall,
-            inputs,
-            output,
-            error_output,
-            generic_constraints,
-            docs,
-            is_unsafe,
-            is_const,
-            is_public,
-            is_fallible,
-        })
-    }
-
-    /// 从 rustdoc Generics 创建泛型节点(用于类型定义:Struct/Enum/Union)
-    fn create_generic_nodes(
-        &self,
-        owner_id: Id,
-        owner_name: &str,
-        generics: &rustdoc_types::Generics,
-    ) -> HashMap<String, TypeNode> {
-        let mut nodes = HashMap::new();
-
-        for param in &generics.params {
-            if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
-                // 提取 trait bounds
-                let trait_bounds: Vec<Id> = bounds
-                    .iter()
-                    .filter_map(|bound| {
-                        if let GenericBound::TraitBound { trait_, .. } = bound {
-                            Some(trait_.id)
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
-
-                let node = TypeNode::GenericParam {
-                    name: param.name.clone(),
-                    owner_id,
-                    owner_name: owner_name.to_string(),
-                    trait_bounds,
-                };
-
-                nodes.insert(param.name.clone(), node);
-            }
-        }
-
-        nodes
-    }
-
-    /// 获取类型定义的泛型节点
-    ///
-    /// 用于 impl 块:impl 块应该使用类型定义的泛型参数,而不是创建新的
-    /// 例如:impl<E, R> DecoderReader<E, R> 的 E 和 R 应该链接到 DecoderReader::E 和 DecoderReader::R
-    fn get_type_generic_nodes(&self, type_id: Id) -> HashMap<String, TypeNode> {
-        let mut nodes = HashMap::new();
-
-        // 查找类型定义
-        if let Some(item) = self.graph.parsed_crate().type_index.get(&type_id) {
-            let type_name = item.name.as_deref().unwrap_or("unknown");
-
-            // 获取类型的泛型参数
-            let generics = match &item.inner {
-                rustdoc_types::ItemEnum::Struct(s) => Some(&s.generics),
-                rustdoc_types::ItemEnum::Enum(e) => Some(&e.generics),
-                rustdoc_types::ItemEnum::Union(u) => Some(&u.generics),
-                _ => None,
-            };
-
-            if let Some(generics) = generics {
-                // 重建泛型节点(与类型定义时创建的一致)
-                for param in &generics.params {
-                    if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
-                        let trait_bounds: Vec<Id> = bounds
-                            .iter()
-                            .filter_map(|bound| {
-                                if let GenericBound::TraitBound { trait_, .. } = bound {
-                                    Some(trait_.id)
-                                } else {
-                                    None
+                                    debug!(
+                                        "创建 Implements 边: 类型 {} -> trait {}",
+                                        type_id.0, trait_id.0
+                                    );
                                 }
-                            })
-                            .collect();
-
-                        let node = TypeNode::GenericParam {
-                            name: param.name.clone(),
-                            owner_id: type_id, // 使用类型的 ID,不是 impl 的 ID
-                            owner_name: type_name.to_string(),
-                            trait_bounds,
-                        };
-
-                        nodes.insert(param.name.clone(), node);
-                    }
-                }
-            }
-        }
-
-        nodes
-    }
-
-    /// 为独立函数创建泛型作用域(将泛型参数解析为 Trait,避免创建 GenericParam 节点)
-    /// 所有指向该泛型 Trait 的类型都会调用此方法
-    #[allow(dead_code)]
-    fn create_generic_nodes_as_traits(
-        &self,
-        generics: &rustdoc_types::Generics,
-    ) -> HashMap<String, TypeNode> {
-        let mut nodes = HashMap::new();
-
-        for param in &generics.params {
-            if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
-                // 提取第一个 trait bound 作为该泛型的类型
-                let trait_node = bounds.iter().find_map(|bound| {
-                    if let GenericBound::TraitBound { trait_, .. } = bound {
-                        Some(TypeNode::TraitObject(Some(trait_.id)))
-                    } else {
-                        None
-                    }
-                });
-
-                if let Some(node) = trait_node {
-                    log::debug!("独立函数泛型参数 {} 解析为 Trait: {:?}", param.name, node);
-                    nodes.insert(param.name.clone(), node);
-                } else {
-                    // 如果没有 trait bound, 则是最大泛型约束, 忽略
-                    log::warn!("独立函数泛型参数 {} 没有 trait 约束", param.name);
-                    nodes.insert(param.name.clone(), TypeNode::Unknown);
-                }
-            }
-        }
-
-        nodes
-    }
-
-    /// 构建构造器和字段访问器操作
-    fn build_constructor_operations(&mut self) {
-        let types = self.graph.parsed_crate().types.clone();
-
-        for type_info in types {
-            match type_info.kind {
-                TypeKind::Struct => {
-                    self.build_struct_operations(&type_info);
-                }
-                TypeKind::Enum => {
-                    self.build_enum_operations(&type_info);
-                }
-                TypeKind::Union => {
-                    self.build_union_operations(&type_info);
-                }
-                _ => {}
-            }
-        }
-    }
-
-    /// 为结构体构建操作:构造器 + 字段访问器
-    ///
-    /// 示例:struct Config { pub port: u16 }
-    /// 生成:
-    /// 1. StructCtor: u16(Move) -> Config(Move)
-    /// 2. FieldAccessor(port): Config(Ref) -> u16(Ref)
-    /// 3. FieldAccessor(port_mut): Config(MutRef) -> u16(MutRef)
-    fn build_struct_operations(&mut self, type_info: &crate::parse::TypeInfo) {
-        let struct_type_node = TypeNode::Struct(Some(type_info.id));
-
-        // 步骤 1: 创建构造器
-        // 只为有公开字段的结构体创建构造器
-        let public_fields: Vec<_> = type_info.fields.iter().filter(|f| f.is_public).collect();
-
-        if !public_fields.is_empty() {
-            let inputs: Vec<DataEdge> = public_fields
-                .iter()
-                .filter_map(|field| {
-                    let data_edge =
-                        self.type_ref_to_data_edge(&field.field_type, Some(field.name.clone()))?;
-                    Some(data_edge)
-                })
-                .collect();
-
-            let output = Some(DataEdge {
-                type_node: struct_type_node.clone(),
-                mode: EdgeMode::Move,
-                name: None,
-                param_index: None,
-            });
-
-            let ctor_op = OpNode {
-                id: type_info.id,
-                name: format!("{}::new", type_info.name),
-                kind: OpKind::StructCtor,
-                inputs,
-                output,
-                error_output: None,
-                generic_constraints: HashMap::new(),
-                docs: None, // 构造器无文档注释
-                is_unsafe: false,
-                is_const: false,
-                is_public: true,
-                is_fallible: false,
-            };
-
-            self.graph.add_operation(ctor_op);
-        }
-
-        // 步骤 2: 为每个公开字段创建访问器(Ref 和 MutRef)
-        for field in &public_fields {
-            // 解析字段类型
-            if let Some(field_edge) = self.type_ref_to_data_edge(&field.field_type, None) {
-                // 2a. 不可变访问器: &S -> &T
-                let accessor_ref = OpNode {
-                    id: type_info.id, // 暂时使用相同的 Id
-                    name: format!("{}.{}", type_info.name, field.name),
-                    kind: OpKind::FieldAccessor {
-                        field_name: field.name.clone(),
-                        struct_type: type_info.id,
-                    },
-                    inputs: vec![DataEdge {
-                        type_node: struct_type_node.clone(),
-                        mode: EdgeMode::Ref,
-                        name: Some("self".to_string()),
-                        param_index: None,
-                    }],
-                    output: Some(DataEdge {
-                        type_node: field_edge.type_node.clone(),
-                        mode: EdgeMode::Ref,
-                        name: Some(field.name.clone()),
-                        param_index: None,
-                    }),
-                    error_output: None,
-                    generic_constraints: HashMap::new(),
-                    docs: None, // 字段访问器无文档注释
-                    is_unsafe: false,
-                    is_const: false,
-                    is_public: true,
-                    is_fallible: false,
-                };
-
-                self.graph.add_operation(accessor_ref);
-
-                // 2b. 可变访问器: &mut S -> &mut T
-                let accessor_mut = OpNode {
-                    id: type_info.id,
-                    name: format!("{}.{}_mut", type_info.name, field.name),
-                    kind: OpKind::FieldAccessor {
-                        field_name: field.name.clone(),
-                        struct_type: type_info.id,
-                    },
-                    inputs: vec![DataEdge {
-                        type_node: struct_type_node.clone(),
-                        mode: EdgeMode::MutRef,
-                        name: Some("self".to_string()),
-                        param_index: None,
-                    }],
-                    output: Some(DataEdge {
-                        type_node: field_edge.type_node.clone(),
-                        mode: EdgeMode::MutRef,
-                        name: Some(field.name.clone()),
-                        param_index: None,
-                    }),
-                    error_output: None,
-                    generic_constraints: HashMap::new(),
-                    docs: None, // 字段访问器无文档注释
-                    is_unsafe: false,
-                    is_const: false,
-                    is_public: true,
-                    is_fallible: false,
-                };
-
-                self.graph.add_operation(accessor_mut);
-            }
-        }
-    }
-
-    /// 处理 impl 块中的方法
-    ///
-    /// 策略:扁平化 impl 块
-    /// - 不为 Trait 创建节点
-    /// - impl 块中的方法直接关联到 Self 类型
-    /// - 解析 Self 为具体类型
-    /// - impl 块的泛型参数应该链接到类型定义的泛型参数
-    fn build_impl_methods(&mut self) {
-        let impl_blocks = self.graph.parsed_crate().impl_blocks.clone();
-
-        for impl_block in impl_blocks {
-            // 设置 Self 类型上下文
-            let self_type_id = impl_block.for_type;
-
-            // 从被实现的类型获取泛型参数
-            // impl<E, R> DecoderReader<E, R> 中的 E 和 R 应该指向 DecoderReader::E 和 DecoderReader::R
-            let generic_nodes = self.get_type_generic_nodes(self_type_id);
-
-            log::debug!(
-                "impl 块 {:?} 的泛型作用域: {} 个泛型参数",
-                impl_block.id,
-                generic_nodes.len()
-            );
-            for (param_name, node) in &generic_nodes {
-                log::debug!("  - {}: {:?}", param_name, node);
-            }
-
-            self.generic_scope
-                .push_scope_with_self(impl_block.id, generic_nodes, self_type_id);
-
-            // 遍历 impl 块中显式定义的 item
-            for &item_id in &impl_block.items {
-                if let Some(item) = self.graph.parsed_crate().type_index.get(&item_id) {
-                    // 处理方法
-                    if let rustdoc_types::ItemEnum::Function(func) = &item.inner {
-                        // 检查黑名单
-                        let method_name = item.name.as_deref().unwrap_or("anonymous");
-                        if self.is_blacklisted_method(method_name) {
-                            log::debug!("跳过黑名单方法: {} (ID: {:?})", method_name, item_id);
-                            continue;
+                            }
                         }
 
-                        if let Some(op) =
-                            self.build_method_from_impl(item_id, &item.name, func, self_type_id)
-                        {
-                            self.graph.add_operation(op);
-                        }
-                    }
-                }
-            }
+                        // 遍历 impl 块中的所有 items（包括方法和 Associated Type）
+                        for &item_id in &impl_data.items {
+                            if let Some(item) = self.parsed.crate_data.index.get(&item_id) {
+                                match &item.inner {
+                                    ItemEnum::Function(_) => {
+                                        // 记录到 type_impls（类型自己的方法）
+                                        self.type_impls
+                                            .entry(type_id)
+                                            .or_insert_with(HashSet::new)
+                                            .insert(item_id);
 
-            // 如果是 trait impl，添加 provided_trait_methods（trait 提供的默认方法）
-            if let Some(trait_id) = impl_block.trait_id {
-                log::debug!(
-                    "处理 trait impl: 类型 {:?} 实现 trait {:?}",
-                    impl_block.for_type,
-                    trait_id
-                );
+                                        debug!(
+                                            "展开方法: 类型 {} 的方法: {}",
+                                            type_id.0,
+                                            item.name.as_deref().unwrap_or("?")
+                                        );
+                                    }
+                                    ItemEnum::AssocType { type_, .. } => {
+                                        // 处理 Associated Type 的重新定义
+                                        if let Some(assoc_type_name) = &item.name {
+                                            if let Some(trait_ref) = &impl_data.trait_ {
+                                                let trait_id = trait_ref.id;
 
-                let mut trait_provided_ops = Vec::new();
+                                                // 解析关联类型的目标类型
+                                                if let Some(assoc_type) = type_ {
+                                                    match assoc_type {
+                                                        Type::ResolvedPath(path) => {
+                                                            if let Some(type_node) =
+                                                                self.type_cache.get_by_id(&path.id)
+                                                            {
+                                                                // 获取类型和 Trait 的名称
+                                                                let type_name = self
+                                                                    .parsed
+                                                                    .crate_data
+                                                                    .index
+                                                                    .get(&type_id)
+                                                                    .and_then(|i| i.name.as_deref())
+                                                                    .unwrap_or("unknown");
 
-                // 从原始 JSON 中获取 impl 块的 provided_trait_methods
-                if let Some(impl_item) = self.graph.parsed_crate().type_index.get(&impl_block.id) {
-                    log::debug!("找到 impl 块项: {:?}", impl_block.id);
-                    if let rustdoc_types::ItemEnum::Impl(impl_data) = &impl_item.inner {
-                        let provided_methods = impl_data.provided_trait_methods.clone();
+                                                                // 创建 Type.AssocType 节点
+                                                                let assoc_type_label = format!(
+                                                                    "{}.{}",
+                                                                    type_name, assoc_type_name
+                                                                );
+                                                                let assoc_type_node =
+                                                                    self.graph.add_type_node(
+                                                                        &assoc_type_label,
+                                                                    );
+                                                                self.graph.node_types.insert(
+                                                                    assoc_type_node,
+                                                                    NodeType::TypeAlias,
+                                                                );
 
-                        // 查找 trait 定义
-                        if let Some(trait_item) =
-                            self.graph.parsed_crate().type_index.get(&trait_id)
-                        {
-                            if let rustdoc_types::ItemEnum::Trait(trait_data) = &trait_item.inner {
-                                // provided_trait_methods 包含使用默认实现的方法名
-                                for method_name in &provided_methods {
-                                    // 在 trait 的 items 中查找这个方法
-                                    for &trait_method_id in &trait_data.items {
-                                        if let Some(method_item) = self
-                                            .graph
-                                            .parsed_crate()
-                                            .type_index
-                                            .get(&trait_method_id)
-                                        {
-                                            if method_item.name.as_deref() == Some(method_name) {
-                                                if let rustdoc_types::ItemEnum::Function(func) =
-                                                    &method_item.inner
-                                                {
-                                                    // 检查黑名单
-                                                    if self.is_blacklisted_method(method_name) {
-                                                        log::debug!(
-                                                            "跳过黑名单 provided 方法: {}",
-                                                            method_name
-                                                        );
-                                                        continue;
-                                                    }
+                                                                // 存储到 type_cache
+                                                                self.type_cache.insert_assoc_type(
+                                                                    &type_name,
+                                                                    assoc_type_name,
+                                                                    assoc_type_node,
+                                                                );
+                                                                // 创建别名边：Type.AssocType -> TargetType
+                                                                self.graph.add_type_relation(
+                                                                    assoc_type_node,
+                                                                    type_node,
+                                                                    EdgeMode::Alias,
+                                                                    Some(format!(
+                                                                        "{} =",
+                                                                        assoc_type_name
+                                                                    )),
+                                                                );
 
-                                                    // 为这个类型构建 trait 提供的方法
-                                                    if let Some(op) = self.build_method_from_impl(
-                                                        trait_method_id,
-                                                        &method_item.name,
-                                                        func,
-                                                        self_type_id,
-                                                    ) {
-                                                        log::debug!(
-                                                            "添加 trait provided 方法: {} 到类型 {:?}",
-                                                            method_name,
-                                                            self_type_id
-                                                        );
-                                                        trait_provided_ops.push(op);
+                                                                // 创建 Include 边：Type -> Type.AssocType
+                                                                if let Some(source_node) = self
+                                                                    .type_cache
+                                                                    .get_by_id(&type_id)
+                                                                {
+                                                                    self.graph.add_type_relation(
+                                                                        source_node,
+                                                                        assoc_type_node,
+                                                                        EdgeMode::Include,
+                                                                        Some(format!(
+                                                                            "has {}",
+                                                                            assoc_type_name
+                                                                        )),
+                                                                    );
+                                                                }
+                                                            }
+                                                        }
+                                                        _ => {
+                                                            continue;
+                                                        }
                                                     }
                                                 }
-                                                break;
+                                            }
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        info!("展开后: {} 个类型的方法", self.type_impls.len());
+        info!("添加了 {} 条 Implements 边", impl_edges_added.len());
+        info!("Trait 定义的方法: {} 个", self.method_impls.len());
+    }
+
+    fn build_type_fields(&mut self) {
+        // 处理 struct 字段
+        for &field_id in &self.parsed.info.struct_fields {
+            if let Some(item) = self.parsed.crate_data.index.get(&field_id) {
+                if let ItemEnum::StructField(field_type) = &item.inner {
+                    let field_name = item.name.as_deref().unwrap_or("unknown");
+
+                    let context = TypeContext::new();
+                    if let Some(type_key) = self.type_cache.create_type_key(field_type, &context) {
+                        let node_index = if let Some(idx) = self.type_cache.get_node(&type_key) {
+                            idx
+                        } else {
+                            let label = self.format_type_label(field_type, field_name);
+                            let idx = self.graph.add_type_node(&label);
+
+                            // 根据 TypeKey 设置节点类型
+                            self.set_node_type_from_key(&type_key, idx);
+                            self.type_cache.insert_node(type_key.clone(), idx);
+                            idx
+                        };
+
+                        self.type_cache.insert_type_by_id(field_id, node_index);
+                        debug!("处理 struct 字段: {} -> {:?}", field_name, type_key);
+                    }
+                }
+            }
+        }
+
+        // 处理 enum variant 字段
+        for &variant_id in &self.parsed.info.variant_fields {
+            if let Some(item) = self.parsed.crate_data.index.get(&variant_id) {
+                if let ItemEnum::Variant(variant) = &item.inner {
+                    let variant_name = item.name.as_deref().unwrap_or("unknown");
+
+                    match &variant.kind {
+                        // Plain 变体：直接插入变体名字作为节点
+                        rustdoc_types::VariantKind::Plain => {
+                            let node_index = self.graph.add_type_node(variant_name);
+                            self.graph.node_types.insert(node_index, NodeType::Variant);
+                            self.type_cache.insert_type_by_id(variant_id, node_index);
+                            debug!("处理 Plain variant: {}", variant_name);
+                        }
+
+                        // Tuple 变体：需要处理元组字段
+                        rustdoc_types::VariantKind::Tuple(field_types) => {
+                            // 为 tuple variant 创建一个节点
+                            let node_index = self.graph.add_type_node(variant_name);
+                            self.graph.node_types.insert(node_index, NodeType::Variant);
+                            self.type_cache.insert_type_by_id(variant_id, node_index);
+
+                            // 为每个元组字段创建类型节点并连接
+                            let context = TypeContext::new();
+                            for (idx, field_id_opt) in field_types.iter().enumerate() {
+                                // field_types 是 Vec<Option<Id>>，每个 Id 指向 StructField
+                                if let Some(field_id) = field_id_opt {
+                                    if let Some(field_item) =
+                                        self.parsed.crate_data.index.get(&field_id)
+                                    {
+                                        if let ItemEnum::StructField(field_type) = &field_item.inner
+                                        {
+                                            if let Some(type_key) = self
+                                                .type_cache
+                                                .create_type_key(field_type, &context)
+                                            {
+                                                let field_node = self.get_or_create_type_node(
+                                                    &type_key,
+                                                    field_type,
+                                                    &format!("{}_{}", variant_name, idx),
+                                                );
+
+                                                // 连接 variant -> field
+                                                self.graph.add_type_relation(
+                                                    node_index,
+                                                    field_node,
+                                                    EdgeMode::Ref,
+                                                    Some(format!("field_{}", idx)),
+                                                );
                                             }
                                         }
                                     }
                                 }
                             }
+                            debug!(
+                                "处理 Tuple variant: {} ({} 字段)",
+                                variant_name,
+                                field_types.len()
+                            );
+                        }
+
+                        // Struct 变体：跳过，后面会作为独立的结构体处理
+                        rustdoc_types::VariantKind::Struct { .. } => {
+                            debug!("跳过 Struct variant: {}，将在后续处理", variant_name);
                         }
                     }
                 }
-
-                // 添加所有收集到的操作
-                for op in trait_provided_ops {
-                    self.graph.add_operation(op);
-                }
             }
-
-            // 退出作用域
-            self.generic_scope.pop_scope();
         }
     }
 
-    /// 从 impl 块中的方法构建操作节点
-    fn build_method_from_impl(
-        &self,
-        method_id: Id,
-        method_name: &Option<String>,
-        func: &rustdoc_types::Function,
-        self_type_id: Id,
-    ) -> Option<OpNode> {
-        let name = method_name.as_deref().unwrap_or("anonymous").to_string();
-
-        // 只跳过黑名单 Trait 的方法
-        // 检查这个方法是否来自黑名单 trait
-        if self.is_method_from_blacklisted_trait(&method_id) {
-            log::debug!("跳过黑名单 Trait 的方法: {} (ID: {:?})", name, method_id);
-            return None;
+    /// 从 TypeKey 获取或创建类型节点
+    fn get_or_create_type_node(
+        &mut self,
+        type_key: &TypeKey,
+        ty: &Type,
+        label_context: &str,
+    ) -> NodeIndex {
+        // 对于 Primitive 类型，先检查 primitive_to_node
+        if let TypeKey::Primitive(name) = type_key {
+            if let Some(&idx) = self.type_cache.primitive_to_node().get(name) {
+                debug!(
+                    "✓ 从 primitive_to_node 找到基本类型: {} -> NodeIndex({:?})",
+                    name, idx
+                );
+                return idx;
+            }
         }
 
-        // 获取方法的文档注释
-        let docs = self
-            .graph
-            .parsed_crate()
-            .type_index
-            .get(&method_id)
-            .and_then(|item| item.docs.clone());
+        // 从 TypeCache 查找
+        // TODO: 全局构建类型缓存系统
+        if let Some(idx) = self.type_cache.get_node(type_key) {
+            debug!(
+                "✓ 从 TypeCache 找到类型节点: {:?} -> NodeIndex({:?})",
+                type_key, idx
+            );
+            return idx;
+        }
 
-        // 解析输入参数(注意 Self 的解析)
-        let inputs: Vec<DataEdge> = func
-            .sig
-            .inputs
-            .iter()
-            .filter_map(|(param_name, ty)| {
-                self.extract_data_edge_from_type(ty, Some(param_name.clone()))
-            })
-            .collect();
+        let label = self.format_type_label(ty, label_context);
+        let idx = self.graph.add_type_node(&label);
 
-        // 解析输出 - 提取 Result 的成功和错误分支
-        let (output, error_output, is_fallible) = if let Some(ty) = &func.sig.output {
-            let (success_ty, error_ty) = self.extract_result_branches(ty);
-            let output = self.extract_data_edge_from_type(success_ty, None);
-            let error_output = error_ty.and_then(|e| self.extract_data_edge_from_type(e, None));
-            let is_fallible = error_ty.is_some();
-            (output, error_output, is_fallible)
-        } else {
-            (None, None, false)
+        self.set_node_type_from_key(type_key, idx);
+        self.type_cache.insert_node(type_key.clone(), idx);
+
+        debug!(
+            "✓ 创建新类型节点: {} (key: {:?}) -> NodeIndex({:?})",
+            label, type_key, idx
+        );
+
+        idx
+    }
+
+    /// 根据 TypeKey 设置节点类型
+    fn set_node_type_from_key(&mut self, type_key: &TypeKey, node_idx: NodeIndex) {
+        let node_type = match type_key {
+            TypeKey::Resolved(_) => NodeType::Struct, // 默认，后续会更新
+            TypeKey::Primitive(_) => NodeType::Primitive,
+            TypeKey::Generic { .. } => NodeType::Generic,
+            TypeKey::Tuple(_) => NodeType::Tuple,
+            TypeKey::FunctionPointer(_) => NodeType::Function,
+
+            _ => NodeType::TypeAlias, // 其他类型暂时标记为 TypeAlias
         };
 
-        // 创建泛型约束
-        let generic_constraints = self.create_generic_constraints_from_generics(&func.generics);
-
-        let kind = if inputs.first().map(|e| e.name.as_deref()) == Some(Some("self")) {
-            // 如果第一个参数是 self,则是方法调用
-            OpKind::MethodCall {
-                self_type: self.create_type_node_from_id(self_type_id),
-            }
-        } else {
-            // 否则是关联函数
-            OpKind::AssocFn {
-                assoc_type: self_type_id,
-            }
-        };
-
-        Some(OpNode {
-            id: method_id,
-            name,
-            kind,
-            inputs,
-            output,
-            error_output,
-            generic_constraints,
-            docs,
-            is_unsafe: func.header.is_unsafe,
-            is_const: func.header.is_const,
-            is_public: true,
-            is_fallible,
-        })
+        self.graph.node_types.insert(node_idx, node_type);
     }
 
-    /// 从 Result<T, E> 中提取成功和错误分支
-    ///
-    /// # 返回值
-    /// - `(&Type, Option<&Type>)`: (成功类型, 错误类型)
-    ///
-    /// # 行为
-    /// - `Result<T, E>` -> (T, Some(E))
-    /// - `Option<T>` -> (T, None)  // Option 没有错误类型
-    /// - 其他类型 -> (原类型, None)
-    ///
-    /// # 示例
-    /// ```ignore
-    /// Result<Vec<u8>, DecodeError> -> (Vec<u8>, Some(DecodeError))
-    /// Option<String> -> (String, None)
-    /// Vec<u8> -> (Vec<u8>, None)
-    /// ```
-    fn extract_result_branches<'a>(&self, ty: &'a Type) -> (&'a Type, Option<&'a Type>) {
+    pub(crate) fn format_type_label(&self, ty: &Type, context: &str) -> String {
         match ty {
+            Type::Primitive(name) => name.clone(),
             Type::ResolvedPath(path) => {
-                let name = &path.path;
-
-                // 检测是否是 Result 类型
-                let is_result = name == "Result"
-                    || name.ends_with("::Result")
-                    || name == "std::result::Result"
-                    || name == "core::result::Result";
-
-                // 检测是否是 Option 类型
-                let is_option = name == "Option"
-                    || name.ends_with("::Option")
-                    || name == "std::option::Option"
-                    || name == "core::option::Option";
-
-                if is_result {
-                    // Result<T, E> -> 提取 T 和 E
-                    if let Some(args) = &path.args {
-                        if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } =
-                            args.as_ref()
-                        {
-                            // 完整的 Result<T, E>
-                            if args.len() >= 2 {
-                                if let (
-                                    rustdoc_types::GenericArg::Type(success_ty),
-                                    rustdoc_types::GenericArg::Type(error_ty),
-                                ) = (&args[0], &args[1])
-                                {
-                                    log::debug!(
-                                        "提取 Result<T, E> 分支: 成功={:?}, 错误={:?}",
-                                        success_ty,
-                                        error_ty
-                                    );
-                                    return (success_ty, Some(error_ty));
-                                }
-                            }
-                            // 类型别名如 io::Result<T> = Result<T, io::Error>
-                            // 只显示一个泛型参数,错误类型被别名隐藏
-                            else if args.len() == 1 {
-                                if let rustdoc_types::GenericArg::Type(success_ty) = &args[0] {
-                                    log::debug!(
-                                        "提取 Result 类型别名: 成功={:?}, 错误类型被别名隐藏",
-                                        success_ty
-                                    );
-                                    // 返回成功类型,错误类型为 None
-                                    return (success_ty, None);
-                                }
-                            }
-                        }
-                    }
-
-                    // 没有泛型参数的 Result(极少见)
-                    log::debug!("Result 类型缺少泛型参数: {:?}", path);
-                } else if is_option {
-                    // Option<T> -> 提取 T, 没有错误类型
-                    if let Some(args) = &path.args {
-                        if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } =
-                            args.as_ref()
-                        {
-                            if let Some(rustdoc_types::GenericArg::Type(inner_ty)) = args.first() {
-                                log::debug!("提取 Option<T> 值: {:?}", inner_ty);
-                                return (inner_ty, None);
-                            }
-                        }
-                    }
-
-                    // 没有泛型参数的 Option(极少见)
-                    log::debug!("Option 类型缺少泛型参数: {:?}", path);
-                }
-
-                // 非包装类型,返回原样
-                (ty, None)
+                // 从 path.path 字符串中提取最后一段作为类型名
+                path.path
+                    .split("::")
+                    .last()
+                    .unwrap_or(&path.path)
+                    .to_string()
             }
-            // 其他类型不是包装类型
-            _ => (ty, None),
+            Type::Generic(name) => format!("{}:{}", context, name),
+            Type::BorrowedRef {
+                type_, is_mutable, ..
+            } => {
+                let inner = self.format_type_label(type_, context);
+                if *is_mutable {
+                    format!("&mut {}", inner)
+                } else {
+                    format!("&{}", inner)
+                }
+            }
+            Type::Slice(inner) => format!("[{}]", self.format_type_label(inner, context)),
+            Type::Array { type_, len } => {
+                format!("[{}; {}]", self.format_type_label(type_, context), len)
+            }
+            Type::Tuple(elems) => {
+                let elem_strs: Vec<_> = elems
+                    .iter()
+                    .map(|e| self.format_type_label(e, context))
+                    .collect();
+                format!("({})", elem_strs.join(", "))
+            }
+            _ => format!("{:?}", ty),
         }
     }
 
-    /// (已废弃) 从 Result/Option 中提取成功类型
-    ///
-    /// 返回 (内部类型, 是否进行了提取)
-    /// 递归处理嵌套 (e.g. Result<Option<T>, E> -> T)
-    ///
-    /// # 支持的包装类型
-    /// - `Result<T, E>` -> 提取 T, 忽略 E
-    /// - `Option<T>` -> 提取 T
-    /// - `std::result::Result<T, E>` -> 提取 T
-    /// - `core::result::Result<T, E>` -> 提取 T
-    /// - `std::option::Option<T>` -> 提取 T
-    /// - `core::option::Option<T>` -> 提取 T
-    ///
-    /// # 示例
-    /// ```ignore
-    /// Result<u32, String> -> (u32, true)
-    /// Option<String> -> (String, true)
-    /// Result<Option<u32>, Error> -> (u32, true)  // 递归解包
-    /// Vec<String> -> (Vec<String>, false)  // 非包装类型,不变
-    /// ```
-    #[allow(dead_code)]
-    fn extract_success_type<'a>(&self, ty: &'a Type) -> (&'a Type, bool) {
-        match ty {
-            Type::ResolvedPath(path) => {
-                let name = &path.path;
+    fn build_types(&mut self) {
+        self.build_type_fields();
 
-                // 检测是否是 Result 类型
-                let is_result = name == "Result"
-                    || name.ends_with("::Result")
-                    || name == "std::result::Result"
-                    || name == "core::result::Result";
+        debug!(
+            "开始构建类型节点，共 {} 个类型",
+            self.parsed.info.types.len()
+        );
 
-                // 检测是否是 Option 类型
-                let is_option = name == "Option"
-                    || name.ends_with("::Option")
-                    || name == "std::option::Option"
-                    || name == "core::option::Option";
-
-                // 如果是包装类型,提取内部类型
-                if is_result || is_option {
-                    if let Some(args) = &path.args {
-                        if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } =
-                            args.as_ref()
-                        {
-                            // 获取第一个泛型参数(Success 类型 或 Option 的 Inner 类型)
-                            if let Some(first_arg) = args.first() {
-                                if let rustdoc_types::GenericArg::Type(inner_ty) = first_arg {
-                                    // 递归处理嵌套 (e.g., Result<Option<T>, E> -> T)
-                                    let (deep_inner, _) = self.extract_success_type(inner_ty);
-
-                                    // 只要外层是 Result/Option,就标记为 fallible
-                                    log::debug!(
-                                        "解包 {} 类型: {:?} -> {:?}",
-                                        if is_result { "Result" } else { "Option" },
-                                        path.path,
-                                        deep_inner
-                                    );
-
-                                    return (deep_inner, true);
-                                }
-                            }
-                        }
+        for &type_id in &self.parsed.info.types {
+            if let Some(item) = self.parsed.crate_data.index.get(&type_id) {
+                match &item.inner {
+                    ItemEnum::Struct(struct_data) => {
+                        self.build_struct(type_id, struct_data);
                     }
+                    ItemEnum::Enum(enum_data) => {
+                        self.build_enum(type_id, enum_data);
+                    }
+                    ItemEnum::Union(union_data) => {
+                        self.build_union(type_id, union_data);
+                    }
+                    ItemEnum::TypeAlias(_) => {
+                        // TypeAlias 作为类型节点
+                        // TODO: 太复杂,暂不考虑
+                        let node_index = self
+                            .graph
+                            .add_type_node(item.name.as_deref().unwrap_or("unknown"));
+                        self.type_cache.insert_type_by_id(type_id, node_index);
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
 
-                    // 如果无法提取泛型参数,警告并返回原类型
-                    log::warn!(
-                        "无法从 {} 类型中提取泛型参数: {:?}",
-                        if is_result { "Result" } else { "Option" },
-                        path
+    fn build_struct(&mut self, struct_id: Id, struct_data: &rustdoc_types::Struct) -> NodeIndex {
+        let item = self.parsed.crate_data.index.get(&struct_id).unwrap();
+        let struct_name = item.name.as_deref().unwrap_or("unknown");
+
+        // 检查是否已经存在
+        if let Some(existing_node) = self.type_cache.get_by_id(&struct_id) {
+            debug!(
+                "⚠️  Struct {} (id: {}) 已存在节点 {:?}，跳过创建",
+                struct_name, struct_id.0, existing_node
+            );
+            return existing_node;
+        }
+
+        let struct_node_index = self.graph.add_type_node(struct_name);
+        self.type_cache.insert_type_by_id(struct_id, struct_node_index);
+        self.graph
+            .node_types
+            .insert(struct_node_index, NodeType::Struct);
+
+        self.type_impls
+            .entry(struct_id)
+            .or_insert_with(HashSet::new)
+            .extend(struct_data.impls.iter().map(|&id| id));
+
+        // 构建字段信息
+        let mut fields = Vec::new();
+        let (is_tuple_struct, is_unit_struct) = match &struct_data.kind {
+            rustdoc_types::StructKind::Unit => (false, true),
+            rustdoc_types::StructKind::Tuple(field_ids) => {
+                for (idx, field_id_opt) in field_ids.iter().enumerate() {
+                    if let Some(field_id) = field_id_opt {
+                        let field_node_index =
+                            self.type_cache.get_by_id(field_id).expect("不可能没有");
+                        self.graph.add_type_relation(
+                            struct_node_index,
+                            field_node_index,
+                            EdgeMode::Ref,
+                            None,
+                        );
+                        fields.push(FieldInfo {
+                            name: idx.to_string(),
+                            type_node: Some(field_node_index),
+                            type_str: self.graph.type_graph[field_node_index].clone(),
+                            visibility: Visibility::Public,
+                        });
+                    }
+                }
+                (true, false)
+            }
+            rustdoc_types::StructKind::Plain { fields: field_ids, .. } => {
+                for &field_id in field_ids {
+                    let field_node_index = self.type_cache.get_by_id(&field_id).expect("不可能没有");
+                    self.graph.add_type_relation(
+                        struct_node_index,
+                        field_node_index,
+                        EdgeMode::Ref,
+                        None,
                     );
+                    let field_name = self.get_name(&field_id).unwrap_or("unknown").to_string();
+                    fields.push(FieldInfo {
+                        name: field_name,
+                        type_node: Some(field_node_index),
+                        type_str: self.graph.type_graph[field_node_index].clone(),
+                        visibility: Visibility::Public,
+                    });
                 }
-
-                // 非包装类型,返回原样
-                (ty, false)
+                (false, false)
             }
-            // 其他类型(Primitive, Generic, etc.)不是包装类型
-            _ => (ty, false),
+        };
+
+        // 创建 StructInfo 并插入
+        let crate_name = self.get_crate_name();
+        let struct_info = StructInfo {
+            path: PathInfo::new(
+                &format!("{}::{}", crate_name, struct_name),
+                struct_name,
+            ),
+            fields,
+            generics: Vec::new(),     // 后续在 build_type_generics 中填充
+            trait_impls: Vec::new(),  // 后续在 expand_impl_blocks 中填充
+            methods: Vec::new(),      // 后续在 build_impl_methods 中填充
+            is_tuple_struct,
+            is_unit_struct,
+        };
+        self.graph.node_infos.insert(struct_node_index, NodeInfo::Struct(struct_info));
+
+        debug!(
+            "✓ 创建 Struct: {} (id: {}, node: {:?})",
+            struct_name, struct_id.0, struct_node_index
+        );
+
+        struct_node_index
+    }
+
+    fn build_enum(&mut self, enum_id: Id, enum_data: &rustdoc_types::Enum) -> NodeIndex {
+        let item = self.parsed.crate_data.index.get(&enum_id).unwrap();
+        let enum_name = item.name.as_deref().unwrap_or("unknown");
+
+        // 获取或创建 enum 节点
+        let (enum_node_index, is_new) = if let Some(existing_node) = self.type_cache.get_by_id(&enum_id) {
+            debug!(
+                "⚠️  Enum {} (id: {}) 已存在节点 {:?}，继续处理 variant",
+                enum_name, enum_id.0, existing_node
+            );
+            self.graph.node_types.insert(existing_node, NodeType::Enum);
+            (existing_node, false)
+        } else {
+            let node_index = self.graph.add_type_node(enum_name);
+            self.type_cache.insert_type_by_id(enum_id, node_index);
+            self.graph.node_types.insert(node_index, NodeType::Enum);
+            debug!(
+                "✓ 创建 Enum: {} (id: {}, node: {:?})",
+                enum_name, enum_id.0, node_index
+            );
+            (node_index, true)
+        };
+
+        self.type_impls
+            .entry(enum_id)
+            .or_insert_with(HashSet::new)
+            .extend(enum_data.impls.iter().map(|&id| id));
+
+        // 收集 variant 信息
+        let mut variants = Vec::new();
+
+        for &variant_id in &enum_data.variants {
+            if let Some(variant_item) = self.parsed.crate_data.index.get(&variant_id) {
+                let variant_name = variant_item.name.as_deref().unwrap_or("unknown");
+                if let ItemEnum::Variant(variant) = &variant_item.inner {
+                    let (variant_node_index, variant_kind) = match &variant.kind {
+                        rustdoc_types::VariantKind::Plain => {
+                            let variant_node_index =
+                                self.type_cache.get_by_id(&variant_id).expect("不可能没有");
+                            self.graph.add_type_relation(enum_node_index, variant_node_index, EdgeMode::Move, None);
+                            self.graph.add_type_relation(variant_node_index, enum_node_index, EdgeMode::Ref, None);
+                            debug!("  ✓ Plain variant: {} (id: {}) <-> {:?}", variant_name, variant_id.0, variant_node_index);
+                            (variant_node_index, VariantKind::Unit)
+                        }
+                        rustdoc_types::VariantKind::Tuple(field_ids) => {
+                            let variant_node_index =
+                                self.type_cache.get_by_id(&variant_id).expect("不可能没有");
+                            self.graph.add_type_relation(enum_node_index, variant_node_index, EdgeMode::Move, None);
+                            self.graph.add_type_relation(variant_node_index, enum_node_index, EdgeMode::Ref, None);
+
+                            let field_nodes: Vec<NodeIndex> = field_ids.iter()
+                                .filter_map(|fid_opt| {
+                                    fid_opt.as_ref().and_then(|fid| self.type_cache.get_by_id(fid))
+                                })
+                                .collect();
+                            debug!("  ✓ Tuple variant: {} (id: {}) <-> {:?}", variant_name, variant_id.0, variant_node_index);
+                            (variant_node_index, VariantKind::Tuple(field_nodes))
+                        }
+                        rustdoc_types::VariantKind::Struct { fields: field_ids, .. } => {
+                            let variant_node_index = if let Some(idx) = self.type_cache.get_by_id(&variant_id) {
+                                idx
+                            } else {
+                                let idx = self.graph.add_type_node(variant_name);
+                                self.graph.node_types.insert(idx, NodeType::Variant);
+                                self.type_cache.insert_type_by_id(variant_id, idx);
+                                idx
+                            };
+
+                            self.graph.add_type_relation(enum_node_index, variant_node_index, EdgeMode::Move, None);
+                            self.graph.add_type_relation(variant_node_index, enum_node_index, EdgeMode::Ref, None);
+
+                            // 收集字段节点索引
+                            let field_nodes: Vec<NodeIndex> = field_ids.iter()
+                                .map(|&fid| {
+                                    let field_node_index = self.type_cache.get_by_id(&fid).expect("不可能没有");
+                                    self.graph.add_type_relation(variant_node_index, field_node_index, EdgeMode::Ref, None);
+                                    field_node_index
+                                })
+                                .collect();
+                            debug!("  ✓ Struct variant: {} (id: {}) <-> {:?} with {} fields", variant_name, variant_id.0, variant_node_index, field_nodes.len());
+                            (variant_node_index, VariantKind::Struct(field_nodes))
+                        }
+                    };
+
+                    // 为 variant 创建 NodeInfo
+                    let variant_info = VariantInfo {
+                        name: variant_name.to_string(),
+                        parent_enum: Some(enum_node_index),
+                        kind: variant_kind,
+                        discriminant: variant.discriminant.as_ref().map(|d| d.value.clone()),
+                    };
+                    self.graph.node_infos.insert(variant_node_index, NodeInfo::Variant(variant_info));
+
+                    variants.push(variant_node_index);
+                }
+            }
+        }
+
+        // 创建 EnumInfo（仅在新创建时）
+        if is_new {
+            let crate_name = self.get_crate_name();
+            let enum_info = EnumInfo {
+                path: PathInfo::new(
+                    &format!("{}::{}", crate_name, enum_name),
+                    enum_name,
+                ),
+                variants,
+                generics: Vec::new(),
+                trait_impls: Vec::new(),
+                methods: Vec::new(),
+            };
+            self.graph.node_infos.insert(enum_node_index, NodeInfo::Enum(enum_info));
+        }
+
+        enum_node_index
+    }
+
+    fn build_union(&mut self, union_id: Id, union_data: &rustdoc_types::Union) -> NodeIndex {
+        let item = self.parsed.crate_data.index.get(&union_id).unwrap();
+        let union_name = item.name.as_deref().unwrap_or("unknown");
+
+        let union_node_index = self.graph.add_type_node(union_name);
+        self.type_cache.insert_type_by_id(union_id, union_node_index);
+        self.graph.node_types.insert(union_node_index, NodeType::Union);
+        self.type_impls
+            .entry(union_id)
+            .or_insert_with(HashSet::new)
+            .extend(union_data.impls.iter().map(|&id| id));
+
+        debug!("构建 Union: {:?}", self.get_name(&union_id));
+
+        // 收集字段信息
+        let mut fields = Vec::new();
+        for &field_id in &union_data.fields {
+            let field_node_index = self.type_cache.get_by_id(&field_id).expect("不可能没有");
+            self.graph.add_type_relation(union_node_index, field_node_index, EdgeMode::Ref, None);
+
+            let field_name = self.get_name(&field_id).unwrap_or("unknown").to_string();
+            fields.push(FieldInfo {
+                name: field_name,
+                type_node: Some(field_node_index),
+                type_str: self.graph.type_graph[field_node_index].clone(),
+                visibility: Visibility::Public,
+            });
+        }
+
+        // 创建 UnionInfo
+        let crate_name = self.get_crate_name();
+        let union_info = UnionInfo {
+            path: PathInfo::new(
+                &format!("{}::{}", crate_name, union_name),
+                union_name,
+            ),
+            fields,
+            generics: Vec::new(),
+            trait_impls: Vec::new(),
+            methods: Vec::new(),
+        };
+        self.graph.node_infos.insert(union_node_index, NodeInfo::Union(union_info));
+
+        union_node_index
+    }
+
+    // ========== 第二步：泛型参数 ==========
+
+    fn build_type_generics(&mut self) {
+        for &type_id in &self.parsed.info.types {
+            if let Some(item) = self.parsed.crate_data.index.get(&type_id) {
+                let generics = match &item.inner {
+                    ItemEnum::Struct(s) => Some(&s.generics),
+                    ItemEnum::Enum(e) => Some(&e.generics),
+                    ItemEnum::Union(u) => Some(&u.generics),
+                    ItemEnum::Trait(t) => Some(&t.generics),
+                    ItemEnum::TypeAlias(t) => Some(&t.generics),
+                    _ => None,
+                };
+
+                if let Some(generics) = generics {
+                    let owner_name = item.name.as_deref().unwrap_or("unknown");
+                    self.create_generics(type_id, generics, owner_name);
+                }
+            }
         }
     }
 
-    /// 从 rustdoc Type 提取 DataEdge(处理 Self 解析)
-    fn extract_data_edge_from_type(&self, ty: &Type, name: Option<String>) -> Option<DataEdge> {
-        let (type_node, mode) = self.extract_type_and_mode_with_self(ty, &self.generic_scope)?;
-
-        Some(DataEdge {
-            type_node,
-            mode,
-            name,
-            param_index: None,
-        })
-    }
-
-    /// 从 Generics 创建泛型约束映射
-    fn create_generic_constraints_from_generics(
-        &self,
+    fn create_generics(
+        &mut self,
+        owner_id: Id,
         generics: &rustdoc_types::Generics,
-    ) -> HashMap<String, Vec<Id>> {
-        let mut constraints = HashMap::new();
+        owner_name: &str,
+    ) {
+        use super::type_cache::{GenericScope as CacheGenericScope, TypeKey};
 
         for param in &generics.params {
             if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
-                let trait_ids: Vec<Id> = bounds
-                    .iter()
-                    .filter_map(|bound| {
-                        if let GenericBound::TraitBound { trait_, .. } = bound {
-                            Some(trait_.id)
+                let generic_name = format!("{}:{}", owner_name, param.name);
+
+                // 使用 TypeCache 创建泛型参数节点
+                let type_key = TypeKey::Generic {
+                    name: param.name.clone(),
+                    scope: CacheGenericScope::Type(owner_id),
+                };
+
+                // 检查是否已存在
+                let (generic_node_index, is_new) = if let Some(idx) = self.type_cache.get_node(&type_key) {
+                    (idx, false)
+                } else {
+                    // 创建新节点
+                    let idx = self.graph.add_type_node(&generic_name);
+                    self.graph.node_types.insert(idx, NodeType::Generic);
+                    self.type_cache.insert_node(type_key.clone(), idx);
+                    (idx, true)
+                };
+
+                self.generic_scopes.insert(owner_id, HashSet::new());
+                self.generic_scopes
+                    .get_mut(&owner_id)
+                    .unwrap()
+                    .insert(param.name.clone());
+
+                // 插入两个 key：完整名和短名
+                // 使用 type_cache 的 insert_generic 方法
+                self.type_cache.insert_generic(
+                    generic_name.clone(),
+                    Some(param.name.clone()),
+                    generic_node_index,
+                );
+
+                debug!(
+                    "创建泛型参数: {} (存储为 {} 和 {}), TypeCache key: {:?}",
+                    generic_name, generic_name, param.name, type_key
+                );
+
+                // 收集 trait bounds
+                let mut bound_nodes = Vec::new();
+
+                // 创建 Include 边：类型/Trait -> 泛型参数
+                let owner_node = self.type_cache.get_by_id(&owner_id);
+                if let Some(owner) = owner_node {
+                    self.graph.add_type_relation(
+                        owner,
+                        generic_node_index,
+                        EdgeMode::Include,
+                        Some(format!("has generic {}", param.name)),
+                    );
+                }
+
+                // 处理 Trait 约束，创建 Require 边
+                for bound in bounds {
+                    if let GenericBound::TraitBound { trait_, .. } = bound {
+                        let trait_id = trait_.id;
+
+                        // 获取或创建 Trait 节点
+                        let trait_node = if let Some(node) = self.type_cache.get_by_id(&trait_id) {
+                            node
                         } else {
-                            None
-                        }
-                    })
-                    .collect();
+                            // Trait 不在本 crate 中（外部 Trait），创建节点
+                            let trait_name = trait_.path.split("::").last().unwrap_or(&trait_.path);
+                            let node = self.graph.add_type_node(trait_name);
+                            self.graph.node_types.insert(node, NodeType::Trait);
+                            self.type_cache.insert_type_by_id(trait_id, node);
 
-                if !trait_ids.is_empty() {
-                    constraints.insert(param.name.clone(), trait_ids);
-                }
-            }
-        }
+                            debug!("创建外部 Trait 节点: {} (id: {})", trait_name, trait_id.0);
+                            node
+                        };
 
-        constraints
-    }
+                        bound_nodes.push(trait_node);
 
-    /// 为枚举构建操作:为每个变体创建构造器
-    ///
-    /// 示例:enum Option<T> { None, Some(T) }
-    /// 生成:
-    /// 1. None 构造器: () -> Option<T>
-    /// 2. Some 构造器: T(Move) -> Option<T>
-    fn build_enum_operations(&mut self, type_info: &crate::parse::TypeInfo) {
-        let enum_type_node = TypeNode::Enum(Some(type_info.id));
-
-        for variant in &type_info.variants {
-            // 构建变体构造器的输入
-            let inputs: Vec<DataEdge> = variant
-                .fields
-                .iter()
-                .filter(|f| f.is_public)
-                .filter_map(|field| {
-                    self.type_ref_to_data_edge(&field.field_type, Some(field.name.clone()))
-                })
-                .collect();
-
-            let output = Some(DataEdge {
-                type_node: enum_type_node.clone(),
-                mode: EdgeMode::Move,
-                name: None,
-                param_index: None,
-            });
-
-            let variant_ctor = OpNode {
-                id: variant.id,
-                name: format!("{}::{}", type_info.name, variant.name),
-                kind: OpKind::VariantCtor {
-                    enum_id: type_info.id,
-                    variant_name: variant.name.clone(),
-                },
-                inputs,
-                output,
-                error_output: None,
-                generic_constraints: HashMap::new(),
-                docs: None, // 变体构造器无文档注释
-                is_unsafe: false,
-                is_const: false,
-                is_public: true,
-                is_fallible: false,
-            };
-
-            self.graph.add_operation(variant_ctor);
-        }
-    }
-
-    /// 为联合体构建操作
-    ///
-    /// Union 类似于 struct,但所有字段共享内存
-    fn build_union_operations(&mut self, type_info: &crate::parse::TypeInfo) {
-        let union_type_node = TypeNode::Union(Some(type_info.id));
-        let public_fields: Vec<_> = type_info.fields.iter().filter(|f| f.is_public).collect();
-
-        if !public_fields.is_empty() {
-            let inputs: Vec<DataEdge> = public_fields
-                .iter()
-                .filter_map(|field| {
-                    self.type_ref_to_data_edge(&field.field_type, Some(field.name.clone()))
-                })
-                .collect();
-
-            let output = Some(DataEdge {
-                type_node: union_type_node.clone(),
-                mode: EdgeMode::Move,
-                name: None,
-                param_index: None,
-            });
-
-            let union_ctor = OpNode {
-                id: type_info.id,
-                name: format!("{}::new", type_info.name),
-                kind: OpKind::UnionCtor,
-                inputs,
-                output,
-                error_output: None,
-                generic_constraints: HashMap::new(),
-                docs: None,      // 联合体构造器无文档注释
-                is_unsafe: true, // Union 构造通常是 unsafe
-                is_const: false,
-                is_public: true,
-                is_fallible: false,
-            };
-
-            self.graph.add_operation(union_ctor);
-        }
-
-        // Union 字段访问器(与 struct 类似)
-        for field in &public_fields {
-            if let Some(field_edge) = self.type_ref_to_data_edge(&field.field_type, None) {
-                // 不可变访问器
-                let accessor_ref = OpNode {
-                    id: field.id,
-                    name: format!("{}.{}", type_info.name, field.name),
-                    kind: OpKind::FieldAccessor {
-                        field_name: field.name.clone(),
-                        struct_type: type_info.id,
-                    },
-                    inputs: vec![DataEdge {
-                        type_node: union_type_node.clone(),
-                        mode: EdgeMode::Ref,
-                        name: Some("self".to_string()),
-                        param_index: None,
-                    }],
-                    output: Some(DataEdge {
-                        type_node: field_edge.type_node.clone(),
-                        mode: EdgeMode::Ref,
-                        name: Some(field.name.clone()),
-                        param_index: None,
-                    }),
-                    error_output: None,
-                    generic_constraints: HashMap::new(),
-                    docs: None,      // 联合体字段访问器无文档注释
-                    is_unsafe: true, // Union 字段访问通常是 unsafe
-                    is_const: false,
-                    is_public: true,
-                    is_fallible: false,
-                };
-
-                self.graph.add_operation(accessor_ref);
-
-                // 可变访问器
-                let accessor_mut = OpNode {
-                    id: field.id,
-                    name: format!("{}.{}_mut", type_info.name, field.name),
-                    kind: OpKind::FieldAccessor {
-                        field_name: field.name.clone(),
-                        struct_type: type_info.id,
-                    },
-                    inputs: vec![DataEdge {
-                        type_node: union_type_node.clone(),
-                        mode: EdgeMode::MutRef,
-                        name: Some("self".to_string()),
-                        param_index: None,
-                    }],
-                    output: Some(DataEdge {
-                        type_node: field_edge.type_node,
-                        mode: EdgeMode::MutRef,
-                        name: Some(field.name.clone()),
-                        param_index: None,
-                    }),
-                    error_output: None,
-                    generic_constraints: HashMap::new(),
-                    docs: None, // 联合体字段访问器无文档注释
-                    is_unsafe: true,
-                    is_const: false,
-                    is_public: true,
-                    is_fallible: false,
-                };
-
-                self.graph.add_operation(accessor_mut);
-            }
-        }
-    }
-
-    /// 将 TypeRef 转换为 DataEdge
-    ///
-    /// **核心解析逻辑**:
-    /// - TypeRef::Resolved(id) -> DataEdge { TypeNode::from_id(id), Move }
-    /// - TypeRef::Generic(name) -> 从作用域解析
-    /// - 如果是引用,需要在更高层处理(因为 TypeRef 可能不包含引用信息)
-    /// - 自动解析重导出(pub use)到规范定义
-    fn type_ref_to_data_edge(&self, type_ref: &TypeRef, name: Option<String>) -> Option<DataEdge> {
-        match type_ref {
-            TypeRef::Resolved(id) => {
-                // create_type_node_from_id 内部会调用 resolve_root_id
-                Some(DataEdge {
-                    type_node: self.create_type_node_from_id(*id),
-                    mode: EdgeMode::Move,
-                    name,
-                    param_index: None,
-                })
-            }
-
-            TypeRef::Primitive(prim_name) => Some(DataEdge {
-                type_node: TypeNode::Primitive(prim_name.clone()),
-                mode: EdgeMode::Move,
-                name,
-                param_index: None,
-            }),
-
-            TypeRef::Generic(param_name) => {
-                // 从作用域解析泛型参数
-                let type_node = self.generic_scope.resolve(param_name)?;
-
-                Some(DataEdge {
-                    type_node,
-                    mode: EdgeMode::Move,
-                    name,
-                    param_index: None,
-                })
-            }
-
-            TypeRef::ImplTrait(trait_ids) => {
-                // impl Trait: 作为特殊的泛型参数处理
-                // owner_id 使用 0 表示匿名 impl Trait
-                Some(DataEdge {
-                    type_node: TypeNode::GenericParam {
-                        name: "impl_trait".to_string(),
-                        owner_id: Id(0), // 使用 Id(0) 表示匿名 impl Trait
-                        owner_name: "anonymous".to_string(),
-                        trait_bounds: trait_ids.clone(),
-                    },
-                    mode: EdgeMode::Move,
-                    name,
-                    param_index: None,
-                })
-            }
-
-            TypeRef::Composite(inner_types) => {
-                // 复合类型:数组、切片等
-                // 对于切片 [T],inner_types 只有一个元素
-                if inner_types.len() == 1 {
-                    // 递归解析内部类型
-                    let inner_edge = self.type_ref_to_data_edge(&inner_types[0], None)?;
-                    Some(DataEdge {
-                        type_node: TypeNode::Array(Box::new(inner_edge.type_node)),
-                        mode: EdgeMode::Move, // 注意:引用信息在 TypeRef 中已丢失
-                        name,
-                        param_index: None,
-                    })
-                } else if inner_types.is_empty() {
-                    // 空复合类型(不太可能出现)
-                    None
-                } else {
-                    // 元组类型
-                    let tuple_nodes: Option<Vec<TypeNode>> = inner_types
-                        .iter()
-                        .map(|type_ref| {
-                            self.type_ref_to_data_edge(type_ref, None)
-                                .map(|edge| edge.type_node)
-                        })
-                        .collect();
-
-                    tuple_nodes.map(|nodes| DataEdge {
-                        type_node: TypeNode::Tuple(nodes),
-                        mode: EdgeMode::Move,
-                        name,
-                        param_index: None,
-                    })
-                }
-            }
-        }
-    }
-
-    /// **关键函数**:从 rustdoc_types::Type 提取 TypeNode 和 EdgeMode(带 Self 解析)
-    ///
-    /// 这是设计的核心:
-    /// 1. 处理 BorrowedRef 和 RawPointer
-    /// 2. 解析 Self 为具体类型
-    /// 3. 处理 QualifiedPath (<T as Trait>::Item)
-    fn extract_type_and_mode_with_self(
-        &self,
-        ty: &Type,
-        scope: &GenericScope,
-    ) -> Option<(TypeNode, EdgeMode)> {
-        match ty {
-            // 处理泛型参数(包括 Self 和其他泛型参数)
-            Type::Generic(name) => {
-                if name == "Self" {
-                    // Self 类型:从作用域解析 Self 的 ID
-                    let self_id = scope.resolve_self()?;
-                    Some((self.create_type_node_from_id(self_id), EdgeMode::Move))
-                } else {
-                    // 其他泛型参数(E, R, T 等):从作用域解析
-                    let type_node = scope.resolve(name)?;
-                    Some((type_node, EdgeMode::Move))
-                }
-            }
-
-            // 处理引用 (&T, &mut T)
-            Type::BorrowedRef {
-                is_mutable, type_, ..
-            } => {
-                // 递归调用 with_self
-                let (inner_type, inner_mode) =
-                    self.extract_type_and_mode_with_self(type_, scope)?;
-
-                if inner_mode.is_reference() || inner_mode.is_raw_pointer() {
-                    return Some((inner_type, inner_mode));
-                }
-
-                let mode = if *is_mutable {
-                    EdgeMode::MutRef
-                } else {
-                    EdgeMode::Ref
-                };
-                Some((inner_type, mode))
-            }
-
-            // 处理裸指针 (*const T, *mut T)
-            Type::RawPointer { is_mutable, type_ } => {
-                // 递归调用 with_self
-                let (inner_type, inner_mode) =
-                    self.extract_type_and_mode_with_self(type_, scope)?;
-
-                if inner_mode.is_raw_pointer() {
-                    return Some((inner_type, inner_mode));
-                }
-
-                let mode = if *is_mutable {
-                    EdgeMode::MutRawPtr
-                } else {
-                    EdgeMode::RawPtr
-                };
-                Some((inner_type, mode))
-            }
-
-            // 处理 Slice ([T])
-            Type::Slice(elem_type) => {
-                let (inner_type, _) = self.extract_type_and_mode_with_self(elem_type, scope)?;
-                Some((TypeNode::Array(Box::new(inner_type)), EdgeMode::Move))
-            }
-
-            // 处理 Array ([T; N])
-            Type::Array { type_, .. } => {
-                let (inner_type, _) = self.extract_type_and_mode_with_self(type_, scope)?;
-                Some((TypeNode::Array(Box::new(inner_type)), EdgeMode::Move))
-            }
-
-            // 处理 Tuple ((T, U))
-            Type::Tuple(elements) => {
-                let nodes: Option<Vec<TypeNode>> = elements
-                    .iter()
-                    .map(|ty| {
-                        self.extract_type_and_mode_with_self(ty, scope)
-                            .map(|(node, _)| node)
-                    })
-                    .collect();
-                nodes.map(|ns| (TypeNode::Tuple(ns), EdgeMode::Move))
-            }
-
-            // QualifiedPath: <T as Trait>::Item 或 Self::Item
-            // 关联类型应该被解析到实际定义
-            Type::QualifiedPath {
-                self_type,
-                trait_,
-                name,
-                args,
-                ..
-            } => {
-                // 优先尝试从 args 中解析出实际类型 ID
-                if let Some(args_box) = args {
-                    if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } =
-                        args_box.as_ref()
-                    {
-                        // 如果有泛型参数,尝试使用第一个(通常是实际类型)
-                        if let Some(rustdoc_types::GenericArg::Type(actual_ty)) = args.first() {
-                            log::debug!(
-                                "QualifiedPath 通过 args 解析: {} -> {:?}",
-                                name,
-                                actual_ty
-                            );
-                            return self.extract_type_and_mode_with_self(actual_ty, scope);
-                        }
+                        // 创建 Require 边：泛型参数 -> Trait
+                        self.graph.add_type_relation(
+                            generic_node_index,
+                            trait_node,
+                            EdgeMode::Require,
+                            Some(format!("{} requires", param.name)),
+                        );
+                        debug!("泛型约束: {} requires trait {}", param.name, trait_.path);
                     }
                 }
 
-                // 尝试在类型索引中查找关联类型的实际定义
-                // 通过 trait + 名称查找
-                if let Some(trait_path) = trait_ {
-                    // 尝试查找 Trait 的关联类型定义
-                    if let Some(trait_item) =
-                        self.graph.parsed_crate().type_index.get(&trait_path.id)
-                    {
-                        if let rustdoc_types::ItemEnum::Trait(trait_def) = &trait_item.inner {
-                            // 在 trait 的 items 中查找同名的关联类型
-                            for &item_id in &trait_def.items {
-                                if let Some(assoc_item) =
-                                    self.graph.parsed_crate().type_index.get(&item_id)
-                                {
-                                    if assoc_item.name.as_deref() == Some(name) {
-                                        log::debug!(
-                                            "QualifiedPath 通过 Trait 定义解析: {} -> Id({:?})",
-                                            name,
-                                            item_id
+                // 创建 GenericInfo（仅在新创建时）
+                if is_new {
+                    let generic_info = GenericInfo {
+                        name: param.name.clone(),
+                        owner: owner_node,
+                        bounds: bound_nodes,
+                        default_type: None,  // TODO: 处理默认类型
+                    };
+                    self.graph.node_infos.insert(generic_node_index, NodeInfo::Generic(generic_info));
+                }
+            }
+        }
+    }
+
+    fn build_traits_nodes(&mut self) {
+        let crate_name = self.get_crate_name();
+
+        for &trait_id in &self.parsed.info.traits {
+            if let Some(item) = self.parsed.crate_data.index.get(&trait_id) {
+                if let ItemEnum::Trait(trait_data) = &item.inner {
+                    let trait_name = item.name.as_deref().unwrap_or("unknown");
+
+                    if self.is_blacklisted_trait(trait_name) {
+                        continue;
+                    }
+
+                    let trait_node = self.graph.add_type_node(trait_name);
+                    self.graph.node_types.insert(trait_node, NodeType::Trait);
+                    self.type_cache.insert_type_by_id(trait_id, trait_node);
+
+                    // 创建 TraitInfo
+                    let trait_info = TraitInfo {
+                        path: PathInfo::new(
+                            &format!("{}::{}", crate_name, trait_name),
+                            trait_name,
+                        ),
+                        associated_types: Vec::new(),  // 后续在 build_trait_assoc_types 中填充
+                        associated_consts: Vec::new(),
+                        methods: Vec::new(),           // 后续在 build_trait_defined_methods 中填充
+                        supertraits: Vec::new(),       // TODO: 处理 supertrait bounds
+                        generics: Vec::new(),          // 后续在 create_generics 中填充
+                        is_auto: trait_data.is_auto,
+                        is_unsafe: trait_data.is_unsafe,
+                    };
+                    self.graph.node_infos.insert(trait_node, NodeInfo::Trait(trait_info));
+
+                    // 创建 Trait 自身的泛型参数
+                    self.create_generics(trait_id, &trait_data.generics, trait_name);
+
+                    // 归一化方法级别的泛型：收集所有方法的泛型，合并同名且约束相同的
+                    self.normalize_trait_method_generics(trait_id, trait_name, &trait_data.items);
+                }
+            }
+        }
+    }
+
+    fn build_trait_assoc_types(&mut self) {
+        for &trait_id in &self.parsed.info.traits {
+            if let Some(item) = self.parsed.crate_data.index.get(&trait_id) {
+                if let ItemEnum::Trait(trait_data) = &item.inner {
+                    let trait_name = item.name.as_deref().unwrap_or("unknown");
+                    let trait_node = self
+                        .type_cache
+                        .get_by_id(&trait_id)
+                        .expect("不可能没有");
+                    if self.is_blacklisted_trait(trait_name) {
+                        continue;
+                    }
+
+                    // 处理 Trait 中定义的 Associated Type
+                    for &item_id in &trait_data.items {
+                        if let Some(item) = self.parsed.crate_data.index.get(&item_id) {
+                            if let ItemEnum::AssocType { type_, bounds, .. } = &item.inner {
+                                if let Some(assoc_type_name) = &item.name {
+                                    // 创建 Trait.AssocType 节点（无论是否有默认值）
+                                    let assoc_type_label =
+                                        format!("{}.{}", trait_name, assoc_type_name);
+                                    let assoc_type_node =
+                                        self.graph.add_type_node(&assoc_type_label);
+                                    self.graph
+                                        .node_types
+                                        .insert(assoc_type_node, NodeType::TypeAlias);
+
+                                    // 存储到 type_cache
+                                    self.type_cache.insert_assoc_type(
+                                        trait_name,
+                                        assoc_type_name,
+                                        assoc_type_node,
+                                    );
+
+                                    // 创建 Include 边：Trait -> Trait.AssocType
+                                    self.graph.add_type_relation(
+                                        trait_node,
+                                        assoc_type_node,
+                                        EdgeMode::Include,
+                                        Some(format!("has {}", assoc_type_name)),
+                                    );
+
+                                    // 如果有默认类型定义，创建别名边
+                                    if let Some(assoc_type) = type_ {
+                                        // 对于 ResolvedPath，直接从 type_cache 查找（内部类型）
+                                        if let Type::ResolvedPath(path) = assoc_type {
+                                            if let Some(target_node) =
+                                                self.type_cache.get_by_id(&path.id)
+                                            {
+                                                // 创建别名边：Trait.AssocType -> TargetType
+                                                self.graph.add_type_relation(
+                                                    assoc_type_node,
+                                                    target_node,
+                                                    EdgeMode::Alias,
+                                                    Some(format!("{} =", assoc_type_name)),
+                                                );
+
+                                                debug!(
+                                                    "Trait {} 定义 Associated Type: {} = {} (id: {})",
+                                                    trait_name,
+                                                    assoc_type_name,
+                                                    self.get_name(&path.id).unwrap_or("unknown"),
+                                                    path.id.0
+                                                );
+                                            } else {
+                                                error!(
+                                                    "Trait {} 的 Associated Type {} 指向的类型 (id: {}) 未找到节点",
+                                                    trait_name, assoc_type_name, path.id.0
+                                                );
+                                            }
+                                        } else {
+                                            // 对于其他类型（如泛型、基本类型等），使用 TypeCache
+                                            use super::type_cache::TypeContext;
+                                            let context = TypeContext::new();
+
+                                            if let Some(type_key) = self
+                                                .type_cache
+                                                .create_type_key(assoc_type, &context)
+                                            {
+                                                let target_node = self.get_or_create_type_node(
+                                                    &type_key,
+                                                    assoc_type,
+                                                    &assoc_type_label,
+                                                );
+
+                                                // 创建别名边：Trait.AssocType -> TargetType
+                                                self.graph.add_type_relation(
+                                                    assoc_type_node,
+                                                    target_node,
+                                                    EdgeMode::Alias,
+                                                    Some(format!("{} =", assoc_type_name)),
+                                                );
+
+                                                debug!(
+                                                    "Trait {} 定义 Associated Type: {} = {:?}",
+                                                    trait_name, assoc_type_name, type_key
+                                                );
+                                            }
+                                        }
+                                    } else {
+                                        // Trait 约束 TODO: 目前仅支持单一 Trait
+                                        for bound in bounds.iter() {
+                                            if let GenericBound::TraitBound { trait_, .. } = bound {
+                                                let trait_id = trait_.id;
+                                                if let Some(trait_node) =
+                                                    self.type_cache.get_by_id(&trait_id)
+                                                {
+                                                    self.graph.add_type_relation(
+                                                        assoc_type_node,
+                                                        trait_node,
+                                                        EdgeMode::Alias,
+                                                        Some(format!("{} =", assoc_type_name)),
+                                                    );
+                                                }
+                                            }
+                                        }
+                                        debug!(
+                                            "Trait {} 定义 Associated Type: {} Trait Bound",
+                                            trait_name, assoc_type_name
                                         );
-                                        // 找到关联类型定义,使用其 ID
-                                        return Some((
-                                            self.create_type_node_from_id(item_id),
-                                            EdgeMode::Move,
-                                        ));
                                     }
                                 }
                             }
                         }
+
+                        // trait_data.items 是 trait 定义的方法，放到 method_impls
+                        self.method_impls
+                            .entry(trait_id)
+                            .or_insert_with(HashSet::new)
+                            .extend(trait_data.items.iter().map(|&id| id));
+
+                        debug!(
+                            "构建 Trait: {}, 方法数: {}, Trait 泛型数: {}",
+                            trait_name,
+                            trait_data.items.len(),
+                            trait_data.generics.params.len()
+                        );
                     }
                 }
-
-                // 如果无法解析,尝试解析 self_type
-                log::debug!("QualifiedPath 无法完全解析,使用路径表示: {}", name);
-                let (inner_type, _) = self.extract_type_and_mode_with_self(self_type, scope)?;
-                let trait_id = trait_.as_ref().map(|path| path.id);
-
-                Some((
-                    TypeNode::QualifiedPath {
-                        parent: Box::new(inner_type),
-                        name: name.clone(),
-                        trait_id,
-                    },
-                    EdgeMode::Move,
-                ))
             }
-
-            // 其他类型:不涉及递归的,可以安全委托给 extract_type_and_mode
-            // (Primitive, ResolvedPath, Generic(非Self), ImplTrait, etc.)
-            _ => self.extract_type_and_mode(ty),
         }
     }
 
-    /// **原有函数**:从 rustdoc_types::Type 提取 TypeNode 和 EdgeMode
-    ///
-    /// 这是设计的核心:如何处理 BorrowedRef 和 RawPointer
-    ///
-    /// ```ignore
-    /// // 示例 rustdoc Type:
-    /// Type::BorrowedRef {
-    ///     lifetime: None,
-    ///     is_mutable: false,
-    ///     type_: Box<Type::Primitive("u32")>
-    /// }
-    /// ```
-    ///
-    /// 解析为:
-    /// ```ignore
-    /// DataEdge {
-    ///     type_node: TypeNode::Primitive("u32"),  // 规范类型
-    ///     mode: EdgeMode::Ref,                     // 引用信息在这里
-    /// }
-    ///
-    ///  ```
-    fn extract_type_and_mode(&self, ty: &Type) -> Option<(TypeNode, EdgeMode)> {
-        match ty {
-            // 原始类型:按值传递
-            Type::Primitive(name) => Some((TypeNode::Primitive(name.clone()), EdgeMode::Move)),
+    /// 归一化 Trait 方法的泛型参数
+    /// 如果多个方法有同名泛型且约束相同，则合并为一个节点
+    fn normalize_trait_method_generics(
+        &mut self,
+        trait_id: Id,
+        trait_name: &str,
+        method_ids: &[Id],
+    ) {
+        use super::type_cache::{GenericScope as CacheGenericScope, TypeKey};
+        use rustdoc_types::Path;
+        use std::collections::HashMap;
 
-            // 已解析的路径:Struct/Enum 等
-            Type::ResolvedPath(path) => {
-                let name = &path.path;
+        // 收集所有方法的泛型：泛型名 -> (约束 trait Paths, 出现次数)
+        let mut generic_info: HashMap<String, (Vec<Path>, usize)> = HashMap::new();
 
-                // 检测是否是包装类型 (Result/Option)
-                let is_result = name == "Result"
-                    || name.ends_with("::Result")
-                    || name == "std::result::Result"
-                    || name == "core::result::Result";
-
-                let is_option = name == "Option"
-                    || name.ends_with("::Option")
-                    || name == "std::option::Option"
-                    || name == "core::option::Option";
-
-                if is_result || is_option {
-                    // 包装类型:提取第一个泛型参数(成功类型)
-                    // 注意:这里忽略了错误类型,因为这个函数只能返回单个类型
-                    // 错误类型应该在 extract_result_branches 中处理
-                    if let Some(args) = &path.args {
-                        if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } =
-                            args.as_ref()
-                        {
-                            if let Some(rustdoc_types::GenericArg::Type(inner_ty)) = args.first() {
-                                log::debug!(
-                                    "穿透包装类型 {}: {:?} -> {:?}",
-                                    if is_result { "Result" } else { "Option" },
-                                    path.path,
-                                    inner_ty
-                                );
-                                // 递归处理内部类型
-                                return self.extract_type_and_mode(inner_ty);
-                            }
-                        }
-                    }
-
-                    log::warn!("无法从包装类型 {} 中提取内部类型,标记为 Unknown", path.path);
-                    return Some((TypeNode::Unknown, EdgeMode::Move));
-                }
-
-                // 非包装类型:检查是否有泛型参数
-                // 只有当泛型参数是具体类型(不是泛型参数占位符)时才创建 GenericInstance
-                // 例如:Vec<u8> 是 GenericInstance,但 EncoderWriter<E, W> 不是
-                if let Some(args) = &path.args {
-                    if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = args.as_ref() {
-                        // 提取类型参数
-                        let type_args: Vec<TypeNode> = args
-                            .iter()
-                            .filter_map(|arg| {
-                                if let rustdoc_types::GenericArg::Type(ty) = arg {
-                                    self.extract_type_and_mode(ty).map(|(node, _)| node)
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect();
-
-                        if !type_args.is_empty() {
-                            // 检查是否所有类型参数都是具体类型(不是 GenericParam)
-                            let has_concrete_types = type_args
+        for &method_id in method_ids {
+            if let Some(method_item) = self.parsed.crate_data.index.get(&method_id) {
+                if let ItemEnum::Function(func) = &method_item.inner {
+                    for param in &func.generics.params {
+                        if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
+                            let trait_bounds: Vec<Path> = bounds
                                 .iter()
-                                .any(|node| !matches!(node, TypeNode::GenericParam { .. }));
+                                .filter_map(|bound| {
+                                    if let GenericBound::TraitBound { trait_, .. } = bound {
+                                        Some(trait_.clone())
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .collect();
 
-                            if has_concrete_types {
-                                // 至少有一个具体类型,创建泛型实例化节点
-                                log::debug!(
-                                    "创建泛型实例化: {} with {} type args (有具体类型)",
-                                    path.path,
-                                    type_args.len()
-                                );
-                                return Some((
-                                    TypeNode::GenericInstance {
-                                        base_id: path.id,
-                                        path: path.path.clone(),
-                                        type_args,
-                                    },
-                                    EdgeMode::Move,
-                                ));
-                            } else {
-                                // 全是泛型参数占位符,使用类型定义本身
-                                log::debug!("跳过泛型实例化: {} (全是泛型参数占位符)", path.path);
-                            }
+                            generic_info
+                                .entry(param.name.clone())
+                                .and_modify(|(bounds_vec, count)| {
+                                    // 检查约束是否相同（比较 trait ID）
+                                    if bounds_vec.len() == trait_bounds.len()
+                                        && bounds_vec
+                                            .iter()
+                                            .all(|b| trait_bounds.iter().any(|t| t.id == b.id))
+                                    {
+                                        *count += 1;
+                                    }
+                                })
+                                .or_insert((trait_bounds, 1));
                         }
                     }
                 }
-
-                // 没有泛型参数,使用普通类型节点
-                Some((self.create_type_node_from_id(path.id), EdgeMode::Move))
             }
+        }
 
-            // 1. &T 或 &mut T -> 提取内部类型 T,EdgeMode 记录引用信息
-            Type::BorrowedRef {
-                is_mutable, type_, ..
-            } => {
-                // 递归提取内部类型
-                let (inner_type, inner_mode) = self.extract_type_and_mode(type_)?;
+        // 为出现次数 >= 2 的泛型创建归一化节点
+        for (generic_name, (trait_bounds, count)) in generic_info {
+            if count >= 2 {
+                let normalized_name = format!("{}:{}", trait_name, generic_name);
 
-                // 如果内部已经是引用,保持原样(避免 &&T)
-                if inner_mode.is_reference() || inner_mode.is_raw_pointer() {
-                    return Some((inner_type, inner_mode));
-                }
-
-                // 设置引用模式
-                let mode = if *is_mutable {
-                    EdgeMode::MutRef
-                } else {
-                    EdgeMode::Ref
+                // 使用 TypeCache 创建归一化的泛型节点
+                let type_key = TypeKey::Generic {
+                    name: generic_name.clone(),
+                    scope: CacheGenericScope::Trait(trait_id),
                 };
 
-                Some((inner_type, mode))
-            }
-
-            // 2. *const T 或 *mut T -> 提取内部类型 T
-            Type::RawPointer { is_mutable, type_ } => {
-                let (inner_type, inner_mode) = self.extract_type_and_mode(type_)?;
-
-                // 如果内部已经是指针,保持原样
-                if inner_mode.is_raw_pointer() {
-                    return Some((inner_type, inner_mode));
-                }
-
-                let mode = if *is_mutable {
-                    EdgeMode::MutRawPtr
+                let generic_node_index = if let Some(idx) = self.type_cache.get_node(&type_key) {
+                    idx
                 } else {
-                    EdgeMode::RawPtr
+                    let idx = self.graph.add_type_node(&normalized_name);
+                    self.graph.node_types.insert(idx, NodeType::Generic);
+                    self.type_cache.insert_node(type_key.clone(), idx);
+                    idx
                 };
 
-                Some((inner_type, mode))
-            }
-
-            // 3. 泛型参数
-            // 需要从作用域解析,而不是创建新节点
-            // 注意:这个函数不接受作用域参数,所以委托给 extract_type_and_mode_with_self
-            Type::Generic(_name) => {
-                // 这里不应该直接处理,应该在 extract_type_and_mode_with_self 中处理
-                // 临时创建一个匿名节点,但这不应该被使用
-                log::warn!(
-                    "extract_type_and_mode 遇到泛型参数,应该使用 extract_type_and_mode_with_self: {}",
-                    _name
+                // 注册到 type_cache，使用 trait_name:T 作为 key
+                self.type_cache.insert_generic(
+                    normalized_name.clone(),
+                    None,
+                    generic_node_index,
                 );
-                Some((
-                    TypeNode::GenericParam {
-                        name: _name.clone(),
-                        owner_id: Id(0),
-                        owner_name: "anonymous".to_string(),
-                        trait_bounds: Vec::new(),
-                    },
-                    EdgeMode::Move,
-                ))
-            }
 
-            // 4. Slice: [T] -> 提取元素类型
-            Type::Slice(elem_type) => {
-                let (inner_type, _) = self.extract_type_and_mode(elem_type)?;
-                Some((TypeNode::Array(Box::new(inner_type)), EdgeMode::Move))
-            }
+                // 创建 Require 边
+                for trait_path in &trait_bounds {
+                    // 获取或创建 Trait 节点
+                    let trait_node = if let Some(node) = self.type_cache.get_by_id(&trait_path.id) {
+                        node
+                    } else {
+                        // 外部 Trait，创建节点
+                        let trait_name = trait_path
+                            .path
+                            .split("::")
+                            .last()
+                            .unwrap_or(&trait_path.path);
+                        let node = self.graph.add_type_node(trait_name);
+                        self.graph.node_types.insert(node, NodeType::Trait);
+                        self.type_cache.insert_type_by_id(trait_path.id, node);
 
-            // 5. Array: [T; N] -> 提取元素类型
-            Type::Array { type_, .. } => {
-                let (inner_type, _) = self.extract_type_and_mode(type_)?;
-                Some((TypeNode::Array(Box::new(inner_type)), EdgeMode::Move))
-            }
+                        debug!(
+                            "创建外部 Trait 节点: {} (id: {}, 用于归一化泛型约束)",
+                            trait_name, trait_path.id.0
+                        );
+                        node
+                    };
 
-            // 6. 元组
-            Type::Tuple(elements) => {
-                let nodes: Option<Vec<TypeNode>> = elements
-                    .iter()
-                    .map(|ty| self.extract_type_and_mode(ty).map(|(node, _)| node))
-                    .collect();
-                nodes.map(|ns| (TypeNode::Tuple(ns), EdgeMode::Move))
-            }
+                    self.graph.add_type_relation(
+                        generic_node_index,
+                        trait_node,
+                        EdgeMode::Require,
+                        Some(format!("{} requires", generic_name)),
+                    );
+                }
 
-            // 7. impl Trait
-            Type::ImplTrait(bounds) => {
-                let trait_bounds: Vec<Id> = bounds
-                    .iter()
-                    .filter_map(|bound| {
-                        if let GenericBound::TraitBound { trait_, .. } = bound {
-                            Some(trait_.id)
-                        } else {
-                            None
+                debug!(
+                    "归一化泛型: {} (出现 {} 次，约束: {} 个)",
+                    normalized_name,
+                    count,
+                    trait_bounds.len()
+                );
+            }
+        }
+    }
+
+    // ========== 第五步：Constant 和 Static ==========
+    fn build_constants_and_statics(&mut self) {
+        let stats = self.type_cache.stats();
+        debug!(
+            "开始处理 Constants 和 Statics\n\
+            - Constants: {} 个\n\
+            - Statics: {} 个\n\
+            - 当前 type_cache 中有 {} 个类型节点",
+            self.parsed.info.constants.len(),
+            self.parsed.info.statics.len(),
+            stats.types
+        );
+
+        let crate_name = self.get_crate_name();
+
+        // 处理 Constants
+        for &constant_id in &self.parsed.info.constants {
+            if let Some(item) = self.parsed.crate_data.index.get(&constant_id) {
+                if let ItemEnum::Constant { type_, const_ } = &item.inner {
+                    let constant_name = item.name.as_deref().unwrap_or("unknown");
+
+                    // 创建 Constant 节点
+                    let constant_node = self.graph.add_type_node(constant_name);
+                    self.graph
+                        .node_types
+                        .insert(constant_node, NodeType::Constant);
+                    self.type_cache.insert_type_by_id(constant_id, constant_node);
+
+                    // 创建 ConstantInfo
+                    let constant_info = ConstantInfo {
+                        path: PathInfo::new(
+                            &format!("{}::{}", crate_name, constant_name),
+                            constant_name,
+                        ),
+                        type_node: None,  // 后续填充
+                        type_str: format!("{:?}", type_),
+                        init_value: const_.value.clone(),
+                    };
+                    self.graph.node_infos.insert(constant_node, NodeInfo::Constant(constant_info));
+
+                    // 解析 Constant 的类型并创建 Instance 边
+                    match type_ {
+                        Type::ResolvedPath(path) => {
+                            let type_name = self
+                                .parsed
+                                .crate_data
+                                .index
+                                .get(&path.id)
+                                .and_then(|item| item.name.as_deref())
+                                .unwrap_or("unknown");
+
+                            debug!(
+                                "处理 Constant: {} -> 类型 {} (id: {})",
+                                constant_name, type_name, path.id.0
+                            );
+
+                            // 查找类型节点
+                            if let Some(type_node) = self.type_cache.get_by_id(&path.id) {
+                                debug!(
+                                    "✓ 从 type_cache 找到类型节点: {} (id: {}) -> NodeIndex({:?})",
+                                    type_name, path.id.0, type_node
+                                );
+
+                                // 创建 Instance 边：Constant -> Type
+                                self.graph.add_type_relation(
+                                    constant_node,
+                                    type_node,
+                                    EdgeMode::Instance,
+                                    Some("instance of".to_string()),
+                                );
+
+                                // 更新 ConstantInfo 的 type_node
+                                if let Some(NodeInfo::Constant(info)) = self.graph.node_infos.get_mut(&constant_node) {
+                                    info.type_node = Some(type_node);
+                                }
+
+                                debug!(
+                                    "创建 Instance 边: {} (NodeIndex({:?})) -> {} (NodeIndex({:?}))",
+                                    constant_name, constant_node, type_name, type_node
+                                );
+                            } else {
+                                error!(
+                                    "✗ 未找到类型节点: {} (id: {}) 在 type_cache 中",
+                                    type_name, path.id.0
+                                );
+                                error!(
+                                    "  当前 type_cache 中的类型 ID: {:?}",
+                                    self.type_cache.type_ids().collect::<Vec<_>>()
+                                );
+
+                                // 尝试通过 TypeCache 的 TypeKey 查找
+                                use super::type_cache::TypeContext;
+                                let context = TypeContext::new();
+                                if let Some(type_key) =
+                                    self.type_cache.create_type_key(type_, &context)
+                                {
+                                    if let Some(cached_node) = self.type_cache.get_node(&type_key) {
+                                        error!(
+                                            "⚠️  从 TypeCache 通过 TypeKey 找到类型节点: {} (id: {}) -> NodeIndex({:?})\n\
+                                            ⚠️  但该节点不在 id_to_node 中！这可能导致重复节点。\n\
+                                            ⚠️  正在更新 type_cache 以避免后续问题。",
+                                            type_name, path.id.0, cached_node
+                                        );
+
+                                        // 检查是否已经有其他节点映射到这个 ID
+                                        if let Some(existing_node) =
+                                            self.type_cache.get_by_id(&path.id)
+                                        {
+                                            error!(
+                                                "❌ 冲突！类型 {} (id: {}) 已经映射到 NodeIndex({:?})，\n\
+                                                但 TypeCache 返回的是 NodeIndex({:?})！\n\
+                                                这会导致重复节点。",
+                                                type_name, path.id.0, existing_node, cached_node
+                                            );
+                                        } else {
+                                            // 更新 type_cache
+                                            self.type_cache.insert_type_by_id(path.id, cached_node);
+                                            debug!(
+                                                "✓ 已更新 type_cache: id {} -> node {:?}",
+                                                path.id.0, cached_node
+                                            );
+                                        }
+
+                                        self.graph.add_type_relation(
+                                            constant_node,
+                                            cached_node,
+                                            EdgeMode::Instance,
+                                            Some("instance of".to_string()),
+                                        );
+                                    } else {
+                                        error!("✗ TypeCache 中也没有找到类型节点: {}", type_name);
+                                    }
+                                } else {
+                                    error!("✗ 无法创建 TypeKey 用于类型: {}", type_name);
+                                }
+                            }
                         }
-                    })
-                    .collect();
-
-                Some((
-                    TypeNode::GenericParam {
-                        name: "impl_trait".to_string(),
-                        owner_id: Id(0), // 匿名 impl Trait(使用 Id(0) 作为特殊标识)
-                        owner_name: "anonymous".to_string(),
-                        trait_bounds,
-                    },
-                    EdgeMode::Move,
-                ))
+                        _ => {
+                            error!(
+                                "Constant {} 的类型不是 ResolvedPath: {:?}",
+                                constant_name, type_
+                            );
+                            continue;
+                        }
+                    }
+                }
             }
+        }
 
-            // 8. 函数指针
-            Type::FunctionPointer(_) => {
-                // TODO: 完整处理函数指针
-                warn!("遇到 FunctionPointer,暂时标记为 Unknown");
-                Some((TypeNode::Unknown, EdgeMode::Move))
+        // 处理 Statics
+        for &static_id in &self.parsed.info.statics {
+            if let Some(item) = self.parsed.crate_data.index.get(&static_id) {
+                if let ItemEnum::Static(static_data) = &item.inner {
+                    let static_name = item.name.as_deref().unwrap_or("unknown");
+
+                    // 创建 Static 节点
+                    let static_node = self.graph.add_type_node(static_name);
+                    self.graph.node_types.insert(static_node, NodeType::Static);
+                    self.type_cache.insert_type_by_id(static_id, static_node);
+
+                    // 创建 StaticInfo
+                    let static_info = StaticInfo {
+                        path: PathInfo::new(
+                            &format!("{}::{}", crate_name, static_name),
+                            static_name,
+                        ),
+                        type_node: None,  // 后续填充
+                        type_str: format!("{:?}", static_data.type_),
+                        is_mutable: static_data.is_mutable,
+                        init_value: Some(static_data.expr.clone()),
+                    };
+                    self.graph.node_infos.insert(static_node, NodeInfo::Static(static_info));
+
+                    match &static_data.type_ {
+                        Type::ResolvedPath(path) => {
+                            if let Some(type_node) = self.type_cache.get_by_id(&path.id) {
+                                self.graph.add_type_relation(
+                                    static_node,
+                                    type_node,
+                                    EdgeMode::Instance,
+                                    Some("instance of".to_string()),
+                                );
+
+                                // 更新 StaticInfo 的 type_node
+                                if let Some(NodeInfo::Static(info)) = self.graph.node_infos.get_mut(&static_node) {
+                                    info.type_node = Some(type_node);
+                                }
+                            } else {
+                                error!("Static {} 的类型节点未找到", static_name);
+                            }
+                        }
+                        _ => {
+                            error!("Static {} 的类型不是 ResolvedPath", static_name);
+                        }
+                    }
+                }
             }
+        }
 
-            // 9. 其他类型
-            _ => {
-                warn!("遇到未知类型,标记为 Unknown: {:?}", ty);
-                Some((TypeNode::Unknown, EdgeMode::Move))
+        // 总结：检查是否有重复的类型节点
+        let stats = self.type_cache.stats();
+        debug!("=== Constants 和 Statics 处理完成 ===");
+        debug!(
+            "最终 type_cache 中有 {} 个类型节点",
+            stats.types
+        );
+
+        // 检查是否有重复的节点（同一个 ID 映射到不同节点）
+        let mut id_to_nodes: HashMap<Id, Vec<NodeIndex>> = HashMap::new();
+        for id in self.type_cache.type_ids() {
+            if let Some(node) = self.type_cache.get_by_id(id) {
+                id_to_nodes.entry(*id).or_insert_with(Vec::new).push(node);
+            }
+        }
+
+        for (id, nodes) in id_to_nodes {
+            if nodes.len() > 1 {
+                let type_name = self.get_name(&id).unwrap_or("unknown");
+                error!(
+                    "❌ 发现重复节点！类型 {} (id: {}) 映射到 {} 个不同节点: {:?}",
+                    type_name,
+                    id.0,
+                    nodes.len(),
+                    nodes
+                );
             }
         }
     }
 
-    /// 构建 Trait 实现关系
-    fn build_trait_implementations(&mut self) {
-        let impl_blocks = self.graph.parsed_crate().impl_blocks.clone();
-
-        for impl_block in impl_blocks {
-            // 只处理 trait impl（跳过固有 impl）
-            if let Some(trait_id) = impl_block.trait_id {
-                let trait_impl = TraitImpl {
-                    for_type: impl_block.for_type,
-                    trait_id,
-                    assoc_type_aliases: impl_block.assoc_types.clone(),
-                    impl_id: impl_block.id,
-                };
-                self.graph.add_trait_impl(trait_impl);
-            }
-        }
+    fn get_name(&self, id: &Id) -> Option<&str> {
+        self.parsed.crate_data.index.get(id)?.name.as_deref()
     }
-}
 
-/// 从 ParsedCrate 构建 IR Graph
-pub fn build_ir_graph(parsed_crate: ParsedCrate) -> IrGraph {
-    IrGraphBuilder::new(parsed_crate).build()
+    /// 获取 crate 名称
+    fn get_crate_name(&self) -> String {
+        self.parsed
+            .crate_data
+            .index
+            .get(&self.parsed.crate_data.root)
+            .and_then(|item| item.name.as_deref())
+            .unwrap_or("crate")
+            .to_string()
+    }
+
+    fn is_blacklisted_trait(&self, name: &str) -> bool {
+        use crate::support_types::TRAIT_BLACKLIST;
+        TRAIT_BLACKLIST.contains(&name)
+    }
 }

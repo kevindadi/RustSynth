@@ -25,41 +25,43 @@ struct FuzzState {
 
 #[derive(Arbitrary, Debug)]
 enum Action {
-    Get_URL_SAFE_NO_PAD_INDIFFERENT {
-    },
-    Get_CRYPT {
-    },
-    Get_BIN_HEX {
-    },
-    Get_STANDARD_NO_PAD_INDIFFERENT {
-    },
     Get_URL_SAFE_PAD_INDIFFERENT {
-    },
-    Get_STANDARD_PAD_INDIFFERENT {
-    },
-    Get_STANDARD {
-    },
-    Get_NO_PAD_INDIFFERENT {
-    },
-    Get_BCRYPT {
-    },
-    Get_URL_SAFE {
-    },
-    Get_URL_SAFE {
-    },
-    Get_URL_SAFE_NO_PAD {
-    },
-    Get_PAD {
-    },
-    Get_PAD_INDIFFERENT {
-    },
-    Get_STANDARD_NO_PAD {
     },
     Get_IMAP_MUTF7 {
     },
-    Get_NO_PAD {
+    Get_CRYPT {
+    },
+    Get_STANDARD_NO_PAD_INDIFFERENT {
+    },
+    Get_URL_SAFE_NO_PAD_INDIFFERENT {
+    },
+    Get_PAD_INDIFFERENT {
+    },
+    Get_STANDARD_PAD_INDIFFERENT {
+    },
+    Get_NO_PAD_INDIFFERENT {
+    },
+    Get_URL_SAFE {
+    },
+    Get_URL_SAFE {
     },
     Get_STANDARD {
+    },
+    Get_NO_PAD {
+    },
+    Get_BCRYPT {
+    },
+    Get_STANDARD {
+    },
+    Get_BIN_HEX {
+    },
+    Get_STANDARD_NO_PAD {
+    },
+    Get_PAD {
+    },
+    Get_URL_SAFE_NO_PAD {
+    },
+    Encode {
     },
     Decoded_len_estimate {
         arg0: usize,
@@ -67,60 +69,27 @@ enum Action {
     Encode_engine_string {
         arg1_idx: usize,
     },
-    Encode {
-    },
-    Decode {
-    },
-    Encoded_len {
-        arg0: usize,
-        arg1: bool,
-    },
-    Decode_engine {
+    Decode_engine_slice {
+        arg1_idx: usize,
     },
     Encode_engine_slice {
         arg1_idx: usize,
     },
     Encode_engine {
     },
-    Decode_engine_vec {
-        arg1_idx: usize,
+    Decode {
     },
     Consume {
         arg0: str,
     },
-    Decode_engine_slice {
+    Decode_engine {
+    },
+    Encoded_len {
+        arg0: usize,
+        arg1: bool,
+    },
+    Decode_engine_vec {
         arg1_idx: usize,
-    },
-    DecodeErrorInvalidByte {
-    },
-    DecodeErrorInvalidLength {
-    },
-    DecodeErrorInvalidLastSymbol {
-    },
-    DecodeErrorInvalidPadding {
-    },
-    ParseAlphabetErrorInvalidLength {
-    },
-    ParseAlphabetErrorDuplicatedByte {
-    },
-    ParseAlphabetErrorUnprintableByte {
-    },
-    ParseAlphabetErrorReservedByte {
-    },
-    DecodePaddingModeIndifferent {
-    },
-    DecodePaddingModeRequireCanonical {
-    },
-    DecodePaddingModeRequireNone {
-    },
-    DecodeSliceErrorDecodeError {
-    },
-    DecodeSliceErrorOutputSliceTooSmall {
-    },
-    EncodeSliceErrorOutputSliceTooSmall {
-    },
-    Encode_padding {
-        arg0_idx: usize,
     },
     Write {
         arg0_idx: usize,
@@ -129,25 +98,12 @@ enum Action {
     Flush {
         arg0_idx: usize,
     },
-    New {
-    },
-    Finish {
-        arg0_idx: usize,
+    From_consumer {
     },
     Into_inner {
         arg0_idx: usize,
     },
-    Read {
-        arg0_idx: usize,
-        arg1_idx: usize,
-    },
-    New {
-        arg0_idx: usize,
-    },
-    New {
-        arg0: str,
-    },
-    As_str {
+    Encode_padding {
         arg0_idx: usize,
     },
     New {
@@ -164,27 +120,43 @@ enum Action {
         arg0_idx: usize,
         arg1_idx: usize,
     },
-    Config {
-        arg0_idx: usize,
-    },
-    New {
-    },
-    New {
+    Read {
         arg0_idx: usize,
         arg1_idx: usize,
+    },
+    New {
+    },
+    Finish {
+        arg0_idx: usize,
+    },
+    Into_inner {
+        arg0_idx: usize,
+    },
+    New {
+    },
+    Into_inner {
+        arg0_idx: usize,
+    },
+    New {
+    },
+    Config {
+        arg0_idx: usize,
     },
     Consume {
         arg0_idx: usize,
         arg1: str,
     },
     New {
+        arg0: str,
     },
-    Into_inner {
+    As_str {
         arg0_idx: usize,
     },
-    From_consumer {
+    New {
+        arg0_idx: usize,
+        arg1_idx: usize,
     },
-    Into_inner {
+    New {
         arg0_idx: usize,
     },
     Write {
@@ -200,77 +172,81 @@ fuzz_target!(|actions: Vec<Action>| {
     let mut state = FuzzState::default();
     for action in actions {
         match action {
-            Action::Get_URL_SAFE_NO_PAD_INDIFFERENT { } => {
-                let res = get_URL_SAFE_NO_PAD_INDIFFERENT();
-                state.pool_GeneralPurpose.push(res);
-            }
-            Action::Get_CRYPT { } => {
-                let res = get_CRYPT();
-                state.pool_Alphabet.push(res);
-            }
-            Action::Get_BIN_HEX { } => {
-                let res = get_BIN_HEX();
-                state.pool_Alphabet.push(res);
-            }
-            Action::Get_STANDARD_NO_PAD_INDIFFERENT { } => {
-                let res = get_STANDARD_NO_PAD_INDIFFERENT();
-                state.pool_GeneralPurpose.push(res);
-            }
             Action::Get_URL_SAFE_PAD_INDIFFERENT { } => {
                 let res = get_URL_SAFE_PAD_INDIFFERENT();
-                state.pool_GeneralPurpose.push(res);
-            }
-            Action::Get_STANDARD_PAD_INDIFFERENT { } => {
-                let res = get_STANDARD_PAD_INDIFFERENT();
-                state.pool_GeneralPurpose.push(res);
-            }
-            Action::Get_STANDARD { } => {
-                let res = get_STANDARD();
-                state.pool_GeneralPurpose.push(res);
-            }
-            Action::Get_NO_PAD_INDIFFERENT { } => {
-                let res = get_NO_PAD_INDIFFERENT();
-                state.pool_GeneralPurposeConfig.push(res);
-            }
-            Action::Get_BCRYPT { } => {
-                let res = get_BCRYPT();
-                state.pool_Alphabet.push(res);
-            }
-            Action::Get_URL_SAFE { } => {
-                let res = get_URL_SAFE();
-                state.pool_Alphabet.push(res);
-            }
-            Action::Get_URL_SAFE { } => {
-                let res = get_URL_SAFE();
-                state.pool_GeneralPurpose.push(res);
-            }
-            Action::Get_URL_SAFE_NO_PAD { } => {
-                let res = get_URL_SAFE_NO_PAD();
-                state.pool_GeneralPurpose.push(res);
-            }
-            Action::Get_PAD { } => {
-                let res = get_PAD();
-                state.pool_GeneralPurposeConfig.push(res);
-            }
-            Action::Get_PAD_INDIFFERENT { } => {
-                let res = get_PAD_INDIFFERENT();
-                state.pool_GeneralPurposeConfig.push(res);
-            }
-            Action::Get_STANDARD_NO_PAD { } => {
-                let res = get_STANDARD_NO_PAD();
                 state.pool_GeneralPurpose.push(res);
             }
             Action::Get_IMAP_MUTF7 { } => {
                 let res = get_IMAP_MUTF7();
                 state.pool_Alphabet.push(res);
             }
+            Action::Get_CRYPT { } => {
+                let res = get_CRYPT();
+                state.pool_Alphabet.push(res);
+            }
+            Action::Get_STANDARD_NO_PAD_INDIFFERENT { } => {
+                let res = get_STANDARD_NO_PAD_INDIFFERENT();
+                state.pool_GeneralPurpose.push(res);
+            }
+            Action::Get_URL_SAFE_NO_PAD_INDIFFERENT { } => {
+                let res = get_URL_SAFE_NO_PAD_INDIFFERENT();
+                state.pool_GeneralPurpose.push(res);
+            }
+            Action::Get_PAD_INDIFFERENT { } => {
+                let res = get_PAD_INDIFFERENT();
+                state.pool_GeneralPurposeConfig.push(res);
+            }
+            Action::Get_STANDARD_PAD_INDIFFERENT { } => {
+                let res = get_STANDARD_PAD_INDIFFERENT();
+                state.pool_GeneralPurpose.push(res);
+            }
+            Action::Get_NO_PAD_INDIFFERENT { } => {
+                let res = get_NO_PAD_INDIFFERENT();
+                state.pool_GeneralPurposeConfig.push(res);
+            }
+            Action::Get_URL_SAFE { } => {
+                let res = get_URL_SAFE();
+                state.pool_Alphabet.push(res);
+            }
+            Action::Get_URL_SAFE { } => {
+                let res = get_URL_SAFE();
+                state.pool_GeneralPurpose.push(res);
+            }
+            Action::Get_STANDARD { } => {
+                let res = get_STANDARD();
+                state.pool_GeneralPurpose.push(res);
+            }
             Action::Get_NO_PAD { } => {
                 let res = get_NO_PAD();
                 state.pool_GeneralPurposeConfig.push(res);
             }
+            Action::Get_BCRYPT { } => {
+                let res = get_BCRYPT();
+                state.pool_Alphabet.push(res);
+            }
             Action::Get_STANDARD { } => {
                 let res = get_STANDARD();
                 state.pool_Alphabet.push(res);
+            }
+            Action::Get_BIN_HEX { } => {
+                let res = get_BIN_HEX();
+                state.pool_Alphabet.push(res);
+            }
+            Action::Get_STANDARD_NO_PAD { } => {
+                let res = get_STANDARD_NO_PAD();
+                state.pool_GeneralPurpose.push(res);
+            }
+            Action::Get_PAD { } => {
+                let res = get_PAD();
+                state.pool_GeneralPurposeConfig.push(res);
+            }
+            Action::Get_URL_SAFE_NO_PAD { } => {
+                let res = get_URL_SAFE_NO_PAD();
+                state.pool_GeneralPurpose.push(res);
+            }
+            Action::Encode { } => {
+                let res = encode();
+                state.pool_String.push(res);
             }
             Action::Decoded_len_estimate { arg0, } => {
                 decoded_len_estimate(arg0);
@@ -279,23 +255,11 @@ fuzz_target!(|actions: Vec<Action>| {
                 if arg1_idx >= state.pool_String.len() { continue; }
                 encode_engine_string(&mut state.pool_String[arg1_idx]);
             }
-            Action::Encode { } => {
-                let res = encode();
-                state.pool_String.push(res);
-            }
-            Action::Decode { } => {
-                match decode() {
-                    Ok(res) => state.pool_Vec_u8.push(res),
-                    Err(err) => state.pool_DecodeError.push(err),
-                }
-            }
-            Action::Encoded_len { arg0, arg1, } => {
-                encoded_len(arg0, arg1);
-            }
-            Action::Decode_engine { } => {
-                match decode_engine() {
-                    Ok(res) => state.pool_Vec_u8.push(res),
-                    Err(err) => state.pool_DecodeError.push(err),
+            Action::Decode_engine_slice { arg1_idx, } => {
+                if arg1_idx >= state.pool_array_u8.len() { continue; }
+                match decode_engine_slice(&mut state.pool_array_u8[arg1_idx]) {
+                    Ok(_) => {},
+                    Err(err) => state.pool_DecodeSliceError.push(err),
                 }
             }
             Action::Encode_engine_slice { arg1_idx, } => {
@@ -309,82 +273,30 @@ fuzz_target!(|actions: Vec<Action>| {
                 let res = encode_engine();
                 state.pool_String.push(res);
             }
-            Action::Decode_engine_vec { arg1_idx, } => {
-                if arg1_idx >= state.pool_Vec_u8.len() { continue; }
-                match decode_engine_vec(&mut state.pool_Vec_u8[arg1_idx]) {
-                    Ok(res) => state.pool_tuple_.push(res),
+            Action::Decode { } => {
+                match decode() {
+                    Ok(res) => state.pool_Vec_u8.push(res),
                     Err(err) => state.pool_DecodeError.push(err),
                 }
             }
             Action::Consume { arg0, } => {
                 consume(arg0);
             }
-            Action::Decode_engine_slice { arg1_idx, } => {
-                if arg1_idx >= state.pool_array_u8.len() { continue; }
-                match decode_engine_slice(&mut state.pool_array_u8[arg1_idx]) {
-                    Ok(_) => {},
-                    Err(err) => state.pool_DecodeSliceError.push(err),
+            Action::Decode_engine { } => {
+                match decode_engine() {
+                    Ok(res) => state.pool_Vec_u8.push(res),
+                    Err(err) => state.pool_DecodeError.push(err),
                 }
             }
-            Action::DecodeErrorInvalidByte { } => {
-                let res = DecodeError::InvalidByte();
-                state.pool_DecodeError.push(res);
+            Action::Encoded_len { arg0, arg1, } => {
+                encoded_len(arg0, arg1);
             }
-            Action::DecodeErrorInvalidLength { } => {
-                let res = DecodeError::InvalidLength();
-                state.pool_DecodeError.push(res);
-            }
-            Action::DecodeErrorInvalidLastSymbol { } => {
-                let res = DecodeError::InvalidLastSymbol();
-                state.pool_DecodeError.push(res);
-            }
-            Action::DecodeErrorInvalidPadding { } => {
-                let res = DecodeError::InvalidPadding();
-                state.pool_DecodeError.push(res);
-            }
-            Action::ParseAlphabetErrorInvalidLength { } => {
-                let res = ParseAlphabetError::InvalidLength();
-                state.pool_ParseAlphabetError.push(res);
-            }
-            Action::ParseAlphabetErrorDuplicatedByte { } => {
-                let res = ParseAlphabetError::DuplicatedByte();
-                state.pool_ParseAlphabetError.push(res);
-            }
-            Action::ParseAlphabetErrorUnprintableByte { } => {
-                let res = ParseAlphabetError::UnprintableByte();
-                state.pool_ParseAlphabetError.push(res);
-            }
-            Action::ParseAlphabetErrorReservedByte { } => {
-                let res = ParseAlphabetError::ReservedByte();
-                state.pool_ParseAlphabetError.push(res);
-            }
-            Action::DecodePaddingModeIndifferent { } => {
-                let res = DecodePaddingMode::Indifferent();
-                state.pool_DecodePaddingMode.push(res);
-            }
-            Action::DecodePaddingModeRequireCanonical { } => {
-                let res = DecodePaddingMode::RequireCanonical();
-                state.pool_DecodePaddingMode.push(res);
-            }
-            Action::DecodePaddingModeRequireNone { } => {
-                let res = DecodePaddingMode::RequireNone();
-                state.pool_DecodePaddingMode.push(res);
-            }
-            Action::DecodeSliceErrorDecodeError { } => {
-                let res = DecodeSliceError::DecodeError();
-                state.pool_DecodeSliceError.push(res);
-            }
-            Action::DecodeSliceErrorOutputSliceTooSmall { } => {
-                let res = DecodeSliceError::OutputSliceTooSmall();
-                state.pool_DecodeSliceError.push(res);
-            }
-            Action::EncodeSliceErrorOutputSliceTooSmall { } => {
-                let res = EncodeSliceError::OutputSliceTooSmall();
-                state.pool_EncodeSliceError.push(res);
-            }
-            Action::Encode_padding { arg0_idx, } => {
-                if arg0_idx >= state.pool_GeneralPurposeConfig.len() { continue; }
-                encode_padding(&state.pool_GeneralPurposeConfig[arg0_idx]);
+            Action::Decode_engine_vec { arg1_idx, } => {
+                if arg1_idx >= state.pool_Vec_u8.len() { continue; }
+                match decode_engine_vec(&mut state.pool_Vec_u8[arg1_idx]) {
+                    Ok(res) => state.pool_tuple_.push(res),
+                    Err(err) => state.pool_DecodeError.push(err),
+                }
             }
             Action::Write { arg0_idx, arg1_idx, } => {
                 if arg0_idx >= state.pool_EncoderWriter.len() { continue; }
@@ -396,37 +308,17 @@ fuzz_target!(|actions: Vec<Action>| {
                 let res = flush(&mut state.pool_EncoderWriter[arg0_idx]);
                 state.pool_tuple_.push(res);
             }
-            Action::New { } => {
-                let res = new();
-                state.pool_EncoderWriter.push(res);
-            }
-            Action::Finish { arg0_idx, } => {
-                if arg0_idx >= state.pool_EncoderWriter.len() { continue; }
-                finish(&mut state.pool_EncoderWriter[arg0_idx]);
+            Action::From_consumer { } => {
+                let res = from_consumer();
+                state.pool_EncoderStringWriter.push(res);
             }
             Action::Into_inner { arg0_idx, } => {
-                if arg0_idx >= state.pool_EncoderWriter.len() { continue; }
-                into_inner(state.pool_EncoderWriter.remove(arg0_idx));
+                if arg0_idx >= state.pool_EncoderStringWriter.len() { continue; }
+                into_inner(state.pool_EncoderStringWriter.remove(arg0_idx));
             }
-            Action::Read { arg0_idx, arg1_idx, } => {
-                if arg0_idx >= state.pool_DecoderReader.len() { continue; }
-                if arg1_idx >= state.pool_array_u8.len() { continue; }
-                read(&mut state.pool_DecoderReader[arg0_idx], &mut state.pool_array_u8[arg1_idx]);
-            }
-            Action::New { arg0_idx, } => {
-                if arg0_idx >= state.pool_array_u8.len() { continue; }
-                let res = new(&state.pool_array_u8[arg0_idx]);
-                state.pool_Base64Display.push(res);
-            }
-            Action::New { arg0, } => {
-                match new(arg0) {
-                    Ok(res) => state.pool_Alphabet.push(res),
-                    Err(err) => state.pool_ParseAlphabetError.push(err),
-                }
-            }
-            Action::As_str { arg0_idx, } => {
-                if arg0_idx >= state.pool_Alphabet.len() { continue; }
-                as_str(&state.pool_Alphabet[arg0_idx]);
+            Action::Encode_padding { arg0_idx, } => {
+                if arg0_idx >= state.pool_GeneralPurposeConfig.len() { continue; }
+                encode_padding(&state.pool_GeneralPurposeConfig[arg0_idx]);
             }
             Action::New { } => {
                 let res = new();
@@ -448,24 +340,22 @@ fuzz_target!(|actions: Vec<Action>| {
                 let res = with_decode_padding_mode(state.pool_GeneralPurposeConfig.remove(arg0_idx), state.pool_DecodePaddingMode.remove(arg1_idx));
                 state.pool_GeneralPurposeConfig.push(res);
             }
-            Action::Config { arg0_idx, } => {
-                if arg0_idx >= state.pool_GeneralPurpose.len() { continue; }
-                let res = config(&state.pool_GeneralPurpose[arg0_idx]);
-                state.pool_Config.push(res);
+            Action::Read { arg0_idx, arg1_idx, } => {
+                if arg0_idx >= state.pool_DecoderReader.len() { continue; }
+                if arg1_idx >= state.pool_array_u8.len() { continue; }
+                read(&mut state.pool_DecoderReader[arg0_idx], &mut state.pool_array_u8[arg1_idx]);
             }
             Action::New { } => {
                 let res = new();
-                state.pool_EncoderStringWriter.push(res);
+                state.pool_EncoderWriter.push(res);
             }
-            Action::New { arg0_idx, arg1_idx, } => {
-                if arg0_idx >= state.pool_Alphabet.len() { continue; }
-                if arg1_idx >= state.pool_GeneralPurposeConfig.len() { continue; }
-                let res = new(&state.pool_Alphabet[arg0_idx], state.pool_GeneralPurposeConfig.remove(arg1_idx));
-                state.pool_GeneralPurpose.push(res);
+            Action::Finish { arg0_idx, } => {
+                if arg0_idx >= state.pool_EncoderWriter.len() { continue; }
+                finish(&mut state.pool_EncoderWriter[arg0_idx]);
             }
-            Action::Consume { arg0_idx, arg1, } => {
-                if arg0_idx >= state.pool_String.len() { continue; }
-                consume(&mut state.pool_String[arg0_idx], arg1);
+            Action::Into_inner { arg0_idx, } => {
+                if arg0_idx >= state.pool_EncoderWriter.len() { continue; }
+                into_inner(state.pool_EncoderWriter.remove(arg0_idx));
             }
             Action::New { } => {
                 let res = new();
@@ -475,13 +365,39 @@ fuzz_target!(|actions: Vec<Action>| {
                 if arg0_idx >= state.pool_DecoderReader.len() { continue; }
                 into_inner(state.pool_DecoderReader.remove(arg0_idx));
             }
-            Action::From_consumer { } => {
-                let res = from_consumer();
+            Action::New { } => {
+                let res = new();
                 state.pool_EncoderStringWriter.push(res);
             }
-            Action::Into_inner { arg0_idx, } => {
-                if arg0_idx >= state.pool_EncoderStringWriter.len() { continue; }
-                into_inner(state.pool_EncoderStringWriter.remove(arg0_idx));
+            Action::Config { arg0_idx, } => {
+                if arg0_idx >= state.pool_GeneralPurpose.len() { continue; }
+                let res = config(&state.pool_GeneralPurpose[arg0_idx]);
+                state.pool_Config.push(res);
+            }
+            Action::Consume { arg0_idx, arg1, } => {
+                if arg0_idx >= state.pool_String.len() { continue; }
+                consume(&mut state.pool_String[arg0_idx], arg1);
+            }
+            Action::New { arg0, } => {
+                match new(arg0) {
+                    Ok(res) => state.pool_Alphabet.push(res),
+                    Err(err) => state.pool_ParseAlphabetError.push(err),
+                }
+            }
+            Action::As_str { arg0_idx, } => {
+                if arg0_idx >= state.pool_Alphabet.len() { continue; }
+                as_str(&state.pool_Alphabet[arg0_idx]);
+            }
+            Action::New { arg0_idx, arg1_idx, } => {
+                if arg0_idx >= state.pool_Alphabet.len() { continue; }
+                if arg1_idx >= state.pool_GeneralPurposeConfig.len() { continue; }
+                let res = new(&state.pool_Alphabet[arg0_idx], state.pool_GeneralPurposeConfig.remove(arg1_idx));
+                state.pool_GeneralPurpose.push(res);
+            }
+            Action::New { arg0_idx, } => {
+                if arg0_idx >= state.pool_array_u8.len() { continue; }
+                let res = new(&state.pool_array_u8[arg0_idx]);
+                state.pool_Base64Display.push(res);
             }
             Action::Write { arg0_idx, arg1_idx, } => {
                 if arg0_idx >= state.pool_EncoderStringWriter.len() { continue; }

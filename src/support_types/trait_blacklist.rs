@@ -1,36 +1,33 @@
 /// Trait 黑名单:过滤对 fuzzing 无意义的 Trait
 ///
-/// 这些 Trait 通常来自:
-/// - 标准库的标记 Trait(Send, Sync, Sized 等)
-/// - 编译器自动实现的 Trait(Auto Trait)
-/// - Blanket Implementations 的 Trait
+/// 只过滤真正的"噪音" Trait：
+/// - 标记 Trait(Send, Sync, Sized 等) - 编译器自动实现
+/// - 调试/格式化 Trait(Debug, Display) - 对 API 理解无意义
+/// - 比较 Trait(PartialEq, Eq 等) - 通常自动派生
+/// - 克隆 Trait(Clone, Copy) - 通常自动派生
+///
+/// **不**过滤重要的 API Trait：
+/// - AsRef, AsMut, From, Into, TryFrom, TryInto - 关键的类型转换约束
+/// - Borrow, BorrowMut, ToOwned - 所有权相关的重要约束
 pub const TRAIT_BLACKLIST: &[&str] = &[
-    // 标记 Trait(Marker Traits)
+    // 标记 Trait(Marker Traits) - 编译器自动实现
     "Send",
     "Sync",
     "Sized",
     "Unpin",
-    // 比较 Trait
+    // 调试/格式化 Trait - 对 API 理解无意义
     "Debug",
     "Display",
+    // 比较 Trait - 通常自动派生
     "PartialEq",
     "Eq",
     "PartialOrd",
     "Ord",
     "Hash",
-    // 转换 Trait
+    // 克隆 Trait - 通常自动派生
     "Clone",
     "Copy",
-    "Borrow",
-    "BorrowMut",
-    "From",
-    "Into",
-    "TryFrom",
-    "TryInto",
-    "AsRef",
-    "AsMut",
-    "ToOwned",
-    // 其他标准 Trait
+    // 其他简单的标准 Trait
     "Default",
     "Drop",
     "Any",

@@ -1,0 +1,1843 @@
+IrGraph {
+    type_nodes: {
+        Constant {
+            id: Id(
+                244,
+            ),
+            name: "STANDARD",
+            type_id: Id(
+                169,
+            ),
+            path: "base64::engine::general_purpose::STANDARD",
+        },
+        Struct(
+            Some(
+                Id(
+                    170,
+                ),
+            ),
+        ),
+        Enum(
+            Some(
+                Id(
+                    266,
+                ),
+            ),
+        ),
+        Enum(
+            Some(
+                Id(
+                    269,
+                ),
+            ),
+        ),
+        GenericParam {
+            name: "E",
+            owner_id: Id(
+                132,
+            ),
+            owner_name: "EncoderStringWriter",
+            trait_bounds: [
+                Id(
+                    4,
+                ),
+            ],
+        },
+        TraitObject(
+            Some(
+                Id(
+                    4,
+                ),
+            ),
+        ),
+        TraitObject(
+            Some(
+                Id(
+                    131,
+                ),
+            ),
+        ),
+        GenericParam {
+            name: "W",
+            owner_id: Id(
+                101,
+            ),
+            owner_name: "EncoderWriter",
+            trait_bounds: [
+                Id(
+                    102,
+                ),
+            ],
+        },
+        Constant {
+            id: Id(
+                246,
+            ),
+            name: "STANDARD_PAD_INDIFFERENT",
+            type_id: Id(
+                169,
+            ),
+            path: "base64::engine::general_purpose::STANDARD_PAD_INDIFFERENT",
+        },
+        Struct(
+            Some(
+                Id(
+                    132,
+                ),
+            ),
+        ),
+        Struct(
+            Some(
+                Id(
+                    169,
+                ),
+            ),
+        ),
+        Primitive(
+            "usize",
+        ),
+        GenericParam {
+            name: "R",
+            owner_id: Id(
+                66,
+            ),
+            owner_name: "DecoderReader",
+            trait_bounds: [
+                Id(
+                    67,
+                ),
+            ],
+        },
+        Constant {
+            id: Id(
+                254,
+            ),
+            name: "URL_SAFE_NO_PAD_INDIFFERENT",
+            type_id: Id(
+                169,
+            ),
+            path: "base64::engine::general_purpose::URL_SAFE_NO_PAD_INDIFFERENT",
+        },
+        Constant {
+            id: Id(
+                394,
+            ),
+            name: "IMAP_MUTF7",
+            type_id: Id(
+                170,
+            ),
+            path: "base64::alphabet::IMAP_MUTF7",
+        },
+        TraitObject(
+            Some(
+                Id(
+                    102,
+                ),
+            ),
+        ),
+        Constant {
+            id: Id(
+                208,
+            ),
+            name: "PAD",
+            type_id: Id(
+                172,
+            ),
+            path: "base64::engine::general_purpose::PAD",
+        },
+        Constant {
+            id: Id(
+                393,
+            ),
+            name: "BCRYPT",
+            type_id: Id(
+                170,
+            ),
+            path: "base64::alphabet::BCRYPT",
+        },
+        Constant {
+            id: Id(
+                245,
+            ),
+            name: "PAD_INDIFFERENT",
+            type_id: Id(
+                172,
+            ),
+            path: "base64::engine::general_purpose::PAD_INDIFFERENT",
+        },
+        GenericParam {
+            name: "E",
+            owner_id: Id(
+                3,
+            ),
+            owner_name: "Base64Display",
+            trait_bounds: [
+                Id(
+                    4,
+                ),
+            ],
+        },
+        Enum(
+            Some(
+                Id(
+                    214,
+                ),
+            ),
+        ),
+        GenericParam {
+            name: "S",
+            owner_id: Id(
+                132,
+            ),
+            owner_name: "EncoderStringWriter",
+            trait_bounds: [
+                Id(
+                    131,
+                ),
+            ],
+        },
+        Struct(
+            Some(
+                Id(
+                    101,
+                ),
+            ),
+        ),
+        Constant {
+            id: Id(
+                249,
+            ),
+            name: "STANDARD_NO_PAD_INDIFFERENT",
+            type_id: Id(
+                169,
+            ),
+            path: "base64::engine::general_purpose::STANDARD_NO_PAD_INDIFFERENT",
+        },
+        Primitive(
+            "u8",
+        ),
+        Struct(
+            Some(
+                Id(
+                    3,
+                ),
+            ),
+        ),
+        Constant {
+            id: Id(
+                395,
+            ),
+            name: "BIN_HEX",
+            type_id: Id(
+                170,
+            ),
+            path: "base64::alphabet::BIN_HEX",
+        },
+        Struct(
+            Some(
+                Id(
+                    66,
+                ),
+            ),
+        ),
+        TraitObject(
+            Some(
+                Id(
+                    242,
+                ),
+            ),
+        ),
+        GenericParam {
+            name: "E",
+            owner_id: Id(
+                101,
+            ),
+            owner_name: "EncoderWriter",
+            trait_bounds: [
+                Id(
+                    4,
+                ),
+            ],
+        },
+        Enum(
+            Some(
+                Id(
+                    274,
+                ),
+            ),
+        ),
+        Struct(
+            Some(
+                Id(
+                    47,
+                ),
+            ),
+        ),
+        Constant {
+            id: Id(
+                248,
+            ),
+            name: "NO_PAD_INDIFFERENT",
+            type_id: Id(
+                172,
+            ),
+            path: "base64::engine::general_purpose::NO_PAD_INDIFFERENT",
+        },
+        GenericParam {
+            name: "E",
+            owner_id: Id(
+                66,
+            ),
+            owner_name: "DecoderReader",
+            trait_bounds: [
+                Id(
+                    4,
+                ),
+            ],
+        },
+        Constant {
+            id: Id(
+                247,
+            ),
+            name: "STANDARD_NO_PAD",
+            type_id: Id(
+                169,
+            ),
+            path: "base64::engine::general_purpose::STANDARD_NO_PAD",
+        },
+        Constant {
+            id: Id(
+                252,
+            ),
+            name: "URL_SAFE_PAD_INDIFFERENT",
+            type_id: Id(
+                169,
+            ),
+            path: "base64::engine::general_purpose::URL_SAFE_PAD_INDIFFERENT",
+        },
+        Struct(
+            Some(
+                Id(
+                    172,
+                ),
+            ),
+        ),
+        Enum(
+            Some(
+                Id(
+                    332,
+                ),
+            ),
+        ),
+        Constant {
+            id: Id(
+                392,
+            ),
+            name: "CRYPT",
+            type_id: Id(
+                170,
+            ),
+            path: "base64::alphabet::CRYPT",
+        },
+        TraitObject(
+            Some(
+                Id(
+                    67,
+                ),
+            ),
+        ),
+        Constant {
+            id: Id(
+                243,
+            ),
+            name: "STANDARD",
+            type_id: Id(
+                170,
+            ),
+            path: "base64::alphabet::STANDARD",
+        },
+        Constant {
+            id: Id(
+                209,
+            ),
+            name: "NO_PAD",
+            type_id: Id(
+                172,
+            ),
+            path: "base64::engine::general_purpose::NO_PAD",
+        },
+        Constant {
+            id: Id(
+                251,
+            ),
+            name: "URL_SAFE",
+            type_id: Id(
+                169,
+            ),
+            path: "base64::engine::general_purpose::URL_SAFE",
+        },
+        TraitObject(
+            Some(
+                Id(
+                    260,
+                ),
+            ),
+        ),
+        Constant {
+            id: Id(
+                250,
+            ),
+            name: "URL_SAFE",
+            type_id: Id(
+                170,
+            ),
+            path: "base64::alphabet::URL_SAFE",
+        },
+        Struct(
+            Some(
+                Id(
+                    309,
+                ),
+            ),
+        ),
+        Constant {
+            id: Id(
+                253,
+            ),
+            name: "URL_SAFE_NO_PAD",
+            type_id: Id(
+                169,
+            ),
+            path: "base64::engine::general_purpose::URL_SAFE_NO_PAD",
+        },
+    },
+    operations: [
+        OpNode {
+            id: Id(
+                171,
+            ),
+            name: "new",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Create a `GeneralPurpose` engine from an [Alphabet].\n\nWhile not very expensive to initialize, ideally these should be cached\nif the engine will be used repeatedly.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                203,
+            ),
+            name: "config",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: None,
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                331,
+            ),
+            name: "new",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Create an `Alphabet` from a string of 64 unique printable ASCII bytes.\n\nThe `=` byte is not allowed as it is used for padding.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                333,
+            ),
+            name: "as_str",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Create a `&str` from the symbols in the `Alphabet`",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                88,
+            ),
+            name: "read",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Decode input from the wrapped reader.\n\nUnder non-error circumstances, this returns `Ok` with the value being the number of bytes\nwritten in `buf`.\n\nWhere possible, this function buffers base64 to minimize the number of `read()` calls to the\ndelegate reader.\n\n# Errors\n\nAny errors emitted by the delegate reader are returned. Decoding errors due to invalid\nbase64 are also possible, and will have `io::ErrorKind::InvalidData`.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                103,
+            ),
+            name: "new",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Create a new encoder that will write to the provided delegate writer.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                104,
+            ),
+            name: "finish",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Encode all remaining buffered data and write it, including any trailing incomplete input\ntriples and associated padding.\n\nOnce this succeeds, no further writes or calls to this method are allowed.\n\nThis may write to the delegate writer multiple times if the delegate writer does not accept\nall input provided to its `write` each invocation.\n\nIf you don't care about error handling, it is not necessary to call this function, as the\nequivalent finalization is done by the Drop impl.\n\nReturns the writer that this was constructed around.\n\n# Errors\n\nThe first error that is not of `ErrorKind::Interrupted` will be returned.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                105,
+            ),
+            name: "into_inner",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Unwraps this `EncoderWriter`, returning the base writer it writes base64 encoded output\nto.\n\nNormally this method should not be needed, since `finish()` returns the inner writer if\nit completes successfully. That will also ensure all data has been flushed, which the\n`into_inner()` function does *not* do.\n\nCalling this method after `finish()` has completed successfully will panic, since the\nwriter has already been returned.\n\nThis method may be useful if the writer implements additional APIs beyond the `Write`\ntrait. Note that the inner writer might be in an error state or have an incomplete\nbase64 string written to it.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                5,
+            ),
+            name: "new",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Create a `Base64Display` with the provided engine.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                151,
+            ),
+            name: "write",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: None,
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                152,
+            ),
+            name: "flush",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: None,
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                240,
+            ),
+            name: "encode_padding",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: None,
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                157,
+            ),
+            name: "consume",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: None,
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                210,
+            ),
+            name: "new",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Create a new config with `padding` = `true`, `decode_allow_trailing_bits` = `false`, and\n`decode_padding_mode = DecodePaddingMode::RequireCanonicalPadding`.\n\nThis probably matches most people's expectations, but consider disabling padding to save\na few bytes unless you specifically need it for compatibility with some legacy system.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                211,
+            ),
+            name: "with_encode_padding",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Create a new config based on `self` with an updated `padding` setting.\n\nIf `padding` is `true`, encoding will append either 1 or 2 `=` padding characters as needed\nto produce an output whose length is a multiple of 4.\n\nPadding is not needed for correct decoding and only serves to waste bytes, but it's in the\n[spec](https://datatracker.ietf.org/doc/html/rfc4648#section-3.2).\n\nFor new applications, consider not using padding if the decoders you're using don't require\npadding to be present.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                212,
+            ),
+            name: "with_decode_allow_trailing_bits",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Create a new config based on `self` with an updated `decode_allow_trailing_bits` setting.\n\nMost users will not need to configure this. It's useful if you need to decode base64\nproduced by a buggy encoder that has bits set in the unused space on the last base64\ncharacter as per [forgiving-base64 decode](https://infra.spec.whatwg.org/#forgiving-base64-decode).\nIf invalid trailing bits are present and this is `true`, those bits will\nbe silently ignored, else `DecodeError::InvalidLastSymbol` will be emitted.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                213,
+            ),
+            name: "with_decode_padding_mode",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Create a new config based on `self` with an updated `decode_padding_mode` setting.\n\nPadding is not useful in terms of representing encoded data -- it makes no difference to\nthe decoder if padding is present or not, so if you have some un-padded input to decode, it\nis perfectly fine to use `DecodePaddingMode::Indifferent` to prevent errors from being\nemitted.\n\nHowever, since in practice\n[people who learned nothing from BER vs DER seem to expect base64 to have one canonical encoding](https://eprint.iacr.org/2022/361),\nthe default setting is the stricter `DecodePaddingMode::RequireCanonicalPadding`.\n\nOr, if \"canonical\" in your circumstance means _no_ padding rather than padding to the\nnext multiple of four, there's `DecodePaddingMode::RequireNoPadding`.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                68,
+            ),
+            name: "new",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Create a new decoder that will read from the provided reader `r`.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                69,
+            ),
+            name: "into_inner",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Unwraps this `DecoderReader`, returning the base reader which it reads base64 encoded\ninput from.\n\nBecause `DecoderReader` performs internal buffering, the state of the inner reader is\nunspecified. This function is mainly provided because the inner reader type may provide\nadditional functionality beyond the `Read` implementation which may still be useful.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                136,
+            ),
+            name: "new",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Create a `EncoderStringWriter` that will encode into a new `String` with the provided config.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                133,
+            ),
+            name: "from_consumer",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Create a `EncoderStringWriter` that will append to the provided `StrConsumer`.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                134,
+            ),
+            name: "into_inner",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Encode all remaining buffered data, including any trailing incomplete input triples and\nassociated padding.\n\nReturns the base64-encoded form of the accumulated written data.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                122,
+            ),
+            name: "write",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Encode input and then write to the delegate writer.\n\nUnder non-error circumstances, this returns `Ok` with the value being the number of bytes\nof `input` consumed. The value may be `0`, which interacts poorly with `write_all`, which\ninterprets `Ok(0)` as an error, despite it being allowed by the contract of `write`. See\n<https://github.com/rust-lang/rust/issues/56889> for more on that.\n\nIf the previous call to `write` provided more (encoded) data than the delegate writer could\naccept in a single call to its `write`, the remaining data is buffered. As long as buffered\ndata is present, subsequent calls to `write` will try to write the remaining buffered data\nto the delegate and return either `Ok(0)` -- and therefore not consume any of `input` -- or\nan error.\n\n# Errors\n\nAny errors emitted by the delegate writer are returned.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                124,
+            ),
+            name: "flush",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Because this is usually treated as OK to call multiple times, it will *not* flush any\nincomplete chunks of input or write padding.\n# Errors\n\nThe first error that is not of [`ErrorKind::Interrupted`] will be returned.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                154,
+            ),
+            name: "consume",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Consume the base64 encoded data in `buf`",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                276,
+            ),
+            name: "decoded_len_estimate",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Returns a conservative (err on the side of too big) estimate of the decoded length to use\nfor pre-allocating buffers, etc.\n\nThe estimate must be no larger than the next largest complete triple of decoded bytes.\nThat is, the final quad of tokens to decode may be assumed to be complete with no padding.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                261,
+            ),
+            name: "config",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Returns the config for this engine.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                262,
+            ),
+            name: "encode",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Encode arbitrary octets as base64 using the provided `Engine`.\nReturns a `String`.\n\n# Example\n\n```rust\nuse base64::{Engine as _, engine::{self, general_purpose}, alphabet};\n\nlet b64 = general_purpose::STANDARD.encode(b\"hello world~\");\nprintln!(\"{}\", b64);\n\nconst CUSTOM_ENGINE: engine::GeneralPurpose =\n    engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);\n\nlet b64_url = CUSTOM_ENGINE.encode(b\"hello internet~\");\n```",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                264,
+            ),
+            name: "encode_string",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Encode arbitrary octets as base64 into a supplied `String`.\nWrites into the supplied `String`, which may allocate if its internal buffer isn't big enough.\n\n# Example\n\n```rust\nuse base64::{Engine as _, engine::{self, general_purpose}, alphabet};\nconst CUSTOM_ENGINE: engine::GeneralPurpose =\n    engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);\n\nfn main() {\n    let mut buf = String::new();\n    general_purpose::STANDARD.encode_string(b\"hello world~\", &mut buf);\n    println!(\"{}\", buf);\n\n    buf.clear();\n    CUSTOM_ENGINE.encode_string(b\"hello internet~\", &mut buf);\n    println!(\"{}\", buf);\n}\n```",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                265,
+            ),
+            name: "encode_slice",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Encode arbitrary octets as base64 into a supplied slice.\nWrites into the supplied output buffer.\n\nThis is useful if you wish to avoid allocation entirely (e.g. encoding into a stack-resident\nor statically-allocated buffer).\n\n# Example\n\n```\nuse base64::{Engine as _, engine::general_purpose};\nlet s = b\"hello internet!\";\nlet mut buf = Vec::new();\n// make sure we'll have a slice big enough for base64 + padding\nbuf.resize(s.len() * 4 / 3 + 4, 0);\n\nlet bytes_written = general_purpose::STANDARD.encode_slice(s, &mut buf).unwrap();\n\n// shorten our vec down to just what was written\nbuf.truncate(bytes_written);\n\nassert_eq!(s, general_purpose::STANDARD.decode(&buf).unwrap().as_slice());\n```",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                267,
+            ),
+            name: "decode",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Decode the input into a new `Vec`.\n\n# Example\n\n```rust\nuse base64::{Engine as _, alphabet, engine::{self, general_purpose}};\n\nlet bytes = general_purpose::STANDARD\n    .decode(\"aGVsbG8gd29ybGR+Cg==\").unwrap();\nprintln!(\"{:?}\", bytes);\n\n// custom engine setup\nlet bytes_url = engine::GeneralPurpose::new(\n             &alphabet::URL_SAFE,\n             general_purpose::NO_PAD)\n    .decode(\"aGVsbG8gaW50ZXJuZXR-Cg\").unwrap();\nprintln!(\"{:?}\", bytes_url);\n```",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                270,
+            ),
+            name: "decode_vec",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Decode the `input` into the supplied `buffer`.\n\nWrites into the supplied `Vec`, which may allocate if its internal buffer isn't big enough.\nReturns a `Result` containing an empty tuple, aka `()`.\n\n# Example\n\n```rust\nuse base64::{Engine as _, alphabet, engine::{self, general_purpose}};\nconst CUSTOM_ENGINE: engine::GeneralPurpose =\n    engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::PAD);\n\nfn main() {\n    use base64::Engine;\n    let mut buffer = Vec::<u8>::new();\n    // with the default engine\n    general_purpose::STANDARD\n        .decode_vec(\"aGVsbG8gd29ybGR+Cg==\", &mut buffer,).unwrap();\n    println!(\"{:?}\", buffer);\n\n    buffer.clear();\n\n    // with a custom engine\n    CUSTOM_ENGINE.decode_vec(\n        \"aGVsbG8gaW50ZXJuZXR-Cg==\",\n        &mut buffer,\n    ).unwrap();\n    println!(\"{:?}\", buffer);\n}\n```",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                273,
+            ),
+            name: "decode_slice",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Decode the input into the provided output slice.\n\nReturns the number of bytes written to the slice, or an error if `output` is smaller than\nthe estimated decoded length.\n\nThis will not write any bytes past exactly what is decoded (no stray garbage bytes at the end).\n\nSee [`crate::decoded_len_estimate`] for calculating buffer sizes.\n\nSee [`Engine::decode_slice_unchecked`] for a version that panics instead of returning an error\nif the output buffer is too small.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                272,
+            ),
+            name: "decode_slice_unchecked",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Decode the input into the provided output slice.\n\nReturns the number of bytes written to the slice.\n\nThis will not write any bytes past exactly what is decoded (no stray garbage bytes at the end).\n\nSee [`crate::decoded_len_estimate`] for calculating buffer sizes.\n\nSee [`Engine::decode_slice`] for a version that returns an error instead of panicking if the output\nbuffer is too small.\n\n# Panics\n\nPanics if the provided output buffer is too small for the decoded data.",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+        OpNode {
+            id: Id(
+                275,
+            ),
+            name: "encode_padding",
+            kind: FnCall,
+            inputs: [],
+            output: None,
+            error_output: None,
+            generic_constraints: [],
+            docs: Some(
+                "Returns `true` if padding should be added after the encoded output.\n\nPadding is added outside the engine's `encode()` since the engine may be used\nto encode only a chunk of the overall output, so it can't always know when\nthe output is \"done\" and would therefore need padding (if configured).",
+            ),
+            is_unsafe: false,
+            is_const: false,
+            is_public: true,
+            is_fallible: false,
+        },
+    ],
+    type_relations: [
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        266,
+                    ),
+                ),
+            ),
+            to: Enum(
+                Some(
+                    Id(
+                        266,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        214,
+                    ),
+                ),
+            ),
+            to: Enum(
+                Some(
+                    Id(
+                        214,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        214,
+                    ),
+                ),
+            ),
+            to: Enum(
+                Some(
+                    Id(
+                        214,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        214,
+                    ),
+                ),
+            ),
+            to: Enum(
+                Some(
+                    Id(
+                        214,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        269,
+                    ),
+                ),
+            ),
+            to: Primitive(
+                "usize",
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        269,
+                    ),
+                ),
+            ),
+            to: Primitive(
+                "u8",
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        269,
+                    ),
+                ),
+            ),
+            to: Primitive(
+                "usize",
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        269,
+                    ),
+                ),
+            ),
+            to: Primitive(
+                "usize",
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        269,
+                    ),
+                ),
+            ),
+            to: Primitive(
+                "u8",
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        269,
+                    ),
+                ),
+            ),
+            to: Enum(
+                Some(
+                    Id(
+                        269,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        332,
+                    ),
+                ),
+            ),
+            to: Enum(
+                Some(
+                    Id(
+                        332,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        332,
+                    ),
+                ),
+            ),
+            to: Primitive(
+                "u8",
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        332,
+                    ),
+                ),
+            ),
+            to: Primitive(
+                "u8",
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        332,
+                    ),
+                ),
+            ),
+            to: Primitive(
+                "u8",
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        274,
+                    ),
+                ),
+            ),
+            to: Enum(
+                Some(
+                    Id(
+                        269,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Enum(
+                Some(
+                    Id(
+                        274,
+                    ),
+                ),
+            ),
+            to: Enum(
+                Some(
+                    Id(
+                        274,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Struct(
+                Some(
+                    Id(
+                        47,
+                    ),
+                ),
+            ),
+            to: TraitObject(
+                Some(
+                    Id(
+                        131,
+                    ),
+                ),
+            ),
+            mode: Implements,
+        },
+        TypeRelation {
+            from: Struct(
+                Some(
+                    Id(
+                        169,
+                    ),
+                ),
+            ),
+            to: TraitObject(
+                Some(
+                    Id(
+                        4,
+                    ),
+                ),
+            ),
+            mode: Implements,
+        },
+        TypeRelation {
+            from: Struct(
+                Some(
+                    Id(
+                        172,
+                    ),
+                ),
+            ),
+            to: TraitObject(
+                Some(
+                    Id(
+                        242,
+                    ),
+                ),
+            ),
+            mode: Implements,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    254,
+                ),
+                name: "URL_SAFE_NO_PAD_INDIFFERENT",
+                type_id: Id(
+                    169,
+                ),
+                path: "base64::engine::general_purpose::URL_SAFE_NO_PAD_INDIFFERENT",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        169,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    246,
+                ),
+                name: "STANDARD_PAD_INDIFFERENT",
+                type_id: Id(
+                    169,
+                ),
+                path: "base64::engine::general_purpose::STANDARD_PAD_INDIFFERENT",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        169,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    394,
+                ),
+                name: "IMAP_MUTF7",
+                type_id: Id(
+                    170,
+                ),
+                path: "base64::alphabet::IMAP_MUTF7",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        170,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    247,
+                ),
+                name: "STANDARD_NO_PAD",
+                type_id: Id(
+                    169,
+                ),
+                path: "base64::engine::general_purpose::STANDARD_NO_PAD",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        169,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    243,
+                ),
+                name: "STANDARD",
+                type_id: Id(
+                    170,
+                ),
+                path: "base64::alphabet::STANDARD",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        170,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    395,
+                ),
+                name: "BIN_HEX",
+                type_id: Id(
+                    170,
+                ),
+                path: "base64::alphabet::BIN_HEX",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        170,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    251,
+                ),
+                name: "URL_SAFE",
+                type_id: Id(
+                    169,
+                ),
+                path: "base64::engine::general_purpose::URL_SAFE",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        169,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    393,
+                ),
+                name: "BCRYPT",
+                type_id: Id(
+                    170,
+                ),
+                path: "base64::alphabet::BCRYPT",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        170,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    252,
+                ),
+                name: "URL_SAFE_PAD_INDIFFERENT",
+                type_id: Id(
+                    169,
+                ),
+                path: "base64::engine::general_purpose::URL_SAFE_PAD_INDIFFERENT",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        169,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    245,
+                ),
+                name: "PAD_INDIFFERENT",
+                type_id: Id(
+                    172,
+                ),
+                path: "base64::engine::general_purpose::PAD_INDIFFERENT",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        172,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    250,
+                ),
+                name: "URL_SAFE",
+                type_id: Id(
+                    170,
+                ),
+                path: "base64::alphabet::URL_SAFE",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        170,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    392,
+                ),
+                name: "CRYPT",
+                type_id: Id(
+                    170,
+                ),
+                path: "base64::alphabet::CRYPT",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        170,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    209,
+                ),
+                name: "NO_PAD",
+                type_id: Id(
+                    172,
+                ),
+                path: "base64::engine::general_purpose::NO_PAD",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        172,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    253,
+                ),
+                name: "URL_SAFE_NO_PAD",
+                type_id: Id(
+                    169,
+                ),
+                path: "base64::engine::general_purpose::URL_SAFE_NO_PAD",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        169,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    249,
+                ),
+                name: "STANDARD_NO_PAD_INDIFFERENT",
+                type_id: Id(
+                    169,
+                ),
+                path: "base64::engine::general_purpose::STANDARD_NO_PAD_INDIFFERENT",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        169,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    208,
+                ),
+                name: "PAD",
+                type_id: Id(
+                    172,
+                ),
+                path: "base64::engine::general_purpose::PAD",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        172,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    244,
+                ),
+                name: "STANDARD",
+                type_id: Id(
+                    169,
+                ),
+                path: "base64::engine::general_purpose::STANDARD",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        169,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: Constant {
+                id: Id(
+                    248,
+                ),
+                name: "NO_PAD_INDIFFERENT",
+                type_id: Id(
+                    172,
+                ),
+                path: "base64::engine::general_purpose::NO_PAD_INDIFFERENT",
+            },
+            to: Struct(
+                Some(
+                    Id(
+                        172,
+                    ),
+                ),
+            ),
+            mode: Move,
+        },
+        TypeRelation {
+            from: GenericParam {
+                name: "E",
+                owner_id: Id(
+                    132,
+                ),
+                owner_name: "EncoderStringWriter",
+                trait_bounds: [
+                    Id(
+                        4,
+                    ),
+                ],
+            },
+            to: TraitObject(
+                Some(
+                    Id(
+                        4,
+                    ),
+                ),
+            ),
+            mode: Require,
+        },
+        TypeRelation {
+            from: GenericParam {
+                name: "W",
+                owner_id: Id(
+                    101,
+                ),
+                owner_name: "EncoderWriter",
+                trait_bounds: [
+                    Id(
+                        102,
+                    ),
+                ],
+            },
+            to: TraitObject(
+                Some(
+                    Id(
+                        102,
+                    ),
+                ),
+            ),
+            mode: Require,
+        },
+        TypeRelation {
+            from: GenericParam {
+                name: "R",
+                owner_id: Id(
+                    66,
+                ),
+                owner_name: "DecoderReader",
+                trait_bounds: [
+                    Id(
+                        67,
+                    ),
+                ],
+            },
+            to: TraitObject(
+                Some(
+                    Id(
+                        67,
+                    ),
+                ),
+            ),
+            mode: Require,
+        },
+        TypeRelation {
+            from: GenericParam {
+                name: "E",
+                owner_id: Id(
+                    3,
+                ),
+                owner_name: "Base64Display",
+                trait_bounds: [
+                    Id(
+                        4,
+                    ),
+                ],
+            },
+            to: TraitObject(
+                Some(
+                    Id(
+                        4,
+                    ),
+                ),
+            ),
+            mode: Require,
+        },
+        TypeRelation {
+            from: GenericParam {
+                name: "S",
+                owner_id: Id(
+                    132,
+                ),
+                owner_name: "EncoderStringWriter",
+                trait_bounds: [
+                    Id(
+                        131,
+                    ),
+                ],
+            },
+            to: TraitObject(
+                Some(
+                    Id(
+                        131,
+                    ),
+                ),
+            ),
+            mode: Require,
+        },
+        TypeRelation {
+            from: GenericParam {
+                name: "E",
+                owner_id: Id(
+                    101,
+                ),
+                owner_name: "EncoderWriter",
+                trait_bounds: [
+                    Id(
+                        4,
+                    ),
+                ],
+            },
+            to: TraitObject(
+                Some(
+                    Id(
+                        4,
+                    ),
+                ),
+            ),
+            mode: Require,
+        },
+        TypeRelation {
+            from: GenericParam {
+                name: "E",
+                owner_id: Id(
+                    66,
+                ),
+                owner_name: "DecoderReader",
+                trait_bounds: [
+                    Id(
+                        4,
+                    ),
+                ],
+            },
+            to: TraitObject(
+                Some(
+                    Id(
+                        4,
+                    ),
+                ),
+            ),
+            mode: Require,
+        },
+    ],
+}

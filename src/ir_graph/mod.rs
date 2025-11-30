@@ -1,6 +1,8 @@
 pub mod builder;
-pub mod export;
 pub mod generic_scope;
+pub mod method_builder;
+pub mod node_info;
+pub mod type_cache;
 /// IR Graph 模块:中间表示层
 ///
 /// 这一层将 rustdoc JSON 转换为扁平的、语义化的可调用路径图.
@@ -10,4 +12,6 @@ pub mod generic_scope;
 pub mod structure;
 
 pub use builder::IrGraphBuilder;
-pub use structure::{IrGraph, TypeNode};
+pub use node_info::*;
+pub use structure::{EdgeMode, IrGraph, NodeType, TypeRelation};
+pub use type_cache::{GenericScope, TypeCache, TypeContext, TypeKey};

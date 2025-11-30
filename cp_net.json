@@ -1,69 +1,6 @@
 {
   "places": [
     {
-      "id": "place_17997327693882849345",
-      "type_info": "NO_PAD_INDIFFERENT",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_7884162033521563644",
-      "type_info": "EncoderStringWriter",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_7879051788259116088",
-      "type_info": "DecodePaddingMode",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_15616505276619872372",
-      "type_info": "STANDARD_NO_PAD_INDIFFERENT",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_6240093653558240571",
-      "type_info": "String",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_14627770981498722351",
-      "type_info": "IMAP_MUTF7",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_7991007273124547738",
-      "type_info": "Alphabet",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
       "id": "place_5537765782388923575",
       "type_info": "Vec<u8>",
       "is_trait_hub": false,
@@ -73,53 +10,8 @@
       "is_copy": false
     },
     {
-      "id": "place_3890282844341050568",
-      "type_info": "Base64Display",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_1779431626412113138",
-      "type_info": "DecodeEstimate",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_12592984572360244390",
-      "type_info": "URL_SAFE_PAD_INDIFFERENT",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_6474122208152276879",
-      "type_info": "bool",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": true,
-      "is_copy": true
-    },
-    {
-      "id": "place_5476732334684356144",
-      "type_info": "URL_SAFE_NO_PAD",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_4464154666114426859",
-      "type_info": "GeneralPurposeConfig",
+      "id": "place_7508759130659522750",
+      "type_info": "URL_SAFE_NO_PAD_INDIFFERENT",
       "is_trait_hub": false,
       "trait_id": null,
       "resolved_path": null,
@@ -136,8 +28,8 @@
       "is_copy": false
     },
     {
-      "id": "place_6243031848768727703",
-      "type_info": "DecodeSliceError",
+      "id": "place_7879051788259116088",
+      "type_info": "DecodePaddingMode",
       "is_trait_hub": false,
       "trait_id": null,
       "resolved_path": null,
@@ -145,17 +37,8 @@
       "is_copy": false
     },
     {
-      "id": "place_6845559422031012432",
-      "type_info": "URL_SAFE",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_7449355588186438760",
-      "type_info": "StrConsumer",
+      "id": "place_6240093653558240571",
+      "type_info": "String",
       "is_trait_hub": false,
       "trait_id": null,
       "resolved_path": null,
@@ -172,8 +55,17 @@
       "is_copy": false
     },
     {
-      "id": "place_16796711621077871184",
-      "type_info": "BCRYPT",
+      "id": "place_7991007273124547738",
+      "type_info": "Alphabet",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_6243031848768727703",
+      "type_info": "DecodeSliceError",
       "is_trait_hub": false,
       "trait_id": null,
       "resolved_path": null,
@@ -190,89 +82,8 @@
       "is_copy": false
     },
     {
-      "id": "place_478552328866085687",
-      "type_info": "NO_PAD",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_4199625609901051029",
-      "type_info": "()",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_665373941718427294",
-      "type_info": "usize",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": true,
-      "is_copy": true
-    },
-    {
-      "id": "place_10931728990624406204",
-      "type_info": "PAD_INDIFFERENT",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_1055025701207509855",
-      "type_info": "DecodeMetadata",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_17236208315346418821",
-      "type_info": "u8",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": true,
-      "is_copy": true
-    },
-    {
-      "id": "place_6337583537840307025",
-      "type_info": "DecoderReader",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_17189642964525760362",
-      "type_info": "ParseAlphabetError",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_13788507874569196026",
-      "type_info": "Config",
-      "is_trait_hub": false,
-      "trait_id": null,
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "place_3007510199653631179",
-      "type_info": "EncodeSliceError",
+      "id": "place_15535155567098852799",
+      "type_info": "CRYPT",
       "is_trait_hub": false,
       "trait_id": null,
       "resolved_path": null,
@@ -289,6 +100,78 @@
       "is_copy": false
     },
     {
+      "id": "place_6474122208152276879",
+      "type_info": "bool",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": true,
+      "is_copy": true
+    },
+    {
+      "id": "place_9738056950506608443",
+      "type_info": "Vec<u8>",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_17236208315346418821",
+      "type_info": "u8",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": true,
+      "is_copy": true
+    },
+    {
+      "id": "place_2185574778298902832",
+      "type_info": "STANDARD",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_16796711621077871184",
+      "type_info": "BCRYPT",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_6415952798859902697",
+      "type_info": "GeneralPurpose",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_17874742837024923103",
+      "type_info": "STANDARD_PAD_INDIFFERENT",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_16996192123203025374",
+      "type_info": "[u8]",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
       "id": "place_11193799429560175560",
       "type_info": "STANDARD_NO_PAD",
       "is_trait_hub": false,
@@ -298,8 +181,8 @@
       "is_copy": false
     },
     {
-      "id": "place_15535155567098852799",
-      "type_info": "CRYPT",
+      "id": "place_4199625609901051029",
+      "type_info": "()",
       "is_trait_hub": false,
       "trait_id": null,
       "resolved_path": null,
@@ -307,8 +190,35 @@
       "is_copy": false
     },
     {
-      "id": "place_9738056950506608443",
-      "type_info": "Vec<u8>",
+      "id": "place_13788507874569196026",
+      "type_info": "Config",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_10931728990624406204",
+      "type_info": "PAD_INDIFFERENT",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_3007510199653631179",
+      "type_info": "EncodeSliceError",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_5476732334684356144",
+      "type_info": "URL_SAFE_NO_PAD",
       "is_trait_hub": false,
       "trait_id": null,
       "resolved_path": null,
@@ -325,8 +235,8 @@
       "is_copy": false
     },
     {
-      "id": "place_6415952798859902697",
-      "type_info": "GeneralPurpose",
+      "id": "place_14627770981498722351",
+      "type_info": "IMAP_MUTF7",
       "is_trait_hub": false,
       "trait_id": null,
       "resolved_path": null,
@@ -334,8 +244,8 @@
       "is_copy": false
     },
     {
-      "id": "place_7508759130659522750",
-      "type_info": "URL_SAFE_NO_PAD_INDIFFERENT",
+      "id": "place_17189642964525760362",
+      "type_info": "ParseAlphabetError",
       "is_trait_hub": false,
       "trait_id": null,
       "resolved_path": null,
@@ -361,6 +271,60 @@
       "is_copy": false
     },
     {
+      "id": "place_6337583537840307025",
+      "type_info": "DecoderReader",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_17997327693882849345",
+      "type_info": "NO_PAD_INDIFFERENT",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_15616505276619872372",
+      "type_info": "STANDARD_NO_PAD_INDIFFERENT",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_7449355588186438760",
+      "type_info": "StrConsumer",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_12592984572360244390",
+      "type_info": "URL_SAFE_PAD_INDIFFERENT",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_665373941718427294",
+      "type_info": "usize",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": true,
+      "is_copy": true
+    },
+    {
       "id": "place_6080785223354906535",
       "type_info": "BIN_HEX",
       "is_trait_hub": false,
@@ -370,8 +334,8 @@
       "is_copy": false
     },
     {
-      "id": "place_17874742837024923103",
-      "type_info": "STANDARD_PAD_INDIFFERENT",
+      "id": "place_4464154666114426859",
+      "type_info": "GeneralPurposeConfig",
       "is_trait_hub": false,
       "trait_id": null,
       "resolved_path": null,
@@ -379,8 +343,8 @@
       "is_copy": false
     },
     {
-      "id": "place_2185574778298902832",
-      "type_info": "STANDARD",
+      "id": "place_3890282844341050568",
+      "type_info": "Base64Display",
       "is_trait_hub": false,
       "trait_id": null,
       "resolved_path": null,
@@ -388,10 +352,55 @@
       "is_copy": false
     },
     {
-      "id": "place_16996192123203025374",
-      "type_info": "[u8]",
+      "id": "place_6845559422031012432",
+      "type_info": "URL_SAFE",
       "is_trait_hub": false,
       "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_1055025701207509855",
+      "type_info": "DecodeMetadata",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_1779431626412113138",
+      "type_info": "DecodeEstimate",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_478552328866085687",
+      "type_info": "NO_PAD",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "place_7884162033521563644",
+      "type_info": "EncoderStringWriter",
+      "is_trait_hub": false,
+      "trait_id": null,
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "trait_Id(263)",
+      "type_info": "dyn UnknownTrait",
+      "is_trait_hub": true,
+      "trait_id": "Id(263)",
       "resolved_path": null,
       "is_source": false,
       "is_copy": false
@@ -406,10 +415,19 @@
       "is_copy": false
     },
     {
-      "id": "trait_Id(3)",
+      "id": "trait_Id(47)",
       "type_info": "dyn UnknownTrait",
       "is_trait_hub": true,
-      "trait_id": "Id(3)",
+      "trait_id": "Id(47)",
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "trait_Id(309)",
+      "type_info": "dyn UnknownTrait",
+      "is_trait_hub": true,
+      "trait_id": "Id(309)",
       "resolved_path": null,
       "is_source": false,
       "is_copy": false
@@ -424,19 +442,64 @@
       "is_copy": false
     },
     {
-      "id": "trait_Id(47)",
+      "id": "trait_Id(3)",
       "type_info": "dyn UnknownTrait",
       "is_trait_hub": true,
-      "trait_id": "Id(47)",
+      "trait_id": "Id(3)",
       "resolved_path": null,
       "is_source": false,
       "is_copy": false
     },
     {
-      "id": "trait_Id(332)",
+      "id": "trait_Id(269)",
       "type_info": "dyn UnknownTrait",
       "is_trait_hub": true,
-      "trait_id": "Id(332)",
+      "trait_id": "Id(269)",
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "trait_Id(101)",
+      "type_info": "dyn UnknownTrait",
+      "is_trait_hub": true,
+      "trait_id": "Id(101)",
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "trait_Id(214)",
+      "type_info": "dyn UnknownTrait",
+      "is_trait_hub": true,
+      "trait_id": "Id(214)",
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "trait_Id(274)",
+      "type_info": "dyn UnknownTrait",
+      "is_trait_hub": true,
+      "trait_id": "Id(274)",
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "trait_Id(266)",
+      "type_info": "dyn UnknownTrait",
+      "is_trait_hub": true,
+      "trait_id": "Id(266)",
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "trait_Id(172)",
+      "type_info": "dyn UnknownTrait",
+      "is_trait_hub": true,
+      "trait_id": "Id(172)",
       "resolved_path": null,
       "is_source": false,
       "is_copy": false
@@ -460,91 +523,10 @@
       "is_copy": false
     },
     {
-      "id": "trait_Id(101)",
+      "id": "trait_Id(332)",
       "type_info": "dyn UnknownTrait",
       "is_trait_hub": true,
-      "trait_id": "Id(101)",
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "trait_Id(266)",
-      "type_info": "dyn UnknownTrait",
-      "is_trait_hub": true,
-      "trait_id": "Id(266)",
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "trait_Id(214)",
-      "type_info": "dyn UnknownTrait",
-      "is_trait_hub": true,
-      "trait_id": "Id(214)",
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "trait_Id(172)",
-      "type_info": "dyn UnknownTrait",
-      "is_trait_hub": true,
-      "trait_id": "Id(172)",
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "trait_Id(274)",
-      "type_info": "dyn UnknownTrait",
-      "is_trait_hub": true,
-      "trait_id": "Id(274)",
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "trait_Id(309)",
-      "type_info": "dyn UnknownTrait",
-      "is_trait_hub": true,
-      "trait_id": "Id(309)",
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "trait_Id(263)",
-      "type_info": "dyn UnknownTrait",
-      "is_trait_hub": true,
-      "trait_id": "Id(263)",
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "trait_Id(269)",
-      "type_info": "dyn UnknownTrait",
-      "is_trait_hub": true,
-      "trait_id": "Id(269)",
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "trait_Id(16)",
-      "type_info": "dyn UnknownTrait",
-      "is_trait_hub": true,
-      "trait_id": "Id(16)",
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
-      "id": "trait_Id(50)",
-      "type_info": "dyn UnknownTrait",
-      "is_trait_hub": true,
-      "trait_id": "Id(50)",
+      "trait_id": "Id(332)",
       "resolved_path": null,
       "is_source": false,
       "is_copy": false
@@ -559,15 +541,6 @@
       "is_copy": false
     },
     {
-      "id": "trait_Id(242)",
-      "type_info": "dyn Config",
-      "is_trait_hub": true,
-      "trait_id": "Id(242)",
-      "resolved_path": null,
-      "is_source": false,
-      "is_copy": false
-    },
-    {
       "id": "trait_Id(12)",
       "type_info": "dyn UnknownTrait",
       "is_trait_hub": true,
@@ -577,19 +550,19 @@
       "is_copy": false
     },
     {
-      "id": "trait_Id(301)",
+      "id": "trait_Id(50)",
       "type_info": "dyn UnknownTrait",
       "is_trait_hub": true,
-      "trait_id": "Id(301)",
+      "trait_id": "Id(50)",
       "resolved_path": null,
       "is_source": false,
       "is_copy": false
     },
     {
-      "id": "trait_Id(102)",
+      "id": "trait_Id(16)",
       "type_info": "dyn UnknownTrait",
       "is_trait_hub": true,
-      "trait_id": "Id(102)",
+      "trait_id": "Id(16)",
       "resolved_path": null,
       "is_source": false,
       "is_copy": false
@@ -604,6 +577,15 @@
       "is_copy": false
     },
     {
+      "id": "trait_Id(102)",
+      "type_info": "dyn UnknownTrait",
+      "is_trait_hub": true,
+      "trait_id": "Id(102)",
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
       "id": "trait_Id(67)",
       "type_info": "dyn UnknownTrait",
       "is_trait_hub": true,
@@ -613,10 +595,28 @@
       "is_copy": false
     },
     {
+      "id": "trait_Id(301)",
+      "type_info": "dyn UnknownTrait",
+      "is_trait_hub": true,
+      "trait_id": "Id(301)",
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
       "id": "trait_Id(4)",
       "type_info": "dyn Engine",
       "is_trait_hub": true,
       "trait_id": "Id(4)",
+      "resolved_path": null,
+      "is_source": false,
+      "is_copy": false
+    },
+    {
+      "id": "trait_Id(242)",
+      "type_info": "dyn Config",
+      "is_trait_hub": true,
+      "trait_id": "Id(242)",
       "resolved_path": null,
       "is_source": false,
       "is_copy": false
@@ -633,11 +633,330 @@
   ],
   "transitions": [
     {
+      "id": "impl_UnknownTrait_Id(17)_for_Id(214)",
+      "name": "impl UnknownTrait for DecodePaddingMode",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_7879051788259116088",
+          "to_trait": "trait_Id(17)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(12)_for_Id(266)",
+      "name": "impl UnknownTrait for EncodeSliceError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_3007510199653631179",
+          "to_trait": "trait_Id(12)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(50)_for_Id(274)",
+      "name": "impl UnknownTrait for DecodeSliceError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6243031848768727703",
+          "to_trait": "trait_Id(50)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(16)_for_Id(214)",
+      "name": "impl UnknownTrait for DecodePaddingMode",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_7879051788259116088",
+          "to_trait": "trait_Id(16)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(12)_for_Id(169)",
+      "name": "impl UnknownTrait for GeneralPurpose",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6415952798859902697",
+          "to_trait": "trait_Id(12)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(17)_for_Id(172)",
+      "name": "impl UnknownTrait for GeneralPurposeConfig",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_4464154666114426859",
+          "to_trait": "trait_Id(17)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
       "id": "impl_UnknownTrait_Id(16)_for_Id(3)",
       "name": "impl UnknownTrait for Base64Display",
       "kind": {
         "ImplCast": {
           "from_type": "place_3890282844341050568",
+          "to_trait": "trait_Id(16)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(17)_for_Id(101)",
+      "name": "impl UnknownTrait for EncoderWriter",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_318004552278808542",
+          "to_trait": "trait_Id(17)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(17)_for_Id(274)",
+      "name": "impl UnknownTrait for DecodeSliceError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6243031848768727703",
+          "to_trait": "trait_Id(17)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(17)_for_Id(132)",
+      "name": "impl UnknownTrait for EncoderStringWriter",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_7884162033521563644",
+          "to_trait": "trait_Id(17)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(16)_for_Id(266)",
+      "name": "impl UnknownTrait for EncodeSliceError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_3007510199653631179",
+          "to_trait": "trait_Id(16)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(16)_for_Id(332)",
+      "name": "impl UnknownTrait for ParseAlphabetError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_17189642964525760362",
+          "to_trait": "trait_Id(16)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(185)_for_Id(172)",
+      "name": "impl UnknownTrait for GeneralPurposeConfig",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_4464154666114426859",
+          "to_trait": "trait_Id(185)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(50)_for_Id(269)",
+      "name": "impl UnknownTrait for DecodeError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6547238509722300142",
+          "to_trait": "trait_Id(50)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(102)_for_Id(101)",
+      "name": "impl UnknownTrait for EncoderWriter",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_318004552278808542",
+          "to_trait": "trait_Id(102)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(102)_for_Id(132)",
+      "name": "impl UnknownTrait for EncoderStringWriter",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_7884162033521563644",
+          "to_trait": "trait_Id(102)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(12)_for_Id(172)",
+      "name": "impl UnknownTrait for GeneralPurposeConfig",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_4464154666114426859",
+          "to_trait": "trait_Id(12)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(12)_for_Id(309)",
+      "name": "impl UnknownTrait for DecodeMetadata",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_1055025701207509855",
+          "to_trait": "trait_Id(12)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(16)_for_Id(66)",
+      "name": "impl UnknownTrait for DecoderReader",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6337583537840307025",
+          "to_trait": "trait_Id(16)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(67)_for_Id(66)",
+      "name": "impl UnknownTrait for DecoderReader",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6337583537840307025",
+          "to_trait": "trait_Id(67)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(17)_for_Id(66)",
+      "name": "impl UnknownTrait for DecoderReader",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6337583537840307025",
+          "to_trait": "trait_Id(17)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(301)_for_Id(309)",
+      "name": "impl UnknownTrait for DecodeMetadata",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_1055025701207509855",
+          "to_trait": "trait_Id(301)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(16)_for_Id(172)",
+      "name": "impl UnknownTrait for GeneralPurposeConfig",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_4464154666114426859",
+          "to_trait": "trait_Id(16)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(12)_for_Id(66)",
+      "name": "impl UnknownTrait for DecoderReader",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6337583537840307025",
+          "to_trait": "trait_Id(12)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(12)_for_Id(101)",
+      "name": "impl UnknownTrait for EncoderWriter",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_318004552278808542",
+          "to_trait": "trait_Id(12)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(17)_for_Id(266)",
+      "name": "impl UnknownTrait for EncodeSliceError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_3007510199653631179",
+          "to_trait": "trait_Id(17)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(16)_for_Id(169)",
+      "name": "impl UnknownTrait for GeneralPurpose",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6415952798859902697",
+          "to_trait": "trait_Id(16)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(16)_for_Id(269)",
+      "name": "impl UnknownTrait for DecodeError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6547238509722300142",
+          "to_trait": "trait_Id(16)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(12)_for_Id(332)",
+      "name": "impl UnknownTrait for ParseAlphabetError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_17189642964525760362",
+          "to_trait": "trait_Id(12)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(16)_for_Id(274)",
+      "name": "impl UnknownTrait for DecodeSliceError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6243031848768727703",
           "to_trait": "trait_Id(16)"
         }
       },
@@ -650,6 +969,215 @@
         "ImplCast": {
           "from_type": "place_3007510199653631179",
           "to_trait": "trait_Id(50)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(16)_for_Id(132)",
+      "name": "impl UnknownTrait for EncoderStringWriter",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_7884162033521563644",
+          "to_trait": "trait_Id(16)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(17)_for_Id(332)",
+      "name": "impl UnknownTrait for ParseAlphabetError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_17189642964525760362",
+          "to_trait": "trait_Id(17)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(12)_for_Id(132)",
+      "name": "impl UnknownTrait for EncoderStringWriter",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_7884162033521563644",
+          "to_trait": "trait_Id(12)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(17)_for_Id(3)",
+      "name": "impl UnknownTrait for Base64Display",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_3890282844341050568",
+          "to_trait": "trait_Id(17)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(17)_for_Id(170)",
+      "name": "impl UnknownTrait for Alphabet",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_7991007273124547738",
+          "to_trait": "trait_Id(17)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(301)_for_Id(214)",
+      "name": "impl UnknownTrait for DecodePaddingMode",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_7879051788259116088",
+          "to_trait": "trait_Id(301)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(12)_for_Id(214)",
+      "name": "impl UnknownTrait for DecodePaddingMode",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_7879051788259116088",
+          "to_trait": "trait_Id(12)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(301)_for_Id(266)",
+      "name": "impl UnknownTrait for EncodeSliceError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_3007510199653631179",
+          "to_trait": "trait_Id(301)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(301)_for_Id(170)",
+      "name": "impl UnknownTrait for Alphabet",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_7991007273124547738",
+          "to_trait": "trait_Id(301)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(12)_for_Id(274)",
+      "name": "impl UnknownTrait for DecodeSliceError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6243031848768727703",
+          "to_trait": "trait_Id(12)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(50)_for_Id(3)",
+      "name": "impl UnknownTrait for Base64Display",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_3890282844341050568",
+          "to_trait": "trait_Id(50)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(185)_for_Id(274)",
+      "name": "impl UnknownTrait for DecodeSliceError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6243031848768727703",
+          "to_trait": "trait_Id(185)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(12)_for_Id(170)",
+      "name": "impl UnknownTrait for Alphabet",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_7991007273124547738",
+          "to_trait": "trait_Id(12)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(185)_for_Id(269)",
+      "name": "impl UnknownTrait for DecodeError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6547238509722300142",
+          "to_trait": "trait_Id(185)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(17)_for_Id(269)",
+      "name": "impl UnknownTrait for DecodeError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6547238509722300142",
+          "to_trait": "trait_Id(17)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_Engine_Id(4)_for_Id(169)",
+      "name": "impl Engine for GeneralPurpose",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6415952798859902697",
+          "to_trait": "trait_Id(4)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(12)_for_Id(3)",
+      "name": "impl UnknownTrait for Base64Display",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_3890282844341050568",
+          "to_trait": "trait_Id(12)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(185)_for_Id(169)",
+      "name": "impl UnknownTrait for GeneralPurpose",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_6415952798859902697",
+          "to_trait": "trait_Id(185)"
+        }
+      },
+      "generic_map": {}
+    },
+    {
+      "id": "impl_UnknownTrait_Id(301)_for_Id(332)",
+      "name": "impl UnknownTrait for ParseAlphabetError",
+      "kind": {
+        "ImplCast": {
+          "from_type": "place_17189642964525760362",
+          "to_trait": "trait_Id(301)"
         }
       },
       "generic_map": {}
@@ -677,385 +1205,44 @@
       "generic_map": {}
     },
     {
-      "id": "impl_UnknownTrait_Id(12)_for_Id(3)",
-      "name": "impl UnknownTrait for Base64Display",
+      "id": "impl_UnknownTrait_Id(12)_for_Id(269)",
+      "name": "impl UnknownTrait for DecodeError",
       "kind": {
         "ImplCast": {
-          "from_type": "place_3890282844341050568",
+          "from_type": "place_6547238509722300142",
           "to_trait": "trait_Id(12)"
         }
       },
       "generic_map": {}
     },
     {
-      "id": "impl_UnknownTrait_Id(301)_for_Id(309)",
-      "name": "impl UnknownTrait for DecodeMetadata",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_1055025701207509855",
-          "to_trait": "trait_Id(301)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(301)_for_Id(266)",
+      "id": "impl_UnknownTrait_Id(185)_for_Id(266)",
       "name": "impl UnknownTrait for EncodeSliceError",
       "kind": {
         "ImplCast": {
           "from_type": "place_3007510199653631179",
-          "to_trait": "trait_Id(301)"
+          "to_trait": "trait_Id(185)"
         }
       },
       "generic_map": {}
     },
     {
-      "id": "impl_UnknownTrait_Id(12)_for_Id(214)",
-      "name": "impl UnknownTrait for DecodePaddingMode",
+      "id": "impl_StrConsumer_Id(131)_for_Id(47)",
+      "name": "impl StrConsumer for String",
       "kind": {
         "ImplCast": {
-          "from_type": "place_7879051788259116088",
-          "to_trait": "trait_Id(12)"
+          "from_type": "place_6240093653558240571",
+          "to_trait": "trait_Id(131)"
         }
       },
       "generic_map": {}
     },
     {
-      "id": "impl_UnknownTrait_Id(17)_for_Id(3)",
-      "name": "impl UnknownTrait for Base64Display",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_3890282844341050568",
-          "to_trait": "trait_Id(17)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(301)_for_Id(332)",
+      "id": "impl_UnknownTrait_Id(50)_for_Id(332)",
       "name": "impl UnknownTrait for ParseAlphabetError",
       "kind": {
         "ImplCast": {
           "from_type": "place_17189642964525760362",
-          "to_trait": "trait_Id(301)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(102)_for_Id(101)",
-      "name": "impl UnknownTrait for EncoderWriter",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_318004552278808542",
-          "to_trait": "trait_Id(102)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(16)_for_Id(172)",
-      "name": "impl UnknownTrait for GeneralPurposeConfig",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_4464154666114426859",
-          "to_trait": "trait_Id(16)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(301)_for_Id(214)",
-      "name": "impl UnknownTrait for DecodePaddingMode",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_7879051788259116088",
-          "to_trait": "trait_Id(301)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(12)_for_Id(274)",
-      "name": "impl UnknownTrait for DecodeSliceError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6243031848768727703",
-          "to_trait": "trait_Id(12)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(185)_for_Id(169)",
-      "name": "impl UnknownTrait for GeneralPurpose",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6415952798859902697",
-          "to_trait": "trait_Id(185)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(185)_for_Id(170)",
-      "name": "impl UnknownTrait for Alphabet",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_7991007273124547738",
-          "to_trait": "trait_Id(185)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(17)_for_Id(274)",
-      "name": "impl UnknownTrait for DecodeSliceError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6243031848768727703",
-          "to_trait": "trait_Id(17)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(16)_for_Id(132)",
-      "name": "impl UnknownTrait for EncoderStringWriter",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_7884162033521563644",
-          "to_trait": "trait_Id(16)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(17)_for_Id(132)",
-      "name": "impl UnknownTrait for EncoderStringWriter",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_7884162033521563644",
-          "to_trait": "trait_Id(17)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(301)_for_Id(269)",
-      "name": "impl UnknownTrait for DecodeError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6547238509722300142",
-          "to_trait": "trait_Id(301)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(16)_for_Id(169)",
-      "name": "impl UnknownTrait for GeneralPurpose",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6415952798859902697",
-          "to_trait": "trait_Id(16)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(67)_for_Id(66)",
-      "name": "impl UnknownTrait for DecoderReader",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6337583537840307025",
-          "to_trait": "trait_Id(67)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(17)_for_Id(170)",
-      "name": "impl UnknownTrait for Alphabet",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_7991007273124547738",
-          "to_trait": "trait_Id(17)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(12)_for_Id(169)",
-      "name": "impl UnknownTrait for GeneralPurpose",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6415952798859902697",
-          "to_trait": "trait_Id(12)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(17)_for_Id(266)",
-      "name": "impl UnknownTrait for EncodeSliceError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_3007510199653631179",
-          "to_trait": "trait_Id(17)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(16)_for_Id(101)",
-      "name": "impl UnknownTrait for EncoderWriter",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_318004552278808542",
-          "to_trait": "trait_Id(16)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(16)_for_Id(266)",
-      "name": "impl UnknownTrait for EncodeSliceError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_3007510199653631179",
-          "to_trait": "trait_Id(16)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(185)_for_Id(269)",
-      "name": "impl UnknownTrait for DecodeError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6547238509722300142",
-          "to_trait": "trait_Id(185)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(16)_for_Id(274)",
-      "name": "impl UnknownTrait for DecodeSliceError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6243031848768727703",
-          "to_trait": "trait_Id(16)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(12)_for_Id(309)",
-      "name": "impl UnknownTrait for DecodeMetadata",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_1055025701207509855",
-          "to_trait": "trait_Id(12)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(185)_for_Id(274)",
-      "name": "impl UnknownTrait for DecodeSliceError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6243031848768727703",
-          "to_trait": "trait_Id(185)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(17)_for_Id(269)",
-      "name": "impl UnknownTrait for DecodeError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6547238509722300142",
-          "to_trait": "trait_Id(17)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(17)_for_Id(332)",
-      "name": "impl UnknownTrait for ParseAlphabetError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_17189642964525760362",
-          "to_trait": "trait_Id(17)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(185)_for_Id(172)",
-      "name": "impl UnknownTrait for GeneralPurposeConfig",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_4464154666114426859",
-          "to_trait": "trait_Id(185)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(17)_for_Id(309)",
-      "name": "impl UnknownTrait for DecodeMetadata",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_1055025701207509855",
-          "to_trait": "trait_Id(17)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(12)_for_Id(266)",
-      "name": "impl UnknownTrait for EncodeSliceError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_3007510199653631179",
-          "to_trait": "trait_Id(12)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(50)_for_Id(269)",
-      "name": "impl UnknownTrait for DecodeError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6547238509722300142",
-          "to_trait": "trait_Id(50)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(12)_for_Id(170)",
-      "name": "impl UnknownTrait for Alphabet",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_7991007273124547738",
-          "to_trait": "trait_Id(12)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(50)_for_Id(274)",
-      "name": "impl UnknownTrait for DecodeSliceError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6243031848768727703",
           "to_trait": "trait_Id(50)"
         }
       },
@@ -1073,77 +1260,33 @@
       "generic_map": {}
     },
     {
-      "id": "impl_Engine_Id(4)_for_Id(169)",
-      "name": "impl Engine for GeneralPurpose",
+      "id": "impl_UnknownTrait_Id(17)_for_Id(309)",
+      "name": "impl UnknownTrait for DecodeMetadata",
       "kind": {
         "ImplCast": {
-          "from_type": "place_6415952798859902697",
-          "to_trait": "trait_Id(4)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(12)_for_Id(101)",
-      "name": "impl UnknownTrait for EncoderWriter",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_318004552278808542",
-          "to_trait": "trait_Id(12)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(12)_for_Id(269)",
-      "name": "impl UnknownTrait for DecodeError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6547238509722300142",
-          "to_trait": "trait_Id(12)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(17)_for_Id(101)",
-      "name": "impl UnknownTrait for EncoderWriter",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_318004552278808542",
+          "from_type": "place_1055025701207509855",
           "to_trait": "trait_Id(17)"
         }
       },
       "generic_map": {}
     },
     {
-      "id": "impl_UnknownTrait_Id(17)_for_Id(172)",
-      "name": "impl UnknownTrait for GeneralPurposeConfig",
+      "id": "impl_UnknownTrait_Id(185)_for_Id(214)",
+      "name": "impl UnknownTrait for DecodePaddingMode",
       "kind": {
         "ImplCast": {
-          "from_type": "place_4464154666114426859",
-          "to_trait": "trait_Id(17)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(185)_for_Id(266)",
-      "name": "impl UnknownTrait for EncodeSliceError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_3007510199653631179",
+          "from_type": "place_7879051788259116088",
           "to_trait": "trait_Id(185)"
         }
       },
       "generic_map": {}
     },
     {
-      "id": "impl_UnknownTrait_Id(301)_for_Id(170)",
-      "name": "impl UnknownTrait for Alphabet",
+      "id": "impl_UnknownTrait_Id(301)_for_Id(269)",
+      "name": "impl UnknownTrait for DecodeError",
       "kind": {
         "ImplCast": {
-          "from_type": "place_7991007273124547738",
+          "from_type": "place_6547238509722300142",
           "to_trait": "trait_Id(301)"
         }
       },
@@ -1161,94 +1304,6 @@
       "generic_map": {}
     },
     {
-      "id": "impl_UnknownTrait_Id(16)_for_Id(66)",
-      "name": "impl UnknownTrait for DecoderReader",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6337583537840307025",
-          "to_trait": "trait_Id(16)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(50)_for_Id(332)",
-      "name": "impl UnknownTrait for ParseAlphabetError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_17189642964525760362",
-          "to_trait": "trait_Id(50)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(12)_for_Id(132)",
-      "name": "impl UnknownTrait for EncoderStringWriter",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_7884162033521563644",
-          "to_trait": "trait_Id(12)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(12)_for_Id(66)",
-      "name": "impl UnknownTrait for DecoderReader",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6337583537840307025",
-          "to_trait": "trait_Id(12)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(16)_for_Id(332)",
-      "name": "impl UnknownTrait for ParseAlphabetError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_17189642964525760362",
-          "to_trait": "trait_Id(16)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_StrConsumer_Id(131)_for_Id(47)",
-      "name": "impl StrConsumer for String",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6240093653558240571",
-          "to_trait": "trait_Id(131)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(185)_for_Id(214)",
-      "name": "impl UnknownTrait for DecodePaddingMode",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_7879051788259116088",
-          "to_trait": "trait_Id(185)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(17)_for_Id(214)",
-      "name": "impl UnknownTrait for DecodePaddingMode",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_7879051788259116088",
-          "to_trait": "trait_Id(17)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
       "id": "impl_UnknownTrait_Id(16)_for_Id(309)",
       "name": "impl UnknownTrait for DecodeMetadata",
       "kind": {
@@ -1260,133 +1315,30 @@
       "generic_map": {}
     },
     {
-      "id": "impl_UnknownTrait_Id(17)_for_Id(66)",
-      "name": "impl UnknownTrait for DecoderReader",
+      "id": "impl_UnknownTrait_Id(185)_for_Id(170)",
+      "name": "impl UnknownTrait for Alphabet",
       "kind": {
         "ImplCast": {
-          "from_type": "place_6337583537840307025",
-          "to_trait": "trait_Id(17)"
+          "from_type": "place_7991007273124547738",
+          "to_trait": "trait_Id(185)"
         }
       },
       "generic_map": {}
     },
     {
-      "id": "impl_UnknownTrait_Id(16)_for_Id(214)",
-      "name": "impl UnknownTrait for DecodePaddingMode",
+      "id": "impl_UnknownTrait_Id(16)_for_Id(101)",
+      "name": "impl UnknownTrait for EncoderWriter",
       "kind": {
         "ImplCast": {
-          "from_type": "place_7879051788259116088",
+          "from_type": "place_318004552278808542",
           "to_trait": "trait_Id(16)"
         }
       },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(12)_for_Id(332)",
-      "name": "impl UnknownTrait for ParseAlphabetError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_17189642964525760362",
-          "to_trait": "trait_Id(12)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(50)_for_Id(3)",
-      "name": "impl UnknownTrait for Base64Display",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_3890282844341050568",
-          "to_trait": "trait_Id(50)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(16)_for_Id(269)",
-      "name": "impl UnknownTrait for DecodeError",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_6547238509722300142",
-          "to_trait": "trait_Id(16)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(12)_for_Id(172)",
-      "name": "impl UnknownTrait for GeneralPurposeConfig",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_4464154666114426859",
-          "to_trait": "trait_Id(12)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "impl_UnknownTrait_Id(102)_for_Id(132)",
-      "name": "impl UnknownTrait for EncoderStringWriter",
-      "kind": {
-        "ImplCast": {
-          "from_type": "place_7884162033521563644",
-          "to_trait": "trait_Id(102)"
-        }
-      },
-      "generic_map": {}
-    },
-    {
-      "id": "op_get_URL_SAFE_NO_PAD_INDIFFERENT_Id(254)",
-      "name": "get_URL_SAFE_NO_PAD_INDIFFERENT",
-      "kind": "Call",
-      "generic_map": {}
-    },
-    {
-      "id": "op_get_CRYPT_Id(392)",
-      "name": "get_CRYPT",
-      "kind": "Call",
-      "generic_map": {}
-    },
-    {
-      "id": "op_get_BIN_HEX_Id(395)",
-      "name": "get_BIN_HEX",
-      "kind": "Call",
-      "generic_map": {}
-    },
-    {
-      "id": "op_get_STANDARD_NO_PAD_INDIFFERENT_Id(249)",
-      "name": "get_STANDARD_NO_PAD_INDIFFERENT",
-      "kind": "Call",
       "generic_map": {}
     },
     {
       "id": "op_get_URL_SAFE_PAD_INDIFFERENT_Id(252)",
       "name": "get_URL_SAFE_PAD_INDIFFERENT",
-      "kind": "Call",
-      "generic_map": {}
-    },
-    {
-      "id": "op_get_STANDARD_PAD_INDIFFERENT_Id(246)",
-      "name": "get_STANDARD_PAD_INDIFFERENT",
-      "kind": "Call",
-      "generic_map": {}
-    },
-    {
-      "id": "op_get_STANDARD_Id(244)",
-      "name": "get_STANDARD",
-      "kind": "Call",
-      "generic_map": {}
-    },
-    {
-      "id": "op_get_NO_PAD_INDIFFERENT_Id(248)",
-      "name": "get_NO_PAD_INDIFFERENT",
-      "kind": "Call",
-      "generic_map": {}
-    },
-    {
-      "id": "op_get_BCRYPT_Id(393)",
-      "name": "get_BCRYPT",
       "kind": "Call",
       "generic_map": {}
     },
@@ -1397,20 +1349,14 @@
       "generic_map": {}
     },
     {
-      "id": "op_get_URL_SAFE_Id(251)",
-      "name": "get_URL_SAFE",
+      "id": "op_get_STANDARD_NO_PAD_INDIFFERENT_Id(249)",
+      "name": "get_STANDARD_NO_PAD_INDIFFERENT",
       "kind": "Call",
       "generic_map": {}
     },
     {
-      "id": "op_get_URL_SAFE_NO_PAD_Id(253)",
-      "name": "get_URL_SAFE_NO_PAD",
-      "kind": "Call",
-      "generic_map": {}
-    },
-    {
-      "id": "op_get_PAD_Id(208)",
-      "name": "get_PAD",
+      "id": "op_get_STANDARD_PAD_INDIFFERENT_Id(246)",
+      "name": "get_STANDARD_PAD_INDIFFERENT",
       "kind": "Call",
       "generic_map": {}
     },
@@ -1421,8 +1367,20 @@
       "generic_map": {}
     },
     {
-      "id": "op_get_STANDARD_NO_PAD_Id(247)",
-      "name": "get_STANDARD_NO_PAD",
+      "id": "op_get_URL_SAFE_Id(251)",
+      "name": "get_URL_SAFE",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_get_STANDARD_Id(244)",
+      "name": "get_STANDARD",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_get_PAD_Id(208)",
+      "name": "get_PAD",
       "kind": "Call",
       "generic_map": {}
     },
@@ -1445,14 +1403,44 @@
       "generic_map": {}
     },
     {
-      "id": "op_decoded_len_estimate_Id(271)",
-      "name": "decoded_len_estimate",
+      "id": "op_get_BIN_HEX_Id(395)",
+      "name": "get_BIN_HEX",
       "kind": "Call",
       "generic_map": {}
     },
     {
-      "id": "op_encode_engine_string_Id(399)",
-      "name": "encode_engine_string",
+      "id": "op_get_BCRYPT_Id(393)",
+      "name": "get_BCRYPT",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_get_URL_SAFE_NO_PAD_Id(253)",
+      "name": "get_URL_SAFE_NO_PAD",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_get_NO_PAD_INDIFFERENT_Id(248)",
+      "name": "get_NO_PAD_INDIFFERENT",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_get_STANDARD_NO_PAD_Id(247)",
+      "name": "get_STANDARD_NO_PAD",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_get_URL_SAFE_NO_PAD_INDIFFERENT_Id(254)",
+      "name": "get_URL_SAFE_NO_PAD_INDIFFERENT",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_get_CRYPT_Id(392)",
+      "name": "get_CRYPT",
       "kind": "Call",
       "generic_map": {}
     },
@@ -1463,32 +1451,8 @@
       "generic_map": {}
     },
     {
-      "id": "op_decode_Id(501)",
-      "name": "decode",
-      "kind": "Call",
-      "generic_map": {}
-    },
-    {
-      "id": "op_decode_Id(501)_error",
-      "name": "decode_error",
-      "kind": "Call",
-      "generic_map": {}
-    },
-    {
-      "id": "op_encoded_len_Id(401)",
-      "name": "encoded_len",
-      "kind": "Call",
-      "generic_map": {}
-    },
-    {
-      "id": "op_decode_engine_Id(502)",
-      "name": "decode_engine",
-      "kind": "Call",
-      "generic_map": {}
-    },
-    {
-      "id": "op_decode_engine_Id(502)_error",
-      "name": "decode_engine_error",
+      "id": "op_encode_engine_Id(398)",
+      "name": "encode_engine",
       "kind": "Call",
       "generic_map": {}
     },
@@ -1505,8 +1469,8 @@
       "generic_map": {}
     },
     {
-      "id": "op_encode_engine_Id(398)",
-      "name": "encode_engine",
+      "id": "op_encoded_len_Id(401)",
+      "name": "encoded_len",
       "kind": "Call",
       "generic_map": {}
     },
@@ -1523,12 +1487,6 @@
       "generic_map": {}
     },
     {
-      "id": "op_consume_Id(155)",
-      "name": "consume",
-      "kind": "Call",
-      "generic_map": {}
-    },
-    {
       "id": "op_decode_engine_slice_Id(504)",
       "name": "decode_engine_slice",
       "kind": "Call",
@@ -1537,6 +1495,48 @@
     {
       "id": "op_decode_engine_slice_Id(504)_error",
       "name": "decode_engine_slice_error",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_decode_Id(501)",
+      "name": "decode",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_decode_Id(501)_error",
+      "name": "decode_error",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_decode_engine_Id(502)",
+      "name": "decode_engine",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_decode_engine_Id(502)_error",
+      "name": "decode_engine_error",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_consume_Id(155)",
+      "name": "consume",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_decoded_len_estimate_Id(271)",
+      "name": "decoded_len_estimate",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_encode_engine_string_Id(399)",
+      "name": "encode_engine_string",
       "kind": "Call",
       "generic_map": {}
     },
@@ -1565,26 +1565,8 @@
       "generic_map": {}
     },
     {
-      "id": "op_ParseAlphabetError::InvalidLength_Id(361)",
-      "name": "ParseAlphabetError::InvalidLength",
-      "kind": "Constructor",
-      "generic_map": {}
-    },
-    {
-      "id": "op_ParseAlphabetError::DuplicatedByte_Id(363)",
-      "name": "ParseAlphabetError::DuplicatedByte",
-      "kind": "Constructor",
-      "generic_map": {}
-    },
-    {
-      "id": "op_ParseAlphabetError::UnprintableByte_Id(365)",
-      "name": "ParseAlphabetError::UnprintableByte",
-      "kind": "Constructor",
-      "generic_map": {}
-    },
-    {
-      "id": "op_ParseAlphabetError::ReservedByte_Id(367)",
-      "name": "ParseAlphabetError::ReservedByte",
+      "id": "op_EncodeSliceError::OutputSliceTooSmall_Id(403)",
+      "name": "EncodeSliceError::OutputSliceTooSmall",
       "kind": "Constructor",
       "generic_map": {}
     },
@@ -1619,27 +1601,27 @@
       "generic_map": {}
     },
     {
-      "id": "op_EncodeSliceError::OutputSliceTooSmall_Id(403)",
-      "name": "EncodeSliceError::OutputSliceTooSmall",
+      "id": "op_ParseAlphabetError::InvalidLength_Id(361)",
+      "name": "ParseAlphabetError::InvalidLength",
       "kind": "Constructor",
       "generic_map": {}
     },
     {
-      "id": "op_encode_padding_Id(240)",
-      "name": "encode_padding",
-      "kind": "MethodCall",
+      "id": "op_ParseAlphabetError::DuplicatedByte_Id(363)",
+      "name": "ParseAlphabetError::DuplicatedByte",
+      "kind": "Constructor",
       "generic_map": {}
     },
     {
-      "id": "op_write_Id(122)",
-      "name": "write",
-      "kind": "MethodCall",
+      "id": "op_ParseAlphabetError::UnprintableByte_Id(365)",
+      "name": "ParseAlphabetError::UnprintableByte",
+      "kind": "Constructor",
       "generic_map": {}
     },
     {
-      "id": "op_flush_Id(124)",
-      "name": "flush",
-      "kind": "MethodCall",
+      "id": "op_ParseAlphabetError::ReservedByte_Id(367)",
+      "name": "ParseAlphabetError::ReservedByte",
+      "kind": "Constructor",
       "generic_map": {}
     },
     {
@@ -1661,32 +1643,32 @@
       "generic_map": {}
     },
     {
-      "id": "op_read_Id(88)",
-      "name": "read",
+      "id": "op_write_Id(122)",
+      "name": "write",
       "kind": "MethodCall",
       "generic_map": {}
     },
     {
-      "id": "op_new_Id(5)",
-      "name": "new",
-      "kind": "AssocFn",
+      "id": "op_flush_Id(124)",
+      "name": "flush",
+      "kind": "MethodCall",
       "generic_map": {}
     },
     {
-      "id": "op_new_Id(331)",
-      "name": "new",
-      "kind": "AssocFn",
+      "id": "op_write_Id(151)",
+      "name": "write",
+      "kind": "MethodCall",
       "generic_map": {}
     },
     {
-      "id": "op_new_Id(331)_error",
-      "name": "new_error",
-      "kind": "Call",
+      "id": "op_flush_Id(152)",
+      "name": "flush",
+      "kind": "MethodCall",
       "generic_map": {}
     },
     {
-      "id": "op_as_str_Id(333)",
-      "name": "as_str",
+      "id": "op_read_Id(88)",
+      "name": "read",
       "kind": "MethodCall",
       "generic_map": {}
     },
@@ -1712,6 +1694,54 @@
       "id": "op_with_decode_padding_mode_Id(213)",
       "name": "with_decode_padding_mode",
       "kind": "MethodCall",
+      "generic_map": {}
+    },
+    {
+      "id": "op_new_Id(331)",
+      "name": "new",
+      "kind": "AssocFn",
+      "generic_map": {}
+    },
+    {
+      "id": "op_new_Id(331)_error",
+      "name": "new_error",
+      "kind": "Call",
+      "generic_map": {}
+    },
+    {
+      "id": "op_as_str_Id(333)",
+      "name": "as_str",
+      "kind": "MethodCall",
+      "generic_map": {}
+    },
+    {
+      "id": "op_new_Id(68)",
+      "name": "new",
+      "kind": "AssocFn",
+      "generic_map": {}
+    },
+    {
+      "id": "op_into_inner_Id(69)",
+      "name": "into_inner",
+      "kind": "MethodCall",
+      "generic_map": {}
+    },
+    {
+      "id": "op_from_consumer_Id(133)",
+      "name": "from_consumer",
+      "kind": "AssocFn",
+      "generic_map": {}
+    },
+    {
+      "id": "op_into_inner_Id(134)",
+      "name": "into_inner",
+      "kind": "MethodCall",
+      "generic_map": {}
+    },
+    {
+      "id": "op_new_Id(171)",
+      "name": "new",
+      "kind": "AssocFn",
       "generic_map": {}
     },
     {
@@ -1793,13 +1823,13 @@
       "generic_map": {}
     },
     {
-      "id": "op_new_Id(136)",
-      "name": "new",
-      "kind": "AssocFn",
+      "id": "op_encode_padding_Id(240)",
+      "name": "encode_padding",
+      "kind": "MethodCall",
       "generic_map": {}
     },
     {
-      "id": "op_new_Id(171)",
+      "id": "op_new_Id(5)",
       "name": "new",
       "kind": "AssocFn",
       "generic_map": {}
@@ -1811,43 +1841,97 @@
       "generic_map": {}
     },
     {
-      "id": "op_new_Id(68)",
+      "id": "op_new_Id(136)",
       "name": "new",
       "kind": "AssocFn",
-      "generic_map": {}
-    },
-    {
-      "id": "op_into_inner_Id(69)",
-      "name": "into_inner",
-      "kind": "MethodCall",
-      "generic_map": {}
-    },
-    {
-      "id": "op_from_consumer_Id(133)",
-      "name": "from_consumer",
-      "kind": "AssocFn",
-      "generic_map": {}
-    },
-    {
-      "id": "op_into_inner_Id(134)",
-      "name": "into_inner",
-      "kind": "MethodCall",
-      "generic_map": {}
-    },
-    {
-      "id": "op_write_Id(151)",
-      "name": "write",
-      "kind": "MethodCall",
-      "generic_map": {}
-    },
-    {
-      "id": "op_flush_Id(152)",
-      "name": "flush",
-      "kind": "MethodCall",
       "generic_map": {}
     }
   ],
   "arcs": [
+    {
+      "source": "place_7879051788259116088",
+      "target": "impl_UnknownTrait_Id(17)_for_Id(214)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(17)_for_Id(214)",
+      "target": "trait_Id(17)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_3007510199653631179",
+      "target": "impl_UnknownTrait_Id(12)_for_Id(266)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(12)_for_Id(266)",
+      "target": "trait_Id(12)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6243031848768727703",
+      "target": "impl_UnknownTrait_Id(50)_for_Id(274)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(50)_for_Id(274)",
+      "target": "trait_Id(50)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_7879051788259116088",
+      "target": "impl_UnknownTrait_Id(16)_for_Id(214)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(16)_for_Id(214)",
+      "target": "trait_Id(16)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6415952798859902697",
+      "target": "impl_UnknownTrait_Id(12)_for_Id(169)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(12)_for_Id(169)",
+      "target": "trait_Id(12)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_4464154666114426859",
+      "target": "impl_UnknownTrait_Id(17)_for_Id(172)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(17)_for_Id(172)",
+      "target": "trait_Id(17)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
     {
       "source": "place_3890282844341050568",
       "target": "impl_UnknownTrait_Id(16)_for_Id(3)",
@@ -1863,6 +1947,328 @@
       "param_index": null
     },
     {
+      "source": "place_318004552278808542",
+      "target": "impl_UnknownTrait_Id(17)_for_Id(101)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(17)_for_Id(101)",
+      "target": "trait_Id(17)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6243031848768727703",
+      "target": "impl_UnknownTrait_Id(17)_for_Id(274)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(17)_for_Id(274)",
+      "target": "trait_Id(17)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_7884162033521563644",
+      "target": "impl_UnknownTrait_Id(17)_for_Id(132)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(17)_for_Id(132)",
+      "target": "trait_Id(17)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_3007510199653631179",
+      "target": "impl_UnknownTrait_Id(16)_for_Id(266)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(16)_for_Id(266)",
+      "target": "trait_Id(16)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_17189642964525760362",
+      "target": "impl_UnknownTrait_Id(16)_for_Id(332)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(16)_for_Id(332)",
+      "target": "trait_Id(16)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_4464154666114426859",
+      "target": "impl_UnknownTrait_Id(185)_for_Id(172)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(185)_for_Id(172)",
+      "target": "trait_Id(185)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6547238509722300142",
+      "target": "impl_UnknownTrait_Id(50)_for_Id(269)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(50)_for_Id(269)",
+      "target": "trait_Id(50)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_318004552278808542",
+      "target": "impl_UnknownTrait_Id(102)_for_Id(101)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(102)_for_Id(101)",
+      "target": "trait_Id(102)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_7884162033521563644",
+      "target": "impl_UnknownTrait_Id(102)_for_Id(132)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(102)_for_Id(132)",
+      "target": "trait_Id(102)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_4464154666114426859",
+      "target": "impl_UnknownTrait_Id(12)_for_Id(172)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(12)_for_Id(172)",
+      "target": "trait_Id(12)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_1055025701207509855",
+      "target": "impl_UnknownTrait_Id(12)_for_Id(309)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(12)_for_Id(309)",
+      "target": "trait_Id(12)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6337583537840307025",
+      "target": "impl_UnknownTrait_Id(16)_for_Id(66)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(16)_for_Id(66)",
+      "target": "trait_Id(16)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6337583537840307025",
+      "target": "impl_UnknownTrait_Id(67)_for_Id(66)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(67)_for_Id(66)",
+      "target": "trait_Id(67)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6337583537840307025",
+      "target": "impl_UnknownTrait_Id(17)_for_Id(66)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(17)_for_Id(66)",
+      "target": "trait_Id(17)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_1055025701207509855",
+      "target": "impl_UnknownTrait_Id(301)_for_Id(309)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(301)_for_Id(309)",
+      "target": "trait_Id(301)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_4464154666114426859",
+      "target": "impl_UnknownTrait_Id(16)_for_Id(172)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(16)_for_Id(172)",
+      "target": "trait_Id(16)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6337583537840307025",
+      "target": "impl_UnknownTrait_Id(12)_for_Id(66)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(12)_for_Id(66)",
+      "target": "trait_Id(12)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_318004552278808542",
+      "target": "impl_UnknownTrait_Id(12)_for_Id(101)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(12)_for_Id(101)",
+      "target": "trait_Id(12)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_3007510199653631179",
+      "target": "impl_UnknownTrait_Id(17)_for_Id(266)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(17)_for_Id(266)",
+      "target": "trait_Id(17)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6415952798859902697",
+      "target": "impl_UnknownTrait_Id(16)_for_Id(169)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(16)_for_Id(169)",
+      "target": "trait_Id(16)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6547238509722300142",
+      "target": "impl_UnknownTrait_Id(16)_for_Id(269)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(16)_for_Id(269)",
+      "target": "trait_Id(16)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_17189642964525760362",
+      "target": "impl_UnknownTrait_Id(12)_for_Id(332)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(12)_for_Id(332)",
+      "target": "trait_Id(12)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6243031848768727703",
+      "target": "impl_UnknownTrait_Id(16)_for_Id(274)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(16)_for_Id(274)",
+      "target": "trait_Id(16)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
       "source": "place_3007510199653631179",
       "target": "impl_UnknownTrait_Id(50)_for_Id(266)",
       "arc_type": "Read",
@@ -1872,6 +2278,272 @@
     {
       "source": "impl_UnknownTrait_Id(50)_for_Id(266)",
       "target": "trait_Id(50)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_7884162033521563644",
+      "target": "impl_UnknownTrait_Id(16)_for_Id(132)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(16)_for_Id(132)",
+      "target": "trait_Id(16)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_17189642964525760362",
+      "target": "impl_UnknownTrait_Id(17)_for_Id(332)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(17)_for_Id(332)",
+      "target": "trait_Id(17)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_7884162033521563644",
+      "target": "impl_UnknownTrait_Id(12)_for_Id(132)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(12)_for_Id(132)",
+      "target": "trait_Id(12)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_3890282844341050568",
+      "target": "impl_UnknownTrait_Id(17)_for_Id(3)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(17)_for_Id(3)",
+      "target": "trait_Id(17)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_7991007273124547738",
+      "target": "impl_UnknownTrait_Id(17)_for_Id(170)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(17)_for_Id(170)",
+      "target": "trait_Id(17)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_7879051788259116088",
+      "target": "impl_UnknownTrait_Id(301)_for_Id(214)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(301)_for_Id(214)",
+      "target": "trait_Id(301)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_7879051788259116088",
+      "target": "impl_UnknownTrait_Id(12)_for_Id(214)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(12)_for_Id(214)",
+      "target": "trait_Id(12)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_3007510199653631179",
+      "target": "impl_UnknownTrait_Id(301)_for_Id(266)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(301)_for_Id(266)",
+      "target": "trait_Id(301)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_7991007273124547738",
+      "target": "impl_UnknownTrait_Id(301)_for_Id(170)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(301)_for_Id(170)",
+      "target": "trait_Id(301)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6243031848768727703",
+      "target": "impl_UnknownTrait_Id(12)_for_Id(274)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(12)_for_Id(274)",
+      "target": "trait_Id(12)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_3890282844341050568",
+      "target": "impl_UnknownTrait_Id(50)_for_Id(3)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(50)_for_Id(3)",
+      "target": "trait_Id(50)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6243031848768727703",
+      "target": "impl_UnknownTrait_Id(185)_for_Id(274)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(185)_for_Id(274)",
+      "target": "trait_Id(185)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_7991007273124547738",
+      "target": "impl_UnknownTrait_Id(12)_for_Id(170)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(12)_for_Id(170)",
+      "target": "trait_Id(12)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6547238509722300142",
+      "target": "impl_UnknownTrait_Id(185)_for_Id(269)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(185)_for_Id(269)",
+      "target": "trait_Id(185)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6547238509722300142",
+      "target": "impl_UnknownTrait_Id(17)_for_Id(269)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(17)_for_Id(269)",
+      "target": "trait_Id(17)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6415952798859902697",
+      "target": "impl_Engine_Id(4)_for_Id(169)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_Engine_Id(4)_for_Id(169)",
+      "target": "trait_Id(4)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_3890282844341050568",
+      "target": "impl_UnknownTrait_Id(12)_for_Id(3)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(12)_for_Id(3)",
+      "target": "trait_Id(12)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6415952798859902697",
+      "target": "impl_UnknownTrait_Id(185)_for_Id(169)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(185)_for_Id(169)",
+      "target": "trait_Id(185)",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_17189642964525760362",
+      "target": "impl_UnknownTrait_Id(301)_for_Id(332)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "impl_UnknownTrait_Id(301)_for_Id(332)",
+      "target": "trait_Id(301)",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
@@ -1905,490 +2577,56 @@
       "param_index": null
     },
     {
-      "source": "place_3890282844341050568",
-      "target": "impl_UnknownTrait_Id(12)_for_Id(3)",
+      "source": "place_6547238509722300142",
+      "target": "impl_UnknownTrait_Id(12)_for_Id(269)",
       "arc_type": "Read",
       "weight": 1,
       "param_index": 0
     },
     {
-      "source": "impl_UnknownTrait_Id(12)_for_Id(3)",
+      "source": "impl_UnknownTrait_Id(12)_for_Id(269)",
       "target": "trait_Id(12)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_1055025701207509855",
-      "target": "impl_UnknownTrait_Id(301)_for_Id(309)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(301)_for_Id(309)",
-      "target": "trait_Id(301)",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
     },
     {
       "source": "place_3007510199653631179",
-      "target": "impl_UnknownTrait_Id(301)_for_Id(266)",
+      "target": "impl_UnknownTrait_Id(185)_for_Id(266)",
       "arc_type": "Read",
       "weight": 1,
       "param_index": 0
     },
     {
-      "source": "impl_UnknownTrait_Id(301)_for_Id(266)",
-      "target": "trait_Id(301)",
+      "source": "impl_UnknownTrait_Id(185)_for_Id(266)",
+      "target": "trait_Id(185)",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
     },
     {
-      "source": "place_7879051788259116088",
-      "target": "impl_UnknownTrait_Id(12)_for_Id(214)",
+      "source": "place_6240093653558240571",
+      "target": "impl_StrConsumer_Id(131)_for_Id(47)",
       "arc_type": "Read",
       "weight": 1,
       "param_index": 0
     },
     {
-      "source": "impl_UnknownTrait_Id(12)_for_Id(214)",
-      "target": "trait_Id(12)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_3890282844341050568",
-      "target": "impl_UnknownTrait_Id(17)_for_Id(3)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(17)_for_Id(3)",
-      "target": "trait_Id(17)",
+      "source": "impl_StrConsumer_Id(131)_for_Id(47)",
+      "target": "trait_Id(131)",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
     },
     {
       "source": "place_17189642964525760362",
-      "target": "impl_UnknownTrait_Id(301)_for_Id(332)",
+      "target": "impl_UnknownTrait_Id(50)_for_Id(332)",
       "arc_type": "Read",
       "weight": 1,
       "param_index": 0
     },
     {
-      "source": "impl_UnknownTrait_Id(301)_for_Id(332)",
-      "target": "trait_Id(301)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_318004552278808542",
-      "target": "impl_UnknownTrait_Id(102)_for_Id(101)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(102)_for_Id(101)",
-      "target": "trait_Id(102)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_4464154666114426859",
-      "target": "impl_UnknownTrait_Id(16)_for_Id(172)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(16)_for_Id(172)",
-      "target": "trait_Id(16)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7879051788259116088",
-      "target": "impl_UnknownTrait_Id(301)_for_Id(214)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(301)_for_Id(214)",
-      "target": "trait_Id(301)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6243031848768727703",
-      "target": "impl_UnknownTrait_Id(12)_for_Id(274)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(12)_for_Id(274)",
-      "target": "trait_Id(12)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6415952798859902697",
-      "target": "impl_UnknownTrait_Id(185)_for_Id(169)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(185)_for_Id(169)",
-      "target": "trait_Id(185)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7991007273124547738",
-      "target": "impl_UnknownTrait_Id(185)_for_Id(170)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(185)_for_Id(170)",
-      "target": "trait_Id(185)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6243031848768727703",
-      "target": "impl_UnknownTrait_Id(17)_for_Id(274)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(17)_for_Id(274)",
-      "target": "trait_Id(17)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7884162033521563644",
-      "target": "impl_UnknownTrait_Id(16)_for_Id(132)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(16)_for_Id(132)",
-      "target": "trait_Id(16)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7884162033521563644",
-      "target": "impl_UnknownTrait_Id(17)_for_Id(132)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(17)_for_Id(132)",
-      "target": "trait_Id(17)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6547238509722300142",
-      "target": "impl_UnknownTrait_Id(301)_for_Id(269)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(301)_for_Id(269)",
-      "target": "trait_Id(301)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6415952798859902697",
-      "target": "impl_UnknownTrait_Id(16)_for_Id(169)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(16)_for_Id(169)",
-      "target": "trait_Id(16)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6337583537840307025",
-      "target": "impl_UnknownTrait_Id(67)_for_Id(66)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(67)_for_Id(66)",
-      "target": "trait_Id(67)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7991007273124547738",
-      "target": "impl_UnknownTrait_Id(17)_for_Id(170)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(17)_for_Id(170)",
-      "target": "trait_Id(17)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6415952798859902697",
-      "target": "impl_UnknownTrait_Id(12)_for_Id(169)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(12)_for_Id(169)",
-      "target": "trait_Id(12)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_3007510199653631179",
-      "target": "impl_UnknownTrait_Id(17)_for_Id(266)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(17)_for_Id(266)",
-      "target": "trait_Id(17)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_318004552278808542",
-      "target": "impl_UnknownTrait_Id(16)_for_Id(101)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(16)_for_Id(101)",
-      "target": "trait_Id(16)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_3007510199653631179",
-      "target": "impl_UnknownTrait_Id(16)_for_Id(266)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(16)_for_Id(266)",
-      "target": "trait_Id(16)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6547238509722300142",
-      "target": "impl_UnknownTrait_Id(185)_for_Id(269)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(185)_for_Id(269)",
-      "target": "trait_Id(185)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6243031848768727703",
-      "target": "impl_UnknownTrait_Id(16)_for_Id(274)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(16)_for_Id(274)",
-      "target": "trait_Id(16)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_1055025701207509855",
-      "target": "impl_UnknownTrait_Id(12)_for_Id(309)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(12)_for_Id(309)",
-      "target": "trait_Id(12)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6243031848768727703",
-      "target": "impl_UnknownTrait_Id(185)_for_Id(274)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(185)_for_Id(274)",
-      "target": "trait_Id(185)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6547238509722300142",
-      "target": "impl_UnknownTrait_Id(17)_for_Id(269)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(17)_for_Id(269)",
-      "target": "trait_Id(17)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_17189642964525760362",
-      "target": "impl_UnknownTrait_Id(17)_for_Id(332)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(17)_for_Id(332)",
-      "target": "trait_Id(17)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_4464154666114426859",
-      "target": "impl_UnknownTrait_Id(185)_for_Id(172)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(185)_for_Id(172)",
-      "target": "trait_Id(185)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_1055025701207509855",
-      "target": "impl_UnknownTrait_Id(17)_for_Id(309)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(17)_for_Id(309)",
-      "target": "trait_Id(17)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_3007510199653631179",
-      "target": "impl_UnknownTrait_Id(12)_for_Id(266)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(12)_for_Id(266)",
-      "target": "trait_Id(12)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6547238509722300142",
-      "target": "impl_UnknownTrait_Id(50)_for_Id(269)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(50)_for_Id(269)",
-      "target": "trait_Id(50)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7991007273124547738",
-      "target": "impl_UnknownTrait_Id(12)_for_Id(170)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(12)_for_Id(170)",
-      "target": "trait_Id(12)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6243031848768727703",
-      "target": "impl_UnknownTrait_Id(50)_for_Id(274)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(50)_for_Id(274)",
+      "source": "impl_UnknownTrait_Id(50)_for_Id(332)",
       "target": "trait_Id(50)",
       "arc_type": "Output",
       "weight": 1,
@@ -2409,98 +2647,42 @@
       "param_index": null
     },
     {
-      "source": "place_6415952798859902697",
-      "target": "impl_Engine_Id(4)_for_Id(169)",
+      "source": "place_1055025701207509855",
+      "target": "impl_UnknownTrait_Id(17)_for_Id(309)",
       "arc_type": "Read",
       "weight": 1,
       "param_index": 0
     },
     {
-      "source": "impl_Engine_Id(4)_for_Id(169)",
-      "target": "trait_Id(4)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_318004552278808542",
-      "target": "impl_UnknownTrait_Id(12)_for_Id(101)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(12)_for_Id(101)",
-      "target": "trait_Id(12)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6547238509722300142",
-      "target": "impl_UnknownTrait_Id(12)_for_Id(269)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(12)_for_Id(269)",
-      "target": "trait_Id(12)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_318004552278808542",
-      "target": "impl_UnknownTrait_Id(17)_for_Id(101)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(17)_for_Id(101)",
+      "source": "impl_UnknownTrait_Id(17)_for_Id(309)",
       "target": "trait_Id(17)",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
     },
     {
-      "source": "place_4464154666114426859",
-      "target": "impl_UnknownTrait_Id(17)_for_Id(172)",
+      "source": "place_7879051788259116088",
+      "target": "impl_UnknownTrait_Id(185)_for_Id(214)",
       "arc_type": "Read",
       "weight": 1,
       "param_index": 0
     },
     {
-      "source": "impl_UnknownTrait_Id(17)_for_Id(172)",
-      "target": "trait_Id(17)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_3007510199653631179",
-      "target": "impl_UnknownTrait_Id(185)_for_Id(266)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(185)_for_Id(266)",
+      "source": "impl_UnknownTrait_Id(185)_for_Id(214)",
       "target": "trait_Id(185)",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
     },
     {
-      "source": "place_7991007273124547738",
-      "target": "impl_UnknownTrait_Id(301)_for_Id(170)",
+      "source": "place_6547238509722300142",
+      "target": "impl_UnknownTrait_Id(301)_for_Id(269)",
       "arc_type": "Read",
       "weight": 1,
       "param_index": 0
     },
     {
-      "source": "impl_UnknownTrait_Id(301)_for_Id(170)",
+      "source": "impl_UnknownTrait_Id(301)_for_Id(269)",
       "target": "trait_Id(301)",
       "arc_type": "Output",
       "weight": 1,
@@ -2521,118 +2703,6 @@
       "param_index": null
     },
     {
-      "source": "place_6337583537840307025",
-      "target": "impl_UnknownTrait_Id(16)_for_Id(66)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(16)_for_Id(66)",
-      "target": "trait_Id(16)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_17189642964525760362",
-      "target": "impl_UnknownTrait_Id(50)_for_Id(332)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(50)_for_Id(332)",
-      "target": "trait_Id(50)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7884162033521563644",
-      "target": "impl_UnknownTrait_Id(12)_for_Id(132)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(12)_for_Id(132)",
-      "target": "trait_Id(12)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6337583537840307025",
-      "target": "impl_UnknownTrait_Id(12)_for_Id(66)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(12)_for_Id(66)",
-      "target": "trait_Id(12)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_17189642964525760362",
-      "target": "impl_UnknownTrait_Id(16)_for_Id(332)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(16)_for_Id(332)",
-      "target": "trait_Id(16)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6240093653558240571",
-      "target": "impl_StrConsumer_Id(131)_for_Id(47)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_StrConsumer_Id(131)_for_Id(47)",
-      "target": "trait_Id(131)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7879051788259116088",
-      "target": "impl_UnknownTrait_Id(185)_for_Id(214)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(185)_for_Id(214)",
-      "target": "trait_Id(185)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7879051788259116088",
-      "target": "impl_UnknownTrait_Id(17)_for_Id(214)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(17)_for_Id(214)",
-      "target": "trait_Id(17)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
       "source": "place_1055025701207509855",
       "target": "impl_UnknownTrait_Id(16)_for_Id(309)",
       "arc_type": "Read",
@@ -2647,119 +2717,42 @@
       "param_index": null
     },
     {
-      "source": "place_6337583537840307025",
-      "target": "impl_UnknownTrait_Id(17)_for_Id(66)",
+      "source": "place_7991007273124547738",
+      "target": "impl_UnknownTrait_Id(185)_for_Id(170)",
       "arc_type": "Read",
       "weight": 1,
       "param_index": 0
     },
     {
-      "source": "impl_UnknownTrait_Id(17)_for_Id(66)",
-      "target": "trait_Id(17)",
+      "source": "impl_UnknownTrait_Id(185)_for_Id(170)",
+      "target": "trait_Id(185)",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
     },
     {
-      "source": "place_7879051788259116088",
-      "target": "impl_UnknownTrait_Id(16)_for_Id(214)",
+      "source": "place_318004552278808542",
+      "target": "impl_UnknownTrait_Id(16)_for_Id(101)",
       "arc_type": "Read",
       "weight": 1,
       "param_index": 0
     },
     {
-      "source": "impl_UnknownTrait_Id(16)_for_Id(214)",
+      "source": "impl_UnknownTrait_Id(16)_for_Id(101)",
       "target": "trait_Id(16)",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
     },
     {
-      "source": "place_17189642964525760362",
-      "target": "impl_UnknownTrait_Id(12)_for_Id(332)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(12)_for_Id(332)",
-      "target": "trait_Id(12)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_3890282844341050568",
-      "target": "impl_UnknownTrait_Id(50)_for_Id(3)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(50)_for_Id(3)",
-      "target": "trait_Id(50)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6547238509722300142",
-      "target": "impl_UnknownTrait_Id(16)_for_Id(269)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(16)_for_Id(269)",
-      "target": "trait_Id(16)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_4464154666114426859",
-      "target": "impl_UnknownTrait_Id(12)_for_Id(172)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(12)_for_Id(172)",
-      "target": "trait_Id(12)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7884162033521563644",
-      "target": "impl_UnknownTrait_Id(102)_for_Id(132)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "impl_UnknownTrait_Id(102)_for_Id(132)",
-      "target": "trait_Id(102)",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_get_URL_SAFE_NO_PAD_INDIFFERENT_Id(254)",
+      "source": "op_get_URL_SAFE_PAD_INDIFFERENT_Id(252)",
       "target": "place_6415952798859902697",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
     },
     {
-      "source": "op_get_CRYPT_Id(392)",
-      "target": "place_7991007273124547738",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_get_BIN_HEX_Id(395)",
+      "source": "op_get_URL_SAFE_Id(250)",
       "target": "place_7991007273124547738",
       "arc_type": "Output",
       "weight": 1,
@@ -2773,14 +2766,21 @@
       "param_index": null
     },
     {
-      "source": "op_get_URL_SAFE_PAD_INDIFFERENT_Id(252)",
+      "source": "op_get_STANDARD_PAD_INDIFFERENT_Id(246)",
       "target": "place_6415952798859902697",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
     },
     {
-      "source": "op_get_STANDARD_PAD_INDIFFERENT_Id(246)",
+      "source": "op_get_PAD_INDIFFERENT_Id(245)",
+      "target": "place_4464154666114426859",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "op_get_URL_SAFE_Id(251)",
       "target": "place_6415952798859902697",
       "arc_type": "Output",
       "weight": 1,
@@ -2794,57 +2794,8 @@
       "param_index": null
     },
     {
-      "source": "op_get_NO_PAD_INDIFFERENT_Id(248)",
-      "target": "place_4464154666114426859",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_get_BCRYPT_Id(393)",
-      "target": "place_7991007273124547738",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_get_URL_SAFE_Id(250)",
-      "target": "place_7991007273124547738",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_get_URL_SAFE_Id(251)",
-      "target": "place_6415952798859902697",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_get_URL_SAFE_NO_PAD_Id(253)",
-      "target": "place_6415952798859902697",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
       "source": "op_get_PAD_Id(208)",
       "target": "place_4464154666114426859",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_get_PAD_INDIFFERENT_Id(245)",
-      "target": "place_4464154666114426859",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_get_STANDARD_NO_PAD_Id(247)",
-      "target": "place_6415952798859902697",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
@@ -2871,25 +2822,53 @@
       "param_index": null
     },
     {
-      "source": "place_665373941718427294",
-      "target": "op_decoded_len_estimate_Id(271)",
-      "arc_type": "Input",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "op_decoded_len_estimate_Id(271)",
-      "target": "place_665373941718427294",
+      "source": "op_get_BIN_HEX_Id(395)",
+      "target": "place_7991007273124547738",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
     },
     {
-      "source": "place_6240093653558240571",
-      "target": "op_encode_engine_string_Id(399)",
-      "arc_type": "ReadWrite",
+      "source": "op_get_BCRYPT_Id(393)",
+      "target": "place_7991007273124547738",
+      "arc_type": "Output",
       "weight": 1,
-      "param_index": 0
+      "param_index": null
+    },
+    {
+      "source": "op_get_URL_SAFE_NO_PAD_Id(253)",
+      "target": "place_6415952798859902697",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "op_get_NO_PAD_INDIFFERENT_Id(248)",
+      "target": "place_4464154666114426859",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "op_get_STANDARD_NO_PAD_Id(247)",
+      "target": "place_6415952798859902697",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "op_get_URL_SAFE_NO_PAD_INDIFFERENT_Id(254)",
+      "target": "place_6415952798859902697",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "op_get_CRYPT_Id(392)",
+      "target": "place_7991007273124547738",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
     },
     {
       "source": "op_encode_Id(397)",
@@ -2899,50 +2878,8 @@
       "param_index": null
     },
     {
-      "source": "op_decode_Id(501)",
-      "target": "place_9738056950506608443",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_decode_Id(501)_error",
-      "target": "place_6547238509722300142",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_665373941718427294",
-      "target": "op_encoded_len_Id(401)",
-      "arc_type": "Input",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "place_6474122208152276879",
-      "target": "op_encoded_len_Id(401)",
-      "arc_type": "Input",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "op_encoded_len_Id(401)",
-      "target": "place_665373941718427294",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_decode_engine_Id(502)",
-      "target": "place_9738056950506608443",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_decode_engine_Id(502)_error",
-      "target": "place_6547238509722300142",
+      "source": "op_encode_engine_Id(398)",
+      "target": "place_6240093653558240571",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
@@ -2976,8 +2913,22 @@
       "param_index": null
     },
     {
-      "source": "op_encode_engine_Id(398)",
-      "target": "place_6240093653558240571",
+      "source": "place_665373941718427294",
+      "target": "op_encoded_len_Id(401)",
+      "arc_type": "Input",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "place_6474122208152276879",
+      "target": "op_encoded_len_Id(401)",
+      "arc_type": "Input",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "op_encoded_len_Id(401)",
+      "target": "place_665373941718427294",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
@@ -3011,13 +2962,6 @@
       "param_index": null
     },
     {
-      "source": "place_2146469600568118527",
-      "target": "op_consume_Id(155)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
       "source": "place_16996192123203025374",
       "target": "op_decode_engine_slice_Id(504)",
       "arc_type": "ReadWrite",
@@ -3044,6 +2988,62 @@
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
+    },
+    {
+      "source": "op_decode_Id(501)",
+      "target": "place_9738056950506608443",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "op_decode_Id(501)_error",
+      "target": "place_6547238509722300142",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "op_decode_engine_Id(502)",
+      "target": "place_9738056950506608443",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "op_decode_engine_Id(502)_error",
+      "target": "place_6547238509722300142",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_2146469600568118527",
+      "target": "op_consume_Id(155)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "place_665373941718427294",
+      "target": "op_decoded_len_estimate_Id(271)",
+      "arc_type": "Input",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "op_decoded_len_estimate_Id(271)",
+      "target": "place_665373941718427294",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6240093653558240571",
+      "target": "op_encode_engine_string_Id(399)",
+      "arc_type": "ReadWrite",
+      "weight": 1,
+      "param_index": 0
     },
     {
       "source": "op_DecodeError::InvalidByte_Id(434)",
@@ -3074,29 +3074,8 @@
       "param_index": null
     },
     {
-      "source": "op_ParseAlphabetError::InvalidLength_Id(361)",
-      "target": "place_17189642964525760362",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_ParseAlphabetError::DuplicatedByte_Id(363)",
-      "target": "place_17189642964525760362",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_ParseAlphabetError::UnprintableByte_Id(365)",
-      "target": "place_17189642964525760362",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "op_ParseAlphabetError::ReservedByte_Id(367)",
-      "target": "place_17189642964525760362",
+      "source": "op_EncodeSliceError::OutputSliceTooSmall_Id(403)",
+      "target": "place_3007510199653631179",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
@@ -3137,25 +3116,53 @@
       "param_index": null
     },
     {
-      "source": "op_EncodeSliceError::OutputSliceTooSmall_Id(403)",
-      "target": "place_3007510199653631179",
+      "source": "op_ParseAlphabetError::InvalidLength_Id(361)",
+      "target": "place_17189642964525760362",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
     },
     {
-      "source": "place_4464154666114426859",
-      "target": "op_encode_padding_Id(240)",
-      "arc_type": "Read",
+      "source": "op_ParseAlphabetError::DuplicatedByte_Id(363)",
+      "target": "place_17189642964525760362",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "op_ParseAlphabetError::UnprintableByte_Id(365)",
+      "target": "place_17189642964525760362",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "op_ParseAlphabetError::ReservedByte_Id(367)",
+      "target": "place_17189642964525760362",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "op_new_Id(103)",
+      "target": "place_318004552278808542",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_318004552278808542",
+      "target": "op_finish_Id(104)",
+      "arc_type": "ReadWrite",
       "weight": 1,
       "param_index": 0
     },
     {
-      "source": "op_encode_padding_Id(240)",
-      "target": "place_6474122208152276879",
-      "arc_type": "Output",
+      "source": "place_318004552278808542",
+      "target": "op_into_inner_Id(105)",
+      "arc_type": "Input",
       "weight": 1,
-      "param_index": null
+      "param_index": 0
     },
     {
       "source": "place_318004552278808542",
@@ -3193,25 +3200,39 @@
       "param_index": null
     },
     {
-      "source": "op_new_Id(103)",
-      "target": "place_318004552278808542",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_318004552278808542",
-      "target": "op_finish_Id(104)",
+      "source": "place_7884162033521563644",
+      "target": "op_write_Id(151)",
       "arc_type": "ReadWrite",
       "weight": 1,
       "param_index": 0
     },
     {
-      "source": "place_318004552278808542",
-      "target": "op_into_inner_Id(105)",
-      "arc_type": "Input",
+      "source": "place_16996192123203025374",
+      "target": "op_write_Id(151)",
+      "arc_type": "Read",
       "weight": 1,
       "param_index": 0
+    },
+    {
+      "source": "op_write_Id(151)",
+      "target": "place_665373941718427294",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_7884162033521563644",
+      "target": "op_flush_Id(152)",
+      "arc_type": "ReadWrite",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "op_flush_Id(152)",
+      "target": "place_4199625609901051029",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
     },
     {
       "source": "place_6337583537840307025",
@@ -3230,62 +3251,6 @@
     {
       "source": "op_read_Id(88)",
       "target": "place_665373941718427294",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_16996192123203025374",
-      "target": "op_new_Id(5)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "op_new_Id(5)",
-      "target": "place_3890282844341050568",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_2146469600568118527",
-      "target": "op_new_Id(331)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "op_new_Id(331)",
-      "target": "place_7991007273124547738",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_2146469600568118527",
-      "target": "op_new_Id(331)_error",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "op_new_Id(331)_error",
-      "target": "place_17189642964525760362",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7991007273124547738",
-      "target": "op_as_str_Id(333)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "op_as_str_Id(333)",
-      "target": "place_2146469600568118527",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
@@ -3356,6 +3321,97 @@
     {
       "source": "op_with_decode_padding_mode_Id(213)",
       "target": "place_4464154666114426859",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_2146469600568118527",
+      "target": "op_new_Id(331)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "op_new_Id(331)",
+      "target": "place_7991007273124547738",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_2146469600568118527",
+      "target": "op_new_Id(331)_error",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "op_new_Id(331)_error",
+      "target": "place_17189642964525760362",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_7991007273124547738",
+      "target": "op_as_str_Id(333)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "op_as_str_Id(333)",
+      "target": "place_2146469600568118527",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "op_new_Id(68)",
+      "target": "place_6337583537840307025",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_6337583537840307025",
+      "target": "op_into_inner_Id(69)",
+      "arc_type": "Input",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "op_from_consumer_Id(133)",
+      "target": "place_7884162033521563644",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_7884162033521563644",
+      "target": "op_into_inner_Id(134)",
+      "arc_type": "Input",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "place_7991007273124547738",
+      "target": "op_new_Id(171)",
+      "arc_type": "Read",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "place_4464154666114426859",
+      "target": "op_new_Id(171)",
+      "arc_type": "Input",
+      "weight": 1,
+      "param_index": 0
+    },
+    {
+      "source": "op_new_Id(171)",
+      "target": "place_6415952798859902697",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
@@ -3599,29 +3655,29 @@
       "param_index": null
     },
     {
-      "source": "op_new_Id(136)",
-      "target": "place_7884162033521563644",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7991007273124547738",
-      "target": "op_new_Id(171)",
+      "source": "place_4464154666114426859",
+      "target": "op_encode_padding_Id(240)",
       "arc_type": "Read",
       "weight": 1,
       "param_index": 0
     },
     {
-      "source": "place_4464154666114426859",
-      "target": "op_new_Id(171)",
-      "arc_type": "Input",
+      "source": "op_encode_padding_Id(240)",
+      "target": "place_6474122208152276879",
+      "arc_type": "Output",
+      "weight": 1,
+      "param_index": null
+    },
+    {
+      "source": "place_16996192123203025374",
+      "target": "op_new_Id(5)",
+      "arc_type": "Read",
       "weight": 1,
       "param_index": 0
     },
     {
-      "source": "op_new_Id(171)",
-      "target": "place_6415952798859902697",
+      "source": "op_new_Id(5)",
+      "target": "place_3890282844341050568",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
@@ -3641,64 +3697,8 @@
       "param_index": 0
     },
     {
-      "source": "op_new_Id(68)",
-      "target": "place_6337583537840307025",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_6337583537840307025",
-      "target": "op_into_inner_Id(69)",
-      "arc_type": "Input",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "op_from_consumer_Id(133)",
+      "source": "op_new_Id(136)",
       "target": "place_7884162033521563644",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7884162033521563644",
-      "target": "op_into_inner_Id(134)",
-      "arc_type": "Input",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "place_7884162033521563644",
-      "target": "op_write_Id(151)",
-      "arc_type": "ReadWrite",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "place_16996192123203025374",
-      "target": "op_write_Id(151)",
-      "arc_type": "Read",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "op_write_Id(151)",
-      "target": "place_665373941718427294",
-      "arc_type": "Output",
-      "weight": 1,
-      "param_index": null
-    },
-    {
-      "source": "place_7884162033521563644",
-      "target": "op_flush_Id(152)",
-      "arc_type": "ReadWrite",
-      "weight": 1,
-      "param_index": 0
-    },
-    {
-      "source": "op_flush_Id(152)",
-      "target": "place_4199625609901051029",
       "arc_type": "Output",
       "weight": 1,
       "param_index": null
