@@ -22,7 +22,7 @@ impl FuzzTargetGenerator {
         code.push_str(&self.generate_imports());
 
         // 2. 收集所有 Place (用于生成 FuzzState)
-        // 过滤掉 Source 类型 (它们直接作为 Action 参数，不需要存储在 State 中)
+        // 过滤掉 Source 类型 (它们直接作为 Action 参数,不需要存储在 State 中)
         let complex_places: Vec<&PlaceData> = net
             .graph
             .node_weights()
@@ -30,13 +30,13 @@ impl FuzzTargetGenerator {
             .filter(|p| !p.is_source)
             .collect();
 
-        // 去重 (可能有多个 Place 对应同一个类型，但我们按 ID 或类型名去重？)
+        // 去重 (可能有多个 Place 对应同一个类型,但我们按 ID 或类型名去重？)
         // 要求: "Pool for std::vec::Vec<u8>".
-        // 实际上 PetriNet 中不同 Place 节点代表不同的逻辑位置，但类型可能相同。
+        // 实际上 PetriNet 中不同 Place 节点代表不同的逻辑位置,但类型可能相同.
         // State 应该按类型聚合吗？
         // Prompt 示例: "pool_vec_u8: Vec<std::vec::Vec<u8>>".
-        // 这意味着同一个类型的所有实例共享一个池。
-        // 所以我们需要按 type_name 聚合。
+        // 这意味着同一个类型的所有实例共享一个池.
+        // 所以我们需要按 type_name 聚合.
 
         let mut type_to_pool_name: HashMap<String, String> = HashMap::new();
         // type_name -> (resolved_path, sanitized_name)
@@ -73,8 +73,8 @@ impl FuzzTargetGenerator {
     }
 
     fn generate_imports(&self) -> String {
-        // 注意：现在我们使用完整路径，不再需要简单的 use crate_name 导入
-        // 但为了兼容性，保留 prelude 导入
+        // 注意:现在我们使用完整路径,不再需要简单的 use crate_name 导入
+        // 但为了兼容性,保留 prelude 导入
         format!(
             r#"#![no_main]
 use libfuzzer_sys::fuzz_target;
@@ -132,7 +132,7 @@ use arbitrary::Arbitrary;
 
     fn sanitize_func_name(&self, func_name: &str) -> String {
         // 将 std::fs::File::open 转换为 StdFsFileOpen (PascalCase)
-        // 简单的实现：按 :: 分割，首字母大写
+        // 简单的实现:按 :: 分割,首字母大写
         func_name
             .split("::")
             .map(|part| {
@@ -156,7 +156,7 @@ use arbitrary::Arbitrary;
         sorted_types.sort_by_key(|(k, _)| *k);
 
         for (type_name, (resolved_path, sanitized)) in sorted_types {
-            // 优先使用完整路径，否则使用简单类型名
+            // 优先使用完整路径,否则使用简单类型名
             let type_path = resolved_path.as_ref().unwrap_or(type_name);
             // 生成: pool_XXX: Vec<完整路径>
             code.push_str(&format!("    pool_{}: Vec<{}>,\n", sanitized, type_path));
@@ -227,7 +227,7 @@ use arbitrary::Arbitrary;
             let variant_name = self.sanitize_func_name(&trans.func_name);
             code.push_str(&format!("            Action::{} {{ ", variant_name));
 
-            // 收集输入变量名，用于解构和后续调用
+            // 收集输入变量名,用于解构和后续调用
             let trans_idx = net.transition_map[&trans.id];
             let mut inputs: Vec<_> = net
                 .graph
@@ -277,10 +277,10 @@ use arbitrary::Arbitrary;
                     match edge_data.kind {
                         EdgeKind::Move => {
                             // Move: remove(idx)
-                            // 注意: remove 会改变后续元素的索引，这对 fuzzing 来说通常是可以接受的随机性，
-                            // 但如果同一个 action 中有多个相同类型的参数，可能会有问题。
-                            // 简单的 fuzzing 策略通常容忍这一点。
-                            // 更好的策略是 swap_remove，效率更高。
+                            // 注意: remove 会改变后续元素的索引,这对 fuzzing 来说通常是可以接受的随机性,
+                            // 但如果同一个 action 中有多个相同类型的参数,可能会有问题.
+                            // 简单的 fuzzing 策略通常容忍这一点.
+                            // 更好的策略是 swap_remove,效率更高.
                             let access = format!("{}.remove({})", pool_name, var_name);
                             args_code.push(access);
                         }
@@ -301,9 +301,9 @@ use arbitrary::Arbitrary;
             // 处理 raw pointer cast
             // 注意: args_code 现在包含了 获取对象的表达式
             // 我们需要在这些表达式后面追加 .as_ptr() 或 cast
-            // 但如果表达式是 remove() 的结果 (owned value)，转指针需要 careful。
+            // 但如果表达式是 remove() 的结果 (owned value),转指针需要 careful.
             // 通常 RawPtr 对应 Ref/MutRef + Cast.
-            // 在 builder 中，RawPtr 被映射为 Ref/MutRef + is_raw_ptr=true.
+            // 在 builder 中,RawPtr 被映射为 Ref/MutRef + is_raw_ptr=true.
             // 所以 args_code 中的表达式应该是 &... 或 &mut ...
 
             let mut final_args = Vec::new();
@@ -323,9 +323,9 @@ use arbitrary::Arbitrary;
 
             // 生成函数调用
             // 考虑泛型 turbo fish? "generic_map in Transition"
-            // 目前简化处理，假设 rustc 能推断，或者需要在 format func_name 时处理。
-            // TransitionData 有 generic_map，但 PetriNetBuilder 中我们暂时留空了。
-            // 如果有，应该在这里拼装 ::<...>
+            // 目前简化处理,假设 rustc 能推断,或者需要在 format func_name 时处理.
+            // TransitionData 有 generic_map,但 PetriNetBuilder 中我们暂时留空了.
+            // 如果有,应该在这里拼装 ::<...>
 
             let call_expr = format!("{}({})", trans.func_name, final_args.join(", "));
 
@@ -341,9 +341,9 @@ use arbitrary::Arbitrary;
             if outputs.is_empty() {
                 code.push_str(&format!("                {};\n", call_expr));
             } else {
-                // 检查是否是 Result (如果有 index 1 的边，或者 output type 是 Result)
-                // 仅凭边无法确定是否是 Result，但如果存在 index=1 的边，说明 builder 解析出了 Result。
-                // 如果只有 index=0，可能是 Result 的 T，也可能是普通返回值。
+                // 检查是否是 Result (如果有 index 1 的边,或者 output type 是 Result)
+                // 仅凭边无法确定是否是 Result,但如果存在 index=1 的边,说明 builder 解析出了 Result.
+                // 如果只有 index=0,可能是 Result 的 T,也可能是普通返回值.
                 // 实际上 builder 中: Result<T,E> -> (T, 0), (E, 1).
                 // 非 Result -> (Ret, 0).
 

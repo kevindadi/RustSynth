@@ -162,7 +162,7 @@ impl Pipeline {
         Ok(())
     }
 
-    // /// 构建 CP-Net（Colored Petri Net with Trait Hub）
+    // /// 构建 CP-Net(Colored Petri Net with Trait Hub)
     // fn build_cp_net(&self, ir_graph: &IrGraph) -> Result<CpPetriNet> {
     //     let cp_net = CpPetriNet::from_ir_graph(ir_graph);
 
@@ -241,7 +241,7 @@ impl Pipeline {
                 self.config.target_crate, lib_path
             )
         } else {
-            // 默认：假设库在上一级目录
+            // 默认:假设库在上一级目录
             format!("[dependencies.{}]\npath = \"..\"", self.config.target_crate)
         };
 

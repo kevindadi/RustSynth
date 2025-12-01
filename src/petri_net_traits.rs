@@ -1,8 +1,8 @@
 /// Petri Net 通用 Trait 定义
 ///
-/// 提供统一的接口用于：
+/// 提供统一的接口用于:
 /// 1. 从 IrGraph 转换到 Petri Net
-/// 2. 导出 Petri Net（DOT 和 JSON）
+/// 2. 导出 Petri Net(DOT 和 JSON)
 use crate::ir_graph::structure::IrGraph;
 use std::io;
 use std::path::Path;
@@ -38,9 +38,9 @@ pub trait PetriNetExport {
     /// 打印统计信息
     fn print_stats(&self);
 
-    /// 获取统计信息字符串（可选实现）
+    /// 获取统计信息字符串(可选实现)
     fn get_stats_string(&self) -> String {
-        // 默认实现：返回空字符串，由具体类型覆盖
+        // 默认实现:返回空字符串,由具体类型覆盖
         String::new()
     }
 }

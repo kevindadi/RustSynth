@@ -6,11 +6,11 @@ use std::path::PathBuf;
 pub struct Config {
     pub input_json: PathBuf,
 
-    /// 目标 crate 名称（用于生成 fuzz target）
+    /// 目标 crate 名称(用于生成 fuzz target)
     pub target_crate: String,
 
-    /// 被测库的路径（相对于 fuzz 目录，用于 Cargo.toml 依赖）
-    /// 如果为 None，则使用 crates.io 依赖
+    /// 被测库的路径(相对于 fuzz 目录,用于 Cargo.toml 依赖)
+    /// 如果为 None,则使用 crates.io 依赖
     pub lib_path: Option<String>,
 
     pub output: OutputConfig,
@@ -19,11 +19,11 @@ pub struct Config {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OutputConfig {
-    /// 输出目录（所有生成文件的根目录）
+    /// 输出目录(所有生成文件的根目录)
     #[serde(default = "default_output_dir")]
     pub output_dir: PathBuf,
 
-    /// Fuzz target 输出目录（相对于 output_dir）
+    /// Fuzz target 输出目录(相对于 output_dir)
     #[serde(default = "default_fuzz_dir")]
     pub fuzz_dir: PathBuf,
 

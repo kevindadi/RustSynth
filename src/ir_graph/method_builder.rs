@@ -29,7 +29,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                     if let ItemEnum::Function(func) = &method_item.inner {
                         let method_name = method_item.name.as_deref().unwrap_or("unknown");
 
-                        // 过滤黑名单方法，但记录对应的 Trait
+                        // 过滤黑名单方法,但记录对应的 Trait
                         if is_blacklisted_method(method_name) {
                             if let Some(trait_name) = get_trait_for_method(method_name) {
                                 let traits = type_blacklisted_traits.entry(type_id).or_default();
@@ -54,7 +54,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                         // 处理方法的泛型参数及约束
                         self.process_method_generics(method_id, &func.generics, method_name);
 
-                        // 处理输入参数（识别 self 并连接到类型）
+                        // 处理输入参数(识别 self 并连接到类型)
                         let params = self.process_function_inputs_with_self(
                             op_node_idx,
                             &func.sig.inputs,
@@ -102,7 +102,7 @@ impl<'ir> IrGraphBuilder<'ir> {
             }
         }
 
-        // 更新类型的 NodeInfo，添加 blacklisted_trait_impls
+        // 更新类型的 NodeInfo,添加 blacklisted_trait_impls
         for (type_id, blacklisted_traits) in type_blacklisted_traits {
             if let Some(node_idx) = self.type_cache.get_by_id(&type_id) {
                 self.update_type_blacklisted_traits(node_idx, blacklisted_traits);
@@ -125,7 +125,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                 }
                 _ => {
                     debug!(
-                        "节点 {:?} 不是 Struct/Enum/Union，跳过 blacklisted_trait_impls 更新",
+                        "节点 {:?} 不是 Struct/Enum/Union,跳过 blacklisted_trait_impls 更新",
                         node_idx
                     );
                 }
@@ -134,7 +134,7 @@ impl<'ir> IrGraphBuilder<'ir> {
     }
 
     /// 构建 Trait 定义的方法节点
-    /// 这些是 trait 本身定义的方法，而不是实现
+    /// 这些是 trait 本身定义的方法,而不是实现
     pub fn build_trait_defined_methods(&mut self) {
         let method_impls = self.method_impls.clone();
 
@@ -149,7 +149,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                             continue;
                         }
 
-                        // 创建操作节点（trait 定义的方法）
+                        // 创建操作节点(trait 定义的方法)
                         let op_node_idx = self.graph.add_type_node(method_name);
                         self.type_cache.insert_op(method_id, op_node_idx);
                         self.graph
@@ -157,7 +157,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                             .insert(op_node_idx, NodeType::TraitMethod);
 
                         // 处理方法的泛型参数
-                        // 优先使用归一化的 Trait 级别泛型，如果没有才创建方法级别的
+                        // 优先使用归一化的 Trait 级别泛型,如果没有才创建方法级别的
                         if !func.generics.params.is_empty() {
                             // 获取 trait 名称用于查找归一化的泛型
                             let trait_name = self
@@ -176,7 +176,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                             );
                         }
 
-                        // 处理输入参数（识别 self 并连接到 trait）
+                        // 处理输入参数(识别 self 并连接到 trait)
                         let params = self.process_function_inputs_with_self(
                             op_node_idx,
                             &func.sig.inputs,
@@ -225,7 +225,7 @@ impl<'ir> IrGraphBuilder<'ir> {
         }
     }
 
-    /// 处理 Trait 方法的泛型参数（优先使用归一化的泛型）
+    /// 处理 Trait 方法的泛型参数(优先使用归一化的泛型)
     fn process_method_generics_with_trait(
         &mut self,
         method_id: Id,
@@ -246,7 +246,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                     continue;
                 }
 
-                // 否则，为此方法创建独立的泛型节点
+                // 否则,为此方法创建独立的泛型节点
                 let generic_name = format!("{}:{}", method_name, param.name);
                 let generic_node_idx = self.graph.add_type_node(&generic_name);
                 self.graph
@@ -292,7 +292,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                     .node_types
                     .insert(generic_node_idx, NodeType::Generic);
 
-                // 插入两个 key：完整名和短名
+                // 插入两个 key:完整名和短名
                 self.type_cache.insert_generic(
                     generic_name.clone(),
                     Some(param.name.clone()),
@@ -309,14 +309,14 @@ impl<'ir> IrGraphBuilder<'ir> {
                     if let GenericBound::TraitBound { trait_, .. } = bound {
                         let trait_id = trait_.id;
 
-                        // 获取 Trait 的完整名称（包含具体类型参数）
+                        // 获取 Trait 的完整名称(包含具体类型参数)
                         let trait_full_name = Self::get_trait_full_name(trait_);
                         let (has_concrete_args, _) =
                             Self::check_trait_args_for_concrete_type(&trait_.args);
 
                         // 获取或创建 Trait 节点
                         let trait_node = if has_concrete_args {
-                            // 带具体类型参数的 Trait，使用完整名称创建新节点
+                            // 带具体类型参数的 Trait,使用完整名称创建新节点
                             let type_key = TypeKey::TraitWithArgs {
                                 trait_id,
                                 args_repr: trait_full_name.clone(),
@@ -336,7 +336,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                         } else if let Some(node) = self.type_cache.get_by_id(&trait_id) {
                             node
                         } else {
-                            // 外部 Trait，创建节点
+                            // 外部 Trait,创建节点
                             let trait_name = trait_.path.split("::").last().unwrap_or(&trait_.path);
                             let node = self.graph.add_type_node(trait_name);
                             self.graph.node_types.insert(node, NodeType::Trait);
@@ -346,7 +346,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                             node
                         };
 
-                        // 创建 Require 边：Trait -> 泛型（Petri 网语义）
+                        // 创建 Require 边:Trait -> 泛型(Petri 网语义)
                         self.graph.add_type_relation(
                             trait_node,
                             generic_node_idx,
@@ -363,7 +363,7 @@ impl<'ir> IrGraphBuilder<'ir> {
         }
     }
 
-    /// 处理函数输入参数（识别 self 并连接到类型/Trait）
+    /// 处理函数输入参数(识别 self 并连接到类型/Trait)
     /// 返回参数信息列表
     fn process_function_inputs_with_self(
         &mut self,
@@ -443,7 +443,7 @@ impl<'ir> IrGraphBuilder<'ir> {
             };
 
             if let Some(type_node_idx) = type_node_idx {
-                // 创建从类型到操作的边（输入边）
+                // 创建从类型到操作的边(输入边)
                 self.graph.type_graph.add_edge(
                     type_node_idx,
                     op_node_idx,
@@ -485,7 +485,7 @@ impl<'ir> IrGraphBuilder<'ir> {
 
         // 检查是否是 Result<T, E>
         if let Some((ok_type, err_type)) = self.extract_result_types(output) {
-            // 创建 Result 包装节点（作为独立的库所）
+            // 创建 Result 包装节点(作为独立的库所)
             let result_node = self.create_result_wrapper_node(method_name);
 
             // 创建 unwrap 变迁节点
@@ -549,7 +549,7 @@ impl<'ir> IrGraphBuilder<'ir> {
         }
         // 检查是否是 Option<T>
         else if let Some(some_type) = self.extract_option_type(output) {
-            // 创建 Option 包装节点（作为独立的库所）
+            // 创建 Option 包装节点(作为独立的库所)
             let option_node = self.create_option_wrapper_node(method_name);
 
             // 创建 unwrap 变迁节点
@@ -612,7 +612,7 @@ impl<'ir> IrGraphBuilder<'ir> {
         else {
             let type_node_idx = self.resolve_type_node_with_owner(output, method_name, owner_id);
             if let Some(type_node_idx) = type_node_idx {
-                // 创建从操作到类型的边（输出边）
+                // 创建从操作到类型的边(输出边)
                 self.graph.type_graph.add_edge(
                     op_node_idx,
                     type_node_idx,
@@ -653,7 +653,7 @@ impl<'ir> IrGraphBuilder<'ir> {
     }
 
     /// 解析类型节点
-    /// context_owner_id: 当前上下文的所有者 ID（类型或 Trait），用于解析 Self 和泛型
+    /// context_owner_id: 当前上下文的所有者 ID(类型或 Trait),用于解析 Self 和泛型
     fn resolve_type_node_with_owner(
         &mut self,
         ty: &Type,
@@ -661,16 +661,16 @@ impl<'ir> IrGraphBuilder<'ir> {
         context_owner_id: Option<Id>,
     ) -> Option<NodeIndex> {
         match ty {
-            // ResolvedPath: 已解析的路径类型（struct, enum, trait 等）
+            // ResolvedPath: 已解析的路径类型(struct, enum, trait 等)
             Type::ResolvedPath(path) => {
-                // 使用 TypeCache 创建 TypeKey（会处理泛型参数）
+                // 使用 TypeCache 创建 TypeKey(会处理泛型参数)
                 let context = TypeContext {
                     current_owner: context_owner_id,
                     generic_scopes: Default::default(), // 简化处理
                 };
 
                 if let Some(type_key) = self.type_cache.create_type_key(ty, &context) {
-                    // 先尝试从 type_cache 查找（优先使用已存在的节点）
+                    // 先尝试从 type_cache 查找(优先使用已存在的节点)
                     if let Some(existing_node) = self.type_cache.get_by_id(&path.id) {
                         debug!(
                             "✓ 从 type_cache 找到类型: {} (id: {}) -> NodeIndex({:?})",
@@ -694,19 +694,19 @@ impl<'ir> IrGraphBuilder<'ir> {
                         return Some(node);
                     }
 
-                    // 如果不存在，创建节点
+                    // 如果不存在,创建节点
                     debug!(
                         "⚠️  创建新的外部类型节点: {} (id: {})",
                         path.path, path.id.0
                     );
                     let type_name = if let Some(args) = &path.args {
-                        // 有泛型参数，创建带参数的类型名
+                        // 有泛型参数,创建带参数的类型名
                         if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = &**args {
                             let arg_names: Vec<String> = args
                                 .iter()
                                 .filter_map(|arg| {
                                     if let rustdoc_types::GenericArg::Type(arg_type) = arg {
-                                        // 简化：只取类型名
+                                        // 简化:只取类型名
                                         match arg_type {
                                             Type::Primitive(name) => Some(name.clone()),
                                             Type::ResolvedPath(p) => Some(
@@ -752,10 +752,10 @@ impl<'ir> IrGraphBuilder<'ir> {
                             .to_string()
                     };
 
-                    // 再次检查 type_cache（可能在检查后又被创建了）
+                    // 再次检查 type_cache(可能在检查后又被创建了)
                     if let Some(existing_node) = self.type_cache.get_by_id(&path.id) {
                         debug!(
-                            "⚠️  类型 {} (id: {}) 在创建过程中已存在节点 NodeIndex({:?})，使用已有节点",
+                            "⚠️  类型 {} (id: {}) 在创建过程中已存在节点 NodeIndex({:?}),使用已有节点",
                             type_name, path.id.0, existing_node
                         );
                         // 确保 TypeCache 中也记录
@@ -780,11 +780,11 @@ impl<'ir> IrGraphBuilder<'ir> {
                     // 更新 TypeCache
                     self.type_cache.insert_node(type_key.clone(), node);
 
-                    // 也更新 type_cache（用于快速查找基础类型）
+                    // 也更新 type_cache(用于快速查找基础类型)
                     let old_node = self.type_cache.get_by_id(&path.id);
                     if let Some(old) = old_node {
                         error!(
-                            "⚠️  类型 {} (id: {}) 在 type_cache 中已有节点 NodeIndex({:?})，被替换为 NodeIndex({:?})",
+                            "⚠️  类型 {} (id: {}) 在 type_cache 中已有节点 NodeIndex({:?}),被替换为 NodeIndex({:?})",
                             type_name, path.id.0, old, node
                         );
                     }
@@ -801,16 +801,16 @@ impl<'ir> IrGraphBuilder<'ir> {
                 }
             }
 
-            // Generic: 泛型参数，包括 Self
+            // Generic: 泛型参数,包括 Self
             Type::Generic(name) => {
-                // 特殊处理：Self 指向所属类型/Trait
+                // 特殊处理:Self 指向所属类型/Trait
                 if name == "Self" {
                     if let Some(owner_id) = context_owner_id {
                         return self.type_cache.get_by_id(&owner_id);
                     }
                 }
 
-                // 【核心修复】优先使用 TypeCache 查找类型的泛型参数（如 EncoderWriter:E）
+                // 【核心修复】优先使用 TypeCache 查找类型的泛型参数(如 EncoderWriter:E)
                 use super::type_cache::{GenericScope as CacheGenericScope, TypeKey};
                 use log::debug;
 
@@ -833,7 +833,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                     }
                 }
 
-                // TypeCache 未找到，尝试查找归一化泛型（Trait:GenericName）
+                // TypeCache 未找到,尝试查找归一化泛型(Trait:GenericName)
                 if let Some(owner_id) = context_owner_id {
                     if let Some(owner_item) = self.parsed.crate_data.index.get(&owner_id) {
                         if let Some(owner_name) = &owner_item.name {
@@ -846,14 +846,14 @@ impl<'ir> IrGraphBuilder<'ir> {
                     }
                 }
 
-                // 尝试方法级泛型（如 decode:T）
+                // 尝试方法级泛型(如 decode:T)
                 let method_generic_key = format!("{}:{}", context_name, name);
                 if let Some(idx) = self.type_cache.get_generic(&method_generic_key) {
                     debug!("✓ 方法级key找到泛型: {}", method_generic_key);
                     return Some(idx);
                 }
 
-                // 最后尝试短名查找（简单泛型，可能被覆盖）
+                // 最后尝试短名查找(简单泛型,可能被覆盖)
                 if let Some(idx) = self.type_cache.get_generic_short(name) {
                     debug!("通过短名找到泛型: {}", name);
                     return Some(idx);
@@ -889,13 +889,13 @@ impl<'ir> IrGraphBuilder<'ir> {
             }
 
             // BorrowedRef: 引用类型 &T, &mut T
-            // 引用类型直接返回内部类型的节点，因为边的 EdgeMode 已经表示了引用关系
+            // 引用类型直接返回内部类型的节点,因为边的 EdgeMode 已经表示了引用关系
             Type::BorrowedRef { type_, .. } => {
                 self.resolve_type_node_with_owner(type_, context_name, context_owner_id)
             }
 
             // RawPointer: 裸指针 *const T, *mut T
-            // 裸指针类型直接返回内部类型的节点，因为边的 EdgeMode 已经表示了指针关系
+            // 裸指针类型直接返回内部类型的节点,因为边的 EdgeMode 已经表示了指针关系
             Type::RawPointer { type_, .. } => {
                 self.resolve_type_node_with_owner(type_, context_name, context_owner_id)
             }
@@ -915,7 +915,7 @@ impl<'ir> IrGraphBuilder<'ir> {
             } => {
                 use log::debug;
 
-                // 解析 self_type 获取类型 ID（self_type 是 &Box<Type>）
+                // 解析 self_type 获取类型 ID(self_type 是 &Box<Type>)
                 let type_id = match self_type.as_ref() {
                     Type::ResolvedPath(path) => Some(path.id),
                     Type::Generic(generic_name) if generic_name == "Self" => context_owner_id,
@@ -942,7 +942,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                             .and_then(|item| item.name.as_deref())
                             .unwrap_or("unknown")
                     } else {
-                        // 如果无法从 self_type 获取，尝试从 context_owner_id 获取
+                        // 如果无法从 self_type 获取,尝试从 context_owner_id 获取
                         if let Some(owner_id) = context_owner_id {
                             self.parsed
                                 .crate_data
@@ -956,13 +956,13 @@ impl<'ir> IrGraphBuilder<'ir> {
                     };
 
                     // 查找关联类型节点
-                    // 优先查找 Type.AssocType（impl 中重新定义的），如果没有则查找 Trait.AssocType（trait 中定义的默认值）
+                    // 优先查找 Type.AssocType(impl 中重新定义的),如果没有则查找 Trait.AssocType(trait 中定义的默认值)
                     if let Some(assoc_node) = self.type_cache.get_assoc_type(type_name, name) {
                         debug!("✓ 找到关联类型: {}.{} (impl 中定义)", type_name, name);
                         return Some(assoc_node);
                     }
 
-                    // 如果 type_name 是 "unknown"，尝试从 context_owner_id 获取
+                    // 如果 type_name 是 "unknown",尝试从 context_owner_id 获取
                     if type_name == "unknown" {
                         if let Some(owner_id) = context_owner_id {
                             if let Some(owner_item) = self.parsed.crate_data.index.get(&owner_id) {
@@ -981,10 +981,10 @@ impl<'ir> IrGraphBuilder<'ir> {
                         }
                     }
 
-                    // 最后查找 Trait.AssocType（trait 中定义的默认值）
+                    // 最后查找 Trait.AssocType(trait 中定义的默认值)
                     if let Some(assoc_node) = self.type_cache.get_assoc_type(trait_name, name) {
                         debug!(
-                            "✓ 找到 Trait 关联类型: {}.{} (trait 中定义，作为 fallback)",
+                            "✓ 找到 Trait 关联类型: {}.{} (trait 中定义,作为 fallback)",
                             trait_name, name
                         );
                         return Some(assoc_node);
@@ -1006,7 +1006,7 @@ impl<'ir> IrGraphBuilder<'ir> {
     /// 提取 Result<T, E> 的类型
     fn extract_result_types(&self, ty: &Type) -> Option<(Type, Type)> {
         if let Type::ResolvedPath(path) = ty {
-            // 通过 path 识别 Result（可能是 std::result::Result, io::Result 等）
+            // 通过 path 识别 Result(可能是 std::result::Result, io::Result 等)
             let is_result = path.path.ends_with("Result")
                 || path.path == "Result"
                 || path.path.contains("::Result");
@@ -1024,19 +1024,19 @@ impl<'ir> IrGraphBuilder<'ir> {
                                 return Some((ok_type.clone(), err_type.clone()));
                             }
                         } else if args.len() == 1 {
-                            // TypeAlias 形式的 Result（如 io::Result<T>），第二个参数被固定
-                            // 提取 T，并创建一个通用的 Error 类型
+                            // TypeAlias 形式的 Result(如 io::Result<T>),第二个参数被固定
+                            // 提取 T,并创建一个通用的 Error 类型
                             if let rustdoc_types::GenericArg::Type(ok_type) = &args[0] {
                                 // 根据 path 推断 Error 类型
                                 let error_type = if path.path.contains("io::") {
                                     // io::Result -> io::Error
                                     Type::ResolvedPath(rustdoc_types::Path {
                                         path: "io::Error".to_string(),
-                                        id: path.id, // 使用相同的 id（外部类型）
+                                        id: path.id, // 使用相同的 id(外部类型)
                                         args: None,
                                     })
                                 } else {
-                                    // 其他情况，使用通用 Error
+                                    // 其他情况,使用通用 Error
                                     Type::Generic("Error".to_string())
                                 };
                                 return Some((ok_type.clone(), error_type));
@@ -1052,7 +1052,7 @@ impl<'ir> IrGraphBuilder<'ir> {
     /// 提取 Option<T> 的类型
     fn extract_option_type(&self, ty: &Type) -> Option<Type> {
         if let Type::ResolvedPath(path) = ty {
-            // 通过 path 识别 Option（可能是 std::option::Option 或 Option）
+            // 通过 path 识别 Option(可能是 std::option::Option 或 Option)
             let is_option = path.path.ends_with("Option")
                 || path.path == "Option"
                 || path.path.contains("::Option");
@@ -1215,7 +1215,7 @@ impl<'ir> IrGraphBuilder<'ir> {
             debug!("✓ 创建切片节点: {} -> {:?}", slice_label, slice_node);
             slice_node
         } else {
-            // 回退：直接返回内部类型节点
+            // 回退:直接返回内部类型节点
             self.resolve_type_node_with_owner(inner_type, context_name, owner_id)
                 .unwrap_or_else(|| self.get_or_create_primitive_node("unknown"))
         }
@@ -1283,7 +1283,7 @@ impl<'ir> IrGraphBuilder<'ir> {
             debug!("✓ 创建数组节点: {} -> {:?}", array_label, array_node);
             array_node
         } else {
-            // 回退：直接返回内部类型节点
+            // 回退:直接返回内部类型节点
             self.resolve_type_node_with_owner(inner_type, context_name, owner_id)
                 .unwrap_or_else(|| self.get_or_create_primitive_node("unknown"))
         }

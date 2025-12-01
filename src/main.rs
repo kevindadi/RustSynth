@@ -12,19 +12,20 @@ pub mod label_pt_net;
 pub mod support_types;
 
 use crate::ir_graph::builder::IrGraphBuilder;
-use crate::label_pt_net::{ExportFormat, convert_ir_to_lpn};
+use crate::label_pt_net::export::ExportFormat;
+use crate::label_pt_net::net::convert_ir_to_lpn;
 use crate::parse::ParsedCrate;
 
 #[derive(Parser)]
 #[command(name = "sypetype")]
-#[command(about = "SyPetype: 解析 Rust API 文档并生成 IR Graph 和 Petri Net（支持 cargo-fuzz）", long_about = None)]
+#[command(about = "SyPetype: 解析 Rust API 文档并生成 IR Graph 和 Petri Net(支持 cargo-fuzz)", long_about = None)]
 #[command(version)]
 struct Cli {
     /// rustdoc JSON 文件路径
     #[arg(value_name = "INPUT")]
     input: PathBuf,
 
-    /// 输出目录（默认为 ./graph）
+    /// 输出目录(默认为 ./graph)
     #[arg(short, long, value_name = "DIR", default_value = "graph")]
     output_dir: PathBuf,
 
@@ -32,15 +33,15 @@ struct Cli {
     #[arg(long)]
     stats: bool,
 
-    /// 不导出文件，仅打印统计
+    /// 不导出文件,仅打印统计
     #[arg(long)]
     no_export: bool,
 
-    /// 生成 API 调用序列（用于 fuzz 测试）
+    /// 生成 API 调用序列(用于 fuzz 测试)
     #[arg(long)]
     generate_sequences: bool,
 
-    /// 序列最大深度（默认 5）
+    /// 序列最大深度(默认 5)
     #[arg(long, default_value = "5")]
     max_depth: usize,
 
@@ -48,7 +49,7 @@ struct Cli {
     #[arg(long)]
     add_shims: bool,
 
-    /// Fuzz 输入（十六进制字符串，用于测试）
+    /// Fuzz 输入(十六进制字符串,用于测试)
     #[arg(long)]
     fuzz_input: Option<String>,
 }
@@ -79,7 +80,7 @@ fn main() -> Result<()> {
     log::info!("正在转换为 Labeled Petri Net...");
     let mut lpn = convert_ir_to_lpn(&ir_graph);
 
-    // 添加基本类型 shims（如果启用）
+    // 添加基本类型 shims(如果启用)
     if cli.add_shims {
         log::info!("正在添加基本类型 shims...");
         lpn.add_primitive_shims(&ir_graph);
@@ -132,7 +133,7 @@ fn main() -> Result<()> {
     if cli.generate_sequences {
         log::info!("正在生成 API 调用序列...");
 
-        // 解析 fuzz 输入（如果提供）
+        // 解析 fuzz 输入(如果提供)
         let fuzz_bytes: Vec<u8> = if let Some(hex_str) = &cli.fuzz_input {
             // 解析十六进制字符串
             hex_str
@@ -179,7 +180,10 @@ fn main() -> Result<()> {
         println!("\n=== Petri Net 分析 ===");
         let analysis = lpn.analyze(1000, 10);
         println!("  活性: {}", if analysis.live { "是" } else { "否" });
-        println!("  10-有界性: {}", if analysis.bounded { "是" } else { "否" });
+        println!(
+            "  10-有界性: {}",
+            if analysis.bounded { "是" } else { "否" }
+        );
 
         // 显示 failure places
         let failure_places = lpn.get_failure_places();

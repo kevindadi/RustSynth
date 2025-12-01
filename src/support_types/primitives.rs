@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 /// 基本类型定义
 ///
 /// 这些是 Rust 的内置类型,不需要从 rustdoc JSON 中解析
@@ -14,6 +15,55 @@ pub const PRIMITIVE_TYPES: &[&str] = &[
     "str",  // Never 类型
     "!",
 ];
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum PrimitiveType {
+    I8,
+    I16,
+    I32,
+    I64,
+    I128,
+    Isize,
+    U8,
+    U16,
+    U32,
+    U64,
+    U128,
+    Usize,
+    F32,
+    F64,
+    Bool,
+    Char,
+    Str,
+    Never,
+    Unit,
+}
+
+impl PrimitiveType {
+    pub fn from_str(name: &str) -> Option<PrimitiveType> {
+        match name {
+            "i8" => Some(PrimitiveType::I8),
+            "i16" => Some(PrimitiveType::I16),
+            "i32" => Some(PrimitiveType::I32),
+            "i64" => Some(PrimitiveType::I64),
+            "i128" => Some(PrimitiveType::I128),
+            "isize" => Some(PrimitiveType::Isize),
+            "u8" => Some(PrimitiveType::U8),
+            "u16" => Some(PrimitiveType::U16),
+            "u32" => Some(PrimitiveType::U32),
+            "u64" => Some(PrimitiveType::U64),
+            "u128" => Some(PrimitiveType::U128),
+            "usize" => Some(PrimitiveType::Usize),
+            "f32" => Some(PrimitiveType::F32),
+            "f64" => Some(PrimitiveType::F64),
+            "bool" => Some(PrimitiveType::Bool),
+            "char" => Some(PrimitiveType::Char),
+            "str" => Some(PrimitiveType::Str),
+            "!" => Some(PrimitiveType::Never),
+            _ => None,
+        }
+    }
+}
 
 /// 检查是否是原始类型
 pub fn is_primitive_type(name: &str) -> bool {
@@ -72,7 +122,7 @@ pub static PRIMITIVE_DEFAULT_TRAITS: LazyLock<HashMap<&'static str, Vec<&'static
             map.insert(ty, integer_traits.clone());
         }
 
-        // 浮点类型（没有 Eq, Ord, Hash）
+        // 浮点类型(没有 Eq, Ord, Hash)
         let float_traits = vec![
             "Copy",
             "Clone",
@@ -145,7 +195,7 @@ pub static PRIMITIVE_DEFAULT_TRAITS: LazyLock<HashMap<&'static str, Vec<&'static
             ],
         );
 
-        // str 类型（不是 Copy，是 ?Sized）
+        // str 类型(不是 Copy,是 ?Sized)
         map.insert(
             "str",
             vec![
