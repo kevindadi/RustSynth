@@ -6,7 +6,10 @@ use super::builder::IrGraphBuilder;
 use super::node_info::{MethodInfo, MethodKind, NodeInfo, ParamInfo, ReturnInfo};
 use super::structure::{EdgeMode, NodeType, TypeRelation};
 use super::type_cache::{TypeContext, TypeKey};
-use super::utils::{extract_result_types, extract_option_type, extract_type_name, extract_type_name_from_path, format_type_label};
+use super::utils::{
+    extract_option_type, extract_result_types, extract_type_name, extract_type_name_from_path,
+    format_type_label,
+};
 use crate::support_types::method_blacklist::{get_trait_for_method, is_blacklisted_method};
 use log::{debug, error};
 
@@ -720,11 +723,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                                 })
                                 .collect();
                             if !arg_names.is_empty() {
-                                format!(
-                                    "{}<{}>",
-                                    extract_type_name(path),
-                                    arg_names.join(", ")
-                                )
+                                format!("{}<{}>", extract_type_name(path), arg_names.join(", "))
                             } else {
                                 extract_type_name(path)
                             }
@@ -993,7 +992,6 @@ impl<'ir> IrGraphBuilder<'ir> {
             _ => None,
         }
     }
-
 
     /// 创建展开操作节点
     fn create_unwrap_node(&mut self, method_name: &str, op_type: &str) -> NodeIndex {

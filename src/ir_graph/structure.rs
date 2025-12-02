@@ -130,11 +130,10 @@ impl IrGraph {
             .add_edge(from, to, TypeRelation { mode, label })
     }
 
-    /// 打印统计信息
     pub fn print_stats(&self) {
-        println!("=== IR Graph 统计 ===");
-        println!("节点数: {}", self.type_graph.node_count());
-        println!("类型关系边数: {}", self.type_graph.edge_count());
+        log::info!("=== IR Graph 统计 ===");
+        log::info!("节点数: {}", self.type_graph.node_count());
+        log::info!("类型关系边数: {}", self.type_graph.edge_count());
 
         let mut move_edges = 0;
         let mut ref_edges = 0;
@@ -164,15 +163,16 @@ impl IrGraph {
             }
         }
 
-        println!("\n边类型分布:");
-        println!("  - Move: {}", move_edges);
-        println!("  - Ref: {}", ref_edges);
-        println!("  - MutRef: {}", mut_ref_edges);
-        println!("  - Implements: {}", implements_edges);
-        println!("  - Require: {}", require_edges);
-        println!("  - UnwrapOk: {}", unwrap_ok_edges);
-        println!("  - UnwrapErr: {}", unwrap_err_edges);
-        println!("  - UnwrapNone: {}", unwrap_none_edges);
+        log::info!("\n边类型分布: \n
+        - Move: {}
+        - Ref: {}
+        - MutRef: {}
+        - Implements: {}
+        - Require: {}
+        - UnwrapOk: {}
+        - UnwrapErr: {}
+        - UnwrapNone: {}",
+        move_edges, ref_edges, mut_ref_edges, implements_edges, require_edges, unwrap_ok_edges, unwrap_err_edges, unwrap_none_edges);
     }
 
     pub fn export_dot<P: AsRef<std::path::Path>>(

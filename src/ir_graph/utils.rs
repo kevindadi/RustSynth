@@ -1,13 +1,10 @@
-use rustdoc_types::{GenericArgs, GenericArg, Path, Type};
+use rustdoc_types::{GenericArg, GenericArgs, Path, Type};
 
 /// 从路径字符串中提取最后一段作为类型名
-/// 
+///
 /// 例如: "std::vec::Vec" -> "Vec"
 pub fn extract_type_name_from_path(path: &str) -> String {
-    path.split("::")
-        .last()
-        .unwrap_or(path)
-        .to_string()
+    path.split("::").last().unwrap_or(path).to_string()
 }
 
 /// 从 Path 结构体中提取类型名
@@ -16,7 +13,7 @@ pub fn extract_type_name(path: &Path) -> String {
 }
 
 /// 提取 Result<T, E> 的类型参数
-/// 
+///
 /// 返回 (Ok 类型, Err 类型)
 pub fn extract_result_types(ty: &Type) -> Option<(Type, Type)> {
     if let Type::ResolvedPath(path) = ty {
@@ -30,10 +27,8 @@ pub fn extract_result_types(ty: &Type) -> Option<(Type, Type)> {
                 if let GenericArgs::AngleBracketed { args, .. } = &**args {
                     if args.len() >= 2 {
                         // 标准 Result<T, E>
-                        if let (
-                            GenericArg::Type(ok_type),
-                            GenericArg::Type(err_type),
-                        ) = (&args[0], &args[1])
+                        if let (GenericArg::Type(ok_type), GenericArg::Type(err_type)) =
+                            (&args[0], &args[1])
                         {
                             return Some((ok_type.clone(), err_type.clone()));
                         }
@@ -87,7 +82,7 @@ pub fn extract_option_type(ty: &Type) -> Option<Type> {
 }
 
 /// 格式化类型标签(用于显示)
-/// 
+///
 /// 将 Type 转换为可读的字符串表示
 pub fn format_type_label(ty: &Type, context: &str) -> String {
     match ty {
@@ -120,7 +115,7 @@ pub fn format_type_label(ty: &Type, context: &str) -> String {
 }
 
 /// 清理类型名称(用于代码生成)
-/// 
+///
 /// 将类型名转换为适合作为 Rust 标识符的格式
 pub fn sanitize_type_name(type_name: &str) -> String {
     let mut result = type_name.to_string();
@@ -169,7 +164,7 @@ pub fn sanitize_type_name(type_name: &str) -> String {
 }
 
 /// 清理函数名称(用于代码生成)
-/// 
+///
 /// 将函数路径转换为 PascalCase 格式
 pub fn sanitize_func_name(func_name: &str) -> String {
     // 将 std::fs::File::open 转换为 StdFsFileOpen (PascalCase)
@@ -186,4 +181,3 @@ pub fn sanitize_func_name(func_name: &str) -> String {
         .collect::<Vec<_>>()
         .join("")
 }
-

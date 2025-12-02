@@ -537,7 +537,7 @@ impl NodeInfo {
 
     /// 判断是否是类型定义节点
     #[allow(unused)]
-        pub fn is_type_def(&self) -> bool {
+    pub fn is_type_def(&self) -> bool {
         matches!(
             self,
             NodeInfo::Struct(_) | NodeInfo::Enum(_) | NodeInfo::Union(_) | NodeInfo::TypeAlias(_)

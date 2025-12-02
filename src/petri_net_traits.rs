@@ -24,34 +24,15 @@ pub trait PetriNetExport {
     fn to_json(&self) -> Result<String, serde_json::Error>;
 
     fn export<P: AsRef<Path>>(&self, path: P, format: ExportFormat) -> io::Result<()> {
-        let mut export_path = path.as_ref().to_path_buf();
         let content = match format {
-            ExportFormat::Pnml => {
-                export_path.push("petri_net.pnml");
-                self.to_pnml()}
-            ExportFormat::Dot => {
-                export_path.push("petri_net.dot");
-                self.to_dot()}
-            ExportFormat::Json => {
-                export_path.push("petri_net.json");
-                self
+            ExportFormat::Pnml => self.to_pnml(),
+            ExportFormat::Dot => self.to_dot(),
+            ExportFormat::Json => self
                 .to_json()
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?}
-            ExportFormat::All => {
-                let export_dot = export_path.join("petri_net.dot");
-                std::fs::write(export_dot, self.to_dot())?;
-                let export_json = export_path.join("petri_net.json");
-                std::fs::write(export_json, self.to_json()?)?;
-                let export_pnml = export_path.join("petri_net.pnml");
-                std::fs::write(export_pnml, self.to_pnml())?;
-                return Ok(())
-            }
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?,
         };
         std::fs::write(path, content)
     }
-
-    /// 打印统计信息
-    fn print_stats(&self);
 
     /// 获取统计信息字符串
     fn get_stats_string(&self) -> String {
@@ -78,8 +59,7 @@ pub enum ExportFormat {
     /// DOT (Graphviz)
     Dot,
     /// JSON
-    Json,
-    All,
+    Json
 }
 
 /// XML 转义

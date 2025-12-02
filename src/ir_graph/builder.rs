@@ -10,7 +10,9 @@ use super::node_info::{
 };
 use super::structure::{EdgeMode, IrGraph};
 use super::type_cache::{TypeCache, TypeContext, TypeKey};
-use super::utils::{extract_type_name, extract_type_name_from_path, format_type_label as format_type_label_util};
+use super::utils::{
+    extract_type_name, extract_type_name_from_path, format_type_label as format_type_label_util,
+};
 use crate::support_types::primitives::{PrimitiveType, get_primitive_default_traits};
 use crate::{ir_graph::structure::NodeType, parse::ParsedCrate};
 use log::{debug, error, info};

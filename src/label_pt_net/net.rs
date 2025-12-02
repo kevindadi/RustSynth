@@ -355,10 +355,10 @@ impl FromIrGraph for LabeledPetriNet {
                     (false, false) => {
                         // 可以记录日志或创建中间 place
                         log::debug!(
-                        "Ignoring transition-to-transition edge: {} -> {}",
-                        &ir.type_graph[source_idx],
-                        &ir.type_graph[target_idx]
-                    );
+                            "Ignoring transition-to-transition edge: {} -> {}",
+                            &ir.type_graph[source_idx],
+                            &ir.type_graph[target_idx]
+                        );
                     }
                 }
             }
@@ -366,7 +366,6 @@ impl FromIrGraph for LabeledPetriNet {
 
         lpn
     }
-
 }
 
 /// 解析初始 token 值
@@ -394,8 +393,6 @@ impl PetriNetKind for LabeledPetriNet {
         "Labeled Petri Net (LPN) with type information"
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -474,5 +471,4 @@ mod tests {
         assert_eq!(stats.output_arc_count, 1);
         assert_eq!(stats.total_initial_tokens, 3);
     }
-
 }

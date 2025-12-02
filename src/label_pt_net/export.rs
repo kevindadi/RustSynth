@@ -1,5 +1,5 @@
 use crate::label_pt_net::net::LabeledPetriNet;
-use crate::petri_net_traits::{escape_dot, escape_xml, PetriNetExport};
+use crate::petri_net_traits::{PetriNetExport, escape_dot, escape_xml};
 
 /// 导出 Petri 网为 PNML 格式(Petri Net Markup Language)
 impl PetriNetExport for LabeledPetriNet {
@@ -142,15 +142,16 @@ impl PetriNetExport for LabeledPetriNet {
         serde_json::to_string_pretty(self)
     }
 
-    fn print_stats(&self) {
+    fn get_stats_string(&self) -> String {
         let stats = self.stats();
-        println!("Petri Net Stats:");
-        println!("  Places: {}", stats.place_count);
-        println!("  Transitions: {}", stats.transition_count);
-        println!("  Input Arcs: {}", stats.input_arc_count);
-        println!("  Output Arcs: {}", stats.output_arc_count);
-        println!("  Total Initial Tokens: {}", stats.total_initial_tokens);
+        format!(
+            "Places: {}, Transitions: {}, Arcs: {} (input: {}, output: {}), Initial tokens: {}",
+            stats.place_count,
+            stats.transition_count,
+            stats.input_arc_count + stats.output_arc_count,
+            stats.input_arc_count,
+            stats.output_arc_count,
+            stats.total_initial_tokens
+        )
     }
 }
-
-
