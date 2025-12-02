@@ -1,182 +1,199 @@
-/// 配置管理模块
-use serde::{Deserialize, Serialize};
+#![allow(unused)]
+use clap::{ArgGroup, Parser, ValueEnum};
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Parser, Debug, Clone)]
+#[command(name = "sypetype")]
+#[command(about = "SyPetype: 解析 Rust API 文档并生成 IR Graph 和 Petri Net")]
+#[command(
+    long_about = "SyPetype 工具用于解析 Rust 项目的 rustdoc JSON 输出，构建中间表示图(IR Graph)，
+并转换为 Petri Net 用于分析和测试。
+
+使用示例:
+  # 基本用法：解析 JSON 并构建 IR Graph
+  sypetype input.json
+
+  # 导出 IR Graph 为 DOT 格式
+  sypetype input.json --export-ir-graph-dot
+
+  # 构建 Petri Net 并导出为 DOT 格式（默认）
+  sypetype input.json --stop-at export-petri-net --petri-net-format dot
+
+  # 导出为 JSON 格式
+  sypetype input.json --stop-at export-petri-net --petri-net-format json
+
+  # 打印统计信息
+  sypetype input.json --stats
+
+输入文件:
+  需要提供 rustdoc 生成的 JSON 文件，通常通过以下命令生成:
+    cargo +nightly rustdoc -- --output-format json
+"
+)]
+#[command(version)]
 pub struct Config {
+    /// rustdoc JSON 文件路径
+    /// 
+    /// 这是通过 'cargo +nightly rustdoc -- --output-format json' 生成的 JSON 文件
+    #[arg(value_name = "INPUT", required = true)]
     pub input_json: PathBuf,
 
-    /// 目标 crate 名称（用于生成 fuzz target）
+    /// 输出目录(默认为当前目录)
+    #[arg(short, long, value_name = "DIR", default_value = ".")]
+    pub output_dir: PathBuf,
+
+    /// 目标 crate 名称(用于生成 fuzz target)
+    #[arg(long, value_name = "NAME", default_value = "my_crate")]
     pub target_crate: String,
 
-    /// 被测库的路径（相对于 fuzz 目录，用于 Cargo.toml 依赖）
-    /// 如果为 None，则使用 crates.io 依赖
+    /// 被测库的路径(相对于 fuzz 目录,用于 Cargo.toml 依赖)
+    /// 如果未指定,则使用上一级目录
+    #[arg(long, value_name = "PATH")]
     pub lib_path: Option<String>,
 
-    pub output: OutputConfig,
+    /// 生成的 fuzz target 名称
+    #[arg(long, value_name = "NAME", default_value = "fuzz_target_1")]
+    pub fuzz_target_name: String,
+
+    /// Fuzz 目录(相对于 output_dir)
+    #[arg(long, value_name = "DIR", default_value = "fuzz")]
+    pub fuzz_dir: PathBuf,
+
+    /// 执行阶段控制
+    /// 
+    /// 指定执行到哪个阶段后停止。可选值:
+    /// - parse: 仅解析 JSON
+    /// - ir-graph: 构建 IR Graph
+    /// - export-ir-graph: 导出 IR Graph
+    /// - petri-net: 构建 PT-Net
+    /// - export-petri-net: 导出 PT-Net
+    /// - fuzz-target: 生成 Fuzz Target
+    /// - fuzz-project: 生成 Fuzz 项目结构
+    #[arg(
+        long,
+        value_enum,
+        default_value = "export-petri-net",
+        help = "指定执行到哪个阶段后停止"
+    )]
+    pub stop_at: PipelineStage,
+
+    /// 打印统计信息
+    #[arg(long)]
+    pub stats: bool,
+
+    /// 打印类型摘要
+    #[arg(long)]
+    pub print_type_summary: bool,
+
+    /// 导出选项组
+    #[command(flatten)]
     pub export: ExportConfig,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OutputConfig {
-    /// 输出目录（所有生成文件的根目录）
-    #[serde(default = "default_output_dir")]
-    pub output_dir: PathBuf,
-
-    /// Fuzz target 输出目录（相对于 output_dir）
-    #[serde(default = "default_fuzz_dir")]
-    pub fuzz_dir: PathBuf,
-
-    /// 生成的 fuzz target 名称
-    #[serde(default = "default_fuzz_target")]
-    pub fuzz_target_name: String,
-}
-
 /// 导出配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Parser, Debug, Clone)]
 pub struct ExportConfig {
-    /// IR Graph Export
-    #[serde(default)]
+    /// 导出 IR Graph DOT 文件
+    #[arg(long)]
     pub export_ir_graph_dot: bool,
-    #[serde(default = "default_ir_dot_name")]
+
+    /// IR Graph DOT 文件名
+    #[arg(long, value_name = "NAME", default_value = "ir_graph.dot")]
     pub ir_graph_dot_name: String,
-    #[serde(default)]
+
+    /// 导出 IR Graph JSON 文件
+    #[arg(long)]
     pub export_ir_graph_json: bool,
-    #[serde(default = "default_ir_json_name")]
+
+    /// IR Graph JSON 文件名
+    #[arg(long, value_name = "NAME", default_value = "ir_graph.json")]
     pub ir_graph_json_name: String,
 
-    /// PT-Net (Place/Transition Net) Export
-    #[serde(default)]
-    pub export_petri_net_dot: bool,
-    #[serde(default = "default_petri_dot_name")]
-    pub petri_net_dot_name: String,
-    #[serde(default)]
-    pub export_petri_net_json: bool,
-    #[serde(default = "default_petri_json_name")]
-    pub petri_net_json_name: String,
+    /// PT-Net 导出格式
+    /// 
+    /// 选择 Petri Net 的导出格式，只能选择一种:
+    /// - dot: Graphviz DOT 格式（默认，用于可视化）
+    /// - json: JSON 格式（用于程序处理）
+    #[arg(
+        long,
+        value_enum,
+        default_value = "dot",
+        help = "PT-Net 导出格式，只能选择一种: dot (默认) 或 json"
+    )]
+    pub petri_net_format: PetriNetFormat,
 
-    /// CP-Net (Colored Petri Net with Trait Hub) Export
-    #[serde(default)]
-    pub export_cp_net_dot: bool,
-    #[serde(default = "default_cp_net_dot_name")]
-    pub cp_net_dot_name: String,
-    #[serde(default)]
-    pub export_cp_net_json: bool,
-    #[serde(default = "default_cp_net_json_name")]
-    pub cp_net_json_name: String,
-
-    #[serde(default = "default_true")]
-    pub print_stats: bool,
-
-    #[serde(default)]
-    pub print_type_summary: bool,
+    /// PT-Net 文件名（不含扩展名）
+    /// 
+    /// 扩展名会根据 --petri-net-format 自动添加
+    #[arg(long, value_name = "NAME", default_value = "petri_net")]
+    pub petri_net_name: String,
 }
 
-fn default_output_dir() -> PathBuf {
-    PathBuf::from(".")
+/// Petri Net 导出格式
+#[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq)]
+pub enum PetriNetFormat {
+    Pnml,
+    Dot,
+    Json,
 }
 
-fn default_fuzz_dir() -> PathBuf {
-    PathBuf::from("fuzz")
-}
+impl ExportConfig {
+    /// 获取 PT-Net 的完整文件名（包含扩展名）
+    pub fn petri_net_filename(&self) -> String {
+        let ext = match self.petri_net_format {
+            PetriNetFormat::Pnml => "pnml",
+            PetriNetFormat::Dot => "dot",
+            PetriNetFormat::Json => "json",
+        };
+        format!("{}.{}", self.petri_net_name, ext)
+    }
 
-fn default_fuzz_target() -> String {
-    "fuzz_target_1".to_string()
-}
-
-fn default_ir_dot_name() -> String {
-    "ir_graph.dot".to_string()
-}
-
-fn default_ir_json_name() -> String {
-    "ir_graph.json".to_string()
-}
-
-fn default_petri_dot_name() -> String {
-    "petri_net.dot".to_string()
-}
-
-fn default_petri_json_name() -> String {
-    "petri_net.json".to_string()
-}
-
-fn default_cp_net_dot_name() -> String {
-    "cp_net.dot".to_string()
-}
-
-fn default_cp_net_json_name() -> String {
-    "cp_net.json".to_string()
-}
-
-fn default_true() -> bool {
-    true
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            input_json: PathBuf::from("./target/doc/my_crate.json"),
-            target_crate: "my_crate".to_string(),
-            lib_path: None,
-            output: OutputConfig::default(),
-            export: ExportConfig::default(),
-        }
+    /// 检查是否应该导出 PT-Net
+    pub fn should_export_petri_net(&self) -> bool {
+        // 如果指定了格式，就导出
+        true // 默认导出，因为格式有默认值
     }
 }
 
-impl Default for OutputConfig {
-    fn default() -> Self {
-        Self {
-            output_dir: default_output_dir(),
-            fuzz_dir: default_fuzz_dir(),
-            fuzz_target_name: default_fuzz_target(),
-        }
-    }
-}
-
-impl Default for ExportConfig {
-    fn default() -> Self {
-        Self {
-            export_ir_graph_dot: false,
-            ir_graph_dot_name: default_ir_dot_name(),
-            export_ir_graph_json: false,
-            ir_graph_json_name: default_ir_json_name(),
-            export_petri_net_dot: true,
-            petri_net_dot_name: default_petri_dot_name(),
-            export_petri_net_json: false,
-            petri_net_json_name: default_petri_json_name(),
-            export_cp_net_dot: false,
-            cp_net_dot_name: default_cp_net_dot_name(),
-            export_cp_net_json: false,
-            cp_net_json_name: default_cp_net_json_name(),
-            print_stats: false,
-            print_type_summary: false,
-        }
-    }
+/// Pipeline 执行阶段
+#[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq, PartialOrd, Ord)]
+pub enum PipelineStage {
+    /// 仅解析 JSON
+    Parse,
+    /// 构建 IR Graph
+    IrGraph,
+    /// 导出 IR Graph
+    ExportIrGraph,
+    /// 构建 PT-Net
+    PetriNet,
+    /// 导出 PT-Net
+    ExportPetriNet,
+    /// 生成 Fuzz Target
+    FuzzTarget,
+    /// 生成 Fuzz 项目结构
+    FuzzProject,
 }
 
 impl Config {
-    /// 从 TOML 文件加载配置
-    pub fn from_toml_file(path: &std::path::Path) -> anyhow::Result<Self> {
-        let content = std::fs::read_to_string(path)?;
-        let config: Config = toml::from_str(&content)?;
-        Ok(config)
-    }
-
-    /// 保存配置到 TOML 文件
-    pub fn save_toml(&self, path: &std::path::Path) -> anyhow::Result<()> {
-        let content = toml::to_string_pretty(self)?;
-        std::fs::write(path, content)?;
-        Ok(())
-    }
-
     /// 获取完整的 fuzz 目录路径
     pub fn fuzz_dir_path(&self) -> PathBuf {
-        self.output.output_dir.join(&self.output.fuzz_dir)
+        self.output_dir.join(&self.fuzz_dir)
     }
 
     /// 获取 fuzz targets 目录路径
     pub fn fuzz_targets_dir(&self) -> PathBuf {
         self.fuzz_dir_path().join("fuzz_targets")
+    }
+
+    /// 检查是否应该停止在指定阶段
+    pub fn should_stop_at(&self, stage: PipelineStage) -> bool {
+        // 如果当前阶段等于或大于停止阶段，则停止
+        stage >= self.stop_at
+    }
+
+    /// 检查是否应该执行指定阶段
+    pub fn should_execute(&self, stage: PipelineStage) -> bool {
+        // 如果阶段小于等于停止阶段，则执行
+        stage <= self.stop_at
     }
 }

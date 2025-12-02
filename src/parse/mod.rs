@@ -1,6 +1,6 @@
 /// Parse 模块:负责解析 rustdoc JSON 输出并提取关键信息
 ///
-/// 此模块是预处理层，最大程度保留 rustdoc_types 原始数据
+/// 此模块是预处理层,最大程度保留 rustdoc_types 原始数据
 /// 便于后续 IR Graph 构建使用
 use rustdoc_types::{Crate, Id, Item, ItemEnum};
 use std::collections::{HashMap, HashSet};
@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
-/// 解析后的 Crate 信息（用于 IR Graph 构建）
+/// 解析后的 Crate 信息(用于 IR Graph 构建)
 #[derive(Debug, Clone)]
 pub struct ParsedCrate {
     /// 原始的 Crate 数据
@@ -23,11 +23,11 @@ pub struct ParsedInfo {
     /// StructFiled 和 Variant
     pub struct_fields: HashSet<Id>,
     pub variant_fields: HashSet<Id>,
-    /// 类型集合（Struct, Enum, Union, TypeAlias）
+    /// 类型集合(Struct, Enum, Union, TypeAlias)
     pub types: HashSet<Id>,
     /// Trait 集合
     pub traits: HashSet<Id>,
-    /// 顶层函数集合（不在 impl/trait 中的）
+    /// 顶层函数集合(不在 impl/trait 中的)
     pub functions: HashSet<Id>,
     /// 常量集合
     pub constants: HashSet<Id>,
@@ -217,7 +217,7 @@ impl ParsedCrate {
             .and_then(|item| item.name.as_deref())
     }
 
-    /// 解析 ID 到其规范定义（跟随 pub use 链）
+    /// 解析 ID 到其规范定义(跟随 pub use 链)
     #[allow(dead_code)]
     pub fn resolve_root_id(&self, id: Id) -> Id {
         // 先查缓存
@@ -225,7 +225,7 @@ impl ParsedCrate {
             return resolved;
         }
 
-        // 不在缓存中，实时解析
+        // 不在缓存中,实时解析
         Self::resolve_use_chain(&self.crate_data.index, id)
     }
 

@@ -1,33 +1,34 @@
+#![allow(unused)]
 //! 类型缓存模块
 //!
-//! 提供统一的类型管理，确保从 rustdoc_types::Type 到 NodeIndex 的唯一映射
+//! 提供统一的类型管理,确保从 rustdoc_types::Type 到 NodeIndex 的唯一映射
 use petgraph::graph::NodeIndex;
 use rustdoc_types::{Id, Type};
 use std::collections::HashMap;
 
-/// 类型标识符，用于唯一标识一个类型
+/// 类型标识符,用于唯一标识一个类型
 ///
-/// 这个枚举覆盖了 rustdoc_types::Type 的所有变体，
+/// 这个枚举覆盖了 rustdoc_types::Type 的所有变体,
 /// 并为每种类型提供可哈希的唯一标识
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum TypeKey {
-    /// 有 ID 的类型：Struct, Enum, Union, Trait, TypeAlias 等
-    /// 直接使用 rustdoc 的 Id（无泛型参数）
+    /// 有 ID 的类型:Struct, Enum, Union, Trait, TypeAlias 等
+    /// 直接使用 rustdoc 的 Id(无泛型参数)
     Resolved(Id),
 
-    /// 有 ID 的类型，带泛型参数实例化
-    /// 例如：Vec<u8>, Vec<u16> 是不同的实例
+    /// 有 ID 的类型,带泛型参数实例化
+    /// 例如:Vec<u8>, Vec<u16> 是不同的实例
     ResolvedWithArgs { id: Id, args: Vec<TypeKey> },
 
-    /// 基本类型：u8, i32, bool, str 等
+    /// 基本类型:u8, i32, bool, str 等
     /// 使用类型名作为标识
     Primitive(String),
 
-    /// 泛型参数，需要上下文信息
-    /// 例如：`Vec<T>` 中的 `T`，需要知道 T 属于哪个作用域
+    /// 泛型参数,需要上下文信息
+    /// 例如:`Vec<T>` 中的 `T`,需要知道 T 属于哪个作用域
     Generic {
         name: String,
-        /// 泛型所属的作用域（类型、Trait 或方法）
+        /// 泛型所属的作用域(类型、Trait 或方法)
         scope: GenericScope,
     },
 
@@ -73,13 +74,13 @@ pub enum TypeKey {
     /// 类型推断占位符 _
     Infer,
 
-    /// 模式类型（实验性功能）
+    /// 模式类型(实验性功能)
     Pat {
         inner: Box<TypeKey>,
         pattern: String,
     },
 
-    /// 操作节点（方法）
+    /// 操作节点(方法)
     /// 使用 rustdoc 的 Id 作为标识
     Operation(Id),
 
@@ -93,44 +94,44 @@ pub enum TypeKey {
     },
 
     /// 带具体类型参数的 Trait
-    /// 例如：AsRef<[u8]> 与 AsRef<str> 是不同的节点
+    /// 例如:AsRef<[u8]> 与 AsRef<str> 是不同的节点
     TraitWithArgs {
         /// Trait 的 ID
         trait_id: Id,
-        /// 参数的字符串表示（用于区分不同实例）
+        /// 参数的字符串表示(用于区分不同实例)
         args_repr: String,
     },
 }
 
 /// 泛型参数的作用域
 ///
-/// 同名泛型可能出现在不同作用域，需要区分
-/// 例如：`struct Vec<T>` 的 T 和 `fn foo<T>()` 的 T 是不同的
+/// 同名泛型可能出现在不同作用域,需要区分
+/// 例如:`struct Vec<T>` 的 T 和 `fn foo<T>()` 的 T 是不同的
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum GenericScope {
-    /// 类型的泛型参数，如 `struct Foo<T>`
+    /// 类型的泛型参数,如 `struct Foo<T>`
     Type(Id),
-    /// Trait 的泛型参数，如 `trait Bar<T>`
+    /// Trait 的泛型参数,如 `trait Bar<T>`
     Trait(Id),
-    /// 方法的泛型参数，如 `fn baz<T>()`
+    /// 方法的泛型参数,如 `fn baz<T>()`
     Method(Id),
     /// 顶层函数的泛型参数
     Function(Id),
-    /// 全局/未知作用域（fallback）
+    /// 全局/未知作用域(fallback)
     Global,
 }
 
 /// 类型解析上下文
 ///
-/// 在解析类型时提供必要的上下文信息，
+/// 在解析类型时提供必要的上下文信息,
 /// 特别是用于解析泛型参数和 Self 类型
 #[derive(Clone, Debug)]
 pub struct TypeContext {
-    /// 当前所在的所有者（类型、Trait 或方法）
+    /// 当前所在的所有者(类型、Trait 或方法)
     pub current_owner: Option<Id>,
 
-    /// 泛型作用域映射：泛型名 -> 作用域
-    /// 例如：{"T" -> Type(id), "U" -> Method(id)}
+    /// 泛型作用域映射:泛型名 -> 作用域
+    /// 例如:{"T" -> Type(id), "U" -> Method(id)}
     pub generic_scopes: HashMap<String, GenericScope>,
 }
 
@@ -160,29 +161,29 @@ impl TypeContext {
 
 /// 类型缓存
 ///
-/// 管理所有类型节点的创建和查找，确保同一类型只创建一次
+/// 管理所有类型节点的创建和查找,确保同一类型只创建一次
 ///
 /// ## 统一管理的节点类型
 ///
 /// - **类型节点** (`id_to_node`): Struct, Enum, Union, Trait, TypeAlias, Constant, Static 等
-/// - **操作节点** (`op_to_node`): 方法（ImplMethod, TraitMethod）
-/// - **泛型节点** (`generic_to_node`): 泛型参数，使用 "OwnerName:GenericName" 作为 key
-/// - **关联类型节点** (`assoc_type_to_node`): 关联类型，使用 "OwnerName.AssocTypeName" 作为 key
+/// - **操作节点** (`op_to_node`): 方法(ImplMethod, TraitMethod)
+/// - **泛型节点** (`generic_to_node`): 泛型参数,使用 "OwnerName:GenericName" 作为 key
+/// - **关联类型节点** (`assoc_type_to_node`): 关联类型,使用 "OwnerName.AssocTypeName" 作为 key
 /// - **基本类型节点** (`primitive_to_node`): u8, i32, bool, str, () 等
 pub struct TypeCache {
-    /// 核心映射：TypeKey -> NodeIndex
+    /// 核心映射:TypeKey -> NodeIndex
     type_to_node: HashMap<TypeKey, NodeIndex>,
 
     // ========== 快速查找索引 ==========
-    // 这些是冗余映射，但可以加速查找
-    /// 有 ID 的类型节点：Struct, Enum, Union, Trait, TypeAlias, Constant, Static 等
+    // 这些是冗余映射,但可以加速查找
+    /// 有 ID 的类型节点:Struct, Enum, Union, Trait, TypeAlias, Constant, Static 等
     id_to_node: HashMap<Id, NodeIndex>,
 
-    /// 操作节点（方法）
+    /// 操作节点(方法)
     op_to_node: HashMap<Id, NodeIndex>,
 
     /// 泛型参数节点
-    /// Key 格式：
+    /// Key 格式:
     /// - 完整名: "OwnerName:GenericName" (如 "Vec:T", "Iterator:Item")
     /// - 短名: "GenericName" (如 "T", "Item") - 可能被覆盖
     generic_to_node: HashMap<String, NodeIndex>,
@@ -209,7 +210,7 @@ impl TypeCache {
 
     /// 从 Type 查找或创建对应的 NodeIndex
     ///
-    /// 如果类型已存在，返回已有的 NodeIndex；
+    /// 如果类型已存在,返回已有的 NodeIndex；
     /// 否则创建新节点并缓存
     pub fn get_or_create_node(&mut self, ty: &Type, context: &TypeContext) -> Option<TypeKey> {
         self.create_type_key(ty, context)
@@ -220,7 +221,7 @@ impl TypeCache {
         self.type_to_node.get(key).copied()
     }
 
-    /// 获取 TypeCache 中的节点总数（用于调试）
+    /// 获取 TypeCache 中的节点总数(用于调试)
     pub fn total_count(&self) -> usize {
         self.type_to_node.len()
     }
@@ -232,7 +233,7 @@ impl TypeCache {
                 self.id_to_node.insert(*id, node);
             }
             TypeKey::ResolvedWithArgs { id, .. } => {
-                // 对于带泛型参数的类型，也更新 id_to_node（用于快速查找基础类型）
+                // 对于带泛型参数的类型,也更新 id_to_node(用于快速查找基础类型)
                 // 但主要映射在 type_to_node 中
                 self.id_to_node.insert(*id, node);
             }
@@ -243,18 +244,18 @@ impl TypeCache {
                 self.op_to_node.insert(*id, node);
             }
             TypeKey::Generic { name, scope } => {
-                // 插入完整名（OwnerName:GenericName）
+                // 插入完整名(OwnerName:GenericName)
                 let full_key = match scope {
                     GenericScope::Type(id)
                     | GenericScope::Trait(id)
                     | GenericScope::Method(id)
                     | GenericScope::Function(id) => {
-                        // 这里我们只存储到 generic_to_node，完整 key 需要外部提供
+                        // 这里我们只存储到 generic_to_node,完整 key 需要外部提供
                         // 因为我们没有 owner_name 信息
                     }
                     GenericScope::Global => {}
                 };
-                // 短名也存储（可能被覆盖）
+                // 短名也存储(可能被覆盖)
                 self.generic_to_node.insert(name.clone(), node);
             }
             TypeKey::AssociatedType {
@@ -270,14 +271,14 @@ impl TypeCache {
         self.type_to_node.insert(key, node);
     }
 
-    // ========== 类型节点（有 ID）操作 ==========
+    // ========== 类型节点(有 ID)操作 ==========
 
     /// 通过 Id 查找类型节点
     pub fn get_by_id(&self, id: &Id) -> Option<NodeIndex> {
         self.id_to_node.get(id).copied()
     }
 
-    /// 插入类型节点（有 ID）
+    /// 插入类型节点(有 ID)
     pub fn insert_type_by_id(&mut self, id: Id, node: NodeIndex) {
         self.id_to_node.insert(id, node);
         self.type_to_node.insert(TypeKey::Resolved(id), node);
@@ -288,12 +289,12 @@ impl TypeCache {
         self.id_to_node.contains_key(id)
     }
 
-    /// 获取所有类型节点的 ID 列表（用于调试）
+    /// 获取所有类型节点的 ID 列表(用于调试)
     pub fn type_ids(&self) -> impl Iterator<Item = &Id> {
         self.id_to_node.keys()
     }
 
-    // ========== 操作节点（方法）操作 ==========
+    // ========== 操作节点(方法)操作 ==========
 
     /// 通过 Id 查找操作节点
     pub fn get_op_by_id(&self, id: &Id) -> Option<NodeIndex> {
@@ -313,20 +314,20 @@ impl TypeCache {
 
     // ========== 泛型节点操作 ==========
 
-    /// 通过完整名查找泛型节点（如 "Vec:T"）
+    /// 通过完整名查找泛型节点(如 "Vec:T")
     pub fn get_generic(&self, full_name: &str) -> Option<NodeIndex> {
         self.generic_to_node.get(full_name).copied()
     }
 
-    /// 通过短名查找泛型节点（如 "T"）
-    /// 注意：短名可能被覆盖，优先使用完整名
+    /// 通过短名查找泛型节点(如 "T")
+    /// 注意:短名可能被覆盖,优先使用完整名
     pub fn get_generic_short(&self, short_name: &str) -> Option<NodeIndex> {
         self.generic_to_node.get(short_name).copied()
     }
 
     /// 插入泛型节点
-    /// - full_name: 完整名，如 "Vec:T"
-    /// - short_name: 短名，如 "T"（可选，可能被覆盖）
+    /// - full_name: 完整名,如 "Vec:T"
+    /// - short_name: 短名,如 "T"(可选,可能被覆盖)
     pub fn insert_generic(
         &mut self,
         full_name: String,
@@ -339,7 +340,7 @@ impl TypeCache {
         }
     }
 
-    /// 插入泛型节点（使用 TypeKey）
+    /// 插入泛型节点(使用 TypeKey)
     pub fn insert_generic_with_key(
         &mut self,
         key: TypeKey,
@@ -361,7 +362,7 @@ impl TypeCache {
 
     // ========== 关联类型节点操作 ==========
 
-    /// 通过 key 查找关联类型节点（如 "Iterator.Item"）
+    /// 通过 key 查找关联类型节点(如 "Iterator.Item")
     pub fn get_assoc_type_by_key(&self, key: &str) -> Option<NodeIndex> {
         self.assoc_type_to_node.get(key).copied()
     }
@@ -440,9 +441,9 @@ impl TypeCache {
     /// 从 rustdoc Type 创建 TypeKey
     pub fn create_type_key(&self, ty: &Type, context: &TypeContext) -> Option<TypeKey> {
         match ty {
-            // 1. 有 ID 的类型：检查是否有泛型参数
+            // 1. 有 ID 的类型:检查是否有泛型参数
             Type::ResolvedPath(path) => {
-                // 如果有泛型参数，需要递归处理每个参数
+                // 如果有泛型参数,需要递归处理每个参数
                 if let Some(args) = &path.args {
                     if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = &**args {
                         let mut type_args = Vec::new();
@@ -451,11 +452,11 @@ impl TypeCache {
                                 if let Some(arg_key) = self.create_type_key(arg_type, context) {
                                     type_args.push(arg_key);
                                 } else {
-                                    // 如果无法解析某个参数，回退到无参数版本
+                                    // 如果无法解析某个参数,回退到无参数版本
                                     return Some(TypeKey::Resolved(path.id));
                                 }
                             } else {
-                                // 非类型参数（如 lifetime），忽略
+                                // 非类型参数(如 lifetime),忽略
                             }
                         }
                         if !type_args.is_empty() {
@@ -465,15 +466,17 @@ impl TypeCache {
                             });
                         }
                     }
+
+                    // TODO: 处理 lifetime, Const 极少遇到
                 }
-                // 无泛型参数，使用简单版本
+                // 无泛型参数,使用简单版本
                 Some(TypeKey::Resolved(path.id))
             }
 
-            // 2. 基本类型：使用类型名
+            // 2. 基本类型:使用类型名
             Type::Primitive(name) => Some(TypeKey::Primitive(name.clone())),
 
-            // 3. 泛型参数：需要解析作用域
+            // 3. 泛型参数:需要解析作用域
             Type::Generic(name) => {
                 let scope = context
                     .resolve_generic_scope(name)
@@ -484,7 +487,7 @@ impl TypeCache {
                 })
             }
 
-            // 4. 引用类型：递归处理内部类型
+            // 4. 引用类型:递归处理内部类型
             Type::BorrowedRef {
                 is_mutable, type_, ..
             } => {
@@ -495,7 +498,7 @@ impl TypeCache {
                 })
             }
 
-            // 5. 裸指针：递归处理
+            // 5. 裸指针:递归处理
             Type::RawPointer {
                 is_mutable, type_, ..
             } => {
@@ -506,13 +509,13 @@ impl TypeCache {
                 })
             }
 
-            // 6. 切片：递归处理
+            // 6. 切片:递归处理
             Type::Slice(type_) => {
                 let inner = self.create_type_key(type_, context)?;
                 Some(TypeKey::Slice(Box::new(inner)))
             }
 
-            // 7. 数组：递归处理 + 长度
+            // 7. 数组:递归处理 + 长度
             Type::Array { type_, len } => {
                 let inner = self.create_type_key(type_, context)?;
                 Some(TypeKey::Array {
@@ -521,7 +524,7 @@ impl TypeCache {
                 })
             }
 
-            // 8. 元组：递归处理每个元素
+            // 8. 元组:递归处理每个元素
             Type::Tuple(elements) => {
                 let keys: Option<Vec<_>> = elements
                     .iter()
@@ -530,16 +533,16 @@ impl TypeCache {
                 keys.map(TypeKey::Tuple)
             }
 
-            // 9. 函数指针：序列化签名
+            // 9. 函数指针:序列化签名
             Type::FunctionPointer(fp) => {
-                // 简化：使用 Debug 格式作为标识
+                // 简化:使用 Debug 格式作为标识
                 Some(TypeKey::FunctionPointer(format!("{:?}", fp)))
             }
 
-            // 10. Trait object：序列化
+            // 10. Trait object:序列化
             Type::DynTrait(dt) => Some(TypeKey::DynTrait(format!("{:?}", dt))),
 
-            // 11. impl Trait：序列化
+            // 11. impl Trait:序列化
             Type::ImplTrait(bounds) => Some(TypeKey::ImplTrait(format!("{:?}", bounds))),
 
             // 12. 关联类型

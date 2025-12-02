@@ -46,7 +46,7 @@ pub const METHOD_BLACKLIST: &[&str] = &[
 ];
 
 /// 方法名到对应 Trait 名的映射
-/// 用于在过滤黑名单方法时，记录类型实现了哪些 Trait
+/// 用于在过滤黑名单方法时,记录类型实现了哪些 Trait
 pub static METHOD_TO_TRAIT: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
     let mut map = HashMap::new();
 

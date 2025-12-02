@@ -1,12 +1,12 @@
 /// Trait 黑名单:过滤对 fuzzing 无意义的 Trait
 ///
-/// 只过滤真正的"噪音" Trait：
+/// 只过滤真正的"噪音" Trait:
 /// - 标记 Trait(Send, Sync, Sized 等) - 编译器自动实现
 /// - 调试/格式化 Trait(Debug, Display) - 对 API 理解无意义
 /// - 比较 Trait(PartialEq, Eq 等) - 通常自动派生
 /// - 克隆 Trait(Clone, Copy) - 通常自动派生
 ///
-/// **不**过滤重要的 API Trait：
+/// **不**过滤重要的 API Trait:
 /// - AsRef, AsMut, From, Into, TryFrom, TryInto - 关键的类型转换约束
 /// - Borrow, BorrowMut, ToOwned - 所有权相关的重要约束
 pub const TRAIT_BLACKLIST: &[&str] = &[
