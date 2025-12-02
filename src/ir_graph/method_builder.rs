@@ -5,10 +5,9 @@ use std::collections::HashMap;
 use super::builder::IrGraphBuilder;
 use super::node_info::{MethodInfo, MethodKind, NodeInfo, ParamInfo, ReturnInfo};
 use super::structure::{EdgeMode, NodeType, TypeRelation};
-use super::type_cache::{TypeContext, TypeKey};
+use super::type_cache::TypeContext;
 use super::utils::{
-    extract_option_type, extract_result_types, extract_type_name, extract_type_name_from_path,
-    format_type_label,
+    extract_option_type, extract_result_types, extract_type_name, format_type_label,
 };
 use crate::support_types::method_blacklist::{get_trait_for_method, is_blacklisted_method};
 use log::{debug, error};
@@ -67,21 +66,12 @@ impl<'ir> IrGraphBuilder<'ir> {
                         );
 
                         // 处理返回值
-                        let return_info = if let Some(output) = &func.sig.output {
-                            self.process_function_output(
-                                op_node_idx,
-                                output,
-                                method_name,
-                                Some(type_id),
-                            )
-                        } else {
-                            ReturnInfo {
-                                type_node: None,
-                                wrapper: None,
-                                unwrap_node: None,
-                                type_str: "()".to_string(),
-                            }
-                        };
+                        let return_info = self.process_function_output(
+                            op_node_idx,
+                            &func.sig.output,
+                            method_name,
+                            Some(type_id),
+                        );
 
                         // 获取 owner 节点
                         let owner_node = self.type_cache.get_by_id(&type_id);
@@ -189,21 +179,12 @@ impl<'ir> IrGraphBuilder<'ir> {
                         );
 
                         // 处理返回值
-                        let return_info = if let Some(output) = &func.sig.output {
-                            self.process_function_output(
-                                op_node_idx,
-                                output,
-                                method_name,
-                                Some(trait_id),
-                            )
-                        } else {
-                            ReturnInfo {
-                                type_node: None,
-                                wrapper: None,
-                                unwrap_node: None,
-                                type_str: "()".to_string(),
-                            }
-                        };
+                        let return_info = self.process_function_output(
+                            op_node_idx,
+                            &func.sig.output,
+                            method_name,
+                            Some(trait_id),
+                        );
 
                         // 获取 owner 节点
                         let owner_node = self.type_cache.get_by_id(&trait_id);
@@ -319,36 +300,12 @@ impl<'ir> IrGraphBuilder<'ir> {
                             Self::check_trait_args_for_concrete_type(&trait_.args);
 
                         // 获取或创建 Trait 节点
-                        let trait_node = if has_concrete_args {
-                            // 带具体类型参数的 Trait,使用完整名称创建新节点
-                            let type_key = TypeKey::TraitWithArgs {
-                                trait_id,
-                                args_repr: trait_full_name.clone(),
-                            };
-                            if let Some(node) = self.type_cache.get_node(&type_key) {
-                                node
-                            } else {
-                                let node = self.graph.add_type_node(&trait_full_name);
-                                self.graph.node_types.insert(node, NodeType::Trait);
-                                self.type_cache.insert_node(type_key, node);
-                                debug!(
-                                    "创建带参数的外部 Trait 节点: {} (id: {})",
-                                    trait_full_name, trait_id.0
-                                );
-                                node
-                            }
-                        } else if let Some(node) = self.type_cache.get_by_id(&trait_id) {
-                            node
-                        } else {
-                            // 外部 Trait,创建节点
-                            let trait_name = extract_type_name_from_path(&trait_.path);
-                            let node = self.graph.add_type_node(&trait_name);
-                            self.graph.node_types.insert(node, NodeType::Trait);
-                            self.type_cache.insert_type_by_id(trait_id, node);
-
-                            debug!("创建外部 Trait 节点: {} (id: {})", trait_name, trait_id.0);
-                            node
-                        };
+                        let trait_node = self.insert_trait_node(
+                            trait_,
+                            trait_id,
+                            &trait_full_name,
+                            has_concrete_args,
+                        );
 
                         // 创建 Require 边:Trait -> 泛型(Petri 网语义)
                         self.graph.add_type_relation(
@@ -481,12 +438,21 @@ impl<'ir> IrGraphBuilder<'ir> {
     fn process_function_output(
         &mut self,
         op_node_idx: NodeIndex,
-        output: &Type,
+        output: &Option<Type>,
         method_name: &str,
         owner_id: Option<Id>,
     ) -> ReturnInfo {
         use super::node_info::WrapperType;
 
+        if output.is_none() {
+            return ReturnInfo {
+                type_node: None,
+                wrapper: None,
+                unwrap_node: None,
+                type_str: "()".to_string(),
+            };
+        }
+        let output = output.as_ref().unwrap();
         // 检查是否是 Result<T, E>
         if let Some((ok_type, err_type)) = extract_result_types(output) {
             // 创建 Result 包装节点(作为独立的库所)
@@ -541,7 +507,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                 );
             }
 
-            return ReturnInfo {
+            ReturnInfo {
                 type_node: Some(result_node), // 返回 Result 节点
                 wrapper: Some(WrapperType::Result {
                     ok_type: ok_node,
@@ -549,7 +515,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                 }),
                 unwrap_node: Some(unwrap_node),
                 type_str: format!("{:?}", output),
-            };
+            }
         }
         // 检查是否是 Option<T>
         else if let Some(some_type) = extract_option_type(output) {
@@ -603,14 +569,14 @@ impl<'ir> IrGraphBuilder<'ir> {
                 },
             );
 
-            return ReturnInfo {
+            ReturnInfo {
                 type_node: Some(option_node), // 返回 Option 节点
                 wrapper: Some(WrapperType::Option {
                     some_type: some_node,
                 }),
                 unwrap_node: Some(unwrap_node),
                 type_str: format!("{:?}", output),
-            };
+            }
         }
         // 普通返回类型
         else {
@@ -627,12 +593,12 @@ impl<'ir> IrGraphBuilder<'ir> {
                 );
             }
 
-            return ReturnInfo {
+            ReturnInfo {
                 type_node: type_node_idx,
                 wrapper: None,
                 unwrap_node: None,
                 type_str: format!("{:?}", output),
-            };
+            }
         }
     }
 

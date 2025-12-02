@@ -14,4 +14,3 @@ pub mod utils;
 
 pub use node_info::*;
 pub use structure::{EdgeMode, IrGraph, NodeType};
-

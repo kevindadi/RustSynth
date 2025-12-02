@@ -33,7 +33,7 @@ use std::path::PathBuf;
 #[command(version)]
 pub struct Config {
     /// rustdoc JSON 文件路径
-    /// 
+    ///
     /// 这是通过 'cargo +nightly rustdoc -- --output-format json' 生成的 JSON 文件
     #[arg(value_name = "INPUT", required = true)]
     pub input_json: PathBuf,
@@ -60,7 +60,7 @@ pub struct Config {
     pub fuzz_dir: PathBuf,
 
     /// 执行阶段控制
-    /// 
+    ///
     /// 指定执行到哪个阶段后停止。可选值:
     /// - parse: 仅解析 JSON
     /// - ir-graph: 构建 IR Graph
@@ -110,7 +110,7 @@ pub struct ExportConfig {
     pub ir_graph_json_name: String,
 
     /// PT-Net 导出格式
-    /// 
+    ///
     /// 选择 Petri Net 的导出格式，只能选择一种:
     /// - dot: Graphviz DOT 格式（默认，用于可视化）
     /// - json: JSON 格式（用于程序处理）
@@ -123,7 +123,7 @@ pub struct ExportConfig {
     pub petri_net_format: PetriNetFormat,
 
     /// PT-Net 文件名（不含扩展名）
-    /// 
+    ///
     /// 扩展名会根据 --petri-net-format 自动添加
     #[arg(long, value_name = "NAME", default_value = "petri_net")]
     pub petri_net_name: String,

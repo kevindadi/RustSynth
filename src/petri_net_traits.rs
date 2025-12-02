@@ -59,7 +59,7 @@ pub enum ExportFormat {
     /// DOT (Graphviz)
     Dot,
     /// JSON
-    Json
+    Json,
 }
 
 /// XML 转义

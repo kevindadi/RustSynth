@@ -163,7 +163,8 @@ impl IrGraph {
             }
         }
 
-        log::info!("\n边类型分布: \n
+        log::info!(
+            "\n边类型分布: \n
         - Move: {}
         - Ref: {}
         - MutRef: {}
@@ -172,7 +173,15 @@ impl IrGraph {
         - UnwrapOk: {}
         - UnwrapErr: {}
         - UnwrapNone: {}",
-        move_edges, ref_edges, mut_ref_edges, implements_edges, require_edges, unwrap_ok_edges, unwrap_err_edges, unwrap_none_edges);
+            move_edges,
+            ref_edges,
+            mut_ref_edges,
+            implements_edges,
+            require_edges,
+            unwrap_ok_edges,
+            unwrap_err_edges,
+            unwrap_none_edges
+        );
     }
 
     pub fn export_dot<P: AsRef<std::path::Path>>(
@@ -263,11 +272,11 @@ impl IrGraph {
 
     pub fn export_json<P: AsRef<std::path::Path>>(&self, path: P) -> std::io::Result<()> {
         // 将 NodeIndex 转换为 usize 以便序列化
-        let node_infos_serializable: std::collections::HashMap<usize, &crate::ir_graph::NodeInfo> =
-            self.node_infos
-                .iter()
-                .map(|(k, v)| (k.index(), v))
-                .collect();
+        let node_infos_serializable: HashMap<usize, &NodeInfo> = self
+            .node_infos
+            .iter()
+            .map(|(k, v)| (k.index(), v))
+            .collect();
 
         let json = serde_json::json!({
             "nodes": self.type_graph.node_count(),

@@ -1,7 +1,7 @@
 use petgraph::graph::NodeIndex;
 ///
 /// 直接使用 ParsedCrate 引用,避免重复查询
-use rustdoc_types::{GenericBound, GenericParamDefKind, Id, ItemEnum, Type};
+use rustdoc_types::{GenericBound, GenericParamDefKind, Id, ItemEnum, Path, Type};
 use std::collections::{HashMap, HashSet};
 
 use super::node_info::{
@@ -379,20 +379,7 @@ impl<'ir> IrGraphBuilder<'ir> {
             // 对于 Primitive 类型,确保 PrimitiveInfo 存在
             if let TypeKey::Primitive(name) = type_key {
                 if !self.graph.node_infos.contains_key(&idx) {
-                    let default_traits = get_primitive_default_traits(name);
-                    if let Some(primitive_type) = PrimitiveType::from_str(name) {
-                        let primitive_info = PrimitiveInfo {
-                            name: name.clone(),
-                            default_traits,
-                            trait_nodes: Vec::new(),
-                            type_: primitive_type,
-                        };
-                        self.graph
-                            .node_infos
-                            .insert(idx, NodeInfo::Primitive(primitive_info));
-                    } else {
-                        error!("未知基本类型: {}", name);
-                    }
+                    self.insert_primitive_info(name, idx);
                 }
             }
             return idx;
@@ -406,20 +393,7 @@ impl<'ir> IrGraphBuilder<'ir> {
 
         // 对于 Primitive 类型,创建 PrimitiveInfo 并填充 default_traits
         if let TypeKey::Primitive(name) = type_key {
-            let default_traits = get_primitive_default_traits(name);
-            if let Some(primitive_type) = PrimitiveType::from_str(name) {
-                let primitive_info = PrimitiveInfo {
-                    name: name.clone(),
-                    default_traits,
-                    trait_nodes: Vec::new(),
-                    type_: primitive_type,
-                };
-                self.graph
-                    .node_infos
-                    .insert(idx, NodeInfo::Primitive(primitive_info));
-            } else {
-                error!("未知基本类型: {}", name);
-            }
+            self.insert_primitive_info(name, idx);
         }
 
         debug!(
@@ -428,6 +402,23 @@ impl<'ir> IrGraphBuilder<'ir> {
         );
 
         idx
+    }
+
+    fn insert_primitive_info(&mut self, name: &str, idx: NodeIndex) {
+        let default_traits = get_primitive_default_traits(name);
+        if let Some(primitive_type) = PrimitiveType::from_str(name) {
+            let primitive_info = PrimitiveInfo {
+                name: name.to_string(),
+                default_traits,
+                trait_nodes: Vec::new(),
+                type_: primitive_type,
+            };
+            self.graph
+                .node_infos
+                .insert(idx, NodeInfo::Primitive(primitive_info));
+        } else {
+            error!("未知基本类型: {}", name);
+        }
     }
 
     /// 根据 TypeKey 设置节点类型
@@ -903,37 +894,12 @@ impl<'ir> IrGraphBuilder<'ir> {
 
                         // 获取或创建 Trait 节点
                         // 对于带有具体类型参数的 Trait(如 AsRef<[u8]>),使用完整名称作为节点
-                        let trait_node = if has_concrete_args {
-                            // 带具体类型参数的 Trait,使用完整名称创建新节点
-                            // 使用 TypeKey 来缓存,避免重复创建
-                            let type_key = TypeKey::TraitWithArgs {
-                                trait_id,
-                                args_repr: trait_full_name.clone(),
-                            };
-                            if let Some(node) = self.type_cache.get_node(&type_key) {
-                                node
-                            } else {
-                                let node = self.graph.add_type_node(&trait_full_name);
-                                self.graph.node_types.insert(node, NodeType::Trait);
-                                self.type_cache.insert_node(type_key, node);
-                                debug!(
-                                    "创建带参数的外部 Trait 节点: {} (id: {})",
-                                    trait_full_name, trait_id.0
-                                );
-                                node
-                            }
-                        } else if let Some(node) = self.type_cache.get_by_id(&trait_id) {
-                            node
-                        } else {
-                            // Trait 不在本 crate 中(外部 Trait),创建节点
-                            let trait_name = extract_type_name_from_path(&trait_.path);
-                            let node = self.graph.add_type_node(&trait_name);
-                            self.graph.node_types.insert(node, NodeType::Trait);
-                            self.type_cache.insert_type_by_id(trait_id, node);
-
-                            debug!("创建外部 Trait 节点: {} (id: {})", trait_name, trait_id.0);
-                            node
-                        };
+                        let trait_node = self.insert_trait_node(
+                            trait_,
+                            trait_id,
+                            &trait_full_name,
+                            has_concrete_args,
+                        );
 
                         bound_nodes.push(trait_node);
 
@@ -966,6 +932,46 @@ impl<'ir> IrGraphBuilder<'ir> {
                         .insert(generic_node_index, NodeInfo::Generic(generic_info));
                 }
             }
+        }
+    }
+
+    pub(crate) fn insert_trait_node(
+        &mut self,
+        trait_: &Path,
+        trait_id: Id,
+        trait_name: &str,
+        has_concrete_args: bool,
+    ) -> NodeIndex {
+        if has_concrete_args {
+            // 带具体类型参数的 Trait,使用完整名称创建新节点
+            // 使用 TypeKey 来缓存,避免重复创建
+            let type_key = TypeKey::TraitWithArgs {
+                trait_id,
+                args_repr: trait_name.to_string(),
+            };
+            if let Some(node) = self.type_cache.get_node(&type_key) {
+                node
+            } else {
+                let node = self.graph.add_type_node(&trait_name);
+                self.graph.node_types.insert(node, NodeType::Trait);
+                self.type_cache.insert_node(type_key, node);
+                debug!(
+                    "创建带参数的外部 Trait 节点: {} (id: {})",
+                    trait_name, trait_id.0
+                );
+                node
+            }
+        } else if let Some(node) = self.type_cache.get_by_id(&trait_id) {
+            node
+        } else {
+            // Trait 不在本 crate 中(外部 Trait),创建节点
+            let trait_name = extract_type_name_from_path(&trait_.path);
+            let node = self.graph.add_type_node(&trait_name);
+            self.graph.node_types.insert(node, NodeType::Trait);
+            self.type_cache.insert_type_by_id(trait_id, node);
+
+            debug!("创建外部 Trait 节点: {} (id: {})", trait_name, trait_id.0);
+            node
         }
     }
 
@@ -1815,7 +1821,7 @@ impl<'ir> IrGraphBuilder<'ir> {
 
     /// 为带有具体类型参数的 Trait 生成完整名称
     /// 例如:AsRef<[u8]> 而不是只是 AsRef
-    pub(crate) fn get_trait_full_name(trait_path: &rustdoc_types::Path) -> String {
+    pub(crate) fn get_trait_full_name(trait_path: &Path) -> String {
         let base_name = trait_path
             .path
             .split("::")
