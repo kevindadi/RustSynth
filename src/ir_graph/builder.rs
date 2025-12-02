@@ -10,6 +10,7 @@ use super::node_info::{
 };
 use super::structure::{EdgeMode, IrGraph};
 use super::type_cache::{TypeCache, TypeContext, TypeKey};
+use super::utils::{extract_type_name, extract_type_name_from_path, format_type_label as format_type_label_util};
 use crate::support_types::primitives::{PrimitiveType, get_primitive_default_traits};
 use crate::{ir_graph::structure::NodeType, parse::ParsedCrate};
 use log::{debug, error, info};
@@ -145,8 +146,8 @@ impl<'ir> IrGraphBuilder<'ir> {
                                     ItemEnum::AssocType { type_, .. } => {
                                         // 处理 Associated Type 的重新定义
                                         if let Some(assoc_type_name) = &item.name {
-                                            if let Some(trait_ref) = &impl_data.trait_ {
-                                                let trait_id = trait_ref.id;
+                                            if let Some(_) = &impl_data.trait_ {
+                                                // let trait_id = trait_ref.id;
 
                                                 // 解析关联类型的目标类型
                                                 if let Some(assoc_type) = type_ {
@@ -443,40 +444,7 @@ impl<'ir> IrGraphBuilder<'ir> {
     }
 
     pub(crate) fn format_type_label(&self, ty: &Type, context: &str) -> String {
-        match ty {
-            Type::Primitive(name) => name.clone(),
-            Type::ResolvedPath(path) => {
-                // 从 path.path 字符串中提取最后一段作为类型名
-                path.path
-                    .split("::")
-                    .last()
-                    .unwrap_or(&path.path)
-                    .to_string()
-            }
-            Type::Generic(name) => format!("{}:{}", context, name),
-            Type::BorrowedRef {
-                type_, is_mutable, ..
-            } => {
-                let inner = self.format_type_label(type_, context);
-                if *is_mutable {
-                    format!("&mut {}", inner)
-                } else {
-                    format!("&{}", inner)
-                }
-            }
-            Type::Slice(inner) => format!("[{}]", self.format_type_label(inner, context)),
-            Type::Array { type_, len } => {
-                format!("[{}; {}]", self.format_type_label(type_, context), len)
-            }
-            Type::Tuple(elems) => {
-                let elem_strs: Vec<_> = elems
-                    .iter()
-                    .map(|e| self.format_type_label(e, context))
-                    .collect();
-                format!("({})", elem_strs.join(", "))
-            }
-            _ => format!("{:?}", ty),
-        }
+        format_type_label_util(ty, context)
     }
 
     fn build_types(&mut self) {
@@ -956,8 +924,8 @@ impl<'ir> IrGraphBuilder<'ir> {
                             node
                         } else {
                             // Trait 不在本 crate 中(外部 Trait),创建节点
-                            let trait_name = trait_.path.split("::").last().unwrap_or(&trait_.path);
-                            let node = self.graph.add_type_node(trait_name);
+                            let trait_name = extract_type_name_from_path(&trait_.path);
+                            let node = self.graph.add_type_node(&trait_name);
                             self.graph.node_types.insert(node, NodeType::Trait);
                             self.type_cache.insert_type_by_id(trait_id, node);
 
@@ -1021,7 +989,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                         associated_types: Vec::new(), // 后续在 build_trait_assoc_types 中填充
                         associated_consts: Vec::new(),
                         methods: Vec::new(), // 后续在 build_trait_defined_methods 中填充
-                        supertraits: Vec::new(), // TODO: 处理 supertrait bounds
+                        super_traits: Vec::new(), // TODO: 处理 supertrait bounds
                         generics: Vec::new(), // 后续在 create_generics 中填充
                         is_auto: trait_data.is_auto,
                         is_unsafe: trait_data.is_unsafe,
@@ -1713,8 +1681,8 @@ impl<'ir> IrGraphBuilder<'ir> {
                     let satisfies_all = bounds.iter().all(|bound| {
                         // 简单匹配:检查 Primitive 的 default_traits 是否包含 bound
                         // 注意:bound 可能是完整路径如 "std::fmt::Debug",需要提取最后一段
-                        let bound_name = bound.split("::").last().unwrap_or(bound);
-                        prim_traits.iter().any(|t| t == bound_name)
+                        let bound_name = extract_type_name_from_path(bound);
+                        prim_traits.iter().any(|t| t == &bound_name)
                     });
 
                     if satisfies_all {
@@ -1825,7 +1793,7 @@ impl<'ir> IrGraphBuilder<'ir> {
             }),
             Type::ResolvedPath(path) => {
                 // 对于已解析的路径,使用路径名
-                let name = path.path.split("::").last().unwrap_or(&path.path);
+                let name = extract_type_name(path);
                 // 检查是否有具体的泛型参数
                 if let Some(args) = &path.args {
                     let (has_concrete, repr) =

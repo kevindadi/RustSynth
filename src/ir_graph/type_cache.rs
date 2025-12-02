@@ -1,3 +1,4 @@
+#![allow(unused)]
 //! 类型缓存模块
 //!
 //! 提供统一的类型管理,确保从 rustdoc_types::Type 到 NodeIndex 的唯一映射
@@ -465,6 +466,8 @@ impl TypeCache {
                             });
                         }
                     }
+
+                    // TODO: 处理 lifetime, Const 极少遇到
                 }
                 // 无泛型参数,使用简单版本
                 Some(TypeKey::Resolved(path.id))

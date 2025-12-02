@@ -44,7 +44,7 @@ impl FuzzTargetGenerator {
 
         for place in &complex_places {
             if !unique_types.contains_key(&place.type_name) {
-                let sanitized = self.sanitize_type_name(&place.type_name);
+                let sanitized = sanitize_type_name(&place.type_name);
                 unique_types.insert(
                     place.type_name.clone(),
                     (place.resolved_path.clone(), sanitized.clone()),
@@ -84,67 +84,6 @@ use arbitrary::Arbitrary;
         )
     }
 
-    fn sanitize_type_name(&self, type_name: &str) -> String {
-        let mut result = type_name.to_string();
-
-        // 处理元组类型 (T1, T2, ...) -> tuple_T1_T2_...
-        if result.starts_with('(') && result.ends_with(')') {
-            result = result
-                .trim_start_matches('(')
-                .trim_end_matches(')')
-                .to_string();
-            result = format!("tuple_{}", result);
-        }
-
-        // 处理切片类型 [T] -> array_T
-        if result.starts_with('[') && result.ends_with(']') && !result.contains(';') {
-            result = result
-                .trim_start_matches('[')
-                .trim_end_matches(']')
-                .to_string();
-            result = format!("array_{}", result);
-        }
-
-        // 处理固定大小数组 [T; N] -> array_T_N
-        if result.starts_with('[') && result.contains(';') && result.ends_with(']') {
-            result = result
-                .trim_start_matches('[')
-                .trim_end_matches(']')
-                .to_string();
-            result = format!("array_{}", result);
-        }
-
-        // 通用的符号替换
-        result
-            .replace("::", "_")
-            .replace("<", "_")
-            .replace(">", "")
-            .replace(" ", "")
-            .replace(",", "_")
-            .replace("&", "")
-            .replace("mut", "")
-            .replace("[", "")
-            .replace("]", "")
-            .replace("(", "")
-            .replace(")", "")
-            .replace(";", "_")
-    }
-
-    fn sanitize_func_name(&self, func_name: &str) -> String {
-        // 将 std::fs::File::open 转换为 StdFsFileOpen (PascalCase)
-        // 简单的实现:按 :: 分割,首字母大写
-        func_name
-            .split("::")
-            .map(|part| {
-                let mut chars = part.chars();
-                match chars.next() {
-                    Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-                    None => String::new(),
-                }
-            })
-            .collect()
-    }
-
     fn generate_fuzz_state(
         &self,
         unique_types: &HashMap<String, (Option<String>, String)>,
@@ -175,7 +114,7 @@ use arbitrary::Arbitrary;
         let mut code = String::from("#[derive(Arbitrary, Debug)]\nenum Action {\n");
 
         for trans in transitions {
-            let variant_name = self.sanitize_func_name(&trans.func_name);
+            let variant_name = sanitize_func_name(&trans.func_name);
             code.push_str(&format!("    {} {{\n", variant_name));
 
             // 查找输入边
@@ -224,7 +163,7 @@ use arbitrary::Arbitrary;
         );
 
         for trans in transitions {
-            let variant_name = self.sanitize_func_name(&trans.func_name);
+            let variant_name = sanitize_func_name(&trans.func_name);
             code.push_str(&format!("            Action::{} {{ ", variant_name));
 
             // 收集输入变量名,用于解构和后续调用
@@ -264,7 +203,7 @@ use arbitrary::Arbitrary;
                     args_code.push(var_name.clone());
                 } else {
                     // 从 pool 获取
-                    let sanitized_type = self.sanitize_type_name(&place.type_name);
+                    let sanitized_type = sanitize_type_name(&place.type_name);
                     let pool_name = format!("state.pool_{}", sanitized_type);
 
                     // 边界检查

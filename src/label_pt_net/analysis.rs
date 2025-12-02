@@ -6,11 +6,10 @@
 //! - 有界性检查:检查 token 数量是否有界
 //! - API 序列生成:生成有效的 API 调用序列用于 fuzz 测试
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashSet, VecDeque};
 
 use super::net::{Arc, LabeledPetriNet};
-use crate::ir_graph::{EdgeMode, IrGraph, NodeInfo, NodeType};
-use crate::support_types::primitives::{PRIMITIVE_DEFAULT_TRAITS, PRIMITIVE_TYPES};
+use crate::ir_graph::{EdgeMode, IrGraph, NodeInfo};
 
 /// 分析结果
 #[derive(Debug, Clone)]
@@ -198,6 +197,7 @@ impl LabeledPetriNet {
     /// 检查目标 marking 是否可达
     ///
     /// 使用 BFS 探索状态空间
+    #[allow(dead_code)]
     pub fn check_reachability(&self, target_marking: &[usize]) -> bool {
         self.check_reachability_with_limit(target_marking, 10000).0
     }
@@ -238,6 +238,7 @@ impl LabeledPetriNet {
     /// 检查活性(所有变迁是否都能在某些路径上触发)
     ///
     /// 使用 DFS 探索,记录触发过的变迁
+    #[allow(dead_code)]
     pub fn check_liveness(&self) -> bool {
         self.check_liveness_with_limit(10000).0
     }
@@ -274,6 +275,7 @@ impl LabeledPetriNet {
     /// 检查 k-有界性
     ///
     /// 检查所有可达 marking 中,每个 place 的 token 数是否 <= k
+    #[allow(dead_code)]
     pub fn check_boundedness(&self, k: usize) -> bool {
         self.check_boundedness_with_limit(k, 10000).0
     }
@@ -598,6 +600,7 @@ impl LabeledPetriNet {
     /// 生成针对特定目标状态的 API 序列(使用 fuzz 输入)
     ///
     /// 使用引导式搜索,尝试到达目标 marking
+    #[allow(dead_code)]
     pub fn generate_targeted_sequences(
         &self,
         target_place: usize,
@@ -665,6 +668,7 @@ impl LabeledPetriNet {
     }
 
     /// 检查是否有"有趣"的状态(failure place 有 token)
+    #[allow(dead_code)]
     pub fn has_interesting_state(&self, marking: &[usize]) -> bool {
         // 检查是否有 failure 相关的 place 有 token
         for (idx, &tokens) in marking.iter().enumerate() {

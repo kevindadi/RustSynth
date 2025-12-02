@@ -6,6 +6,7 @@ use super::builder::IrGraphBuilder;
 use super::node_info::{MethodInfo, MethodKind, NodeInfo, ParamInfo, ReturnInfo};
 use super::structure::{EdgeMode, NodeType, TypeRelation};
 use super::type_cache::{TypeContext, TypeKey};
+use super::utils::{extract_result_types, extract_option_type, extract_type_name, extract_type_name_from_path, format_type_label};
 use crate::support_types::method_blacklist::{get_trait_for_method, is_blacklisted_method};
 use log::{debug, error};
 
@@ -228,7 +229,7 @@ impl<'ir> IrGraphBuilder<'ir> {
     /// 处理 Trait 方法的泛型参数(优先使用归一化的泛型)
     fn process_method_generics_with_trait(
         &mut self,
-        method_id: Id,
+        _: Id,
         generics: &Generics,
         method_name: &str,
         trait_name: &str,
@@ -280,7 +281,7 @@ impl<'ir> IrGraphBuilder<'ir> {
     }
 
     /// 处理方法的泛型参数及约束
-    fn process_method_generics(&mut self, method_id: Id, generics: &Generics, method_name: &str) {
+    fn process_method_generics(&mut self, _: Id, generics: &Generics, method_name: &str) {
         use rustdoc_types::GenericBound;
 
         for param in &generics.params {
@@ -337,8 +338,8 @@ impl<'ir> IrGraphBuilder<'ir> {
                             node
                         } else {
                             // 外部 Trait,创建节点
-                            let trait_name = trait_.path.split("::").last().unwrap_or(&trait_.path);
-                            let node = self.graph.add_type_node(trait_name);
+                            let trait_name = extract_type_name_from_path(&trait_.path);
+                            let node = self.graph.add_type_node(&trait_name);
                             self.graph.node_types.insert(node, NodeType::Trait);
                             self.type_cache.insert_type_by_id(trait_id, node);
 
@@ -484,7 +485,7 @@ impl<'ir> IrGraphBuilder<'ir> {
         use super::node_info::WrapperType;
 
         // 检查是否是 Result<T, E>
-        if let Some((ok_type, err_type)) = self.extract_result_types(output) {
+        if let Some((ok_type, err_type)) = extract_result_types(output) {
             // 创建 Result 包装节点(作为独立的库所)
             let result_node = self.create_result_wrapper_node(method_name);
 
@@ -548,7 +549,7 @@ impl<'ir> IrGraphBuilder<'ir> {
             };
         }
         // 检查是否是 Option<T>
-        else if let Some(some_type) = self.extract_option_type(output) {
+        else if let Some(some_type) = extract_option_type(output) {
             // 创建 Option 包装节点(作为独立的库所)
             let option_node = self.create_option_wrapper_node(method_name);
 
@@ -709,13 +710,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                                         // 简化:只取类型名
                                         match arg_type {
                                             Type::Primitive(name) => Some(name.clone()),
-                                            Type::ResolvedPath(p) => Some(
-                                                p.path
-                                                    .split("::")
-                                                    .last()
-                                                    .unwrap_or(&p.path)
-                                                    .to_string(),
-                                            ),
+                                            Type::ResolvedPath(p) => Some(extract_type_name(p)),
                                             Type::Generic(name) => Some(name.clone()),
                                             _ => Some("?".to_string()),
                                         }
@@ -727,15 +722,11 @@ impl<'ir> IrGraphBuilder<'ir> {
                             if !arg_names.is_empty() {
                                 format!(
                                     "{}<{}>",
-                                    path.path.split("::").last().unwrap_or(&path.path),
+                                    extract_type_name(path),
                                     arg_names.join(", ")
                                 )
                             } else {
-                                path.path
-                                    .split("::")
-                                    .last()
-                                    .unwrap_or(&path.path)
-                                    .to_string()
+                                extract_type_name(path)
                             }
                         } else {
                             path.path
@@ -1003,74 +994,6 @@ impl<'ir> IrGraphBuilder<'ir> {
         }
     }
 
-    /// 提取 Result<T, E> 的类型
-    fn extract_result_types(&self, ty: &Type) -> Option<(Type, Type)> {
-        if let Type::ResolvedPath(path) = ty {
-            // 通过 path 识别 Result(可能是 std::result::Result, io::Result 等)
-            let is_result = path.path.ends_with("Result")
-                || path.path == "Result"
-                || path.path.contains("::Result");
-
-            if is_result {
-                if let Some(args) = &path.args {
-                    if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = &**args {
-                        if args.len() >= 2 {
-                            // 标准 Result<T, E>
-                            if let (
-                                rustdoc_types::GenericArg::Type(ok_type),
-                                rustdoc_types::GenericArg::Type(err_type),
-                            ) = (&args[0], &args[1])
-                            {
-                                return Some((ok_type.clone(), err_type.clone()));
-                            }
-                        } else if args.len() == 1 {
-                            // TypeAlias 形式的 Result(如 io::Result<T>),第二个参数被固定
-                            // 提取 T,并创建一个通用的 Error 类型
-                            if let rustdoc_types::GenericArg::Type(ok_type) = &args[0] {
-                                // 根据 path 推断 Error 类型
-                                let error_type = if path.path.contains("io::") {
-                                    // io::Result -> io::Error
-                                    Type::ResolvedPath(rustdoc_types::Path {
-                                        path: "io::Error".to_string(),
-                                        id: path.id, // 使用相同的 id(外部类型)
-                                        args: None,
-                                    })
-                                } else {
-                                    // 其他情况,使用通用 Error
-                                    Type::Generic("Error".to_string())
-                                };
-                                return Some((ok_type.clone(), error_type));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        None
-    }
-
-    /// 提取 Option<T> 的类型
-    fn extract_option_type(&self, ty: &Type) -> Option<Type> {
-        if let Type::ResolvedPath(path) = ty {
-            // 通过 path 识别 Option(可能是 std::option::Option 或 Option)
-            let is_option = path.path.ends_with("Option")
-                || path.path == "Option"
-                || path.path.contains("::Option");
-
-            if is_option {
-                if let Some(args) = &path.args {
-                    if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = &**args {
-                        if !args.is_empty() {
-                            if let rustdoc_types::GenericArg::Type(some_type) = &args[0] {
-                                return Some(some_type.clone());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        None
-    }
 
     /// 创建展开操作节点
     fn create_unwrap_node(&mut self, method_name: &str, op_type: &str) -> NodeIndex {
@@ -1167,7 +1090,7 @@ impl<'ir> IrGraphBuilder<'ir> {
         use log::debug;
 
         // 生成切片类型的标签
-        let inner_label = self.format_type_label(inner_type, context_name);
+        let inner_label = format_type_label(inner_type, context_name);
         let slice_label = format!("[{}]", inner_label);
 
         // 创建 TypeKey 用于缓存
@@ -1232,7 +1155,7 @@ impl<'ir> IrGraphBuilder<'ir> {
         use log::debug;
 
         // 生成数组类型的标签
-        let inner_label = self.format_type_label(inner_type, context_name);
+        let inner_label = format_type_label(inner_type, context_name);
         let array_label = format!("[{}; {}]", inner_label, len);
 
         // 创建 TypeKey 用于缓存

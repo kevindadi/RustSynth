@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::ir_graph::{EdgeMode, IrGraph, NodeInfo, NodeType};
+use crate::petri_net_traits::{FromIrGraph, PetriNetKind};
 
 /// Labeled Petri Net 结构
 ///
@@ -195,174 +196,177 @@ pub struct PetriNetStats {
 ///    - Ref/MutRef:非消耗性弧(需要守卫逻辑)
 ///    - Implements/Require:约束弧(用于守卫条件)
 ///    - Include/Alias/Instance:结构性弧
-pub fn convert_ir_to_lpn(ir: &IrGraph) -> LabeledPetriNet {
-    let mut lpn = LabeledPetriNet::new();
+impl FromIrGraph for LabeledPetriNet {
+    fn from_ir_graph(ir: &IrGraph) -> Self {
+        let mut lpn = LabeledPetriNet::new();
 
-    // NodeIndex → (is_place, lpn_index) 的映射
-    let mut node_mapping: HashMap<NodeIndex, (bool, usize)> = HashMap::new();
+        // NodeIndex → (is_place, lpn_index) 的映射
+        let mut node_mapping: HashMap<NodeIndex, (bool, usize)> = HashMap::new();
 
-    // 第一步:遍历所有节点,分类为 place 或 transition
-    for node_idx in ir.type_graph.node_indices() {
-        let node_label = &ir.type_graph[node_idx];
-        let node_type = ir.node_types.get(&node_idx);
+        // 第一步:遍历所有节点,分类为 place 或 transition
+        for node_idx in ir.type_graph.node_indices() {
+            let node_label = &ir.type_graph[node_idx];
+            let node_type = ir.node_types.get(&node_idx);
 
-        let is_place = match node_type {
-            // 数据类型 → Place
-            Some(NodeType::Struct)
-            | Some(NodeType::Enum)
-            | Some(NodeType::Union)
-            | Some(NodeType::Constant)
-            | Some(NodeType::Static)
-            | Some(NodeType::Primitive)
-            | Some(NodeType::Tuple)
-            | Some(NodeType::Variant)
-            | Some(NodeType::Generic)
-            | Some(NodeType::TypeAlias)
-            | Some(NodeType::Unit) => true,
+            let is_place = match node_type {
+                // 数据类型 → Place
+                Some(NodeType::Struct)
+                | Some(NodeType::Enum)
+                | Some(NodeType::Union)
+                | Some(NodeType::Constant)
+                | Some(NodeType::Static)
+                | Some(NodeType::Primitive)
+                | Some(NodeType::Tuple)
+                | Some(NodeType::Variant)
+                | Some(NodeType::Generic)
+                | Some(NodeType::TypeAlias)
+                | Some(NodeType::Unit) => true,
 
-            // Result/Option 包装类型 → Place
-            Some(NodeType::ResultWrapper) | Some(NodeType::OptionWrapper) => true,
+                // Result/Option 包装类型 → Place
+                Some(NodeType::ResultWrapper) | Some(NodeType::OptionWrapper) => true,
 
-            // 操作类型 → Transition
-            Some(NodeType::ImplMethod)
-            | Some(NodeType::TraitMethod)
-            | Some(NodeType::Function)
-            | Some(NodeType::UnwrapOp) => false,
+                // 操作类型 → Transition
+                Some(NodeType::ImplMethod)
+                | Some(NodeType::TraitMethod)
+                | Some(NodeType::Function)
+                | Some(NodeType::UnwrapOp) => false,
 
-            // Trait 作为 Place(用于约束检查)
-            Some(NodeType::Trait) => true,
+                // Trait 作为 Place(用于约束检查)
+                Some(NodeType::Trait) => true,
 
-            // 未知类型默认为 Place
-            None => true,
-        };
+                // 未知类型默认为 Place
+                None => true,
+            };
 
-        let lpn_idx = if is_place {
-            let idx = lpn.add_place(node_label.clone());
-            lpn.place_to_node.insert(idx, node_idx);
-            idx
-        } else {
-            // 获取方法属性(is_const, is_async, is_unsafe)
-            let attr = if let Some(node_info) = ir.node_infos.get(&node_idx) {
-                match node_info {
-                    NodeInfo::Method(method_info) => TransitionAttr {
-                        is_const: method_info.is_const,
-                        is_async: method_info.is_async,
-                        is_unsafe: method_info.is_unsafe,
-                    },
-                    _ => TransitionAttr::default(),
-                }
+            let lpn_idx = if is_place {
+                let idx = lpn.add_place(node_label.clone());
+                lpn.place_to_node.insert(idx, node_idx);
+                idx
             } else {
-                TransitionAttr::default()
+                // 获取方法属性(is_const, is_async, is_unsafe)
+                let attr = if let Some(node_info) = ir.node_infos.get(&node_idx) {
+                    match node_info {
+                        NodeInfo::Method(method_info) => TransitionAttr {
+                            is_const: method_info.is_const,
+                            is_async: method_info.is_async,
+                            is_unsafe: method_info.is_unsafe,
+                        },
+                        _ => TransitionAttr::default(),
+                    }
+                } else {
+                    TransitionAttr::default()
+                };
+                let idx = lpn.add_transition_with_attr(node_label.clone(), attr);
+                lpn.trans_to_node.insert(idx, node_idx);
+                idx
             };
-            let idx = lpn.add_transition_with_attr(node_label.clone(), attr);
-            lpn.trans_to_node.insert(idx, node_idx);
-            idx
-        };
 
-        node_mapping.insert(node_idx, (is_place, lpn_idx));
-    }
+            node_mapping.insert(node_idx, (is_place, lpn_idx));
+        }
 
-    // 第二步:设置初始标记(从 ConstantInfo/StaticInfo)
-    for (node_idx, node_info) in &ir.node_infos {
-        if let Some(&(true, place_idx)) = node_mapping.get(node_idx) {
-            let tokens = match node_info {
-                NodeInfo::Constant(info) => parse_initial_token(&info.init_value),
-                NodeInfo::Static(info) => parse_initial_token(&info.init_value),
-                _ => 0,
-            };
-            if tokens > 0 {
-                lpn.set_initial_marking(place_idx, tokens);
+        // 第二步:设置初始标记(从 ConstantInfo/StaticInfo)
+        for (node_idx, node_info) in &ir.node_infos {
+            if let Some(&(true, place_idx)) = node_mapping.get(node_idx) {
+                let tokens = match node_info {
+                    NodeInfo::Constant(info) => parse_initial_token(&info.init_value),
+                    NodeInfo::Static(info) => parse_initial_token(&info.init_value),
+                    _ => 0,
+                };
+                if tokens > 0 {
+                    lpn.set_initial_marking(place_idx, tokens);
+                }
             }
         }
-    }
 
-    // 第三步:遍历边,创建弧
-    for edge_ref in ir.type_graph.edge_references() {
-        let source_idx = edge_ref.source();
-        let target_idx = edge_ref.target();
-        let relation = edge_ref.weight();
+        // 第三步:遍历边,创建弧
+        for edge_ref in ir.type_graph.edge_references() {
+            let source_idx = edge_ref.source();
+            let target_idx = edge_ref.target();
+            let relation = edge_ref.weight();
 
-        let source_mapping = node_mapping.get(&source_idx);
-        let target_mapping = node_mapping.get(&target_idx);
+            let source_mapping = node_mapping.get(&source_idx);
+            let target_mapping = node_mapping.get(&target_idx);
 
-        if let (
-            Some(&(source_is_place, source_lpn_idx)),
-            Some(&(target_is_place, target_lpn_idx)),
-        ) = (source_mapping, target_mapping)
-        {
-            match (source_is_place, target_is_place) {
-                // Place → Transition:输入弧
-                (true, false) => {
-                    lpn.add_input_arc(
-                        source_lpn_idx,
-                        target_lpn_idx,
-                        relation.mode,
-                        1,
-                        relation.label.clone(),
-                    );
-                }
-                // Transition → Place:输出弧
-                (false, true) => {
-                    lpn.add_output_arc(
-                        source_lpn_idx,
-                        target_lpn_idx,
-                        relation.mode,
-                        1,
-                        relation.label.clone(),
-                    );
-                }
-                // Place → Place:创建虚拟 transition(如字段访问、类型包含)
-                (true, true) => {
-                    // 对于结构性关系(Include, Alias, Instance),创建虚拟 transition
-                    if relation.mode.is_relationship() {
-                        let virtual_trans_name = format!(
-                            "{}_{}_{}",
-                            &ir.type_graph[source_idx],
-                            format!("{:?}", relation.mode).to_lowercase(),
-                            &ir.type_graph[target_idx]
-                        );
-                        let trans_idx = lpn.add_transition(virtual_trans_name);
+            if let (
+                Some(&(source_is_place, source_lpn_idx)),
+                Some(&(target_is_place, target_lpn_idx)),
+            ) = (source_mapping, target_mapping)
+            {
+                match (source_is_place, target_is_place) {
+                    // Place → Transition:输入弧
+                    (true, false) => {
                         lpn.add_input_arc(
                             source_lpn_idx,
-                            trans_idx,
+                            target_lpn_idx,
                             relation.mode,
                             1,
                             relation.label.clone(),
                         );
-                        lpn.add_output_arc(trans_idx, target_lpn_idx, relation.mode, 1, None);
                     }
-                    // 对于数据流关系(Move, Ref 等),也创建虚拟 transition
-                    else {
-                        let virtual_trans_name = format!(
-                            "access_{}_{}",
-                            &ir.type_graph[source_idx],
-                            relation.label.as_deref().unwrap_or("field")
-                        );
-                        let trans_idx = lpn.add_transition(virtual_trans_name);
-                        lpn.add_input_arc(
+                    // Transition → Place:输出弧
+                    (false, true) => {
+                        lpn.add_output_arc(
                             source_lpn_idx,
-                            trans_idx,
+                            target_lpn_idx,
                             relation.mode,
                             1,
                             relation.label.clone(),
                         );
-                        lpn.add_output_arc(trans_idx, target_lpn_idx, EdgeMode::Move, 1, None);
                     }
-                }
-                // Transition → Transition:忽略(不符合 Petri 网语义)
-                (false, false) => {
-                    // 可以记录日志或创建中间 place
-                    log::debug!(
+                    // Place → Place:创建虚拟 transition(如字段访问、类型包含)
+                    (true, true) => {
+                        // 对于结构性关系(Include, Alias, Instance),创建虚拟 transition
+                        if relation.mode.is_relationship() {
+                            let virtual_trans_name = format!(
+                                "{}_{}_{}",
+                                &ir.type_graph[source_idx],
+                                format!("{:?}", relation.mode).to_lowercase(),
+                                &ir.type_graph[target_idx]
+                            );
+                            let trans_idx = lpn.add_transition(virtual_trans_name);
+                            lpn.add_input_arc(
+                                source_lpn_idx,
+                                trans_idx,
+                                relation.mode,
+                                1,
+                                relation.label.clone(),
+                            );
+                            lpn.add_output_arc(trans_idx, target_lpn_idx, relation.mode, 1, None);
+                        }
+                        // 对于数据流关系(Move, Ref 等),也创建虚拟 transition
+                        else {
+                            let virtual_trans_name = format!(
+                                "access_{}_{}",
+                                &ir.type_graph[source_idx],
+                                relation.label.as_deref().unwrap_or("field")
+                            );
+                            let trans_idx = lpn.add_transition(virtual_trans_name);
+                            lpn.add_input_arc(
+                                source_lpn_idx,
+                                trans_idx,
+                                relation.mode,
+                                1,
+                                relation.label.clone(),
+                            );
+                            lpn.add_output_arc(trans_idx, target_lpn_idx, EdgeMode::Move, 1, None);
+                        }
+                    }
+                    // Transition → Transition:忽略(不符合 Petri 网语义)
+                    (false, false) => {
+                        // 可以记录日志或创建中间 place
+                        log::debug!(
                         "Ignoring transition-to-transition edge: {} -> {}",
                         &ir.type_graph[source_idx],
                         &ir.type_graph[target_idx]
                     );
+                    }
                 }
             }
         }
+
+        lpn
     }
 
-    lpn
 }
 
 /// 解析初始 token 值
@@ -380,6 +384,18 @@ fn parse_initial_token(value: &Option<String>) -> usize {
         None => 0,
     }
 }
+
+impl PetriNetKind for LabeledPetriNet {
+    fn kind_name() -> &'static str {
+        "LabeledPetriNet"
+    }
+
+    fn description() -> &'static str {
+        "Labeled Petri Net (LPN) with type information"
+    }
+}
+
+
 
 #[cfg(test)]
 mod tests {
@@ -459,21 +475,4 @@ mod tests {
         assert_eq!(stats.total_initial_tokens, 3);
     }
 
-    #[test]
-    fn test_to_dot() {
-        let mut lpn = LabeledPetriNet::new();
-        let p0 = lpn.add_place("Input".to_string());
-        let t0 = lpn.add_transition("Process".to_string());
-        let p1 = lpn.add_place("Output".to_string());
-
-        lpn.set_initial_marking(p0, 1);
-        lpn.add_input_arc(p0, t0, EdgeMode::Move, 1, None);
-        lpn.add_output_arc(t0, p1, EdgeMode::Move, 1, None);
-
-        let dot = lpn.to_dot();
-        assert!(dot.contains("digraph PetriNet"));
-        assert!(dot.contains("p0"));
-        assert!(dot.contains("t0"));
-        assert!(dot.contains("p1"));
-    }
 }

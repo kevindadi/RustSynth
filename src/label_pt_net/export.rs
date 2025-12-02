@@ -1,9 +1,10 @@
 use crate::label_pt_net::net::LabeledPetriNet;
+use crate::petri_net_traits::{escape_dot, escape_xml, PetriNetExport};
 
 /// 导出 Petri 网为 PNML 格式(Petri Net Markup Language)
-impl LabeledPetriNet {
+impl PetriNetExport for LabeledPetriNet {
     /// 导出为 PNML XML 格式
-    pub fn to_pnml(&self) -> String {
+    fn to_pnml(&self) -> String {
         let mut xml = String::new();
         xml.push_str(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
         xml.push('\n');
@@ -68,7 +69,7 @@ impl LabeledPetriNet {
     }
 
     /// 导出为 DOT 格式(用于 Graphviz 可视化)
-    pub fn to_dot(&self) -> String {
+    fn to_dot(&self) -> String {
         let mut dot = String::new();
         dot.push_str("digraph PetriNet {\n");
         dot.push_str("  rankdir=LR;\n");
@@ -137,50 +138,19 @@ impl LabeledPetriNet {
     }
 
     /// 导出为 JSON 格式
-    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+    fn to_json(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string_pretty(self)
     }
 
-    /// 保存到文件
-    pub fn save_to_file<P: AsRef<std::path::Path>>(
-        &self,
-        path: P,
-        format: ExportFormat,
-    ) -> std::io::Result<()> {
-        let content = match format {
-            ExportFormat::Pnml => self.to_pnml(),
-            ExportFormat::Dot => self.to_dot(),
-            ExportFormat::Json => self
-                .to_json()
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?,
-        };
-        std::fs::write(path, content)
+    fn print_stats(&self) {
+        let stats = self.stats();
+        println!("Petri Net Stats:");
+        println!("  Places: {}", stats.place_count);
+        println!("  Transitions: {}", stats.transition_count);
+        println!("  Input Arcs: {}", stats.input_arc_count);
+        println!("  Output Arcs: {}", stats.output_arc_count);
+        println!("  Total Initial Tokens: {}", stats.total_initial_tokens);
     }
 }
 
-/// 导出格式
-#[derive(Debug, Clone, Copy)]
-pub enum ExportFormat {
-    /// PNML (Petri Net Markup Language)
-    Pnml,
-    /// DOT (Graphviz)
-    Dot,
-    /// JSON
-    Json,
-}
 
-/// XML 转义
-fn escape_xml(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&apos;")
-}
-
-/// DOT 转义
-fn escape_dot(s: &str) -> String {
-    s.replace('\\', "\\\\")
-        .replace('"', "\\\"")
-        .replace('\n', "\\n")
-}

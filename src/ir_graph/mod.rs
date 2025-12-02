@@ -10,6 +10,7 @@ pub mod node_info;
 /// 3. 统一处理函数、构造器等操作
 pub mod structure;
 pub mod type_cache;
+pub mod utils;
 
 pub use builder::IrGraphBuilder;
 pub use node_info::*;

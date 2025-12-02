@@ -12,13 +12,13 @@ pub mod label_pt_net;
 pub mod support_types;
 
 use crate::ir_graph::builder::IrGraphBuilder;
-use crate::label_pt_net::export::ExportFormat;
-use crate::label_pt_net::net::convert_ir_to_lpn;
+use crate::label_pt_net::net::LabeledPetriNet;
 use crate::parse::ParsedCrate;
+use crate::petri_net_traits::{ExportFormat, FromIrGraph, PetriNetExport, PetriNetKind};
 
 #[derive(Parser)]
 #[command(name = "sypetype")]
-#[command(about = "SyPetype: 解析 Rust API 文档并生成 IR Graph 和 Petri Net(支持 cargo-fuzz)", long_about = None)]
+#[command(about = "SyPetype: 解析 Rust API 文档并生成 IR Graph 和 Petri Net", long_about = None)]
 #[command(version)]
 struct Cli {
     /// rustdoc JSON 文件路径
@@ -77,9 +77,9 @@ fn main() -> Result<()> {
     }
 
     // 转换为 Labeled Petri Net
-    log::info!("正在转换为 Labeled Petri Net...");
-    let mut lpn = convert_ir_to_lpn(&ir_graph);
-
+    log::info!("转换为 {:?}", LabeledPetriNet::kind_name());
+    let mut lpn = LabeledPetriNet::from_ir_graph(&ir_graph);
+   
     // 添加基本类型 shims(如果启用)
     if cli.add_shims {
         log::info!("正在添加基本类型 shims...");
@@ -112,19 +112,10 @@ fn main() -> Result<()> {
         ir_graph.export_json(&json_path)?;
         log::info!("  ✓ IR Graph JSON: {}", json_path.display());
 
-        // 导出 Petri Net
-        let lpn_dot_path = cli.output_dir.join("petri_net.dot");
-        let lpn_pnml_path = cli.output_dir.join("petri_net.pnml");
-        let lpn_json_path = cli.output_dir.join("petri_net.json");
+        PetriNetExport::export(&lpn, &cli.output_dir, ExportFormat::Dot)?;
+        log::info!("  ✓ Petri Net DOT: {}", cli.output_dir.display());
 
-        lpn.save_to_file(&lpn_dot_path, ExportFormat::Dot)?;
-        log::info!("  ✓ Petri Net DOT: {}", lpn_dot_path.display());
-
-        lpn.save_to_file(&lpn_pnml_path, ExportFormat::Pnml)?;
-        log::info!("  ✓ Petri Net PNML: {}", lpn_pnml_path.display());
-
-        lpn.save_to_file(&lpn_json_path, ExportFormat::Json)?;
-        log::info!("  ✓ Petri Net JSON: {}", lpn_json_path.display());
+        lpn.print_stats();
 
         log::info!("✓ 完成!");
     }

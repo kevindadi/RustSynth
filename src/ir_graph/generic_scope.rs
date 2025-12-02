@@ -46,6 +46,7 @@ impl GenericScope {
     /// 参数:
     /// - owner_id: 作用域所有者 ID
     /// - generics: 泛型参数映射(名称 -> TypeNode)
+    #[allow(unused)]
     pub fn push_scope(&mut self, owner_id: Id, generics: HashMap<String, Id>) {
         self.stack.push(ScopeFrame {
             owner_id,
@@ -57,6 +58,7 @@ impl GenericScope {
     /// 进入新作用域(带 Self 类型)
     ///
     /// 用于 impl 块
+    #[allow(unused)]
     pub fn push_scope_with_self(
         &mut self,
         owner_id: Id,
@@ -71,6 +73,7 @@ impl GenericScope {
     }
 
     /// 退出当前作用域
+    #[allow(unused)]
     pub fn pop_scope(&mut self) {
         self.stack.pop();
     }
@@ -85,6 +88,7 @@ impl GenericScope {
     /// 返回:
     /// - Some(Id): 找到对应的泛型 Id
     /// - None: 未找到(可能是未定义的泛型)
+    #[allow(unused)]
     pub fn resolve(&self, name: &str) -> Option<Id> {
         // 从栈顶向下查找(最内层作用域优先)
         for frame in self.stack.iter().rev() {

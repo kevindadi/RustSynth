@@ -234,8 +234,8 @@ pub struct TraitInfo {
     pub associated_consts: Vec<NodeIndex>,
     /// 方法签名(trait 定义的方法)
     pub methods: Vec<NodeIndex>,
-    /// 父 Trait(supertrait bounds)
-    pub supertraits: Vec<NodeIndex>,
+    /// 父 Trait(super trait bounds)
+    pub super_traits: Vec<NodeIndex>,
     /// 泛型参数
     pub generics: Vec<NodeIndex>,
     /// 是否是 auto trait
@@ -457,6 +457,7 @@ pub enum UnwrapOpKind {
 
 impl NodeInfo {
     /// 获取节点的路径信息(如果有)
+    #[allow(unused)]
     pub fn path(&self) -> Option<&PathInfo> {
         match self {
             NodeInfo::Struct(info) => Some(&info.path),
@@ -497,6 +498,7 @@ impl NodeInfo {
     }
 
     /// 获取泛型参数列表(如果有)
+    #[allow(unused)]
     pub fn generics(&self) -> &[NodeIndex] {
         match self {
             NodeInfo::Struct(info) => &info.generics,
@@ -511,6 +513,7 @@ impl NodeInfo {
     }
 
     /// 获取方法列表(如果有)
+    #[allow(unused)]
     pub fn methods(&self) -> &[NodeIndex] {
         match self {
             NodeInfo::Struct(info) => &info.methods,
@@ -522,6 +525,7 @@ impl NodeInfo {
     }
 
     /// 获取 Trait 实现列表(如果有)
+    #[allow(unused)]
     pub fn trait_impls(&self) -> &[TraitImplInfo] {
         match self {
             NodeInfo::Struct(info) => &info.trait_impls,
@@ -532,7 +536,8 @@ impl NodeInfo {
     }
 
     /// 判断是否是类型定义节点
-    pub fn is_type_def(&self) -> bool {
+    #[allow(unused)]
+        pub fn is_type_def(&self) -> bool {
         matches!(
             self,
             NodeInfo::Struct(_) | NodeInfo::Enum(_) | NodeInfo::Union(_) | NodeInfo::TypeAlias(_)
@@ -540,6 +545,7 @@ impl NodeInfo {
     }
 
     /// 判断是否是可调用节点
+    #[allow(unused)]
     pub fn is_callable(&self) -> bool {
         matches!(
             self,
@@ -548,6 +554,7 @@ impl NodeInfo {
     }
 
     /// 判断是否有初始 token(用于 Petri 网)
+    #[allow(unused)]
     pub fn has_initial_token(&self) -> bool {
         match self {
             NodeInfo::Constant(info) => info.init_value.is_some(),
@@ -557,6 +564,7 @@ impl NodeInfo {
     }
 
     /// 获取初始 token 值(用于 Petri 网)
+    #[allow(unused)]
     pub fn initial_token(&self) -> Option<&str> {
         match self {
             NodeInfo::Constant(info) => info.init_value.as_deref(),
@@ -590,11 +598,13 @@ impl PathInfo {
 
 impl ParamInfo {
     /// 从借用模式判断是否需要可变访问
+    #[allow(unused)]
     pub fn requires_mut(&self) -> bool {
         matches!(self.borrow_mode, EdgeMode::MutRef | EdgeMode::MutPtr)
     }
 
     /// 从借用模式判断是否是引用
+    #[allow(unused)]
     pub fn is_reference(&self) -> bool {
         matches!(
             self.borrow_mode,
