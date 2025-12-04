@@ -1,0 +1,2043 @@
+{
+  "edges": 206,
+  "node_infos": {
+    "0": {
+      "Primitive": {
+        "default_traits": [
+          "Copy",
+          "Clone",
+          "Debug",
+          "Display",
+          "PartialEq",
+          "Eq",
+          "PartialOrd",
+          "Ord",
+          "Hash",
+          "Default",
+          "Send",
+          "Sync",
+          "Sized",
+          "Add",
+          "Sub",
+          "Mul",
+          "Div",
+          "Rem",
+          "BitAnd",
+          "BitOr",
+          "BitXor",
+          "Shl",
+          "Shr",
+          "Not",
+          "Neg",
+          "From",
+          "Into",
+          "TryFrom",
+          "TryInto"
+        ],
+        "name": "u8",
+        "trait_nodes": [],
+        "type_": "U8"
+      }
+    },
+    "10": {
+      "Variant": {
+        "discriminant": null,
+        "kind": "Unit",
+        "name": "InvalidLength",
+        "parent_enum": 23
+      }
+    },
+    "101": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "flush",
+        "owner": 26,
+        "params": [
+          {
+            "borrow_mode": "MutRef",
+            "is_self": true,
+            "name": "self",
+            "type_node": 26,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: true, type_: Generic(\"Self\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 102,
+          "type_str": "ResolvedPath(Path { path: \"Result\", id: Id(89), args: Some(AngleBracketed { args: [Type(Tuple([]))], constraints: [] }) })",
+          "unwrap_node": 103,
+          "wrapper": {
+            "Result": {
+              "err_type": null,
+              "ok_type": 61
+            }
+          }
+        }
+      }
+    },
+    "104": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "new",
+        "owner": 26,
+        "params": [
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "delegate",
+            "type_node": 44,
+            "type_str": "Generic(\"W\")"
+          },
+          {
+            "borrow_mode": "Ref",
+            "is_self": false,
+            "name": "engine",
+            "type_node": 43,
+            "type_str": "BorrowedRef { lifetime: Some(\"'e\"), is_mutable: false, type_: Generic(\"E\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 26,
+          "type_str": "ResolvedPath(Path { path: \"EncoderWriter\", id: Id(101), args: Some(AngleBracketed { args: [Lifetime(\"'e\"), Type(Generic(\"E\")), Type(Generic(\"W\"))], constraints: [] }) })",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "105": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "finish",
+        "owner": 26,
+        "params": [
+          {
+            "borrow_mode": "MutRef",
+            "is_self": true,
+            "name": "self",
+            "type_node": 26,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: true, type_: Generic(\"Self\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 106,
+          "type_str": "ResolvedPath(Path { path: \"Result\", id: Id(89), args: Some(AngleBracketed { args: [Type(Generic(\"W\"))], constraints: [] }) })",
+          "unwrap_node": 107,
+          "wrapper": {
+            "Result": {
+              "err_type": null,
+              "ok_type": 44
+            }
+          }
+        }
+      }
+    },
+    "108": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": true,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "with_encode_padding",
+        "owner": 18,
+        "params": [
+          {
+            "borrow_mode": "Move",
+            "is_self": true,
+            "name": "self",
+            "type_node": 18,
+            "type_str": "Generic(\"Self\")"
+          },
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "padding",
+            "type_node": 72,
+            "type_str": "Primitive(\"bool\")"
+          }
+        ],
+        "return_info": {
+          "type_node": 18,
+          "type_str": "Generic(\"Self\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "109": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": true,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "with_decode_allow_trailing_bits",
+        "owner": 18,
+        "params": [
+          {
+            "borrow_mode": "Move",
+            "is_self": true,
+            "name": "self",
+            "type_node": 18,
+            "type_str": "Generic(\"Self\")"
+          },
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "allow",
+            "type_node": 72,
+            "type_str": "Primitive(\"bool\")"
+          }
+        ],
+        "return_info": {
+          "type_node": 18,
+          "type_str": "Generic(\"Self\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "11": {
+      "Variant": {
+        "discriminant": null,
+        "kind": "Unit",
+        "name": "InvalidPadding",
+        "parent_enum": 1
+      }
+    },
+    "110": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "encode_padding",
+        "owner": 18,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": true,
+            "name": "self",
+            "type_node": 18,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Generic(\"Self\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 72,
+          "type_str": "Primitive(\"bool\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "111": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": true,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "with_decode_padding_mode",
+        "owner": 18,
+        "params": [
+          {
+            "borrow_mode": "Move",
+            "is_self": true,
+            "name": "self",
+            "type_node": 18,
+            "type_str": "Generic(\"Self\")"
+          },
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "mode",
+            "type_node": 25,
+            "type_str": "ResolvedPath(Path { path: \"DecodePaddingMode\", id: Id(214), args: None })"
+          }
+        ],
+        "return_info": {
+          "type_node": 18,
+          "type_str": "Generic(\"Self\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "112": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": true,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "new",
+        "owner": 18,
+        "params": [],
+        "return_info": {
+          "type_node": 18,
+          "type_str": "Generic(\"Self\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "113": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::URL_SAFE_NO_PAD",
+          "module_path": [],
+          "name": "URL_SAFE_NO_PAD"
+        },
+        "type_node": 19,
+        "type_str": "ResolvedPath(Path { path: \"GeneralPurpose\", id: Id(169), args: None })"
+      }
+    },
+    "114": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::URL_SAFE_NO_PAD_INDIFFERENT",
+          "module_path": [],
+          "name": "URL_SAFE_NO_PAD_INDIFFERENT"
+        },
+        "type_node": 19,
+        "type_str": "ResolvedPath(Path { path: \"GeneralPurpose\", id: Id(169), args: None })"
+      }
+    },
+    "115": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::NO_PAD_INDIFFERENT",
+          "module_path": [],
+          "name": "NO_PAD_INDIFFERENT"
+        },
+        "type_node": 18,
+        "type_str": "ResolvedPath(Path { path: \"GeneralPurposeConfig\", id: Id(172), args: None })"
+      }
+    },
+    "116": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::CRYPT",
+          "module_path": [],
+          "name": "CRYPT"
+        },
+        "type_node": 20,
+        "type_str": "ResolvedPath(Path { path: \"Alphabet\", id: Id(170), args: None })"
+      }
+    },
+    "117": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::STANDARD_NO_PAD_INDIFFERENT",
+          "module_path": [],
+          "name": "STANDARD_NO_PAD_INDIFFERENT"
+        },
+        "type_node": 19,
+        "type_str": "ResolvedPath(Path { path: \"GeneralPurpose\", id: Id(169), args: None })"
+      }
+    },
+    "118": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::URL_SAFE_PAD_INDIFFERENT",
+          "module_path": [],
+          "name": "URL_SAFE_PAD_INDIFFERENT"
+        },
+        "type_node": 19,
+        "type_str": "ResolvedPath(Path { path: \"GeneralPurpose\", id: Id(169), args: None })"
+      }
+    },
+    "119": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::STANDARD",
+          "module_path": [],
+          "name": "STANDARD"
+        },
+        "type_node": 19,
+        "type_str": "ResolvedPath(Path { path: \"GeneralPurpose\", id: Id(169), args: None })"
+      }
+    },
+    "12": {
+      "Variant": {
+        "discriminant": null,
+        "kind": {
+          "Tuple": [
+            0
+          ]
+        },
+        "name": "UnprintableByte",
+        "parent_enum": 23
+      }
+    },
+    "120": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::BCRYPT",
+          "module_path": [],
+          "name": "BCRYPT"
+        },
+        "type_node": 20,
+        "type_str": "ResolvedPath(Path { path: \"Alphabet\", id: Id(170), args: None })"
+      }
+    },
+    "121": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::BIN_HEX",
+          "module_path": [],
+          "name": "BIN_HEX"
+        },
+        "type_node": 20,
+        "type_str": "ResolvedPath(Path { path: \"Alphabet\", id: Id(170), args: None })"
+      }
+    },
+    "122": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::STANDARD",
+          "module_path": [],
+          "name": "STANDARD"
+        },
+        "type_node": 20,
+        "type_str": "ResolvedPath(Path { path: \"Alphabet\", id: Id(170), args: None })"
+      }
+    },
+    "123": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::STANDARD_NO_PAD",
+          "module_path": [],
+          "name": "STANDARD_NO_PAD"
+        },
+        "type_node": 19,
+        "type_str": "ResolvedPath(Path { path: \"GeneralPurpose\", id: Id(169), args: None })"
+      }
+    },
+    "124": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::STANDARD_PAD_INDIFFERENT",
+          "module_path": [],
+          "name": "STANDARD_PAD_INDIFFERENT"
+        },
+        "type_node": 19,
+        "type_str": "ResolvedPath(Path { path: \"GeneralPurpose\", id: Id(169), args: None })"
+      }
+    },
+    "125": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::PAD",
+          "module_path": [],
+          "name": "PAD"
+        },
+        "type_node": 18,
+        "type_str": "ResolvedPath(Path { path: \"GeneralPurposeConfig\", id: Id(172), args: None })"
+      }
+    },
+    "126": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::URL_SAFE",
+          "module_path": [],
+          "name": "URL_SAFE"
+        },
+        "type_node": 20,
+        "type_str": "ResolvedPath(Path { path: \"Alphabet\", id: Id(170), args: None })"
+      }
+    },
+    "127": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::URL_SAFE",
+          "module_path": [],
+          "name": "URL_SAFE"
+        },
+        "type_node": 19,
+        "type_str": "ResolvedPath(Path { path: \"GeneralPurpose\", id: Id(169), args: None })"
+      }
+    },
+    "128": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::NO_PAD",
+          "module_path": [],
+          "name": "NO_PAD"
+        },
+        "type_node": 18,
+        "type_str": "ResolvedPath(Path { path: \"GeneralPurposeConfig\", id: Id(172), args: None })"
+      }
+    },
+    "129": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::IMAP_MUTF7",
+          "module_path": [],
+          "name": "IMAP_MUTF7"
+        },
+        "type_node": 20,
+        "type_str": "ResolvedPath(Path { path: \"Alphabet\", id: Id(170), args: None })"
+      }
+    },
+    "13": {
+      "Variant": {
+        "discriminant": null,
+        "kind": {
+          "Tuple": [
+            2,
+            0
+          ]
+        },
+        "name": "InvalidByte",
+        "parent_enum": 1
+      }
+    },
+    "130": {
+      "Constant": {
+        "init_value": null,
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::PAD_INDIFFERENT",
+          "module_path": [],
+          "name": "PAD_INDIFFERENT"
+        },
+        "type_node": 18,
+        "type_str": "ResolvedPath(Path { path: \"GeneralPurposeConfig\", id: Id(172), args: None })"
+      }
+    },
+    "14": {
+      "Variant": {
+        "discriminant": null,
+        "kind": {
+          "Tuple": [
+            1
+          ]
+        },
+        "name": "DecodeError",
+        "parent_enum": 21
+      }
+    },
+    "15": {
+      "Variant": {
+        "discriminant": null,
+        "kind": "Unit",
+        "name": "OutputSliceTooSmall",
+        "parent_enum": 28
+      }
+    },
+    "16": {
+      "Variant": {
+        "discriminant": null,
+        "kind": {
+          "Tuple": [
+            2,
+            0
+          ]
+        },
+        "name": "InvalidLastSymbol",
+        "parent_enum": 1
+      }
+    },
+    "17": {
+      "Struct": {
+        "blacklisted_trait_impls": [
+          "From",
+          "TryFrom",
+          "Borrow",
+          "BorrowMut",
+          "Any",
+          "Into",
+          "TryInto"
+        ],
+        "fields": [],
+        "generics": [],
+        "is_tuple_struct": false,
+        "is_unit_struct": false,
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::EncoderStringWriter",
+          "module_path": [],
+          "name": "EncoderStringWriter"
+        },
+        "trait_impls": []
+      }
+    },
+    "18": {
+      "Struct": {
+        "blacklisted_trait_impls": [
+          "From",
+          "ToOwned",
+          "Into",
+          "BorrowMut",
+          "TryFrom",
+          "Debug",
+          "Clone",
+          "Any",
+          "Default",
+          "TryInto",
+          "Borrow"
+        ],
+        "fields": [],
+        "generics": [],
+        "is_tuple_struct": false,
+        "is_unit_struct": false,
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::GeneralPurposeConfig",
+          "module_path": [],
+          "name": "GeneralPurposeConfig"
+        },
+        "trait_impls": []
+      }
+    },
+    "19": {
+      "Struct": {
+        "blacklisted_trait_impls": [
+          "Debug",
+          "ToOwned",
+          "Clone",
+          "Borrow",
+          "Into",
+          "TryInto",
+          "BorrowMut",
+          "From",
+          "TryFrom",
+          "Any"
+        ],
+        "fields": [],
+        "generics": [],
+        "is_tuple_struct": false,
+        "is_unit_struct": false,
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::GeneralPurpose",
+          "module_path": [],
+          "name": "GeneralPurpose"
+        },
+        "trait_impls": []
+      }
+    },
+    "2": {
+      "Primitive": {
+        "default_traits": [
+          "Copy",
+          "Clone",
+          "Debug",
+          "Display",
+          "PartialEq",
+          "Eq",
+          "PartialOrd",
+          "Ord",
+          "Hash",
+          "Default",
+          "Send",
+          "Sync",
+          "Sized",
+          "Add",
+          "Sub",
+          "Mul",
+          "Div",
+          "Rem",
+          "BitAnd",
+          "BitOr",
+          "BitXor",
+          "Shl",
+          "Shr",
+          "Not",
+          "Neg",
+          "From",
+          "Into",
+          "TryFrom",
+          "TryInto"
+        ],
+        "name": "usize",
+        "trait_nodes": [],
+        "type_": "Usize"
+      }
+    },
+    "20": {
+      "Struct": {
+        "blacklisted_trait_impls": [
+          "PartialEq",
+          "Clone",
+          "TryFrom",
+          "Borrow",
+          "Debug",
+          "TryInto",
+          "BorrowMut",
+          "Any",
+          "ToOwned",
+          "From",
+          "Into"
+        ],
+        "fields": [],
+        "generics": [],
+        "is_tuple_struct": false,
+        "is_unit_struct": false,
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::Alphabet",
+          "module_path": [],
+          "name": "Alphabet"
+        },
+        "trait_impls": []
+      }
+    },
+    "21": {
+      "Enum": {
+        "blacklisted_trait_impls": [
+          "ToString",
+          "Debug",
+          "From",
+          "Any",
+          "BorrowMut",
+          "Borrow",
+          "Error",
+          "Clone",
+          "Into",
+          "TryInto",
+          "ToOwned",
+          "PartialEq",
+          "TryFrom"
+        ],
+        "generics": [],
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::DecodeSliceError",
+          "module_path": [],
+          "name": "DecodeSliceError"
+        },
+        "trait_impls": [],
+        "variants": [
+          14,
+          3
+        ]
+      }
+    },
+    "22": {
+      "Struct": {
+        "blacklisted_trait_impls": [
+          "TryFrom",
+          "From",
+          "Any",
+          "Into",
+          "Debug",
+          "Borrow",
+          "BorrowMut",
+          "TryInto"
+        ],
+        "fields": [],
+        "generics": [],
+        "is_tuple_struct": false,
+        "is_unit_struct": false,
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::DecoderReader",
+          "module_path": [],
+          "name": "DecoderReader"
+        },
+        "trait_impls": []
+      }
+    },
+    "23": {
+      "Enum": {
+        "blacklisted_trait_impls": [
+          "Debug",
+          "Borrow",
+          "Any",
+          "ToString",
+          "Into",
+          "From",
+          "TryFrom",
+          "TryInto",
+          "PartialEq",
+          "BorrowMut"
+        ],
+        "generics": [],
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::ParseAlphabetError",
+          "module_path": [],
+          "name": "ParseAlphabetError"
+        },
+        "trait_impls": [],
+        "variants": [
+          10,
+          6,
+          12,
+          8
+        ]
+      }
+    },
+    "24": {
+      "Struct": {
+        "blacklisted_trait_impls": [
+          "Debug",
+          "BorrowMut",
+          "Borrow",
+          "From",
+          "Any",
+          "Into",
+          "TryFrom",
+          "TryInto",
+          "ToString"
+        ],
+        "fields": [],
+        "generics": [],
+        "is_tuple_struct": false,
+        "is_unit_struct": false,
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::Base64Display",
+          "module_path": [],
+          "name": "Base64Display"
+        },
+        "trait_impls": []
+      }
+    },
+    "25": {
+      "Enum": {
+        "blacklisted_trait_impls": [
+          "ToOwned",
+          "TryInto",
+          "Borrow",
+          "BorrowMut",
+          "PartialEq",
+          "Any",
+          "TryFrom",
+          "Debug",
+          "Clone",
+          "From",
+          "Into"
+        ],
+        "generics": [],
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::DecodePaddingMode",
+          "module_path": [],
+          "name": "DecodePaddingMode"
+        },
+        "trait_impls": [],
+        "variants": [
+          5,
+          9,
+          4
+        ]
+      }
+    },
+    "26": {
+      "Struct": {
+        "blacklisted_trait_impls": [
+          "TryFrom",
+          "BorrowMut",
+          "From",
+          "Any",
+          "Drop",
+          "TryInto",
+          "Debug",
+          "Borrow",
+          "Into"
+        ],
+        "fields": [],
+        "generics": [],
+        "is_tuple_struct": false,
+        "is_unit_struct": false,
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::EncoderWriter",
+          "module_path": [],
+          "name": "EncoderWriter"
+        },
+        "trait_impls": []
+      }
+    },
+    "27": {
+      "Struct": {
+        "blacklisted_trait_impls": [
+          "Debug",
+          "PartialEq",
+          "From",
+          "TryInto",
+          "BorrowMut",
+          "Into",
+          "Borrow",
+          "Any",
+          "TryFrom"
+        ],
+        "fields": [],
+        "generics": [],
+        "is_tuple_struct": false,
+        "is_unit_struct": false,
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::DecodeMetadata",
+          "module_path": [],
+          "name": "DecodeMetadata"
+        },
+        "trait_impls": []
+      }
+    },
+    "28": {
+      "Enum": {
+        "blacklisted_trait_impls": [
+          "Borrow",
+          "Any",
+          "TryInto",
+          "Debug",
+          "TryFrom",
+          "ToOwned",
+          "PartialEq",
+          "From",
+          "ToString",
+          "Clone",
+          "BorrowMut",
+          "Into"
+        ],
+        "generics": [],
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::EncodeSliceError",
+          "module_path": [],
+          "name": "EncodeSliceError"
+        },
+        "trait_impls": [],
+        "variants": [
+          15
+        ]
+      }
+    },
+    "29": {
+      "Trait": {
+        "associated_consts": [],
+        "associated_types": [],
+        "generics": [],
+        "is_auto": false,
+        "is_unsafe": false,
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::Config",
+          "module_path": [],
+          "name": "Config"
+        },
+        "super_traits": []
+      }
+    },
+    "3": {
+      "Variant": {
+        "discriminant": null,
+        "kind": "Unit",
+        "name": "OutputSliceTooSmall",
+        "parent_enum": 21
+      }
+    },
+    "30": {
+      "Trait": {
+        "associated_consts": [],
+        "associated_types": [],
+        "generics": [],
+        "is_auto": false,
+        "is_unsafe": false,
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::DecodeEstimate",
+          "module_path": [],
+          "name": "DecodeEstimate"
+        },
+        "super_traits": []
+      }
+    },
+    "31": {
+      "Trait": {
+        "associated_consts": [],
+        "associated_types": [],
+        "generics": [],
+        "is_auto": false,
+        "is_unsafe": false,
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::StrConsumer",
+          "module_path": [],
+          "name": "StrConsumer"
+        },
+        "super_traits": []
+      }
+    },
+    "32": {
+      "Trait": {
+        "associated_consts": [],
+        "associated_types": [],
+        "generics": [],
+        "is_auto": false,
+        "is_unsafe": false,
+        "methods": [],
+        "path": {
+          "crate_name": "base64",
+          "full_path": "base64::Engine",
+          "module_path": [],
+          "name": "Engine"
+        },
+        "super_traits": []
+      }
+    },
+    "37": {
+      "Generic": {
+        "bounds": [
+          32
+        ],
+        "default_type": null,
+        "name": "E",
+        "owner": 17
+      }
+    },
+    "38": {
+      "Generic": {
+        "bounds": [
+          31
+        ],
+        "default_type": null,
+        "name": "S",
+        "owner": 17
+      }
+    },
+    "39": {
+      "Generic": {
+        "bounds": [
+          32
+        ],
+        "default_type": null,
+        "name": "E",
+        "owner": 22
+      }
+    },
+    "4": {
+      "Variant": {
+        "discriminant": null,
+        "kind": "Unit",
+        "name": "RequireNone",
+        "parent_enum": 25
+      }
+    },
+    "40": {
+      "Generic": {
+        "bounds": [
+          41
+        ],
+        "default_type": null,
+        "name": "R",
+        "owner": 22
+      }
+    },
+    "42": {
+      "Generic": {
+        "bounds": [
+          32
+        ],
+        "default_type": null,
+        "name": "E",
+        "owner": 24
+      }
+    },
+    "43": {
+      "Generic": {
+        "bounds": [
+          32
+        ],
+        "default_type": null,
+        "name": "E",
+        "owner": 26
+      }
+    },
+    "44": {
+      "Generic": {
+        "bounds": [
+          45
+        ],
+        "default_type": null,
+        "name": "W",
+        "owner": 26
+      }
+    },
+    "46": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "TraitDef",
+        "name": "decoded_len_estimate",
+        "owner": 30,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": true,
+            "name": "self",
+            "type_node": 30,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Generic(\"Self\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 2,
+          "type_str": "Primitive(\"usize\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "47": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "TraitDef",
+        "name": "encode_string",
+        "owner": 32,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": true,
+            "name": "self",
+            "type_node": 32,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Generic(\"Self\") }"
+          },
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "input",
+            "type_node": 33,
+            "type_str": "Generic(\"T\")"
+          },
+          {
+            "borrow_mode": "MutRef",
+            "is_self": false,
+            "name": "output_buf",
+            "type_node": 48,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: true, type_: ResolvedPath(Path { path: \"String\", id: Id(47), args: None }) }"
+          }
+        ],
+        "return_info": {
+          "type_node": null,
+          "type_str": "()",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "49": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "TraitDef",
+        "name": "encode_slice",
+        "owner": 32,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": true,
+            "name": "self",
+            "type_node": 32,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Generic(\"Self\") }"
+          },
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "input",
+            "type_node": 33,
+            "type_str": "Generic(\"T\")"
+          },
+          {
+            "borrow_mode": "MutRef",
+            "is_self": false,
+            "name": "output_buf",
+            "type_node": 50,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: true, type_: Slice(Primitive(\"u8\")) }"
+          }
+        ],
+        "return_info": {
+          "type_node": 51,
+          "type_str": "ResolvedPath(Path { path: \"Result\", id: Id(35), args: Some(AngleBracketed { args: [Type(Primitive(\"usize\")), Type(ResolvedPath(Path { path: \"EncodeSliceError\", id: Id(266), args: None }))], constraints: [] }) })",
+          "unwrap_node": 52,
+          "wrapper": {
+            "Result": {
+              "err_type": 28,
+              "ok_type": 2
+            }
+          }
+        }
+      }
+    },
+    "5": {
+      "Variant": {
+        "discriminant": null,
+        "kind": "Unit",
+        "name": "Indifferent",
+        "parent_enum": 25
+      }
+    },
+    "53": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "TraitDef",
+        "name": "config",
+        "owner": 32,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": true,
+            "name": "self",
+            "type_node": 32,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Generic(\"Self\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 35,
+          "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: QualifiedPath { name: \"Config\", args: None, self_type: Generic(\"Self\"), trait_: Some(Path { path: \"\", id: Id(4), args: None }) } }",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "54": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "TraitDef",
+        "name": "decode",
+        "owner": 32,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": true,
+            "name": "self",
+            "type_node": 32,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Generic(\"Self\") }"
+          },
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "input",
+            "type_node": 33,
+            "type_str": "Generic(\"T\")"
+          }
+        ],
+        "return_info": {
+          "type_node": 55,
+          "type_str": "ResolvedPath(Path { path: \"Result\", id: Id(35), args: Some(AngleBracketed { args: [Type(ResolvedPath(Path { path: \"Vec\", id: Id(268), args: Some(AngleBracketed { args: [Type(Primitive(\"u8\"))], constraints: [] }) })), Type(ResolvedPath(Path { path: \"DecodeError\", id: Id(269), args: None }))], constraints: [] }) })",
+          "unwrap_node": 56,
+          "wrapper": {
+            "Result": {
+              "err_type": 1,
+              "ok_type": 57
+            }
+          }
+        }
+      }
+    },
+    "58": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "TraitDef",
+        "name": "decode_vec",
+        "owner": 32,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": true,
+            "name": "self",
+            "type_node": 32,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Generic(\"Self\") }"
+          },
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "input",
+            "type_node": 33,
+            "type_str": "Generic(\"T\")"
+          },
+          {
+            "borrow_mode": "MutRef",
+            "is_self": false,
+            "name": "buffer",
+            "type_node": 57,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: true, type_: ResolvedPath(Path { path: \"Vec\", id: Id(268), args: Some(AngleBracketed { args: [Type(Primitive(\"u8\"))], constraints: [] }) }) }"
+          }
+        ],
+        "return_info": {
+          "type_node": 59,
+          "type_str": "ResolvedPath(Path { path: \"Result\", id: Id(35), args: Some(AngleBracketed { args: [Type(Tuple([])), Type(ResolvedPath(Path { path: \"DecodeError\", id: Id(269), args: None }))], constraints: [] }) })",
+          "unwrap_node": 60,
+          "wrapper": {
+            "Result": {
+              "err_type": 1,
+              "ok_type": 61
+            }
+          }
+        }
+      }
+    },
+    "6": {
+      "Variant": {
+        "discriminant": null,
+        "kind": {
+          "Tuple": [
+            0
+          ]
+        },
+        "name": "DuplicatedByte",
+        "parent_enum": 23
+      }
+    },
+    "62": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "TraitDef",
+        "name": "decode_slice",
+        "owner": 32,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": true,
+            "name": "self",
+            "type_node": 32,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Generic(\"Self\") }"
+          },
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "input",
+            "type_node": 33,
+            "type_str": "Generic(\"T\")"
+          },
+          {
+            "borrow_mode": "MutRef",
+            "is_self": false,
+            "name": "output",
+            "type_node": 50,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: true, type_: Slice(Primitive(\"u8\")) }"
+          }
+        ],
+        "return_info": {
+          "type_node": 63,
+          "type_str": "ResolvedPath(Path { path: \"Result\", id: Id(35), args: Some(AngleBracketed { args: [Type(Primitive(\"usize\")), Type(ResolvedPath(Path { path: \"DecodeSliceError\", id: Id(274), args: None }))], constraints: [] }) })",
+          "unwrap_node": 64,
+          "wrapper": {
+            "Result": {
+              "err_type": 21,
+              "ok_type": 2
+            }
+          }
+        }
+      }
+    },
+    "65": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "TraitDef",
+        "name": "decode_slice_unchecked",
+        "owner": 32,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": true,
+            "name": "self",
+            "type_node": 32,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Generic(\"Self\") }"
+          },
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "input",
+            "type_node": 33,
+            "type_str": "Generic(\"T\")"
+          },
+          {
+            "borrow_mode": "MutRef",
+            "is_self": false,
+            "name": "output",
+            "type_node": 50,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: true, type_: Slice(Primitive(\"u8\")) }"
+          }
+        ],
+        "return_info": {
+          "type_node": 66,
+          "type_str": "ResolvedPath(Path { path: \"Result\", id: Id(35), args: Some(AngleBracketed { args: [Type(Primitive(\"usize\")), Type(ResolvedPath(Path { path: \"DecodeError\", id: Id(269), args: None }))], constraints: [] }) })",
+          "unwrap_node": 67,
+          "wrapper": {
+            "Result": {
+              "err_type": 1,
+              "ok_type": 2
+            }
+          }
+        }
+      }
+    },
+    "68": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "TraitDef",
+        "name": "encode",
+        "owner": 32,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": true,
+            "name": "self",
+            "type_node": 32,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Generic(\"Self\") }"
+          },
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "input",
+            "type_node": 33,
+            "type_str": "Generic(\"T\")"
+          }
+        ],
+        "return_info": {
+          "type_node": 48,
+          "type_str": "ResolvedPath(Path { path: \"String\", id: Id(47), args: None })",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "69": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "TraitDef",
+        "name": "consume",
+        "owner": 31,
+        "params": [
+          {
+            "borrow_mode": "MutRef",
+            "is_self": true,
+            "name": "self",
+            "type_node": 31,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: true, type_: Generic(\"Self\") }"
+          },
+          {
+            "borrow_mode": "Ref",
+            "is_self": false,
+            "name": "buf",
+            "type_node": 70,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Primitive(\"str\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": null,
+          "type_str": "()",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "7": {
+      "Variant": {
+        "discriminant": null,
+        "kind": {
+          "Tuple": [
+            2
+          ]
+        },
+        "name": "InvalidLength",
+        "parent_enum": 1
+      }
+    },
+    "71": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "TraitDef",
+        "name": "encode_padding",
+        "owner": 29,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": true,
+            "name": "self",
+            "type_node": 29,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Generic(\"Self\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 72,
+          "type_str": "Primitive(\"bool\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "75": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "into_inner",
+        "owner": 22,
+        "params": [
+          {
+            "borrow_mode": "Move",
+            "is_self": true,
+            "name": "self",
+            "type_node": 22,
+            "type_str": "Generic(\"Self\")"
+          }
+        ],
+        "return_info": {
+          "type_node": 40,
+          "type_str": "Generic(\"R\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "76": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "read",
+        "owner": 22,
+        "params": [
+          {
+            "borrow_mode": "MutRef",
+            "is_self": true,
+            "name": "self",
+            "type_node": 22,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: true, type_: Generic(\"Self\") }"
+          },
+          {
+            "borrow_mode": "MutRef",
+            "is_self": false,
+            "name": "buf",
+            "type_node": 50,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: true, type_: Slice(Primitive(\"u8\")) }"
+          }
+        ],
+        "return_info": {
+          "type_node": 77,
+          "type_str": "ResolvedPath(Path { path: \"io::Result\", id: Id(89), args: Some(AngleBracketed { args: [Type(Primitive(\"usize\"))], constraints: [] }) })",
+          "unwrap_node": 78,
+          "wrapper": {
+            "Result": {
+              "err_type": 79,
+              "ok_type": 2
+            }
+          }
+        }
+      }
+    },
+    "8": {
+      "Variant": {
+        "discriminant": null,
+        "kind": {
+          "Tuple": [
+            0
+          ]
+        },
+        "name": "ReservedByte",
+        "parent_enum": 23
+      }
+    },
+    "80": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "new",
+        "owner": 22,
+        "params": [
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "reader",
+            "type_node": 40,
+            "type_str": "Generic(\"R\")"
+          },
+          {
+            "borrow_mode": "Ref",
+            "is_self": false,
+            "name": "engine",
+            "type_node": 39,
+            "type_str": "BorrowedRef { lifetime: Some(\"'e\"), is_mutable: false, type_: Generic(\"E\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 22,
+          "type_str": "Generic(\"Self\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "81": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "new",
+        "owner": 17,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": false,
+            "name": "engine",
+            "type_node": 37,
+            "type_str": "BorrowedRef { lifetime: Some(\"'e\"), is_mutable: false, type_: Generic(\"E\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 17,
+          "type_str": "Generic(\"Self\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "82": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "into_inner",
+        "owner": 17,
+        "params": [
+          {
+            "borrow_mode": "Move",
+            "is_self": true,
+            "name": "self",
+            "type_node": 17,
+            "type_str": "Generic(\"Self\")"
+          }
+        ],
+        "return_info": {
+          "type_node": 38,
+          "type_str": "Generic(\"S\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "83": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "flush",
+        "owner": 17,
+        "params": [
+          {
+            "borrow_mode": "MutRef",
+            "is_self": true,
+            "name": "self",
+            "type_node": 17,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: true, type_: Generic(\"Self\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 84,
+          "type_str": "ResolvedPath(Path { path: \"io::Result\", id: Id(89), args: Some(AngleBracketed { args: [Type(Tuple([]))], constraints: [] }) })",
+          "unwrap_node": 85,
+          "wrapper": {
+            "Result": {
+              "err_type": 79,
+              "ok_type": 61
+            }
+          }
+        }
+      }
+    },
+    "86": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "write",
+        "owner": 17,
+        "params": [
+          {
+            "borrow_mode": "MutRef",
+            "is_self": true,
+            "name": "self",
+            "type_node": 17,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: true, type_: Generic(\"Self\") }"
+          },
+          {
+            "borrow_mode": "Ref",
+            "is_self": false,
+            "name": "buf",
+            "type_node": 50,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Slice(Primitive(\"u8\")) }"
+          }
+        ],
+        "return_info": {
+          "type_node": 87,
+          "type_str": "ResolvedPath(Path { path: \"io::Result\", id: Id(89), args: Some(AngleBracketed { args: [Type(Primitive(\"usize\"))], constraints: [] }) })",
+          "unwrap_node": 88,
+          "wrapper": {
+            "Result": {
+              "err_type": 79,
+              "ok_type": 2
+            }
+          }
+        }
+      }
+    },
+    "89": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "from_consumer",
+        "owner": 17,
+        "params": [
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "str_consumer",
+            "type_node": 38,
+            "type_str": "Generic(\"S\")"
+          },
+          {
+            "borrow_mode": "Ref",
+            "is_self": false,
+            "name": "engine",
+            "type_node": 37,
+            "type_str": "BorrowedRef { lifetime: Some(\"'e\"), is_mutable: false, type_: Generic(\"E\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 17,
+          "type_str": "Generic(\"Self\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "9": {
+      "Variant": {
+        "discriminant": null,
+        "kind": "Unit",
+        "name": "RequireCanonical",
+        "parent_enum": 25
+      }
+    },
+    "90": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "as_str",
+        "owner": 20,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": true,
+            "name": "self",
+            "type_node": 20,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Generic(\"Self\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 70,
+          "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Primitive(\"str\") }",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "91": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": true,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "new",
+        "owner": 20,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": false,
+            "name": "alphabet",
+            "type_node": 70,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Primitive(\"str\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 92,
+          "type_str": "ResolvedPath(Path { path: \"Result\", id: Id(35), args: Some(AngleBracketed { args: [Type(Generic(\"Self\")), Type(ResolvedPath(Path { path: \"ParseAlphabetError\", id: Id(332), args: None }))], constraints: [] }) })",
+          "unwrap_node": 93,
+          "wrapper": {
+            "Result": {
+              "err_type": 23,
+              "ok_type": 20
+            }
+          }
+        }
+      }
+    },
+    "94": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "new",
+        "owner": 24,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": false,
+            "name": "bytes",
+            "type_node": 50,
+            "type_str": "BorrowedRef { lifetime: Some(\"'a\"), is_mutable: false, type_: Slice(Primitive(\"u8\")) }"
+          },
+          {
+            "borrow_mode": "Ref",
+            "is_self": false,
+            "name": "engine",
+            "type_node": 42,
+            "type_str": "BorrowedRef { lifetime: Some(\"'e\"), is_mutable: false, type_: Generic(\"E\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 24,
+          "type_str": "ResolvedPath(Path { path: \"Base64Display\", id: Id(3), args: Some(AngleBracketed { args: [Lifetime(\"'a\"), Lifetime(\"'e\"), Type(Generic(\"E\"))], constraints: [] }) })",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "95": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "config",
+        "owner": 19,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": true,
+            "name": "self",
+            "type_node": 19,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Generic(\"Self\") }"
+          }
+        ],
+        "return_info": {
+          "type_node": 74,
+          "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: QualifiedPath { name: \"Config\", args: None, self_type: Generic(\"Self\"), trait_: Some(Path { path: \"\", id: Id(4), args: None }) } }",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "96": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": true,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "new",
+        "owner": 19,
+        "params": [
+          {
+            "borrow_mode": "Ref",
+            "is_self": false,
+            "name": "alphabet",
+            "type_node": 20,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: ResolvedPath(Path { path: \"Alphabet\", id: Id(170), args: None }) }"
+          },
+          {
+            "borrow_mode": "Move",
+            "is_self": false,
+            "name": "config",
+            "type_node": 18,
+            "type_str": "ResolvedPath(Path { path: \"GeneralPurposeConfig\", id: Id(172), args: None })"
+          }
+        ],
+        "return_info": {
+          "type_node": 19,
+          "type_str": "Generic(\"Self\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "97": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "into_inner",
+        "owner": 26,
+        "params": [
+          {
+            "borrow_mode": "Move",
+            "is_self": true,
+            "name": "self",
+            "type_node": 26,
+            "type_str": "Generic(\"Self\")"
+          }
+        ],
+        "return_info": {
+          "type_node": 44,
+          "type_str": "Generic(\"W\")",
+          "unwrap_node": null,
+          "wrapper": null
+        }
+      }
+    },
+    "98": {
+      "Method": {
+        "generics": [],
+        "is_async": false,
+        "is_const": false,
+        "is_unsafe": false,
+        "method_kind": "Inherent",
+        "name": "write",
+        "owner": 26,
+        "params": [
+          {
+            "borrow_mode": "MutRef",
+            "is_self": true,
+            "name": "self",
+            "type_node": 26,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: true, type_: Generic(\"Self\") }"
+          },
+          {
+            "borrow_mode": "Ref",
+            "is_self": false,
+            "name": "input",
+            "type_node": 50,
+            "type_str": "BorrowedRef { lifetime: None, is_mutable: false, type_: Slice(Primitive(\"u8\")) }"
+          }
+        ],
+        "return_info": {
+          "type_node": 99,
+          "type_str": "ResolvedPath(Path { path: \"Result\", id: Id(89), args: Some(AngleBracketed { args: [Type(Primitive(\"usize\"))], constraints: [] }) })",
+          "unwrap_node": 100,
+          "wrapper": {
+            "Result": {
+              "err_type": null,
+              "ok_type": 2
+            }
+          }
+        }
+      }
+    }
+  },
+  "node_types": 131,
+  "nodes": 131
+}

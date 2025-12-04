@@ -15,7 +15,7 @@ impl LabeledPetriNet {
     /// 2. 设置初始标记为 1(表示类型可用)
     /// 3. 链接默认 Trait(如 Copy, Clone, Debug 等)
     /// 4. 如果 ir 中存在对应的 Generic 节点,添加 Instance 弧
-    pub fn add_primitive_shims(&mut self, ir: &IrGraph) {
+    pub(crate) fn add_primitive_shims(&mut self, ir: &IrGraph) {
         // 收集 ir 中已存在的 Primitive 节点名称
         let existing_primitives: HashSet<String> = ir
             .node_infos
@@ -156,7 +156,7 @@ impl LabeledPetriNet {
     }
 
     /// 添加 String 类型 shim
-    fn add_string_shim(
+    pub(crate) fn add_string_shim(
         &mut self,
         trait_places: &HashMap<String, usize>,
         generic_places: &[(usize, Vec<String>)],

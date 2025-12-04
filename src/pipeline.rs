@@ -42,11 +42,13 @@ impl Pipeline {
         }
 
         // Step 3: 构建 Petri Net
-        self.config.log("Step 3: Build Petri Net");
+        let pn_kind = format!("Step 3: Build {:?}", LabeledPetriNet::kind_name(),);
+        self.config.log(&pn_kind);
         let pn = self.build_pn(&ir)?;
 
         // Step 4: 导出 Petri Net
-        self.config.log("Step 4: Export Petri Net");
+        let pn_desc = format!("Step 4: Export {:?}", LabeledPetriNet::description());
+        self.config.log(&pn_desc);
         self.export_pn(&pn)?;
 
         // Step 5: 生成 Fuzz 项目 (可选)
@@ -98,7 +100,8 @@ impl Pipeline {
     }
 
     fn build_pn(&self, ir: &IrGraph) -> Result<LabeledPetriNet> {
-        let pn = LabeledPetriNet::from_ir_graph(ir);
+        let mut pn = LabeledPetriNet::from_ir_graph(ir);
+        pn.add_primitive_shims(ir);
 
         self.config.log_verbose(&format!(
             "  {:?}: {}",
@@ -121,8 +124,11 @@ impl Pipeline {
 
             let path = self.config.output.join(format!("petri_net.{}", ext));
             PetriNetExport::export(pn, &path, export_fmt)?;
-            self.config
-                .log(&format!("  ✓ PN {}: {}", ext.to_uppercase(), path.display()));
+            self.config.log(&format!(
+                "  ✓ PN {}: {}",
+                ext.to_uppercase(),
+                path.display()
+            ));
         }
         Ok(())
     }
@@ -190,4 +196,3 @@ fuzz_target!(|data: &[u8]| {
         Ok(())
     }
 }
-

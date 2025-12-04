@@ -6,10 +6,36 @@
 \usepackage{geometry}
 \usepackage{xcolor}
 \usepackage[utf8]{inputenc}
+\usepackage{textcomp}
+\usepackage{listings}
 
 \newtheorem{definition}{Definition}[section]
 \newtheorem{tupledef}{Tuple}[section]
 \newtheorem{mapping}{Mapping Rule}[section]
+
+\definecolor{rustcomment}{rgb}{0.5,0.5,0.5}
+\definecolor{rustkeyword}{rgb}{0.5,0,0.5}
+\definecolor{ruststring}{rgb}{0,0.5,0}
+\definecolor{rusttype}{rgb}{0.1,0.3,0.6}
+
+\lstdefinelanguage{Rust}{
+  keywords={fn, let, mut, struct, enum, impl, return, match, if, else, while, for, in, move, pub, use, mod, crate, ref, where, unsafe},
+  keywordstyle=\color{rustkeyword}\bfseries,
+  ndkeywords={String, Vec, Option, Result, u32, i32, bool, Self, Box, Rc, Arc},
+  ndkeywordstyle=\color{rusttype}\bfseries,
+  comment=[l]{//},
+  commentstyle=\color{rustcomment}\itshape,
+  stringstyle=\color{ruststring},
+  sensitive=true,
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  captionpos=b,
+  escapeinside={(*@}{@*)}, % 允许在代码中使用 LaTeX
+}
+
 %%
 %% \BibTeX command to typeset BibTeX logo in the docs
 \AtBeginDocument{%
@@ -177,12 +203,26 @@
 \maketitle
 
 \section{Introduction}
+% [Background & Motivation]
 Rust has revolutionized systems programming by enforcing memory safety through its ownership and borrowing rules at compile time, eliminating common errors like data races and use-after-free without runtime overhead. The borrow checker, a core component of the Rust compiler (rustc), statically verifies these rules, enabling ``fearless concurrency'' where developers can write parallel code with confidence in its safety.
+
+Rust has revolutionized systems programming by enforcing memory safety through a strict ownership and borrowing discipline. While the borrow checker empowers developers with "fearless concurrency," it presents a formidable barrier for automated code synthesis and fuzzing. Conventional generative approaches, such as grammar-based fuzzing, act blindly regarding type states, resulting in a vast majority of synthesized programs being rejected by the compiler due to ownership violations. This inefficiency severely limits the scope of automated testing in the Rust ecosystem.
+
+% [The Gap]
+Existing formal foundations for Rust, such as Place Capability Graphs (PCG) and RustBelt, primarily focus on verification—checking the soundness of existing code. While these models provide rigorous abstractions for analyzing validity, they lack the generative mechanisms required for synthesis. There is a critical need for a formal model that can proactively guide the construction of valid code sequences rather than merely rejecting invalid ones.
+
 
 However, while Rust's type system is powerful for verification, formal models that support \emph{code generation}—synthesizing new, verified code snippets that adhere to these rules—are underdeveloped. Existing works, such as RustBelt~\citep{rustbelt}, Stacked Borrows~\citep{stackedborrows}, and Place Capability Graphs (PCG)~\citep{pcg2025}, focus primarily on verifying or analyzing existing code. They provide sound abstractions for borrow checking but lack mechanisms for proactive synthesis, which is crucial for applications like fuzz testing, automated code repair, and program synthesis.
 
+% [The Approach: Theoretical Insight]
+This paper addresses this gap by bridging Linear Logic and Automata Theory. We propose a novel modeling framework that maps Rust’s type system to High-Level Petri Nets, exploiting the structural isomorphism between Rust's affine types (resources that are consumed) and Petri Net tokens (flow that is irreversible). Unlike static dependency graphs, our model captures the dynamic lifecycle of resources: ownership transfer is modeled as token consumption, mutable borrowing as loan-return cycles that temporarily block access to owners, and generic instantiation as net unfolding.
+
 This paper addresses this gap by proposing a Petri Net-based formal model for Rust's ownership and borrowing rules. Petri Nets, a classical formalism for modeling concurrent and distributed systems, offer natural advantages in simulating dynamic behaviors through token flows and transitions. We customize the net with labeled places and transitions to precisely encode Rust's key concepts: ownership transfers as token movements, borrowing as temporary token allocations, and lifetimes as scoped invariants.
 
+% [Methodology & Implementation]
+We present a pipeline that automatically extracts API semantics from cargo doc metadata to construct a Rust-specific Petri Net. We formulate the code generation task as a Reachability Problem within this net. By traversing valid firing sequences in the Vector Addition System, our algorithm produces API sequences that are correct-by-construction regarding ownership and lifetime constraints. Special attention is given to handling complex features such as non-lexical lifetimes (NLL), trait bounds, and structural decomposition of composite types.
+
+% [Contributions & Results]
 Our contributions are threefold:
 \begin{itemize}
     \item A formal definition of a Labeled Petri Net tailored to Rust's type system, including custom firing rules that enforce AXM and handle non-lexical lifetimes (NLL), composite types, and generics.
@@ -191,6 +231,73 @@ Our contributions are threefold:
 \end{itemize}
 
 By shifting from verification to synthesis, our model not only complements existing tools like PCG but also opens new avenues for automated testing in Rust ecosystems. The implementation is open-source and available at [GitHub link].
+
+\section{Background and Problem Formulation}
+\label{sec:background}
+
+To understand the challenge of synthesizing valid Rust code, one must first grasp the strict static analysis performed by the Rust compiler. Unlike garbage-collected languages (e.g., Java, Python) or manually managed ones (e.g., C/C++), Rust employs an \textit{affine type system} and a \textit{borrow checker} to guarantee memory safety.
+
+\subsection{Ownership and Affine Types}
+At the core of Rust is the concept of \textit{ownership}. Every value has a single owner, and when the owner goes out of scope, the value is dropped. Crucially, Rust enforces \textit{affine semantics} for non-primitive types: a value can be used (moved) at most once.
+
+Consider the code in Listing \ref{lst:move_error}. Assigning \texttt{s1} to \texttt{s2} transfers ownership. Any subsequent attempt to access \texttt{s1} is flagged as a compile-time error.
+
+\begin{lstlisting}[language=Rust, caption={Ownership transfer causing a ``use-after-move'' error.}, label={lst:move_error}]
+fn main() {
+    let s1 = String::from("resource");
+    let s2 = s1; // Ownership moved to s2
+    
+    // Compile Error: borrow of moved value: `s1`
+    println!("{}", s1); 
+}
+\end{lstlisting}
+
+\textbf{Implication for Synthesis:} A naive fuzzer unaware of these semantics might generate sequences that reuse variables after they have been moved. 
+\textbf{Connection to Our Model:} This aligns perfectly with the token consumption mechanics of Petri Nets. A token in a Petri Net represents a resource; once a transition (function) consumes a token (variable), it is removed from the place, rendering it unavailable for future transitions unless explicitly regenerated.
+
+\subsection{The Borrowing Discipline: Aliasing XOR Mutability}
+Rust allows temporary access to values via references (borrowing). The borrow checker enforces the \textit{Aliasing XOR Mutability} rule: at any given point, a variable can have either multiple immutable references (\texttt{\&T}) OR exactly one mutable reference (\texttt{\&mut T}), but not both. Furthermore, while a mutable reference exists, the original owner is effectively ``frozen.''
+
+Listing \ref{lst:borrow_error} demonstrates a violation where the original owner \texttt{data} is accessed while a mutable borrow \texttt{borrow} is still active.
+
+\begin{lstlisting}[language=Rust, caption={Violation of the exclusive mutability rule.}, label={lst:borrow_error}]
+fn main() {
+    let mut data = vec![1, 2, 3];
+    let borrow = &mut data; // Mutable borrow starts
+    
+    // Compile Error: cannot use `data` because 
+    // it was mutably borrowed
+    data.push(4); 
+    
+    println!("{:?}", borrow); // Borrow ends here
+}
+\end{lstlisting}
+
+\textbf{Implication for Synthesis:} Valid code generation requires tracking the complex ``locking'' state of every variable. 
+\textbf{Connection to Our Model:} We model this statefulness using the network topology. A mutable borrow is represented as a \textit{loan-return cycle}: the token representing \texttt{data} is temporarily removed from its place (locking it) and is only returned when the transition representing the end of the borrow fires.
+
+\subsection{Lifetimes and Scoping}
+Lifetimes are named regions of code that ensure references do not outlive the data they point to. The compiler constructs a control-flow graph to verify that any data referenced by \texttt{\&'a T} is valid for at least lifetime \texttt{'a}.
+
+Listing \ref{lst:lifetime_error} illustrates a ``dangling pointer'' scenario, which Rust prevents statically.
+
+\begin{lstlisting}[language=Rust, caption={A reference outliving its referent.}, label={lst:lifetime_error}]
+fn main() {
+    let r;
+    {
+        let x = 5;
+        r = &x; // Error: `x` does not live long enough
+    } // `x` is dropped here
+    println!("{}", r);
+}
+\end{lstlisting}
+
+\textbf{Connection to Our Model:} In our Petri Net, scopes are not merely syntactic blocks but are encoded as causal dependencies between transitions. A ``Drop'' transition for a resource is strictly guarded; it cannot fire if there are outstanding ``Reference'' tokens circulating in the network, ensuring lifetime invariants are respected by construction.
+
+\subsection{The Gap: Verification vs. Synthesis}
+While formal models like RustBelt \cite{rustbelt} and Place Capability Graphs (PCG) provide a solid foundation for \textit{verifying} the safety of existing code, they are not optimized for \textit{generating} new code. 
+
+A random fuzzer operating on the grammar level has a near-zero probability of guessing a sequence of operations that satisfies ownership, borrowing, and lifetime constraints simultaneously. This necessitates a generative model that is \textit{correct-by-construction}. By mapping Rust's type system to a Petri Net, we transform the problem of satisfying these constraints into a graph reachability problem, ensuring that every generated path corresponds to a valid Rust program.
 
 
 \section{Methodology}

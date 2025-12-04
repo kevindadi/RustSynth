@@ -1,7 +1,7 @@
 use crate::ir_graph::NodeInfo;
 use petgraph::graph::{DiGraph, EdgeIndex, NodeIndex};
 use petgraph::visit::EdgeRef;
-/// IR Graph 数据结构定义  
+/// IR Graph 数据结构定义
 ///
 /// 使用 rustdoc Id 作为节点标识,详细信息通过 ParsedCrate 查询
 use serde::{Deserialize, Serialize};
@@ -130,6 +130,7 @@ impl IrGraph {
             .add_edge(from, to, TypeRelation { mode, label })
     }
 
+    #[allow(dead_code)]
     pub fn print_stats(&self) {
         log::info!("=== IR Graph 统计 ===");
         log::info!("节点数: {}", self.type_graph.node_count());

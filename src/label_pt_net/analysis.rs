@@ -5,6 +5,7 @@
 //! - 活性检查:检查所有变迁是否都能触发
 //! - 有界性检查:检查 token 数量是否有界
 //! - API 序列生成:生成有效的 API 调用序列用于 fuzz 测试
+#![allow(dead_code)]
 
 use std::collections::{HashSet, VecDeque};
 
@@ -720,9 +721,7 @@ impl LabeledPetriNet {
 }
 
 // ========== cargo-fuzz 集成示例 ==========
-
-/// cargo-fuzz 目标函数示例
-///
+//
 /// 在 fuzz/fuzz_targets/ 目录下创建文件使用此函数
 ///
 /// ```rust,ignore
