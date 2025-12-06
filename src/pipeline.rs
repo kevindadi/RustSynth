@@ -1,11 +1,13 @@
 /// SyPetype 完整工作流管道
-use crate::config::Config;
-use crate::generate::FuzzTargetGenerator;
-use crate::ir_graph::builder::build_ir_graph;
+use crate::config::{Config, PipelineStage};
+// TODO: 更新 generate 模块以适配 LabeledPetriNet
+// use crate::generate::FuzzTargetGenerator;
+use crate::ir_graph::builder::IrGraphBuilder;
 use crate::ir_graph::structure::IrGraph;
+use crate::label_pt_net::net::LabeledPetriNet;
+use crate::petri_net_traits::PetriNetKind;
 use crate::parse::ParsedCrate;
 use crate::petri_net_traits::{FromIrGraph, PetriNetExport};
-use crate::pt_net::structure::PetriNet;
 use anyhow::Result;
 use std::fs;
 use std::path::Path;
@@ -25,42 +27,74 @@ impl Pipeline {
         log::info!("Step 1: Parse rustdoc JSON");
         let parsed_crate = self.parse_json()?;
 
+        if self.config.should_stop_at(PipelineStage::Parse) {
+            log::info!("停止在阶段: Parse");
+            return Ok(());
+        }
+
         // Step 2: Build IR Graph
         log::info!("Step 2: Build IR Graph");
         let ir_graph = self.build_ir_graph(parsed_crate)?;
 
+        if self.config.should_stop_at(PipelineStage::IrGraph) {
+            log::info!("停止在阶段: IrGraph");
+            ir_graph.print_stats();
+            return Ok(());
+        }
+
         // Step 3: Export IR Graph (if enabled)
-        if self.config.export.export_ir_graph_dot || self.config.export.export_ir_graph_json {
+        if self.config.should_execute(PipelineStage::ExportIrGraph)
+            && (self.config.export.export_ir_graph_dot || self.config.export.export_ir_graph_json)
+        {
             log::info!("Step 3: Export IR Graph");
             self.export_ir_graph(&ir_graph)?;
         }
 
-        // Step 4: Convert to PT-Net (Place/Transition Net)
-        log::info!("Step 4: Convert to PT-Net");
-        let petri_net = self.build_petri_net(&ir_graph)?;
-
-        // Step 5: Export PT-Net (if enabled)
-        if self.config.export.export_petri_net_dot || self.config.export.export_petri_net_json {
-            log::info!("Step 5: Export PT-Net");
-            self.export_petri_net(&petri_net)?;
+        if self.config.should_stop_at(PipelineStage::ExportIrGraph) {
+            log::info!("停止在阶段: ExportIrGraph");
+            return Ok(());
         }
 
-        // Step 6: Convert to CP-Net (Colored Petri Net with Trait Hub)
-        // if self.config.export.export_cp_net_dot || self.config.export.export_cp_net_json {
-        //     log::info!("Step 6: Convert to CP-Net");
-        //     let cp_net = self.build_cp_net(&ir_graph)?;
+        // Step 4: Convert to PT-Net (Place/Transition Net)
+        if self.config.should_execute(PipelineStage::PetriNet) {
+            log::info!("Step 4: Convert to {:?}", LabeledPetriNet::kind_name());
+            log::info!("  {:?}", LabeledPetriNet::description());
+            let petri_net = self.build_petri_net(&ir_graph)?;
 
-        //     log::info!("Step 6.1: Export CP-Net");
-        //     self.export_cp_net(&cp_net)?;
-        // }
+            // Step 5: Export PT-Net
+            if self.config.should_execute(PipelineStage::ExportPetriNet)
+                && self.config.export.should_export_petri_net()
+            {
+                log::info!("Step 5: Export PT-Net");
+                self.export_petri_net(&petri_net)?;
+            }
 
-        // Step 7: Generate Fuzz Target
-        log::info!("Step 7: Generate Fuzz Target");
-        self.generate_fuzz_target(&petri_net)?;
+            if self.config.should_stop_at(PipelineStage::ExportPetriNet) {
+                log::info!("停止在阶段: ExportPetriNet");
+                return Ok(());
+            }
 
-        // Step 8: Generate Fuzz Project Structure
-        log::info!("Step 8: Generate Fuzz Project Structure");
-        self.setup_fuzz_project()?;
+            // Step 6: Generate Fuzz Target
+            // TODO: 更新 generate 模块以适配 LabeledPetriNet
+            // if self.config.should_execute(PipelineStage::FuzzTarget) {
+            //     log::info!("Step 6: Generate Fuzz Target");
+            //     self.generate_fuzz_target(&petri_net)?;
+            // }
+
+            // if self.config.should_stop_at(PipelineStage::FuzzTarget) {
+            //     log::info!("停止在阶段: FuzzTarget");
+            //     return Ok(());
+            // }
+
+            // Step 7: Generate Fuzz Project Structure
+            // TODO: 更新 generate 模块以适配 LabeledPetriNet
+            // if self.config.should_execute(PipelineStage::FuzzProject) {
+            //     log::info!("Step 7: Generate Fuzz Project Structure");
+            //     self.setup_fuzz_project()?;
+            // }
+        } else {
+            log::info!("跳过 PT-Net 构建阶段");
+        }
 
         log::info!("SyPetype workflow completed");
         Ok(())
@@ -73,25 +107,21 @@ impl Pipeline {
         let parsed_crate = ParsedCrate::from_json_file(&self.config.input_json)
             .map_err(|e| anyhow::anyhow!("无法解析 rustdoc JSON 文件: {}", e))?;
 
-        if self.config.export.print_stats {
+        if self.config.stats {
             parsed_crate.print_stats();
         }
-
-        if self.config.export.print_type_summary {
-            parsed_crate.print_type_trait_summary();
-        }
-
         Ok(parsed_crate)
     }
 
     /// 构建 IR Graph
     fn build_ir_graph(&self, parsed_crate: ParsedCrate) -> Result<IrGraph> {
-        let ir_graph = build_ir_graph(parsed_crate);
+        let builder = IrGraphBuilder::new(&parsed_crate);
+        let ir_graph = builder.build();
 
-        if self.config.export.print_stats {
+        if self.config.stats {
             log::info!("  IR Graph 统计:");
-            log::info!("    类型节点数: {}", ir_graph.type_nodes.len());
-            log::info!("    操作节点数: {}", ir_graph.operations.len());
+            log::info!("    节点数: {}", ir_graph.type_graph.node_count());
+            log::info!("    边数: {}", ir_graph.type_graph.edge_count());
         }
 
         Ok(ir_graph)
@@ -99,124 +129,90 @@ impl Pipeline {
 
     /// 导出 IR Graph
     fn export_ir_graph(&self, ir_graph: &IrGraph) -> Result<()> {
-        fs::create_dir_all(&self.config.output.output_dir)?;
+        fs::create_dir_all(&self.config.output_dir)?;
+
+        let parsed_crate = ParsedCrate::from_json_file(&self.config.input_json)
+            .map_err(|e| anyhow::anyhow!("无法解析 rustdoc JSON 文件: {}", e))?;
 
         if self.config.export.export_ir_graph_dot {
             let dot_path = self
                 .config
-                .output
                 .output_dir
                 .join(&self.config.export.ir_graph_dot_name);
-            let dot_content = ir_graph.export_to_dot();
-            fs::write(&dot_path, dot_content)?;
+            ir_graph.export_dot(&parsed_crate, &dot_path)?;
             log::info!("  ✓ IR Graph DOT 已导出: {}", dot_path.display());
         }
 
         if self.config.export.export_ir_graph_json {
             let json_path = self
                 .config
-                .output
                 .output_dir
                 .join(&self.config.export.ir_graph_json_name);
-            let json_content = ir_graph.export_to_json();
-            fs::write(&json_path, serde_json::to_string_pretty(&json_content)?)?;
+            ir_graph.export_json(&json_path)?;
             log::info!("  ✓ IR Graph JSON 已导出: {}", json_path.display());
         }
 
         Ok(())
     }
 
-    fn build_petri_net(&self, ir_graph: &IrGraph) -> Result<PetriNet> {
-        let petri_net = PetriNet::from_ir_graph(ir_graph);
+    fn build_petri_net(&self, ir_graph: &IrGraph) -> Result<LabeledPetriNet> {
+        let petri_net = LabeledPetriNet::from_ir_graph(ir_graph);
 
-        if self.config.export.print_stats {
-            log::info!("  {}", petri_net.get_stats_string());
+        if self.config.stats {
+            let stats = petri_net.get_stats_string();
+            log::info!("  {:?} 统计: {}", LabeledPetriNet::kind_name(), stats);
         }
 
         Ok(petri_net)
     }
 
-    fn export_petri_net(&self, petri_net: &PetriNet) -> Result<()> {
-        fs::create_dir_all(&self.config.output.output_dir)?;
+    fn export_petri_net(&self, petri_net: &LabeledPetriNet) -> Result<()> {
+        fs::create_dir_all(&self.config.output_dir)?;
 
-        if self.config.export.export_petri_net_dot {
-            let dot_path = self
-                .config
-                .output
-                .output_dir
-                .join(&self.config.export.petri_net_dot_name);
-            petri_net.export_dot(&dot_path)?;
-            log::info!("  ✓ PT-Net DOT 已导出: {}", dot_path.display());
-        }
+        use crate::config::PetriNetFormat;
+        use crate::petri_net_traits::ExportFormat;
 
-        if self.config.export.export_petri_net_json {
-            let json_path = self
-                .config
-                .output
-                .output_dir
-                .join(&self.config.export.petri_net_json_name);
-            petri_net.export_json(&json_path)?;
-            log::info!("  ✓ PT-Net JSON 已导出: {}", json_path.display());
-        }
+        let format = match self.config.export.petri_net_format {
+            PetriNetFormat::Pnml => ExportFormat::Pnml,
+            PetriNetFormat::Dot => ExportFormat::Dot,
+            PetriNetFormat::Json => ExportFormat::Json,
+        };
+
+        let filename = self.config.export.petri_net_filename();
+        let output_path = self.config.output_dir.join(&filename);
+
+        PetriNetExport::export(petri_net, &output_path, format)?;
+        log::info!(
+            "  ✓ {:?} {:?} 已导出: {}",
+            LabeledPetriNet::kind_name(),
+            match self.config.export.petri_net_format {
+                PetriNetFormat::Pnml => "PNML",
+                PetriNetFormat::Dot => "DOT",
+                PetriNetFormat::Json => "JSON",
+            },
+            output_path.display()
+        );
 
         Ok(())
     }
 
-    // /// 构建 CP-Net（Colored Petri Net with Trait Hub）
-    // fn build_cp_net(&self, ir_graph: &IrGraph) -> Result<CpPetriNet> {
-    //     let cp_net = CpPetriNet::from_ir_graph(ir_graph);
+    // /// 生成 Fuzz Target
+    // /// TODO: 更新以适配 LabeledPetriNet
+    // fn generate_fuzz_target(&self, petri_net: &LabeledPetriNet) -> Result<()> {
+    //     let generator = FuzzTargetGenerator::new(self.config.target_crate.clone());
+    //     let fuzz_code = generator.generate(petri_net);
 
-    //     if self.config.export.print_stats {
-    //         log::info!("  CP-Net 统计:");
-    //         cp_net.print_stats();
-    //     }
+    //     let fuzz_targets_dir = self.config.fuzz_targets_dir();
+    //     fs::create_dir_all(&fuzz_targets_dir)?;
 
-    //     Ok(cp_net)
-    // }
+    //     let target_file =
+    //         fuzz_targets_dir.join(format!("{}.rs", self.config.fuzz_target_name));
+    //     fs::write(&target_file, fuzz_code)?;
 
-    // /// 导出 CP-Net
-    // fn export_cp_net(&self, cp_net: &CpPetriNet) -> Result<()> {
-    //     fs::create_dir_all(&self.config.output.output_dir)?;
-
-    //     if self.config.export.export_cp_net_dot {
-    //         let dot_path = self
-    //             .config
-    //             .output
-    //             .output_dir
-    //             .join(&self.config.export.cp_net_dot_name);
-    //         cp_net.export_dot(&dot_path)?;
-    //         log::info!("  ✓ CP-Net DOT 已导出: {}", dot_path.display());
-    //     }
-
-    //     if self.config.export.export_cp_net_json {
-    //         let json_path = self
-    //             .config
-    //             .output
-    //             .output_dir
-    //             .join(&self.config.export.cp_net_json_name);
-    //         cp_net.export_json(&json_path)?;
-    //         log::info!("  ✓ CP-Net JSON 已导出: {}", json_path.display());
-    //     }
+    //     log::info!("  ✓ Fuzz target 已生成: {}", target_file.display());
 
     //     Ok(())
     // }
-
-    /// 生成 Fuzz Target
-    fn generate_fuzz_target(&self, petri_net: &PetriNet) -> Result<()> {
-        let generator = FuzzTargetGenerator::new(self.config.target_crate.clone());
-        let fuzz_code = generator.generate(petri_net);
-
-        let fuzz_targets_dir = self.config.fuzz_targets_dir();
-        fs::create_dir_all(&fuzz_targets_dir)?;
-
-        let target_file =
-            fuzz_targets_dir.join(format!("{}.rs", self.config.output.fuzz_target_name));
-        fs::write(&target_file, fuzz_code)?;
-
-        log::info!("  ✓ Fuzz target 已生成: {}", target_file.display());
-
-        Ok(())
-    }
 
     /// 设置 Fuzz 项目结构
     fn setup_fuzz_project(&self) -> Result<()> {
@@ -241,7 +237,7 @@ impl Pipeline {
                 self.config.target_crate, lib_path
             )
         } else {
-            // 默认：假设库在上一级目录
+            // 默认:假设库在上一级目录
             format!("[dependencies.{}]\npath = \"..\"", self.config.target_crate)
         };
 
@@ -273,8 +269,8 @@ doc = false
 "#,
             self.config.target_crate,
             lib_dependency,
-            self.config.output.fuzz_target_name,
-            self.config.output.fuzz_target_name
+            self.config.fuzz_target_name,
+            self.config.fuzz_target_name
         );
 
         let cargo_toml_path = fuzz_dir.join("Cargo.toml");

@@ -10,8 +10,7 @@ pub mod method_blacklist;
 pub mod primitives;
 pub mod trait_blacklist;
 
-// 重新导出常用函数和常量
 pub use impl_filter::should_filter_impl;
 pub use method_blacklist::is_blacklisted_method;
-pub use primitives::is_primitive_type;
+pub use primitives::{PRIMITIVE_DEFAULT_TRAITS, get_primitive_default_traits, is_primitive_type};
 pub use trait_blacklist::{TRAIT_BLACKLIST, is_blacklisted_trait, is_blacklisted_trait_path};

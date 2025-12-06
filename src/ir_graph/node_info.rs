@@ -1,17 +1,18 @@
-//! NodeInfo 系统：为 IrGraph 节点提供详细的类型信息
+//! NodeInfo 系统:为 IrGraph 节点提供详细的类型信息
 //!
-//! 设计原则：
-//! 1. 使用带数据的枚举（enum with associated data）区分不同节点类型
-//! 2. 复用 EdgeMode 表示借用语义，避免重复定义
+//! 设计原则:
+//! 1. 使用带数据的枚举(enum with associated data)区分不同节点类型
+//! 2. 复用 EdgeMode 表示借用语义,避免重复定义
 //! 3. 保存足够信息用于 Petri 网转换
 
 use super::EdgeMode;
+use crate::support_types::primitives::PrimitiveType;
 use petgraph::graph::NodeIndex;
 use rustdoc_types::Id;
 use serde::{Deserialize, Serialize};
 
 /// 节点详细信息枚举
-/// 每个变体对应一种节点类型，携带该类型特有的信息
+/// 每个变体对应一种节点类型,携带该类型特有的信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum NodeInfo {
     /// 结构体
@@ -22,7 +23,7 @@ pub enum NodeInfo {
     Union(UnionInfo),
     /// Trait 定义
     Trait(TraitInfo),
-    /// 方法（包括 impl 方法和 trait 方法）
+    /// 方法(包括 impl 方法和 trait 方法)
     Method(MethodInfo),
     /// 独立函数
     Function(FunctionInfo),
@@ -54,10 +55,10 @@ pub enum NodeInfo {
     FunctionPointer(FunctionPointerInfo),
 }
 
-/// 完整路径信息（用于符号解析）
+/// 完整路径信息(用于符号解析)
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PathInfo {
-    /// 完整路径，如 "std::collections::HashMap"
+    /// 完整路径,如 "std::collections::HashMap"
     pub full_path: String,
     /// crate 名称
     pub crate_name: Option<String>,
@@ -72,13 +73,13 @@ pub struct PathInfo {
 pub struct ParamInfo {
     /// 参数名
     pub name: String,
-    /// 参数类型的节点索引（如果已解析）
+    /// 参数类型的节点索引(如果已解析)
     pub type_node: Option<NodeIndex>,
-    /// 借用模式（复用 EdgeMode）
+    /// 借用模式(复用 EdgeMode)
     pub borrow_mode: EdgeMode,
     /// 是否是 self 参数
     pub is_self: bool,
-    /// 原始类型字符串（用于调试）
+    /// 原始类型字符串(用于调试)
     pub type_str: String,
 }
 
@@ -87,15 +88,15 @@ pub struct ParamInfo {
 pub struct ReturnInfo {
     /// 返回类型的节点索引
     pub type_node: Option<NodeIndex>,
-    /// 包装器类型（Result/Option 等）
+    /// 包装器类型(Result/Option 等)
     pub wrapper: Option<WrapperType>,
-    /// 展开操作节点（用于 Result/Option 的分支处理）
+    /// 展开操作节点(用于 Result/Option 的分支处理)
     pub unwrap_node: Option<NodeIndex>,
     /// 原始类型字符串
     pub type_str: String,
 }
 
-/// 包装器类型（Result/Option 等）
+/// 包装器类型(Result/Option 等)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WrapperType {
     /// Result<T, E>
@@ -118,20 +119,20 @@ pub enum WrapperType {
 pub struct TraitImplInfo {
     /// Trait 的节点索引
     pub trait_node: Option<NodeIndex>,
-    /// Trait 的 Id（用于查找）
+    /// Trait 的 Id(用于查找)
     pub trait_id: Option<Id>,
     /// Trait 名称
     pub trait_name: String,
-    /// 是否是自动派生的（#[derive(...)]）
+    /// 是否是自动派生的(#[derive(...)])
     pub is_derived: bool,
-    /// 是否是默认实现（如 Default, Clone 等标准库 trait）
+    /// 是否是默认实现(如 Default, Clone 等标准库 trait)
     pub is_default: bool,
 }
 
 /// 字段信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FieldInfo {
-    /// 字段名（对于元组结构体是索引）
+    /// 字段名(对于元组结构体是索引)
     pub name: String,
     /// 字段类型的节点索引
     pub type_node: Option<NodeIndex>,
@@ -161,12 +162,15 @@ pub struct StructInfo {
     pub generics: Vec<NodeIndex>,
     /// 实现的 Trait 列表
     pub trait_impls: Vec<TraitImplInfo>,
-    /// 自带方法列表（impl Self 中的方法）
+    /// 自带方法列表(impl Self 中的方法)
     pub methods: Vec<NodeIndex>,
     /// 是否是元组结构体
     pub is_tuple_struct: bool,
     /// 是否是单元结构体
     pub is_unit_struct: bool,
+    /// 被过滤的黑名单 Trait 实现(如 Debug, Clone 等)
+    /// 这些 Trait 的方法被过滤,但类型仍然实现了这些 Trait
+    pub blacklisted_trait_impls: Vec<String>,
 }
 
 /// 枚举信息
@@ -178,6 +182,8 @@ pub struct EnumInfo {
     pub generics: Vec<NodeIndex>,
     pub trait_impls: Vec<TraitImplInfo>,
     pub methods: Vec<NodeIndex>,
+    /// 被过滤的黑名单 Trait 实现
+    pub blacklisted_trait_impls: Vec<String>,
 }
 
 /// 联合体信息
@@ -188,6 +194,8 @@ pub struct UnionInfo {
     pub generics: Vec<NodeIndex>,
     pub trait_impls: Vec<TraitImplInfo>,
     pub methods: Vec<NodeIndex>,
+    /// 被过滤的黑名单 Trait 实现
+    pub blacklisted_trait_impls: Vec<String>,
 }
 
 /// 枚举变体信息
@@ -197,22 +205,22 @@ pub struct VariantInfo {
     pub name: String,
     /// 所属枚举的节点索引
     pub parent_enum: Option<NodeIndex>,
-    /// 变体类型（包含字段信息）
+    /// 变体类型(包含字段信息)
     pub kind: VariantKind,
-    /// 判别值（如果有）
+    /// 判别值(如果有)
     pub discriminant: Option<String>,
 }
 
 /// 变体类型
 ///
-/// 所有变体类型都只存储字段的 NodeIndex，详细信息通过节点获取
+/// 所有变体类型都只存储字段的 NodeIndex,详细信息通过节点获取
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum VariantKind {
-    /// 单元变体：None
+    /// 单元变体:None
     Unit,
-    /// 元组变体：Some(T) - 存储字段类型的 NodeIndex
+    /// 元组变体:Some(T) - 存储字段类型的 NodeIndex
     Tuple(Vec<NodeIndex>),
-    /// 结构体变体：Struct { field: T } - 存储字段的 NodeIndex
+    /// 结构体变体:Struct { field: T } - 存储字段的 NodeIndex
     Struct(Vec<NodeIndex>),
 }
 
@@ -224,10 +232,10 @@ pub struct TraitInfo {
     pub associated_types: Vec<NodeIndex>,
     /// 关联常量
     pub associated_consts: Vec<NodeIndex>,
-    /// 方法签名（trait 定义的方法）
+    /// 方法签名(trait 定义的方法)
     pub methods: Vec<NodeIndex>,
-    /// 父 Trait（supertrait bounds）
-    pub supertraits: Vec<NodeIndex>,
+    /// 父 Trait(super trait bounds)
+    pub super_traits: Vec<NodeIndex>,
     /// 泛型参数
     pub generics: Vec<NodeIndex>,
     /// 是否是 auto trait
@@ -243,7 +251,7 @@ pub struct MethodInfo {
     pub name: String,
     /// 所属类型/Trait 的节点索引
     pub owner: Option<NodeIndex>,
-    /// 参数列表（包括 self）
+    /// 参数列表(包括 self)
     pub params: Vec<ParamInfo>,
     /// 返回值信息
     pub return_info: ReturnInfo,
@@ -288,7 +296,7 @@ pub struct ConstantInfo {
     pub path: PathInfo,
     /// 类型节点
     pub type_node: Option<NodeIndex>,
-    /// 初始值 token（字符串表示，用于 Petri 网初始标记）
+    /// 初始值 token(字符串表示,用于 Petri 网初始标记)
     pub init_value: Option<String>,
     /// 类型字符串
     pub type_str: String,
@@ -308,13 +316,13 @@ pub struct StaticInfo {
 /// 泛型参数信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GenericInfo {
-    /// 泛型名称（如 T, U）
+    /// 泛型名称(如 T, U)
     pub name: String,
     /// 所属的类型/方法节点
     pub owner: Option<NodeIndex>,
-    /// Trait bounds（需要满足的 Trait）
+    /// Trait bounds(需要满足的 Trait)
     pub bounds: Vec<NodeIndex>,
-    /// 默认类型（如果有）
+    /// 默认类型(如果有)
     pub default_type: Option<NodeIndex>,
 }
 
@@ -330,8 +338,13 @@ pub struct TypeAliasInfo {
 /// 基本类型信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrimitiveInfo {
-    /// 类型名称（如 u8, i32, bool, str）
+    /// 类型名称(如 u8, i32, bool, str)
     pub name: String,
+    /// 默认实现的 Trait 列表(如 Copy, Clone, Debug 等)
+    pub default_traits: Vec<String>,
+    /// 对应 Trait 节点的索引(用于建立 Implements 边)
+    pub trait_nodes: Vec<NodeIndex>,
+    pub type_: PrimitiveType,
 }
 
 /// 元组类型信息
@@ -368,7 +381,7 @@ pub struct AssociatedTypeInfo {
     pub name: String,
     /// 所属 Trait 节点
     pub owner_trait: Option<NodeIndex>,
-    /// 具体类型（如果已绑定）
+    /// 具体类型(如果已绑定)
     pub concrete_type: Option<NodeIndex>,
     /// Trait bounds
     pub bounds: Vec<NodeIndex>,
@@ -381,7 +394,7 @@ pub struct DynTraitInfo {
     pub main_trait: Option<NodeIndex>,
     /// 额外的 Trait bounds
     pub additional_bounds: Vec<NodeIndex>,
-    /// 生命周期（如果有）
+    /// 生命周期(如果有)
     pub lifetime: Option<String>,
 }
 
@@ -394,7 +407,7 @@ pub struct FunctionPointerInfo {
     pub return_type: Option<NodeIndex>,
     /// 是否 unsafe
     pub is_unsafe: bool,
-    /// ABI（如 "C", "Rust"）
+    /// ABI(如 "C", "Rust")
     pub abi: Option<String>,
 }
 
@@ -403,11 +416,11 @@ pub struct FunctionPointerInfo {
 pub struct UnwrapOpInfo {
     /// 操作类型
     pub op_kind: UnwrapOpKind,
-    /// 输入类型节点（Result<T,E> 或 Option<T>）
+    /// 输入类型节点(Result<T,E> 或 Option<T>)
     pub input_type: Option<NodeIndex>,
-    /// 成功分支目标节点（T 或 Some(T)）
+    /// 成功分支目标节点(T 或 Some(T))
     pub success_branch: Option<NodeIndex>,
-    /// 失败分支目标节点（E 或 None）
+    /// 失败分支目标节点(E 或 None)
     pub failure_branch: Option<NodeIndex>,
     /// 所属方法节点
     pub owner_method: Option<NodeIndex>,
@@ -443,7 +456,8 @@ pub enum UnwrapOpKind {
 }
 
 impl NodeInfo {
-    /// 获取节点的路径信息（如果有）
+    /// 获取节点的路径信息(如果有)
+    #[allow(unused)]
     pub fn path(&self) -> Option<&PathInfo> {
         match self {
             NodeInfo::Struct(info) => Some(&info.path),
@@ -483,7 +497,8 @@ impl NodeInfo {
         }
     }
 
-    /// 获取泛型参数列表（如果有）
+    /// 获取泛型参数列表(如果有)
+    #[allow(unused)]
     pub fn generics(&self) -> &[NodeIndex] {
         match self {
             NodeInfo::Struct(info) => &info.generics,
@@ -497,7 +512,8 @@ impl NodeInfo {
         }
     }
 
-    /// 获取方法列表（如果有）
+    /// 获取方法列表(如果有)
+    #[allow(unused)]
     pub fn methods(&self) -> &[NodeIndex] {
         match self {
             NodeInfo::Struct(info) => &info.methods,
@@ -508,7 +524,8 @@ impl NodeInfo {
         }
     }
 
-    /// 获取 Trait 实现列表（如果有）
+    /// 获取 Trait 实现列表(如果有)
+    #[allow(unused)]
     pub fn trait_impls(&self) -> &[TraitImplInfo] {
         match self {
             NodeInfo::Struct(info) => &info.trait_impls,
@@ -519,17 +536,16 @@ impl NodeInfo {
     }
 
     /// 判断是否是类型定义节点
+    #[allow(unused)]
     pub fn is_type_def(&self) -> bool {
         matches!(
             self,
-            NodeInfo::Struct(_)
-                | NodeInfo::Enum(_)
-                | NodeInfo::Union(_)
-                | NodeInfo::TypeAlias(_)
+            NodeInfo::Struct(_) | NodeInfo::Enum(_) | NodeInfo::Union(_) | NodeInfo::TypeAlias(_)
         )
     }
 
     /// 判断是否是可调用节点
+    #[allow(unused)]
     pub fn is_callable(&self) -> bool {
         matches!(
             self,
@@ -537,7 +553,8 @@ impl NodeInfo {
         )
     }
 
-    /// 判断是否有初始 token（用于 Petri 网）
+    /// 判断是否有初始 token(用于 Petri 网)
+    #[allow(unused)]
     pub fn has_initial_token(&self) -> bool {
         match self {
             NodeInfo::Constant(info) => info.init_value.is_some(),
@@ -546,7 +563,8 @@ impl NodeInfo {
         }
     }
 
-    /// 获取初始 token 值（用于 Petri 网）
+    /// 获取初始 token 值(用于 Petri 网)
+    #[allow(unused)]
     pub fn initial_token(&self) -> Option<&str> {
         match self {
             NodeInfo::Constant(info) => info.init_value.as_deref(),
@@ -580,11 +598,13 @@ impl PathInfo {
 
 impl ParamInfo {
     /// 从借用模式判断是否需要可变访问
+    #[allow(unused)]
     pub fn requires_mut(&self) -> bool {
         matches!(self.borrow_mode, EdgeMode::MutRef | EdgeMode::MutPtr)
     }
 
     /// 从借用模式判断是否是引用
+    #[allow(unused)]
     pub fn is_reference(&self) -> bool {
         matches!(
             self.borrow_mode,
@@ -603,6 +623,7 @@ impl Default for StructInfo {
             methods: Vec::new(),
             is_tuple_struct: false,
             is_unit_struct: false,
+            blacklisted_trait_impls: Vec::new(),
         }
     }
 }
@@ -615,6 +636,7 @@ impl Default for EnumInfo {
             generics: Vec::new(),
             trait_impls: Vec::new(),
             methods: Vec::new(),
+            blacklisted_trait_impls: Vec::new(),
         }
     }
 }
@@ -637,238 +659,5 @@ impl Default for MethodInfo {
             is_unsafe: false,
             method_kind: MethodKind::Inherent,
         }
-    }
-}
-
-/// 示例：从 rustdoc Item 创建 NodeInfo 并插入到 IrGraph
-pub mod insert_example {
-    use super::*;
-    use crate::ir_graph::{IrGraph, EdgeMode};
-    use rustdoc_types::{Item, Type};
-
-    /// 从 rustdoc Item 插入节点到 IrGraph
-    ///
-    /// # 返回值
-    /// - 新创建的 NodeIndex
-    /// - 对应的 NodeInfo（调用者需要存入 node_infos HashMap）
-    pub fn insert_struct_node(
-        ir_graph: &mut IrGraph,
-        item: &Item,
-        struct_data: &rustdoc_types::Struct,
-    ) -> (NodeIndex, NodeInfo) {
-        // 1. 创建节点
-        let name = item.name.as_deref().unwrap_or("anonymous");
-        let node_idx = ir_graph.add_type_node(name);
-
-        // 2. 构建路径信息
-        let path = PathInfo::new(
-            &format!("crate::{}", name), // 简化的路径
-            name,
-        );
-
-        // 3. 构建 StructInfo
-        let struct_info = StructInfo {
-            path,
-            fields: Vec::new(),      // 后续填充
-            generics: Vec::new(),    // 后续填充
-            trait_impls: Vec::new(), // 后续填充
-            methods: Vec::new(),     // 后续填充
-            is_tuple_struct: matches!(struct_data.kind, rustdoc_types::StructKind::Tuple(_)),
-            is_unit_struct: matches!(struct_data.kind, rustdoc_types::StructKind::Unit),
-        };
-
-        (node_idx, NodeInfo::Struct(struct_info))
-    }
-
-    /// 插入方法节点并建立边关系
-    pub fn insert_method_node(
-        ir_graph: &mut IrGraph,
-        method_name: &str,
-        owner_node: NodeIndex,
-        params: &[(String, Type)],
-        return_type: Option<&Type>,
-        is_const: bool,
-    ) -> (NodeIndex, NodeInfo, Vec<(NodeIndex, NodeIndex, EdgeMode)>) {
-        // 1. 创建方法节点
-        let node_idx = ir_graph.add_type_node(method_name);
-
-        // 2. 构建参数信息
-        let mut param_infos = Vec::new();
-        let mut edges_to_add = Vec::new();
-
-        for (param_name, param_type) in params {
-            // 确定借用模式
-            let (borrow_mode, is_self) = match param_type {
-                Type::BorrowedRef { is_mutable, .. } => {
-                    let mode = if *is_mutable {
-                        EdgeMode::MutRef
-                    } else {
-                        EdgeMode::Ref
-                    };
-                    (mode, param_name == "self")
-                }
-                Type::Generic(name) if name == "Self" => (EdgeMode::Move, true),
-                _ => (EdgeMode::Move, false),
-            };
-
-            param_infos.push(ParamInfo {
-                name: param_name.clone(),
-                type_node: None, // 后续解析时填充
-                borrow_mode,
-                is_self,
-                type_str: format!("{:?}", param_type),
-            });
-
-            // 如果是 self 参数，添加从 owner 到方法的边
-            if is_self {
-                edges_to_add.push((owner_node, node_idx, borrow_mode));
-            }
-        }
-
-        // 3. 构建返回值信息
-        let return_info = ReturnInfo {
-            type_node: None,
-            wrapper: detect_wrapper_type(return_type),
-            unwrap_node: None,
-            type_str: return_type.map(|t| format!("{:?}", t)).unwrap_or_default(),
-        };
-
-        // 4. 构建 MethodInfo
-        let method_info = MethodInfo {
-            name: method_name.to_string(),
-            owner: Some(owner_node),
-            params: param_infos,
-            return_info,
-            generics: Vec::new(),
-            is_const,
-            is_async: false,
-            is_unsafe: false,
-            method_kind: MethodKind::Inherent,
-        };
-
-        (node_idx, NodeInfo::Method(method_info), edges_to_add)
-    }
-
-    /// 插入常量节点（带初始 token）
-    pub fn insert_constant_node(
-        ir_graph: &mut IrGraph,
-        item: &Item,
-        const_data: &rustdoc_types::Constant,
-    ) -> (NodeIndex, NodeInfo) {
-        let name = item.name.as_deref().unwrap_or("CONST");
-        let node_idx = ir_graph.add_type_node(name);
-
-        let constant_info = ConstantInfo {
-            path: PathInfo::new(&format!("crate::{}", name), name),
-            type_node: None,
-            init_value: const_data.value.clone(), // 初始 token
-            type_str: const_data.expr.clone(),    // 使用表达式字符串
-        };
-
-        (node_idx, NodeInfo::Constant(constant_info))
-    }
-
-    /// 插入 UnwrapOp 节点（用于 Result/Option 展开）
-    pub fn insert_unwrap_op_node(
-        ir_graph: &mut IrGraph,
-        op_kind: UnwrapOpKind,
-        input_node: NodeIndex,
-        success_node: Option<NodeIndex>,
-        failure_node: Option<NodeIndex>,
-    ) -> (NodeIndex, NodeInfo, Vec<(NodeIndex, NodeIndex, EdgeMode)>) {
-        let op_name = match op_kind {
-            UnwrapOpKind::Unwrap => "unwrap",
-            UnwrapOpKind::QuestionMark => "?",
-            UnwrapOpKind::Match => "match",
-            UnwrapOpKind::IsSome => "is_some",
-            UnwrapOpKind::IsNone => "is_none",
-            UnwrapOpKind::IsOk => "is_ok",
-            UnwrapOpKind::IsErr => "is_err",
-            _ => "unwrap_op",
-        };
-
-        let node_idx = ir_graph.add_type_node(op_name);
-
-        let unwrap_info = UnwrapOpInfo {
-            op_kind,
-            input_type: Some(input_node),
-            success_branch: success_node,
-            failure_branch: failure_node,
-            owner_method: None,
-        };
-
-        // 建立边关系
-        let mut edges = vec![
-            // 输入到 unwrap 操作
-            (input_node, node_idx, EdgeMode::Move),
-        ];
-
-        // 成功分支
-        if let Some(success) = success_node {
-            edges.push((node_idx, success, EdgeMode::Move));
-        }
-
-        // 失败分支
-        if let Some(failure) = failure_node {
-            edges.push((node_idx, failure, EdgeMode::Move));
-        }
-
-        (node_idx, NodeInfo::UnwrapOp(unwrap_info), edges)
-    }
-
-    /// 检测返回类型的包装器
-    fn detect_wrapper_type(ty: Option<&Type>) -> Option<WrapperType> {
-        let ty = ty?;
-
-        if let Type::ResolvedPath(path) = ty {
-            let name = path.path.split("::").last().unwrap_or(&path.path);
-
-            match name {
-                "Result" => Some(WrapperType::Result {
-                    ok_type: None,
-                    err_type: None,
-                }),
-                "Option" => Some(WrapperType::Option { some_type: None }),
-                "Box" => Some(WrapperType::Box { inner_type: None }),
-                "Vec" => Some(WrapperType::Vec { elem_type: None }),
-                _ => None,
-            }
-        } else {
-            None
-        }
-    }
-
-    /// 添加 Trait 实现边
-    pub fn add_trait_impl_edge(
-        ir_graph: &mut IrGraph,
-        type_node: NodeIndex,
-        trait_node: NodeIndex,
-        is_derived: bool,
-    ) {
-        // 添加 Implements 边
-        ir_graph.add_type_relation(
-            type_node,
-            trait_node,
-            EdgeMode::Implements,
-            if is_derived {
-                Some("derived".to_string())
-            } else {
-                None
-            },
-        );
-    }
-
-    /// 添加泛型约束边
-    pub fn add_generic_bound_edge(
-        ir_graph: &mut IrGraph,
-        generic_node: NodeIndex,
-        trait_node: NodeIndex,
-    ) {
-        ir_graph.add_type_relation(
-            generic_node,
-            trait_node,
-            EdgeMode::Require,
-            None,
-        );
     }
 }

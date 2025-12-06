@@ -1,12 +1,12 @@
+use crate::ir_graph::NodeInfo;
 use petgraph::graph::{DiGraph, EdgeIndex, NodeIndex};
+use petgraph::visit::EdgeRef;
 /// IR Graph 数据结构定义  
 ///
-/// 使用 rustdoc Id 作为节点标识，详细信息通过 ParsedCrate 查询
+/// 使用 rustdoc Id 作为节点标识,详细信息通过 ParsedCrate 查询
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use petgraph::visit::EdgeRef;
 use std::fmt::Write;
-use crate::ir_graph::NodeInfo;
 
 /// 边的模式:定义数据如何传递或关系
 ///
@@ -23,16 +23,22 @@ pub enum EdgeMode {
     Ptr,
     /// 可变裸指针 *mut T
     MutPtr,
-    /// 实现关系（类型实现 Trait）
+    /// 实现关系(类型实现 Trait)
     Implements,
-    /// 约束关系（泛型需要满足 Trait）
+    /// 约束关系(泛型需要满足 Trait)
     Require,
-    /// 包含关系（类型包含泛型参数）
+    /// 包含关系(类型包含泛型参数)
     Include,
-    /// 类型别名（Associated Type 或 type alias）
+    /// 类型别名(Associated Type 或 type alias)
     Alias,
-    /// 实例化关系（Const/Static 是某个类型的实例）
+    /// 实例化关系(Const/Static 是某个类型的实例)
     Instance,
+    /// Result/Option 展开成功(Ok/Some)
+    UnwrapOk,
+    /// Result 展开失败(Err)
+    UnwrapErr,
+    /// Option 展开失败(None)
+    UnwrapNone,
 }
 
 impl EdgeMode {
@@ -41,7 +47,7 @@ impl EdgeMode {
         matches!(self, EdgeMode::MutRef | EdgeMode::MutPtr)
     }
 
-    /// 判断是否是关系边（不是数据流）
+    /// 判断是否是关系边(不是数据流)
     #[allow(unused)]
     pub fn is_relationship(&self) -> bool {
         matches!(
@@ -55,12 +61,12 @@ impl EdgeMode {
     }
 }
 
-/// 类型关系边（用作 petgraph 边权重）
+/// 类型关系边(用作 petgraph 边权重)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TypeRelation {
     /// 边的模式
     pub mode: EdgeMode,
-    /// 可选的标签（例如字段名、变体名等）
+    /// 可选的标签(例如字段名、变体名等)
     pub label: Option<String>,
 }
 
@@ -76,19 +82,22 @@ pub enum NodeType {
     Constant,
     Static,
     Tuple,
+    #[allow(unused)]
     Unit,
     Variant,
     Function,
-    Primitive,   // 基本类型
-    ImplMethod,  // 类型实现的方法
-    TraitMethod, // Trait 定义的方法
-    UnwrapOp,    // Result/Option 展开操作
+    Primitive,     // 基本类型
+    ImplMethod,    // 类型实现的方法
+    TraitMethod,   // Trait 定义的方法
+    UnwrapOp,      // Result/Option 展开操作
+    ResultWrapper, // Result<T, E> 包装类型节点
+    OptionWrapper, // Option<T> 包装类型节点
 }
 
 /// IR 图:整个程序的中间表示
 #[derive(Debug)]
 pub struct IrGraph {
-    /// 节点是字符串（Id.0.to_string()），边是 TypeRelation
+    /// 节点是字符串(Id.0.to_string()),边是 TypeRelation
     pub type_graph: DiGraph<String, TypeRelation>,
     pub node_types: HashMap<NodeIndex, NodeType>,
     pub node_infos: HashMap<NodeIndex, NodeInfo>,
@@ -104,7 +113,7 @@ impl IrGraph {
     }
 
     /// 添加或获取类型节点
-    /// 如果节点已存在，返回其 NodeIndex；否则创建新节点
+    /// 如果节点已存在,返回其 NodeIndex；否则创建新节点
     pub fn add_type_node(&mut self, id: &str) -> NodeIndex {
         self.type_graph.add_node(id.to_string())
     }
@@ -121,17 +130,20 @@ impl IrGraph {
             .add_edge(from, to, TypeRelation { mode, label })
     }
 
-    /// 打印统计信息
     pub fn print_stats(&self) {
-        println!("=== IR Graph 统计 ===");
-        println!("节点数: {}", self.type_graph.node_count());
-        println!("类型关系边数: {}", self.type_graph.edge_count());
+        log::info!("=== IR Graph 统计 ===");
+        log::info!("节点数: {}", self.type_graph.node_count());
+        log::info!("类型关系边数: {}", self.type_graph.edge_count());
 
         let mut move_edges = 0;
         let mut ref_edges = 0;
         let mut mut_ref_edges = 0;
         let mut implements_edges = 0;
         let mut require_edges = 0;
+
+        let mut unwrap_ok_edges = 0;
+        let mut unwrap_err_edges = 0;
+        let mut unwrap_none_edges = 0;
 
         for edge in self.type_graph.edge_weights() {
             match edge.mode {
@@ -140,6 +152,9 @@ impl IrGraph {
                 EdgeMode::MutRef => mut_ref_edges += 1,
                 EdgeMode::Implements => implements_edges += 1,
                 EdgeMode::Require => require_edges += 1,
+                EdgeMode::UnwrapOk => unwrap_ok_edges += 1,
+                EdgeMode::UnwrapErr => unwrap_err_edges += 1,
+                EdgeMode::UnwrapNone => unwrap_none_edges += 1,
                 EdgeMode::Include
                 | EdgeMode::Alias
                 | EdgeMode::Instance
@@ -148,12 +163,16 @@ impl IrGraph {
             }
         }
 
-        println!("\n边类型分布:");
-        println!("  - Move: {}", move_edges);
-        println!("  - Ref: {}", ref_edges);
-        println!("  - MutRef: {}", mut_ref_edges);
-        println!("  - Implements: {}", implements_edges);
-        println!("  - Require: {}", require_edges);
+        log::info!("\n边类型分布: \n
+        - Move: {}
+        - Ref: {}
+        - MutRef: {}
+        - Implements: {}
+        - Require: {}
+        - UnwrapOk: {}
+        - UnwrapErr: {}
+        - UnwrapNone: {}",
+        move_edges, ref_edges, mut_ref_edges, implements_edges, require_edges, unwrap_ok_edges, unwrap_err_edges, unwrap_none_edges);
     }
 
     pub fn export_dot<P: AsRef<std::path::Path>>(
@@ -165,7 +184,7 @@ impl IrGraph {
         dot.push_str("  rankdir=LR;\n");
         dot.push_str("  node [style=filled];\n\n");
 
-        // 遍历所有节点，根据类型设置样式
+        // 遍历所有节点,根据类型设置样式
         for node_idx in self.type_graph.node_indices() {
             let node_label = &self.type_graph[node_idx];
             let node_type = self.node_types.get(&node_idx);
@@ -183,6 +202,8 @@ impl IrGraph {
                 Some(NodeType::TraitMethod) => ("box", "plum"),
                 Some(NodeType::UnwrapOp) => ("diamond", "wheat"),
                 Some(NodeType::Function) => ("box", "lightgreen"),
+                Some(NodeType::ResultWrapper) => ("hexagon", "gold"), // Result 包装类型
+                Some(NodeType::OptionWrapper) => ("hexagon", "khaki"), // Option 包装类型
                 _ => ("circle", "white"),
             };
 
@@ -216,6 +237,9 @@ impl IrGraph {
                 EdgeMode::Instance => ("cyan", "dotted", "instance"),
                 EdgeMode::Ptr => ("gray", "dotted", "*const"),
                 EdgeMode::MutPtr => ("gray", "dotted", "*mut"),
+                EdgeMode::UnwrapOk => ("darkgreen", "bold", "Ok/Some"),
+                EdgeMode::UnwrapErr => ("red", "bold", "Err"),
+                EdgeMode::UnwrapNone => ("darkgray", "bold", "None"),
             };
 
             let edge_label = relation.label.as_deref().unwrap_or(label);
@@ -240,7 +264,8 @@ impl IrGraph {
     pub fn export_json<P: AsRef<std::path::Path>>(&self, path: P) -> std::io::Result<()> {
         // 将 NodeIndex 转换为 usize 以便序列化
         let node_infos_serializable: std::collections::HashMap<usize, &crate::ir_graph::NodeInfo> =
-            self.node_infos.iter()
+            self.node_infos
+                .iter()
                 .map(|(k, v)| (k.index(), v))
                 .collect();
 
