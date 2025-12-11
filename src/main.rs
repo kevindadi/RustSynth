@@ -3,6 +3,7 @@ mod config;
 // mod generate;  // TODO: 更新以适配 LabeledPetriNet
 mod ir_graph;
 pub mod label_pt_net;
+pub mod pushdown_colored_pt_net;
 mod parse;
 mod petri_net_traits;
 mod pipeline;
