@@ -5,10 +5,9 @@ use std::collections::HashMap;
 use super::builder::IrGraphBuilder;
 use super::node_info::{MethodInfo, MethodKind, NodeInfo, ParamInfo, ReturnInfo};
 use super::structure::{EdgeMode, NodeType, TypeRelation};
-use super::type_cache::{TypeContext, TypeKey};
+use super::type_cache::TypeContext;
 use super::utils::{
-    extract_option_type, extract_result_types, extract_type_name, extract_type_name_from_path,
-    format_type_label,
+    extract_option_type, extract_result_types, extract_type_name, format_type_label,
 };
 use crate::support_types::method_blacklist::{get_trait_for_method, is_blacklisted_method};
 use log::{debug, error};
@@ -67,21 +66,12 @@ impl<'ir> IrGraphBuilder<'ir> {
                         );
 
                         // 处理返回值
-                        let return_info = if let Some(output) = &func.sig.output {
-                            self.process_function_output(
-                                op_node_idx,
-                                output,
-                                method_name,
-                                Some(type_id),
-                            )
-                        } else {
-                            ReturnInfo {
-                                type_node: None,
-                                wrapper: None,
-                                unwrap_node: None,
-                                type_str: "()".to_string(),
-                            }
-                        };
+                        let return_info = self.process_function_output(
+                            op_node_idx,
+                            &func.sig.output,
+                            method_name,
+                            Some(type_id),
+                        );
 
                         // 获取 owner 节点
                         let owner_node = self.type_cache.get_by_id(&type_id);
@@ -189,21 +179,12 @@ impl<'ir> IrGraphBuilder<'ir> {
                         );
 
                         // 处理返回值
-                        let return_info = if let Some(output) = &func.sig.output {
-                            self.process_function_output(
-                                op_node_idx,
-                                output,
-                                method_name,
-                                Some(trait_id),
-                            )
-                        } else {
-                            ReturnInfo {
-                                type_node: None,
-                                wrapper: None,
-                                unwrap_node: None,
-                                type_str: "()".to_string(),
-                            }
-                        };
+                        let return_info = self.process_function_output(
+                            op_node_idx,
+                            &func.sig.output,
+                            method_name,
+                            Some(trait_id),
+                        );
 
                         // 获取 owner 节点
                         let owner_node = self.type_cache.get_by_id(&trait_id);
@@ -284,84 +265,148 @@ impl<'ir> IrGraphBuilder<'ir> {
     }
 
     /// 处理方法的泛型参数及约束
-    fn process_method_generics(&mut self, _: Id, generics: &Generics, method_name: &str) {
+    fn process_method_generics(&mut self, method_id: Id, generics: &Generics, method_name: &str) {
         use rustdoc_types::GenericBound;
+        use super::type_cache::{GenericParamKind, GenericScope as CacheGenericScope, TypeKey};
 
         for param in &generics.params {
-            if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
-                // 创建泛型参数节点
-                let generic_name = format!("{}:{}", method_name, param.name);
-                let generic_node_idx = self.graph.add_type_node(&generic_name);
-                self.graph
-                    .node_types
-                    .insert(generic_node_idx, NodeType::Generic);
+            let generic_name = format!("{}:{}", method_name, param.name);
+            let scope = CacheGenericScope::Method(method_id);
 
-                // 插入两个 key:完整名和短名
-                self.type_cache.insert_generic(
-                    generic_name.clone(),
-                    Some(param.name.clone()),
-                    generic_node_idx,
-                );
+            // 根据泛型参数类型创建对应的 TypeKey
+            match &param.kind {
+                GenericParamDefKind::Type { bounds, default: _default, .. } => {
+                    let type_key = TypeKey::Generic {
+                        name: param.name.clone(),
+                        scope: scope.clone(),
+                        kind: GenericParamKind::Type,
+                    };
 
-                debug!(
-                    "创建方法泛型参数: {} (存储为 {} 和 {})",
-                    generic_name, generic_name, param.name
-                );
+                    // 检查是否已存在
+                    let generic_node_idx = if let Some(idx) = self.type_cache.get_node(&type_key) {
+                        idx
+                    } else {
+                        // 创建新节点
+                        let idx = self.graph.add_type_node(&generic_name);
+                        self.graph
+                            .node_types
+                            .insert(idx, NodeType::Generic);
+                        self.type_cache.insert_node(type_key.clone(), idx);
+                        idx
+                    };
 
-                // 处理 Trait 约束
-                for bound in bounds {
-                    if let GenericBound::TraitBound { trait_, .. } = bound {
-                        let trait_id = trait_.id;
+                    // 插入两个 key:完整名和短名
+                    self.type_cache.insert_generic(
+                        generic_name.clone(),
+                        Some(param.name.clone()),
+                        generic_node_idx,
+                    );
 
-                        // 获取 Trait 的完整名称(包含具体类型参数)
-                        let trait_full_name = Self::get_trait_full_name(trait_);
-                        let (has_concrete_args, _) =
-                            Self::check_trait_args_for_concrete_type(&trait_.args);
+                    debug!(
+                        "创建方法类型泛型参数: {} (存储为 {} 和 {}), TypeCache key: {:?}",
+                        generic_name, generic_name, param.name, type_key
+                    );
 
-                        // 获取或创建 Trait 节点
-                        let trait_node = if has_concrete_args {
-                            // 带具体类型参数的 Trait,使用完整名称创建新节点
-                            let type_key = TypeKey::TraitWithArgs {
+                    // 处理 Trait 约束
+                    for bound in bounds {
+                        if let GenericBound::TraitBound { trait_, .. } = bound {
+                            let trait_id = trait_.id;
+
+                            // 获取 Trait 的完整名称(包含具体类型参数)
+                            let trait_full_name = Self::get_trait_full_name(trait_);
+                            let (has_concrete_args, _) =
+                                Self::check_trait_args_for_concrete_type(&trait_.args);
+
+                            // 获取或创建 Trait 节点
+                            let trait_node = self.insert_trait_node(
+                                trait_,
                                 trait_id,
-                                args_repr: trait_full_name.clone(),
-                            };
-                            if let Some(node) = self.type_cache.get_node(&type_key) {
-                                node
-                            } else {
-                                let node = self.graph.add_type_node(&trait_full_name);
-                                self.graph.node_types.insert(node, NodeType::Trait);
-                                self.type_cache.insert_node(type_key, node);
-                                debug!(
-                                    "创建带参数的外部 Trait 节点: {} (id: {})",
-                                    trait_full_name, trait_id.0
-                                );
-                                node
-                            }
-                        } else if let Some(node) = self.type_cache.get_by_id(&trait_id) {
-                            node
-                        } else {
-                            // 外部 Trait,创建节点
-                            let trait_name = extract_type_name_from_path(&trait_.path);
-                            let node = self.graph.add_type_node(&trait_name);
-                            self.graph.node_types.insert(node, NodeType::Trait);
-                            self.type_cache.insert_type_by_id(trait_id, node);
+                                &trait_full_name,
+                                has_concrete_args,
+                            );
 
-                            debug!("创建外部 Trait 节点: {} (id: {})", trait_name, trait_id.0);
-                            node
-                        };
-
-                        // 创建 Require 边:Trait -> 泛型(Petri 网语义)
-                        self.graph.add_type_relation(
-                            trait_node,
-                            generic_node_idx,
-                            EdgeMode::Require,
-                            Some(format!("required by {}", param.name)),
-                        );
-                        debug!(
-                            "泛型约束: trait {} -> {} (Petri net flow)",
-                            trait_full_name, param.name
-                        );
+                            // 创建 Require 边:Trait -> 泛型(Petri 网语义)
+                            self.graph.add_type_relation(
+                                trait_node,
+                                generic_node_idx,
+                                EdgeMode::Require,
+                                Some(format!("required by {}", param.name)),
+                            );
+                            debug!(
+                                "泛型约束: trait {} -> {} (Petri net flow)",
+                                trait_full_name, param.name
+                            );
+                        }
                     }
+                }
+                GenericParamDefKind::Lifetime { outlives } => {
+                    let type_key = TypeKey::Generic {
+                        name: param.name.clone(),
+                        scope: scope.clone(),
+                        kind: GenericParamKind::Lifetime {
+                            outlives: outlives.clone(),
+                        },
+                    };
+
+                    // 检查是否已存在
+                    let generic_node_idx = if let Some(idx) = self.type_cache.get_node(&type_key) {
+                        idx
+                    } else {
+                        // 创建新节点
+                        let idx = self.graph.add_type_node(&generic_name);
+                        self.graph
+                            .node_types
+                            .insert(idx, NodeType::Generic);
+                        self.type_cache.insert_node(type_key.clone(), idx);
+                        idx
+                    };
+
+                    // 插入两个 key:完整名和短名
+                    self.type_cache.insert_generic(
+                        generic_name.clone(),
+                        Some(param.name.clone()),
+                        generic_node_idx,
+                    );
+
+                    debug!(
+                        "创建方法生命周期泛型参数: {} (存储为 {} 和 {}), outlives: {:?}, TypeCache key: {:?}",
+                        generic_name, generic_name, param.name, outlives, type_key
+                    );
+                }
+                GenericParamDefKind::Const { type_, default } => {
+                    let type_key = TypeKey::Generic {
+                        name: param.name.clone(),
+                        scope: scope.clone(),
+                        kind: GenericParamKind::Const {
+                            type_: format!("{:?}", type_),
+                            default: default.clone(),
+                        },
+                    };
+
+                    // 检查是否已存在
+                    let generic_node_idx = if let Some(idx) = self.type_cache.get_node(&type_key) {
+                        idx
+                    } else {
+                        // 创建新节点
+                        let idx = self.graph.add_type_node(&generic_name);
+                        self.graph
+                            .node_types
+                            .insert(idx, NodeType::Generic);
+                        self.type_cache.insert_node(type_key.clone(), idx);
+                        idx
+                    };
+
+                    // 插入两个 key:完整名和短名
+                    self.type_cache.insert_generic(
+                        generic_name.clone(),
+                        Some(param.name.clone()),
+                        generic_node_idx,
+                    );
+
+                    debug!(
+                        "创建方法常量泛型参数: {} (存储为 {} 和 {}), type: {:?}, default: {:?}, TypeCache key: {:?}",
+                        generic_name, generic_name, param.name, type_, default, type_key
+                    );
                 }
             }
         }
@@ -481,12 +526,21 @@ impl<'ir> IrGraphBuilder<'ir> {
     fn process_function_output(
         &mut self,
         op_node_idx: NodeIndex,
-        output: &Type,
+        output: &Option<Type>,
         method_name: &str,
         owner_id: Option<Id>,
     ) -> ReturnInfo {
         use super::node_info::WrapperType;
 
+        if output.is_none() {
+            return ReturnInfo {
+                type_node: None,
+                wrapper: None,
+                unwrap_node: None,
+                type_str: "()".to_string(),
+            };
+        }
+        let output = output.as_ref().unwrap();
         // 检查是否是 Result<T, E>
         if let Some((ok_type, err_type)) = extract_result_types(output) {
             // 创建 Result 包装节点(作为独立的库所)
@@ -541,7 +595,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                 );
             }
 
-            return ReturnInfo {
+            ReturnInfo {
                 type_node: Some(result_node), // 返回 Result 节点
                 wrapper: Some(WrapperType::Result {
                     ok_type: ok_node,
@@ -549,7 +603,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                 }),
                 unwrap_node: Some(unwrap_node),
                 type_str: format!("{:?}", output),
-            };
+            }
         }
         // 检查是否是 Option<T>
         else if let Some(some_type) = extract_option_type(output) {
@@ -603,14 +657,14 @@ impl<'ir> IrGraphBuilder<'ir> {
                 },
             );
 
-            return ReturnInfo {
+            ReturnInfo {
                 type_node: Some(option_node), // 返回 Option 节点
                 wrapper: Some(WrapperType::Option {
                     some_type: some_node,
                 }),
                 unwrap_node: Some(unwrap_node),
                 type_str: format!("{:?}", output),
-            };
+            }
         }
         // 普通返回类型
         else {
@@ -627,12 +681,12 @@ impl<'ir> IrGraphBuilder<'ir> {
                 );
             }
 
-            return ReturnInfo {
+            ReturnInfo {
                 type_node: type_node_idx,
                 wrapper: None,
                 unwrap_node: None,
                 type_str: format!("{:?}", output),
-            };
+            }
         }
     }
 
@@ -801,13 +855,14 @@ impl<'ir> IrGraphBuilder<'ir> {
                 }
 
                 // 【核心修复】优先使用 TypeCache 查找类型的泛型参数(如 EncoderWriter:E)
-                use super::type_cache::{GenericScope as CacheGenericScope, TypeKey};
+                use super::type_cache::{GenericParamKind, GenericScope as CacheGenericScope, TypeKey};
                 use log::debug;
 
                 if let Some(owner_id) = context_owner_id {
                     let type_key = TypeKey::Generic {
                         name: name.clone(),
                         scope: CacheGenericScope::Type(owner_id),
+                        kind: GenericParamKind::Type, // Type::Generic 只用于类型泛型参数
                     };
 
                     debug!("查找泛型 TypeCache key: {:?}", type_key);

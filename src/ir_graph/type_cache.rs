@@ -30,6 +30,8 @@ pub enum TypeKey {
         name: String,
         /// 泛型所属的作用域(类型、Trait 或方法)
         scope: GenericScope,
+        /// 泛型参数的类型:Type(类型参数)、Lifetime(生命周期参数)、Const(常量参数)
+        kind: GenericParamKind,
     },
 
     /// 引用类型 &T, &mut T
@@ -100,6 +102,25 @@ pub enum TypeKey {
         trait_id: Id,
         /// 参数的字符串表示(用于区分不同实例)
         args_repr: String,
+    },
+}
+
+/// 泛型参数的类型
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub enum GenericParamKind {
+    /// 类型参数,如 `struct Foo<T>`
+    Type,
+    /// 生命周期参数,如 `fn foo<'a>(x: &'a str)`
+    Lifetime {
+        /// 该生命周期需要 outlive 的其他生命周期
+        outlives: Vec<String>,
+    },
+    /// 常量参数,如 `struct Array<T, const N: usize>`
+    Const {
+        /// 常量参数的类型
+        type_: String,
+        /// 默认值(如果有)
+        default: Option<String>,
     },
 }
 
@@ -243,7 +264,7 @@ impl TypeCache {
             TypeKey::Operation(id) => {
                 self.op_to_node.insert(*id, node);
             }
-            TypeKey::Generic { name, scope } => {
+            TypeKey::Generic { name, scope, .. } => {
                 // 插入完整名(OwnerName:GenericName)
                 let full_key = match scope {
                     GenericScope::Type(id)
@@ -467,7 +488,8 @@ impl TypeCache {
                         }
                     }
 
-                    // TODO: 处理 lifetime, Const 极少遇到
+                    // 处理 lifetime 和 Const 参数(虽然不用于类型实例化,但需要记录)
+                    // 这些参数在 create_generics 中已经创建了节点,这里不需要额外处理
                 }
                 // 无泛型参数,使用简单版本
                 Some(TypeKey::Resolved(path.id))
@@ -477,6 +499,7 @@ impl TypeCache {
             Type::Primitive(name) => Some(TypeKey::Primitive(name.clone())),
 
             // 3. 泛型参数:需要解析作用域
+            // 注意:Type::Generic 只用于类型泛型参数,生命周期和常量参数在 GenericArg 中处理
             Type::Generic(name) => {
                 let scope = context
                     .resolve_generic_scope(name)
@@ -484,6 +507,7 @@ impl TypeCache {
                 Some(TypeKey::Generic {
                     name: name.clone(),
                     scope,
+                    kind: GenericParamKind::Type,
                 })
             }
 

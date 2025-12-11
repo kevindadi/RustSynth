@@ -3,13 +3,72 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsthm}
-\usepackage{geometry}
 \usepackage{xcolor}
+\usepackage{textcomp}
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 \usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
 
-\newtheorem{definition}{Definition}[section]
-\newtheorem{tupledef}{Tuple}[section]
-\newtheorem{mapping}{Mapping Rule}[section]
+
+% --- Theorem Environments ---
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{ruledef}{Rule}
+
+% 符号约定
+\DeclareMathOperator{\N}{\mathbb{N}}    % 非负整数集
+\DeclareMathOperator{\Z}{\mathbb{Z}}    % 整数集
+\DeclareMathOperator{\C}{\mathcal{C}}   % 颜色集（PCPN）
+\DeclareMathOperator{\Q}{\mathcal{Q}}   % 控制状态集（PVASS）
+%\DeclareMathOperator{\P}{\mathcal{P}}   % PCPN库所集（类型/Trait）
+\DeclareMathOperator{\T}{\mathcal{T}}   % PCPN变迁集（函数）
+\DeclareMathOperator{\Exp}{\text{Exp}}  % 颜色表达式（PCPN）
+\DeclareMathOperator{\Type}{\text{Type}}% 类型函数（PCPN）
+\DeclareMathOperator{\Guard}{\text{Guard}}% 守卫函数（PCPN）
+\DeclareMathOperator{\Action}{\text{Action}}% 动作函数（PCPN）
+\DeclareMathOperator{\Consume}{\text{Consume}}% 令牌消耗（PCPN）
+\DeclareMathOperator{\Produce}{\text{Produce}}% 令牌生成（PCPN）
+\DeclareMathOperator{\Pop}{\text{Pop}}  % 栈弹出（二者共用）
+\DeclareMathOperator{\Push}{\text{Push}}% 栈压入（二者共用）
+
+% Rust专用符号
+\newcommand{\RustType}[1]{\texttt{#1}}    % Rust类型（如i32, Vec<i32>）
+\newcommand{\RustTrait}[1]{\texttt{#1}}   % Rust Trait（如Clone, Send）
+\newcommand{\RustBorrow}[1]{\texttt{#1}}  % Rust借用（如&mut, &）
+\newcommand{\RustLifetime}[1]{\texttt{#1}}% Rust生命周期（如'a, 'static）
+\newcommand{\RustFunc}[1]{\texttt{#1}}    % Rust函数（如push, clone）
+
+\newcommand{\RType}{\mathbb{T}_{rust}}
+\newcommand{\RFunc}{\mathbb{F}_{rust}}
+\newcommand{\RLifetime}{\mathbb{L}_{rust}}
+
+\definecolor{rustcomment}{rgb}{0.5,0.5,0.5}
+\definecolor{rustkeyword}{rgb}{0.5,0,0.5}
+\definecolor{ruststring}{rgb}{0,0.5,0}
+\definecolor{rusttype}{rgb}{0.1,0.3,0.6}
+
+\lstdefinelanguage{Rust}{
+  keywords={fn, let, mut, struct, enum, impl, return, match, if, else, while, for, in, move, pub, use, mod, crate, ref, where, unsafe},
+  keywordstyle=\color{rustkeyword}\bfseries,
+  ndkeywords={String, Vec, Option, Result, u32, i32, bool, Self, Box, Rc, Arc},
+  ndkeywordstyle=\color{rusttype}\bfseries,
+  comment=[l]{//},
+  commentstyle=\color{rustcomment}\itshape,
+  stringstyle=\color{ruststring},
+  sensitive=true,
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  captionpos=b,
+  escapeinside={(*@}{@*)}, % 允许在代码中使用 LaTeX
+}
+
 %%
 %% \BibTeX command to typeset BibTeX logo in the docs
 \AtBeginDocument{%
@@ -177,12 +236,26 @@
 \maketitle
 
 \section{Introduction}
+% [Background & Motivation]
 Rust has revolutionized systems programming by enforcing memory safety through its ownership and borrowing rules at compile time, eliminating common errors like data races and use-after-free without runtime overhead. The borrow checker, a core component of the Rust compiler (rustc), statically verifies these rules, enabling ``fearless concurrency'' where developers can write parallel code with confidence in its safety.
+
+Rust has revolutionized systems programming by enforcing memory safety through a strict ownership and borrowing discipline. While the borrow checker empowers developers with "fearless concurrency," it presents a formidable barrier for automated code synthesis and fuzzing. Conventional generative approaches, such as grammar-based fuzzing, act blindly regarding type states, resulting in a vast majority of synthesized programs being rejected by the compiler due to ownership violations. This inefficiency severely limits the scope of automated testing in the Rust ecosystem.
+
+% [The Gap]
+Existing formal foundations for Rust, such as Place Capability Graphs (PCG) and RustBelt, primarily focus on verification—checking the soundness of existing code. While these models provide rigorous abstractions for analyzing validity, they lack the generative mechanisms required for synthesis. There is a critical need for a formal model that can proactively guide the construction of valid code sequences rather than merely rejecting invalid ones.
+
 
 However, while Rust's type system is powerful for verification, formal models that support \emph{code generation}—synthesizing new, verified code snippets that adhere to these rules—are underdeveloped. Existing works, such as RustBelt~\citep{rustbelt}, Stacked Borrows~\citep{stackedborrows}, and Place Capability Graphs (PCG)~\citep{pcg2025}, focus primarily on verifying or analyzing existing code. They provide sound abstractions for borrow checking but lack mechanisms for proactive synthesis, which is crucial for applications like fuzz testing, automated code repair, and program synthesis.
 
+% [The Approach: Theoretical Insight]
+This paper addresses this gap by bridging Linear Logic and Automata Theory. We propose a novel modeling framework that maps Rust’s type system to High-Level Petri Nets, exploiting the structural isomorphism between Rust's affine types (resources that are consumed) and Petri Net tokens (flow that is irreversible). Unlike static dependency graphs, our model captures the dynamic lifecycle of resources: ownership transfer is modeled as token consumption, mutable borrowing as loan-return cycles that temporarily block access to owners, and generic instantiation as net unfolding.
+
 This paper addresses this gap by proposing a Petri Net-based formal model for Rust's ownership and borrowing rules. Petri Nets, a classical formalism for modeling concurrent and distributed systems, offer natural advantages in simulating dynamic behaviors through token flows and transitions. We customize the net with labeled places and transitions to precisely encode Rust's key concepts: ownership transfers as token movements, borrowing as temporary token allocations, and lifetimes as scoped invariants.
 
+% [Methodology & Implementation]
+We present a pipeline that automatically extracts API semantics from cargo doc metadata to construct a Rust-specific Petri Net. We formulate the code generation task as a Reachability Problem within this net. By traversing valid firing sequences in the Vector Addition System, our algorithm produces API sequences that are correct-by-construction regarding ownership and lifetime constraints. Special attention is given to handling complex features such as non-lexical lifetimes (NLL), trait bounds, and structural decomposition of composite types.
+
+% [Contributions & Results]
 Our contributions are threefold:
 \begin{itemize}
     \item A formal definition of a Labeled Petri Net tailored to Rust's type system, including custom firing rules that enforce AXM and handle non-lexical lifetimes (NLL), composite types, and generics.
@@ -192,109 +265,537 @@ Our contributions are threefold:
 
 By shifting from verification to synthesis, our model not only complements existing tools like PCG but also opens new avenues for automated testing in Rust ecosystems. The implementation is open-source and available at [GitHub link].
 
+\section{Background and Problem Formulation}
+\label{sec:background}
+
+To understand the challenge of synthesizing valid Rust code, one must first grasp the strict static analysis performed by the Rust compiler. Unlike garbage-collected languages (e.g., Java, Python) or manually managed ones (e.g., C/C++), Rust employs an \textit{affine type system} and a \textit{borrow checker} to guarantee memory safety.
+
+\subsection{Ownership and Affine Types}
+At the core of Rust is the concept of \textit{ownership}. Every value has a single owner, and when the owner goes out of scope, the value is dropped. Crucially, Rust enforces \textit{affine semantics} for non-primitive types: a value can be used (moved) at most once.
+
+Consider the code in Listing \ref{lst:move_error}. Assigning \texttt{s1} to \texttt{s2} transfers ownership. Any subsequent attempt to access \texttt{s1} is flagged as a compile-time error.
+
+\begin{lstlisting}[language=Rust, caption={Ownership transfer causing a ``use-after-move'' error.}, label={lst:move_error}]
+fn main() {
+    let s1 = String::from("resource");
+    let s2 = s1; // Ownership moved to s2
+    
+    // Compile Error: borrow of moved value: `s1`
+    println!("{}", s1); 
+}
+\end{lstlisting}
+
+\textbf{Implication for Synthesis:} A naive fuzzer unaware of these semantics might generate sequences that reuse variables after they have been moved. 
+\textbf{Connection to Our Model:} This aligns perfectly with the token consumption mechanics of Petri Nets. A token in a Petri Net represents a resource; once a transition (function) consumes a token (variable), it is removed from the place, rendering it unavailable for future transitions unless explicitly regenerated.
+
+\subsection{The Borrowing Discipline: Aliasing XOR Mutability}
+Rust allows temporary access to values via references (borrowing). The borrow checker enforces the \textit{Aliasing XOR Mutability} rule: at any given point, a variable can have either multiple immutable references (\texttt{\&T}) OR exactly one mutable reference (\texttt{\&mut T}), but not both. Furthermore, while a mutable reference exists, the original owner is effectively ``frozen.''
+
+Listing \ref{lst:borrow_error} demonstrates a violation where the original owner \texttt{data} is accessed while a mutable borrow \texttt{borrow} is still active.
+
+\begin{lstlisting}[language=Rust, caption={Violation of the exclusive mutability rule.}, label={lst:borrow_error}]
+fn main() {
+    let mut data = vec![1, 2, 3];
+    let borrow = &mut data; // Mutable borrow starts
+    
+    // Compile Error: cannot use `data` because 
+    // it was mutably borrowed
+    data.push(4); 
+    
+    println!("{:?}", borrow); // Borrow ends here
+}
+\end{lstlisting}
+
+\textbf{Implication for Synthesis:} Valid code generation requires tracking the complex ``locking'' state of every variable. 
+\textbf{Connection to Our Model:} We model this statefulness using the network topology. A mutable borrow is represented as a \textit{loan-return cycle}: the token representing \texttt{data} is temporarily removed from its place (locking it) and is only returned when the transition representing the end of the borrow fires.
+
+\subsection{Lifetimes and Scoping}
+Lifetimes are named regions of code that ensure references do not outlive the data they point to. The compiler constructs a control-flow graph to verify that any data referenced by \texttt{\&'a T} is valid for at least lifetime \texttt{'a}.
+
+Listing \ref{lst:lifetime_error} illustrates a ``dangling pointer'' scenario, which Rust prevents statically.
+
+\begin{lstlisting}[language=Rust, caption={A reference outliving its referent.}, label={lst:lifetime_error}]
+fn main() {
+    let r;
+    {
+        let x = 5;
+        r = &x; // Error: `x` does not live long enough
+    } // `x` is dropped here
+    println!("{}", r);
+}
+\end{lstlisting}
+
+\textbf{Connection to Our Model:} In our Petri Net, scopes are not merely syntactic blocks but are encoded as causal dependencies between transitions. A ``Drop'' transition for a resource is strictly guarded; it cannot fire if there are outstanding ``Reference'' tokens circulating in the network, ensuring lifetime invariants are respected by construction.
+
+\subsection{The Gap: Verification vs. Synthesis}
+While formal models like RustBelt \cite{rustbelt} and Place Capability Graphs (PCG) provide a solid foundation for \textit{verifying} the safety of existing code, they are not optimized for \textit{generating} new code. 
+
+A random fuzzer operating on the grammar level has a near-zero probability of guessing a sequence of operations that satisfies ownership, borrowing, and lifetime constraints simultaneously. This necessitates a generative model that is \textit{correct-by-construction}. By mapping Rust's type system to a Petri Net, we transform the problem of satisfying these constraints into a graph reachability problem, ensuring that every generated path corresponds to a valid Rust program.
+
+\section{Methodology}
+\subsection{Pushdown Vector Addition System with States}
+PVASS extends Vector Addition System (VAS) with a pushdown stack, which is suitable for verifying the validity of Rust's ownership and generic constraints. Its formal definition follows the paradigm in \cite{Abdulla2010, Esparza2005}.
+
+\begin{definition}
+A Pushdown Vector Addition System with States (PVASS) is a 7-tuple:
+\[
+\mathcal{V} = (Q, d, \Gamma, \Delta, q_0, \vec{v}_0, \sigma_0)
+\]
+where each component is defined as follows:
+\begin{enumerate}
+    \item $Q$: A finite set of control states, modeling discrete system states (e.g., "before API call", "after API call" in Rust code generation).
+    \item $d \in \N$: The dimension of the integer vector, modeling countable constraints (e.g., $d=3$ could correspond to: component 1 = ownership of variable $x$, component 2 = $\text{Clone}$ trait satisfaction of type $T$, component 3 = nested depth of lifetimes).
+    \item $\Gamma$: A finite pushdown stack alphabet, modeling recursive/nested contexts.
+    \item $\Delta$: A finite set of transition rules. Each rule is of the form:
+    \[
+    (q, \gamma) \xrightarrow{\vec{u}} (q', \gamma')
+    \]
+    where:
+    \begin{itemize}
+        \item $q, q' \in Q$: The control state before and after the transition.
+        \item $\gamma \in \Gamma \cup \{\epsilon\}$: The string popped from the stack ($\epsilon$ means no pop operation).
+        \item $\vec{u} \in \Z^d$: The vector update amount, modeling the change of constraints (e.g., $\vec{u}[1] = -1$ means releasing the ownership of variable $x$).
+        \item $\gamma' \in \Gamma^*$: The string pushed to the stack ($\epsilon$ means no push operation).
+    \end{itemize}
+    After executing the transition, the resulting vector must be non-negative: $\vec{v} + \vec{u} \geq \vec{0}$ (component-wise comparison).
+    \item $q_0 \in Q$: The initial control state.
+    \item $\vec{v}_0 \in \N^d$: The initial vector, modeling the initial constraint state (e.g., $\vec{v}_0[1] = 1$ means variable $x$ has ownership initially).
+    \item $\sigma_0 \in \Gamma^*$: The initial stack content (e.g., $\epsilon$ means no initial nested context).
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[Configuration and Transition Semantics of PVASS]
+Let $\mathcal{V} = (Q, d, \Gamma, \Delta, q_0, \vec{v}_0, \sigma_0)$ be a PVASS.
+\begin{itemize}
+    \item A \textbf{configuration} of $\mathcal{V}$ is a triple $(q, \vec{v}, \sigma)$, where:
+      - $q \in Q$: The current control state.
+      - $\vec{v} \in \N^d$: The current constraint vector (satisfying $\vec{v} \geq \vec{0}$).
+      - $\sigma \in \Gamma^*$: The current stack content.
+    \item The \textbf{transition relation} $\rightarrow_{\mathcal{V}}$ between configurations is defined as follows:
+      For any transition rule $(q, \gamma) \xrightarrow{\vec{u}} (q', \gamma') \in \Delta$, if:
+      1. Stack matching: $\sigma = \gamma \cdot \sigma''$ (if $\gamma \neq \epsilon$) or $\sigma = \sigma''$ (if $\gamma = \epsilon$), where $\sigma'' \in \Gamma^*$.
+      2. Vector validity: $\vec{v} + \vec{u} \geq \vec{0}$.
+      Then:
+      \[
+      (q, \vec{v}, \sigma) \rightarrow_{\mathcal{V}} (q', \vec{v} + \vec{u}, \gamma' \cdot \sigma'')
+      \]
+\end{itemize}
+\end{definition}
+
+\subsection{Pushdown Colored Petri Net}
+We define the \textbf{Pushdown Colored Petri Net (PCPN)} for Rust as a mathematical structure modeling the static typing and dynamic resource management of the language.
+
+\begin{definition}[Structure]
+A Rust-PCPN is a 9-tuple:
+\[
+\mathcal{N} = (P, T, F, \Sigma, \Gamma, \tau, \phi, \Delta, \mu_0)
+\]
+where:
+\begin{enumerate}
+    \item $P$: A finite set of \textbf{places}, corresponding to Rust types (e.g., \texttt{i32}, \texttt{Vec<T>}) and trait bounds.
+    \item $T$: A finite set of \textbf{transitions}, corresponding to executable functions, methods, and closures.
+    \item $F \subseteq (P \times T) \cup (T \times P)$: A set of directed \textbf{arcs}, representing data flow (arguments and return values).
+    \item $\Sigma$: A finite set of \textbf{colors}, representing instance-specific properties (e.g., mutability status, generic monomorphization).
+    \item $\Gamma$: A finite \textbf{stack alphabet}, representing lifetime scopes and return points.
+    \item $\tau: F \to \{\texttt{Move}, \texttt{Borrow}, \texttt{Mut}, \texttt{Ptr}\}$: An \textbf{arc typing function} that assigns ownership semantics to edges.
+    \item $\phi: T \to \text{Expr}$: A \textbf{guard function}, mapping each transition to a boolean predicate (e.g., trait bounds) that must be satisfied for execution.
+    \item $\Delta: T \to (\Gamma \cup \{\epsilon\}) \times \Gamma^*$: A \textbf{stack action function}, modeling scope entry (push) and exit (pop).
+    \item $\mu_0$: The \textbf{initial state} of the system.
+\end{enumerate}
+\end{definition}
+
+\subsection{Operational Semantics}
+
+The dynamic behavior of the system is described by the evolution of its configuration.
+
+\begin{definition}[Configuration]
+A configuration is a pair $C = (m, \sigma)$, where:
+\begin{itemize}
+    \item $m: P \times \Sigma \to \mathbb{N} \cup \{\omega\}$ is the \textbf{marking}. $m(p, c) = k$ implies $k$ active instances of type $p$ with property $c$. The symbol $\omega$ represents an unbounded count (conceptually).
+    \item $\sigma \in \Gamma^*$ is the \textbf{lifetime stack}, representing the current nesting of scopes.
+\end{itemize}
+\end{definition}
+
+\subsection{Transition Rules and Token Flow}
+
+The transition relation defines how the system moves from one configuration to another.
+
+\begin{definition}[Enabling Condition]
+A transition $t \in T$ is enabled in configuration $(m, \sigma)$, denoted $(m, \sigma) \xrightarrow{t}$, iff:
+\begin{enumerate}
+    \item \textbf{Resource Sufficiency}: For all input arcs $a = (p, t) \in F$:
+    \begin{itemize}
+        \item If $\tau(a) = \texttt{Move}$ or $\texttt{Borrow}$: $m(p) \ge 1$.
+        \item If $\tau(a) = \texttt{Mut}$: $m(p) \ge 1$ (and implies exclusive access in the extended semantics).
+    \end{itemize}
+    \item \textbf{Guard Satisfaction}: $\phi(t)$ evaluates to true.
+    \item \textbf{Stack Consistency}: The stack top matches the pop requirement $\Delta(t)_{pop}$.
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[State Update Rule]
+The firing of $t$ yields a new configuration $(m', \sigma')$:
+\[ (m, \sigma) \xrightarrow{t} (m', \sigma') \]
+
+\paragraph{1. Stack Evolution}
+Let $\Delta(t) = (\gamma_{pop}, \omega_{push})$. The new stack is:
+\[ \sigma' = \omega_{push} \cdot \sigma_{rest} \quad \text{where } \sigma = \gamma_{pop} \cdot \sigma_{rest} \]
+
+\paragraph{2. Token Flow (Marking Evolution)}
+For each place $p \in P$, the new marking $m'(p)$ is calculated based on the net flow determined by arc types $\tau$:
+\[ m'(p) = m(p) - \sum_{a \in pre(t)} \mathcal{W}^-(a) + \sum_{a \in post(t)} \mathcal{W}^+(a) \]
+where the weight functions $\mathcal{W}$ are defined by Rust semantics:
+
+\begin{itemize}
+    \item \textbf{Case $\tau(a) = \texttt{Move}$}:
+    \[ \mathcal{W}^-(a) = 1, \quad \mathcal{W}^+(a) = 0 \]
+    (Token is permanently removed from source).
+
+    \item \textbf{Case $\tau(a) = \texttt{Borrow}$ (\texttt{\&T})}:
+    \[ \mathcal{W}^-(a) = 0, \quad \mathcal{W}^+(a) = 0 \]
+    (Read Arc semantics: Checks for presence but does not consume. Alternatively, consumes a permission token and returns it immediately).
+
+    \item \textbf{Case $\tau(a) = \texttt{Mut}$ (\texttt{\&mut T})}:
+    \[ \mathcal{W}^-(a) = 1, \quad \mathcal{W}^+(a_{return}) = 1 \]
+    (Token is temporarily consumed/locked, and a new token representing the mutable reference is produced. The original token is restored only when the lifetime ends).
+
+    \item \textbf{Case $\tau(a) = \texttt{Ptr}$}:
+    \[ \mathcal{W}^-(a) = 0, \quad \mathcal{W}^+(a) = 1 \]
+    (Duplication of raw address values without ownership transfer).
+\end{itemize}
+\end{definition}
+
+\subsection{State Space Topology}
+
+To analyze the behavior of the system, we define the reachability and coverability structures.
+
+\begin{definition}[Reachability Graph]
+The Reachability Graph $RG(\mathcal{N}) = (V, E)$ is a directed graph where:
+\begin{itemize}
+    \item $V = [ \mu_0 \rangle$: The set of all configurations reachable from $\mu_0$ via any sequence of enabled transitions.
+    \item $E$: Labeled edges representing single transition steps $C_i \xrightarrow{t} C_j$.
+\end{itemize}
+A path in this graph corresponds to a valid execution trace of the Rust program.
+\end{definition}
+
+\begin{definition}[Coverability Tree]
+Since the state space may be infinite (due to unbounded recursion or loops), we define the Coverability Tree to summarize the behavior using the symbol $\omega$.
+\begin{enumerate}
+    \item The root is $\mu_0$.
+    \item If a node $M$ can transition to $M'$, and $M' > M$ (element-wise), we replace the increasing components in $M'$ with $\omega$.
+    \item This tree is finite and preserves the "liveness" and "safety" properties of the original infinite graph.
+\end{enumerate}
+\end{definition}
+
+\subsection{Mapping: PCPN to PVASS }
+We map PCPN's Rust-specific elements to PVASS vectors/states (core intuition: PCPN tokens = PVASS vector components):
+
+\begin{table*}
+\centering
+\caption{PCPN $\rightarrow$ PVASS Mapping (Rust Semantics)}
+\begin{tabular}{|c|c|}
+\hline
+PCPN Element (Rust) & PVASS Element (Rust) \\
+\hline
+Place $p_{\RustType{i32}}$ (owned) & Vector component $d_4$ ($\vec{v}[d_4] = 1$ = owned) \\
+\hline
+Place $p_{\RustBorrow{\&mut i32}}$ & Vector component $d_1$ ($\vec{v}[d_1] = 1$ = 1 mutable borrow) \\
+\hline
+Place $p_{\RustTrait{Clone}}$ (T satisfies Clone) & Vector component $d_2$ ($\vec{v}[d_2] = 1$ = satisfied) \\
+\hline
+Transition $t_{\RustFunc{clone()}}$ & Rule $(q, \gamma) \xrightarrow{\vec{u}} (q', \gamma')$ ($\vec{u}[d_2] = +1$) \\
+\hline
+Guard $\Guard(t) = \RustLifetime{'b} \supseteq \RustLifetime{'a}$ & Stack rule $\sigma = \RustLifetime{'a} \cdot \sigma''$ \\
+\hline
+Action $\Push(t) = \RustLifetime{'a}$ & Stack push $\gamma' = \RustLifetime{'a}$ \\
+\hline
+Initial marking $m_0(p_{\RustType{Vec<i32>}}) = 1$ & Initial vector $\vec{v}_0[d_4] = 1$ \\
+\hline
+\end{tabular}
+\end{table*}
+
+\begin{theorem}
+For any PCPN $\mathcal{P}$, there exists a PVASS $\mathcal{V}$ such that:
+1. A configuration $(m, \sigma)$ is reachable in $\mathcal{P}$ iff $(q, \vec{v}, \sigma)$ is reachable in $\mathcal{V}$;
+2. $\Guard(t)$ holds in $\mathcal{P}$ iff $\vec{v} + \vec{u} \geq \vec{0}$ in $\mathcal{V}$ (Rust safety rules are equivalent);
+3. Lifetime stack operations ($\Push/\Pop$) are isomorphic in both models.
+\end{theorem}
+
+\begin{proof}
+Define $\mathcal{V} = (Q, d, \Gamma, \Delta, q_0, \vec{v}_0, \sigma_0)$ where:
+- $Q = \{ \Guard(t) \mid t \in T \}$ (control states = Rust guard conditions);
+- $d = |P|$ (vector dimension = number of Rust places/constraints);
+- $\vec{u}[p] = \Produce(t)(p) - \Consume(t)(p)$ (vector update = token flow in PCPN);
+- Stack operations $\Pop(t)/\Push(t)$ map directly to PVASS's $\gamma/\gamma'$.
+
+For any PCPN transition $(m, \sigma) \rightarrow_{\mathcal{P}} (m', \sigma')$, the corresponding PVASS transition $(q, \vec{v}, \sigma) \rightarrow_{\mathcal{V} }(q', \vec{v} + \vec{u}, \sigma')$ exists (since $\Guard(t)$ holds $\iff$ $\vec{v} + \vec{u} \geq \vec{0}$). Conversely, every PVASS transition maps to a PCPN transition. Thus, bisimulation holds.
+\end{proof}
+
+\section{Formalization of Rust Static Semantics}
+Instead of relying on the raw output of documentation tools, we formalize the static information extracted from Rust interfaces as the \textit{Rust Static Semantic Schema}. This schema captures the type system, ownership rules, and lifetime constraints necessary for safety verification.
+
+\begin{definition}[Rust Static Semantic Schema]
+The Rust Static Semantic Schema is defined as a 7-tuple:
+\[
+\mathcal{S} = (\mathcal{T}, \mathcal{R}, \mathcal{F}, \mathcal{L}, \mathcal{O}, \mathcal{G}, \Lambda)
+\]
+where:
+\begin{itemize}
+    \item $\mathcal{T}$: A finite set of \textbf{concrete types} (e.g., \texttt{i32}, \texttt{String}).
+    \item $\mathcal{R}$: A finite set of \textbf{traits} representing behavioral interfaces.
+    \item $\mathcal{F}$: A set of \textbf{function signatures}. Each $f \in \mathcal{F}$ is defined as $f = (P_{in}, P_{out}, \mathcal{C})$, where:
+    \begin{itemize}
+        \item $P_{in} \subseteq \mathcal{T} \times \mathcal{O}$: Input parameters with ownership modifiers.
+        \item $P_{out} \in \mathcal{T} \times \mathcal{O}$: Return type with ownership modifier.
+        \item $\mathcal{C} \subseteq (\mathcal{G} \times \mathcal{R}) \cup (\mathcal{L} \times \mathcal{L})$: A set of constraints (Trait Bounds and Lifetime subtyping).
+    \end{itemize}
+    \item $\mathcal{L}$: A set of \textbf{lifetime annotations} (e.g., \texttt{'a}, \texttt{'static}).
+    \item $\mathcal{O}$: The set of \textbf{ownership semantics}, $\mathcal{O} = \{ \text{Move}, \text{Borrow}, \text{Mut}, \text{Shared} \}$.
+    \item $\mathcal{G}$: A set of \textbf{generic type parameters}.
+    \item $\Lambda: \mathcal{T} \to 2^\mathcal{R}$: A mapping defining which traits are implemented by a given type.
+\end{itemize}
+\end{definition}
+
+\section{Extended Formal Definition of Rust Static Semantics}
+To capture the intricate details of Rust's type system, including composite structures, generics, and associated types, we extend the static schema $\mathcal{S}$.
+
+\begin{definition}[Extended Static Schema]
+The Extended Rust Static Semantic Schema is a tuple:
+\[
+\mathcal{S} = (\mathcal{T}, \mathcal{K}, \mathcal{F}, \mathcal{L}, \mathcal{O}, \mathcal{G}, \mathcal{A}, \prec_{sub})
+\]
+where new or refined components are:
+\begin{itemize}
+    \item $\mathcal{K}$: The set of \textbf{data layouts} (Composite Types). For a struct $S \in \mathcal{K}$, $Fields(S) = \{ (n_1, t_1), ..., (n_k, t_k) \}$ defines its member names and types.
+    \item $\mathcal{A}$: The set of \textbf{associated types} and trait projections (e.g., \texttt{Iterator::Item}).
+    \item $\prec_{sub} \subseteq \mathcal{L} \times \mathcal{L}$: The strict \textbf{outlives relation}. $l_a \prec_{sub} l_b$ implies scope $l_a$ strictly encloses $l_b$.
+\end{itemize}
+\end{definition}
+
+\section{Fine-Grained Mapping from $\mathcal{S}$ to Rust-PCPN}
+The mapping $\Psi: \mathcal{S} \to \mathcal{N}$ is constructed using structural operational semantics. We define the construction rules for Generics, Composite Structures, Borrowing Dynamics, and Function Calls.
+
+\subsection{Rule 1: Generics and Monomorphization Mapping}
+Rust generics are resolved at compile time (monomorphization). In the Rust-PCPN, this corresponds to instantiating distinct sub-nets or specialized color sets for each concrete type combination.
+
+\begin{prooftree}
+\AxiomC{$G \in \mathcal{G}$}
+\AxiomC{$T_{conc} \in \mathcal{T}$}
+\AxiomC{$T_{conc} \text{ binds } G$}
+\BinaryInfC{$\Sigma(G) \leftarrow \text{ColorSet}(T_{conc})$}
+\end{prooftree}
+
+\textbf{Description}: 
+The generic parameter $G$ does not map to a single place. Instead, it acts as a \textit{generator} for the Color Set definition. 
+\begin{itemize}
+    \item For a generic function \texttt{fn foo<T>}, the mapping generates a color set $\Sigma_T$. 
+    \item Specific bounds (e.g., \texttt{T: Clone}) map to guard functions $\phi(t) = \exists impl \in \mathcal{R}: \text{impl}(Type(token), \texttt{Clone})$.
+\end{itemize}
+
+\subsection{Rule 2: Composite Types and Field Access}
+Structs and Enums require a hierarchical mapping to support partial borrowing (e.g., borrowing \texttt{self.a} while moving \texttt{self.b}).
+
+\textbf{Mapping Logic}:
+Let $S$ be a struct with fields $f_1: T_1, \dots, f_n: T_n$.
+\begin{enumerate}
+    \item \textbf{Color Composition}: The color set for $S$ is the Cartesian product: $\Sigma_S = \Sigma_{T_1} \times \dots \times \Sigma_{T_n}$.
+    \item \textbf{Projection Transitions}: Accessing a member $f_i$ is mapped to a transition $t_{proj\_i}$ that decomposes the token.
+\end{enumerate}
+
+\[
+\frac{S \in \mathcal{K}, \quad (f_i, T_i) \in Fields(S)}{
+    \exists t_{access} \in T, \quad \tau(p_S, t_{access}) = \text{Read/Move}, \quad \text{Output}(t_{access}) = p_{T_i}
+}
+\]
+
+\textbf{Refinement for Partial Borrowing}:
+To model "splitting" a struct (borrowing disjoint fields), the mapping introduces \textit{Splitter Transitions} that consume the aggregate token from $P_S$ and produce multiple tokens into constituent places $\{P_{T_1}, \dots, P_{T_n}\}$.
+
+\subsection{Rule 3: Borrowing, Re-borrowing, and Freezing}
+This is the core of Rust's safety. We map the \textit{Borrow Checker} rules to Petri net resource consumption patterns.
+
+\subsubsection{Shared Borrow ($\&T$)}
+A shared borrow creates a dependency but allows concurrent access.
+\[
+\frac{f \text{ takes } \&T}{
+    \exists t_{borrow} \in T, \quad F \ni (p_T, t_{borrow}), \quad \tau = \text{ReadArc}
+}
+\]
+\begin{itemize}
+    \item \textbf{Read Arc}: Modeled as a double arc (test arc) that checks for token presence without consuming it, preserving the value in $p_T$.
+    \item \textbf{Re-borrowing}: If $p_{ref}$ holds a reference $\&'a T$, a re-borrow implies deriving a new token $\&'b T$ (where $'a \preceq_{sub} 'b$) without invalidating the original reference.
+\end{itemize}
+
+\subsubsection{Mutable Borrow ($\&mut T$) and Locking}
+A mutable borrow implies exclusivity.
+\[
+\frac{f \text{ takes } \&mut T}{
+    t_{borrow}: p_T \xrightarrow{Move} p_{locked\_T} + p_{ref\_mut}
+}
+\]
+\textbf{Mechanism}:
+\begin{enumerate}
+    \item The original token in $p_T$ is consumed (moved) to a \textbf{Shadow Place} $p_{locked\_T}$.
+    \item A new token is generated in $p_{ref\_mut}$ representing the active mutable reference.
+    \item \textbf{Restoration}: When the lifetime of the reference ends (stack pop), a transition merges $p_{locked\_T}$ and $p_{ref\_mut}$ back into $p_T$. This formally prevents access to the original data while the mutable borrow is active.
+\end{enumerate}
+
+\subsection{Rule 4: Function Calls and Lifetime Scopes}
+Function calls are mapped to sub-net invocations with explicit stack manipulation for lifetimes.
+
+\begin{definition}[Lifetime-Stack Synchronization]
+For a function call $f(args) \to ret$ with associated lifetime scope $'a$:
+\[
+\Delta(t_{call}) = \text{push}('a)
+\]
+\[
+\phi(t_{exec}) = \text{top}(\Gamma) \succeq 'a
+\]
+\end{definition}
+
+\textbf{Wrapper Types (Box, Rc, Arc)}:
+Wrapper types are mapped as \textbf{State Transformers}.
+\begin{itemize}
+    \item \texttt{Box<T>}: Maps to place $p_{Box}$ which behaves identically to $p_T$ regarding ownership (Move semantics).
+    \item \texttt{Rc<T>}: Adds a counter attribute to the token color. Cloning increments the counter; dropping decrements it. The underlying resource is only reclaimed when count maps to 0.
+\end{itemize}
+
+\section{Graph-Based Dependency Interpretation}
+Similar to the Program Certification Graph (PCG) approach, our Rust-PCPN explicitly models the \textit{Loan} relationships via the net topology.
+
+\begin{theorem}[Loan Liveness]
+A reference token in place $p_{\&T}$ is valid if and only if the \textbf{Originating Path} in the Petri net (from the owner place $p_T$) is token-preserving (i.e., the owner has not been moved or invalidated). This is enforced by the topological constraint that $t_{borrow}$ locks the owner place.
+\end{theorem}
+
+
 
 \section{Methodology}
 
-This section formalizes the transformation framework. We first provide an abstract definition of a Rust library derived from the static analysis of \texttt{rustdoc-json}. Subsequently, we define the target formalism, Colored Petri Nets (CPN). Finally, we define the mapping function $\Psi$ that transforms the static library definition into a dynamic CPN model executable for fuzzing sequence generation.
+We define a translation function family $\mathcal{T}$ that maps Rustdoc Intermediate Representation (IR) entities to PCPN components.
 
-\subsection{Formal Abstraction of Rust Libraries}
+\subsection{Type Mapping: Types to Places}
 
-We abstract a Rust library (Crate) as a tuple representing its type system and interface surface.
+Let $\RType$ be the set of concrete types extracted from \texttt{rustdoc}. We define the injection $\mathcal{T}_{type}: \RType \to P \times \Sigma$.
 
-\begin{definition}[Rust Library Model]
-A Rust library is defined as a tuple $\mathcal{L} = (\mathcal{U}, \mathcal{F}, \mathcal{K}, \mathcal{I})$, where:
+\begin{ruledef}[Struct/Enum Mapping]
+For a concrete type $\tau \in \RType$ (e.g., \texttt{std::vec::Vec<i32>}):
+\[ \mathcal{T}_{type}(\tau) = p_{\tau} \]
+where $p_{\tau} \in P$ is a distinct place dedicated to storing instances of $\tau$.
+Tokens inside $p_{\tau}$ represent fully owned, initialized values of type $\tau$.
+\end{ruledef}
+
+\begin{ruledef}[Reference Mapping]
+For reference types, we map them to separate "permission" places:
 \begin{itemize}
-    \item $\mathcal{U} = \mathcal{U}_{prim} \cup \mathcal{U}_{comp}$ is the universe of types, consisting of primitive types (e.g., \texttt{i32}, \texttt{bool}) and composite types (Structs, Enums).
-    \item $\mathcal{F}$ is the set of public API functions. Each $f \in \mathcal{F}$ is characterized by a signature $sig(f): \mathcal{U}^* \to \mathcal{U}$.
-    \item $\mathcal{K}$ is the set of Traits (interfaces), representing behavioral constraints.
-    \item $\mathcal{I} \subseteq \mathcal{U} \times \mathcal{K}$ is the implementation relation. We write $\tau \vdash \kappa$ if type $\tau \in \mathcal{U}$ implements trait $\kappa \in \mathcal{K}$.
+    \item Immutable Reference \texttt{\&'a T}: $\mathcal{T}_{type}(\texttt{\&'a T}) = p_{\texttt{\&T}}$
+    \item Mutable Reference \texttt{\&'a mut T}: $\mathcal{T}_{type}(\texttt{\&'a mut T}) = p_{\texttt{\&mut T}}$
 \end{itemize}
-\end{definition}
+\textit{Note:} The lifetime `'a` is not encoded in the place itself but handled via the stack mechanism and transition guards.
+\end{ruledef}
 
-\begin{definition}[Composite Structure]
-For any composite type $\tau \in \mathcal{U}_{comp}$:
+\subsection{Function Mapping: API to Transitions}
+
+Let $\RFunc$ be the set of public functions. We define $\mathcal{T}_{func}: \RFunc \to T \times \Pow{F} \times \Guard \times \StackOp$.
+
+For a Rust function $f(\vec{args}) \to \vec{ret}$ with generic bounds $\vec{B}$ and lifetime constraints $\vec{L}$:
+\[ \mathcal{T}_{func}(f) = (t_f, F_{in} \cup F_{out}, \phi_f, \Delta_f) \]
+
+\subsubsection{Ownership and Arc Generation}
+The set of arcs is derived from the function signature's ownership semantics:
+
 \begin{itemize}
-    \item If $\tau$ is a \textbf{Struct}, it is defined by an ordered set of fields $S_\tau = \{ (id_1, \tau_1), \dots, (id_n, \tau_n) \}$.
-    \item If $\tau$ is an \textbf{Enum}, it is defined by a set of variants $E_\tau = \{ v_1(\tau_{v1}), \dots, v_m(\tau_{vm}) \}$.
+    \item \textbf{By-Value (Move)}: For argument $arg: \tau$:
+    \[ F_{in} \leftarrow F_{in} \cup \{(p_\tau, t_f)\}, \quad \tau((p_\tau, t_f)) = \texttt{Move} \]
+    
+    \item \textbf{By-Reference (Borrow)}: For argument $arg: \texttt{\& \tau}$:
+    \[ F_{in} \leftarrow F_{in} \cup \{(p_\tau, t_f)\}, \quad \tau((p_\tau, t_f)) = \texttt{Borrow} \]
+    
+    \item \textbf{By-Mutable-Reference (Mut)}: For argument $arg: \texttt{\&mut \tau}$:
+    \[ F_{in} \leftarrow F_{in} \cup \{(p_\tau, t_f)\}, \quad \tau((p_\tau, t_f)) = \texttt{Mut} \]
+    
+    \item \textbf{Return Value}: For return type $\tau_{ret}$:
+    \[ F_{out} \leftarrow F_{out} \cup \{(t_f, p_{\tau_{ret}})\} \]
 \end{itemize}
-\end{definition}
 
-\subsection{Formal Definition of Colored Petri Nets}
+\subsection{Lifetime and Stack Mapping}
 
-We utilize the formal definition of Colored Petri Nets as proposed by Jensen to model the concurrent behavior and state of the API usage.
+Rust lifetimes correspond to the pushdown stack operations.
+\begin{ruledef}[Lifetime Scope]
+If function $f$ introduces a new lifetime parameter (e.g., \texttt{fn f<'a>(...)}):
+\[ \Delta(t_f) = (\epsilon, \texttt{'a}) \quad \text{(Push 'a)} \]
+For the implicit scope drop (end of block), we introduce a specialized transition $t_{drop\_'a}$ where:
+\[ \Delta(t_{drop\_'a}) = (\texttt{'a}, \epsilon) \quad \text{(Pop 'a)} \]
+\end{ruledef}
 
-\begin{definition}[Colored Petri Net]
-A CPN is a 9-tuple $\mathcal{N} = (\Sigma, P, T, A, N, C, G, E, I)$, where:
-\begin{enumerate}
-    \item $\Sigma$ is a finite, non-empty set of non-empty \textbf{Color Sets}.
-    \item $P$ is a finite set of \textbf{Places}.
-    \item $T$ is a finite set of \textbf{Transitions}, such that $P \cap T = \emptyset$.
-    \item $A$ is a finite set of \textbf{Arcs}, such that $P \cap A = T \cap A = \emptyset$.
-    \item $N: A \to (P \times T) \cup (T \times P)$ is the \textbf{Node Function}, defining the source and destination of arcs.
-    \item $C: P \to \Sigma$ is the \textbf{Color Function}, assigning a color set to each place.
-    \item $G: T \to \mathbb{B}$ is the \textbf{Guard Function}, mapping each transition to a boolean expression.
-    \item $E: A \to \text{Expr}$ is the \textbf{Arc Expression Function}, evaluating to a multi-set of token colors.
-    \item $I: P \to \text{Expr}_{closed}$ is the \textbf{Initialization Function}, defining the initial marking.
-\end{enumerate}
-\end{definition}
+\subsection{Guard Construction for Correctness}
 
-\subsection{Mapping Strategy: Rust to CPN}
+The guard function $\phi(t)$ is the critical component ensuring that the PCPN only allows states valid under Rust's borrow checker. It is constructed as a conjunction of predicates:
+\[ \phi(t) = \phi_{borrow}(t) \wedge \phi_{trait}(t) \wedge \phi_{lifetime}(t) \]
 
-The core of our methodology is the mapping function $\Psi: \mathcal{L} \to \mathcal{N}$, which translates the static semantics of $\mathcal{L}$ into the dynamic topology of $\mathcal{N}$.
+\subsection{Borrow Checker Logic}
+To enforce "Shared XOR Mutable":
+\begin{itemize}
+    \item If $t$ requires \texttt{\&mut T} (Mut Arc from $p_T$):
+    \[ \phi_{borrow}(t) = (Tokens(p_{\texttt{\&T}}) == 0) \wedge (Tokens(p_{\texttt{\&mut T}}) == 0) \]
+    \textit{Meaning: Cannot take a mutable reference if any reference (shared or mutable) already exists.}
+    
+    \item If $t$ requires \texttt{\&T} (Borrow Arc from $p_T$):
+    \[ \phi_{borrow}(t) = (Tokens(p_{\texttt{\&mut T}}) == 0) \]
+    \textit{Meaning: Cannot take a shared reference if a mutable reference exists.}
+\end{itemize}
 
-\subsubsection{Type Mapping ($\Sigma$ and $C$)}
+\subsection{Lifetime Constraints}
+If function $f$ requires argument $x$ with lifetime `'a` and $y$ with lifetime `'b`, and the signature specifies `'a: 'b` ('a outlives 'b):
+\[ \phi_{lifetime}(t) = StackContains(\texttt{'a}) \wedge StackIndex(\texttt{'a}) \le StackIndex(\texttt{'b}) \]
 
-The first step transforms Rust memory layouts into CPN Color Sets ($\Sigma$). To support runtime polymorphism simulation, we define a universal token structure.
+\subsection{Translation Algorithm}
 
-\begin{definition}[Token Structure]
-Every token $\omega \in \Sigma_{univ}$ is a tuple $\langle \texttt{tid}, \texttt{val} \rangle$, where $\texttt{tid} \in \mathcal{ID}$ uniquely identifies the concrete type in $\mathcal{U}$, and $\texttt{val}$ holds the structural data.
-\end{definition}
+\begin{algorithm}
+\caption{Rustdoc to PCPN Translation}
+\begin{algorithmic}[1]
+\Require $JSON$: The parsed rustdoc output
+\Ensure $\mathcal{N}$: The constructed PCPN
 
-\begin{mapping}[Data Structure Transformation]
-\label{rule:data}
-Let $\phi: \mathcal{U} \to \Sigma$ be the type transformation function:
-\begin{enumerate}
-    \item \textbf{Primitives}: For $b \in \mathcal{U}_{prim}$, $\phi(b)$ maps directly to standard CPN types (e.g., Integer, Boolean, String).
-    \item \textbf{Structs}: For a struct $\tau$ with fields types $\tau_1, \dots, \tau_n$, $\phi(\tau)$ is defined as a \textbf{Product Color Set}:
-    \begin{equation}
-        \phi(\tau) = \prod_{i=1}^{n} \phi(\tau_i) = \phi(\tau_1) \times \phi(\tau_2) \times \dots \times \phi(\tau_n)
-    \end{equation}
-    This preserves the aggregation relationship of the struct members.
-    \item \textbf{Enums}: For an enum $\tau$ with variants $v_1, \dots, v_m$, $\phi(\tau)$ is defined as a \textbf{Disjoint Union Color Set} (Tagged Union):
-    \begin{equation}
-        \phi(\tau) = \coprod_{j=1}^{m} (\texttt{tag}_{v_j} \times \phi(\text{content}(v_j)))
-    \end{equation}
-\end{enumerate}
-\end{mapping}
+\State $\mathcal{N}.P \leftarrow \emptyset, \mathcal{N}.T \leftarrow \emptyset, \mathcal{N}.F \leftarrow \emptyset$
 
-Based on this, the set of Places $P$ is constructed. For every visible type $\tau \in \mathcal{U}$ appearing in public API signatures, we create a unique place $p_\tau \in P$, such that $C(p_\tau) = \phi(\tau)$.
+\Comment{\textbf{Phase 1: Place Generation}}
+\For{each $struct/enum \ D$ in $JSON$}
+    \State $p_D \leftarrow \text{CreatePlace}(D)$
+    \State $\mathcal{N}.P \leftarrow \mathcal{N}.P \cup \{p_D\}$
+\EndFor
 
-\subsubsection{Function Mapping ($T$, $A$, and $E$)}
+\Comment{\textbf{Phase 2: Transition Generation}}
+\For{each $function \ F$ in $JSON$}
+    \State $t_F \leftarrow \text{CreateTransition}(F)$
+    
+    \Comment{Process Arguments (Inputs)}
+    \For{each $arg \ A$ in $F.inputs$}
+        \State $p_{type} \leftarrow \text{LookupPlace}(A.type)$
+        \If{$A.is\_owned$}
+            \State $\text{AddArc}(p_{type} \xrightarrow{\texttt{Move}} t_F)$
+        \ElsIf{$A.is\_mutable\_ref$}
+            \State $\text{AddArc}(p_{type} \xrightarrow{\texttt{Mut}} t_F)$
+            \State $\phi(t_F) \leftarrow \phi(t_F) \wedge \text{NoActiveRefs}(p_{type})$
+        \Else \Comment{Immutable Ref}
+            \State $\text{AddArc}(p_{type} \xrightarrow{\texttt{Borrow}} t_F)$
+            \State $\phi(t_F) \leftarrow \phi(t_F) \wedge \text{NoActiveMutRefs}(p_{type})$
+        \EndIf
+    \EndFor
+    
+    \Comment{Process Return (Output)}
+    \If{$F.has\_output$}
+        \State $p_{ret} \leftarrow \text{LookupPlace}(F.output\_type)$
+        \State $\text{AddArc}(t_F \to p_{ret})$
+    \EndIf
+    
+    \State $\mathcal{N}.T \leftarrow \mathcal{N}.T \cup \{t_F\}$
+\EndFor
 
-Transitions model the execution of functions. This mapping ensures that the flow of tokens adheres to Rust's ownership and borrowing rules (simplified for reachability analysis).
+\State \Return $\mathcal{N}$
+\end{algorithmic}
+\end{algorithm}
 
-\begin{mapping}[Function Transformation]
-For each function $f \in \mathcal{F}$ with signature $f(x_1: \tau_1, \dots, x_k: \tau_k) \to \tau_{ret}$:
-\begin{enumerate}
-    \item Create a transition $t_f \in T$.
-    \item \textbf{Input Arcs}: For each argument $x_i$, create an arc $a_i \in A$ from $p_{\tau_i}$ to $t_f$. The arc expression $E(a_i)$ binds the variable name $x_i$.
-    \item \textbf{Output Arcs}: Create an arc $a_{out} \in A$ from $t_f$ to $p_{\tau_{ret}}$. The expression $E(a_{out})$ represents the function result.
-\end{enumerate}
-\end{mapping}
-
-\subsubsection{Constraint Mapping ($G$)}
-
-The crucial innovation of our approach is mapping generic bounds to CPN Guard expressions, converting type-checking problems into constraint satisfaction problems during net execution.
-
-\begin{mapping}[Generics and Trait Bounds]
-Let $f$ be a generic function with type parameter $T$ constrained by trait bounds $\{ \kappa_1, \dots, \kappa_r \} \subseteq \mathcal{K}$. The Guard function $G(t_f)$ is constructed as:
-\begin{equation}
-    G(t_f) = \lambda \omega. \bigwedge_{j=1}^{r} (\omega.\texttt{tid} \vdash \kappa_j)
-\end{equation}
-where $\omega.\texttt{tid}$ extracts the type identifier from the incoming token. The relation $\vdash$ is evaluated against the pre-computed implementation registry $\mathcal{I}$.
-\end{mapping}
-
-This mapping ensures that the transition $t_f$ is enabled if and only if the concrete data types flowing into the function satisfy the Rust compiler's requirements for the generic parameters.
+To prove that our Pushdown Colored Petri Net accurately models Rust's ownership and borrowing rules, we establish a \textbf{strong bisimulation} between the operational semantics of Rust (the Rust Abstract Machine, RAM) and the firing semantics of the PCPN.
 
 
 %%
@@ -315,38 +816,6 @@ To Robert, for the bagels and explaining CMYK and color spaces.
 
 %%
 %% If your work has an appendix, this is the place to put it.
-\appendix
-
-\section{Research Methods}
-
-\subsection{Part One}
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi
-malesuada, quam in pulvinar varius, metus nunc fermentum urna, id
-sollicitudin purus odio sit amet enim. Aliquam ullamcorper eu ipsum
-vel mollis. Curabitur quis dictum nisl. Phasellus vel semper risus, et
-lacinia dolor. Integer ultricies commodo sem nec semper.
-
-\subsection{Part Two}
-
-Etiam commodo feugiat nisl pulvinar pellentesque. Etiam auctor sodales
-ligula, non varius nibh pulvinar semper. Suspendisse nec lectus non
-ipsum convallis congue hendrerit vitae sapien. Donec at laoreet
-eros. Vivamus non purus placerat, scelerisque diam eu, cursus
-ante. Etiam aliquam tortor auctor efficitur mattis.
-
-\section{Online Resources}
-
-Nam id fermentum dui. Suspendisse sagittis tortor a nulla mollis, in
-pulvinar ex pretium. Sed interdum orci quis metus euismod, et sagittis
-enim maximus. Vestibulum gravida massa ut felis suscipit
-congue. Quisque mattis elit a risus ultrices commodo venenatis eget
-dui. Etiam sagittis eleifend elementum.
-
-Nam interdum magna at lectus dignissim, ac dignissim lorem
-rhoncus. Maecenas eu arcu ac neque placerat aliquam. Nunc pulvinar
-massa et mattis lacinia.
-
 \end{document}
 \endinput
 %%
