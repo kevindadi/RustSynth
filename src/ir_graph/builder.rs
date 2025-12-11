@@ -825,113 +825,251 @@ impl<'ir> IrGraphBuilder<'ir> {
         generics: &rustdoc_types::Generics,
         owner_name: &str,
     ) {
-        use super::type_cache::{GenericScope as CacheGenericScope, TypeKey};
+        use super::type_cache::{GenericParamKind, GenericScope as CacheGenericScope, TypeKey};
 
         for param in &generics.params {
-            if let GenericParamDefKind::Type { bounds, .. } = &param.kind {
-                let generic_name = format!("{}:{}", owner_name, param.name);
+            let generic_name = format!("{}:{}", owner_name, param.name);
+            let scope = CacheGenericScope::Type(owner_id);
 
-                // 使用 TypeCache 创建泛型参数节点
-                let type_key = TypeKey::Generic {
-                    name: param.name.clone(),
-                    scope: CacheGenericScope::Type(owner_id),
-                };
-
-                // 检查是否已存在
-                let (generic_node_index, is_new) =
-                    if let Some(idx) = self.type_cache.get_node(&type_key) {
-                        (idx, false)
-                    } else {
-                        // 创建新节点
-                        let idx = self.graph.add_type_node(&generic_name);
-                        self.graph.node_types.insert(idx, NodeType::Generic);
-                        self.type_cache.insert_node(type_key.clone(), idx);
-                        (idx, true)
+            // 根据泛型参数类型创建对应的 TypeKey
+            let (_type_key, _kind_str) = match &param.kind {
+                GenericParamDefKind::Type { bounds, default, .. } => {
+                    let type_key = TypeKey::Generic {
+                        name: param.name.clone(),
+                        scope: scope.clone(),
+                        kind: GenericParamKind::Type,
                     };
 
-                self.generic_scopes.insert(owner_id, HashSet::new());
-                self.generic_scopes
-                    .get_mut(&owner_id)
-                    .unwrap()
-                    .insert(param.name.clone());
+                    // 检查是否已存在
+                    let (generic_node_index, is_new) =
+                        if let Some(idx) = self.type_cache.get_node(&type_key) {
+                            (idx, false)
+                        } else {
+                            // 创建新节点
+                            let idx = self.graph.add_type_node(&generic_name);
+                            self.graph.node_types.insert(idx, NodeType::Generic);
+                            self.type_cache.insert_node(type_key.clone(), idx);
+                            (idx, true)
+                        };
 
-                // 插入两个 key:完整名和短名
-                // 使用 type_cache 的 insert_generic 方法
-                self.type_cache.insert_generic(
-                    generic_name.clone(),
-                    Some(param.name.clone()),
-                    generic_node_index,
-                );
+                    self.generic_scopes.insert(owner_id, HashSet::new());
+                    self.generic_scopes
+                        .get_mut(&owner_id)
+                        .unwrap()
+                        .insert(param.name.clone());
 
-                debug!(
-                    "创建泛型参数: {} (存储为 {} 和 {}), TypeCache key: {:?}",
-                    generic_name, generic_name, param.name, type_key
-                );
-
-                // 收集 trait bounds
-                let mut bound_nodes = Vec::new();
-
-                // 创建 Include 边:类型/Trait -> 泛型参数
-                let owner_node = self.type_cache.get_by_id(&owner_id);
-                if let Some(owner) = owner_node {
-                    self.graph.add_type_relation(
-                        owner,
+                    // 插入两个 key:完整名和短名
+                    self.type_cache.insert_generic(
+                        generic_name.clone(),
+                        Some(param.name.clone()),
                         generic_node_index,
-                        EdgeMode::Include,
-                        Some(format!("has generic {}", param.name)),
                     );
-                }
 
-                // 处理 Trait 约束,创建 Require 边
-                for bound in bounds {
-                    if let GenericBound::TraitBound { trait_, .. } = bound {
-                        let trait_id = trait_.id;
+                    debug!(
+                        "创建类型泛型参数: {} (存储为 {} 和 {}), TypeCache key: {:?}",
+                        generic_name, generic_name, param.name, type_key
+                    );
 
-                        // 获取 Trait 的完整名称(包含具体类型参数)
-                        let trait_full_name = Self::get_trait_full_name(trait_);
-                        let (has_concrete_args, _) =
-                            Self::check_trait_args_for_concrete_type(&trait_.args);
+                    // 收集 trait bounds
+                    let mut bound_nodes = Vec::new();
 
-                        // 获取或创建 Trait 节点
-                        // 对于带有具体类型参数的 Trait(如 AsRef<[u8]>),使用完整名称作为节点
-                        let trait_node = self.insert_trait_node(
-                            trait_,
-                            trait_id,
-                            &trait_full_name,
-                            has_concrete_args,
-                        );
-
-                        bound_nodes.push(trait_node);
-
-                        // 创建 Require 边:Trait -> 泛型参数
-                        // 在 Petri 网语义中,实现了 Trait 的类型会向 Trait 库所发送 token,
-                        // 然后这些 token 可以流向需要该 Trait 的泛型
+                    // 创建 Include 边:类型/Trait -> 泛型参数
+                    let owner_node = self.type_cache.get_by_id(&owner_id);
+                    if let Some(owner) = owner_node {
                         self.graph.add_type_relation(
-                            trait_node,
+                            owner,
                             generic_node_index,
-                            EdgeMode::Require,
-                            Some(format!("required by {}", param.name)),
-                        );
-                        debug!(
-                            "泛型约束: trait {} -> {} (Petri net flow)",
-                            trait_full_name, param.name
+                            EdgeMode::Include,
+                            Some(format!("has generic {}", param.name)),
                         );
                     }
-                }
 
-                // 创建 GenericInfo(仅在新创建时)
-                if is_new {
-                    let generic_info = GenericInfo {
-                        name: param.name.clone(),
-                        owner: owner_node,
-                        bounds: bound_nodes,
-                        default_type: None, // TODO: 处理默认类型
-                    };
-                    self.graph
-                        .node_infos
-                        .insert(generic_node_index, NodeInfo::Generic(generic_info));
+                    // 处理 Trait 约束,创建 Require 边
+                    for bound in bounds {
+                        if let GenericBound::TraitBound { trait_, .. } = bound {
+                            let trait_id = trait_.id;
+
+                            // 获取 Trait 的完整名称(包含具体类型参数)
+                            let trait_full_name = Self::get_trait_full_name(trait_);
+                            let (has_concrete_args, _) =
+                                Self::check_trait_args_for_concrete_type(&trait_.args);
+
+                            // 获取或创建 Trait 节点
+                            let trait_node = self.insert_trait_node(
+                                trait_,
+                                trait_id,
+                                &trait_full_name,
+                                has_concrete_args,
+                            );
+
+                            bound_nodes.push(trait_node);
+
+                            // 创建 Require 边:Trait -> 泛型参数
+                            self.graph.add_type_relation(
+                                trait_node,
+                                generic_node_index,
+                                EdgeMode::Require,
+                                Some(format!("required by {}", param.name)),
+                            );
+                            debug!(
+                                "泛型约束: trait {} -> {} (Petri net flow)",
+                                trait_full_name, param.name
+                            );
+                        }
+                    }
+
+                    // 创建 GenericInfo(仅在新创建时)
+                    if is_new {
+                        let generic_info = GenericInfo {
+                            name: param.name.clone(),
+                            owner: owner_node,
+                            bounds: bound_nodes,
+                            default_type: default.as_ref().and_then(|_default_ty| {
+                                // TODO: 处理默认类型节点
+                                None
+                            }),
+                        };
+                        self.graph
+                            .node_infos
+                            .insert(generic_node_index, NodeInfo::Generic(generic_info));
+                    }
+
+                    (type_key, "Type")
                 }
-            }
+                GenericParamDefKind::Lifetime { outlives } => {
+                    let type_key = TypeKey::Generic {
+                        name: param.name.clone(),
+                        scope: scope.clone(),
+                        kind: GenericParamKind::Lifetime {
+                            outlives: outlives.clone(),
+                        },
+                    };
+
+                    // 检查是否已存在
+                    let (generic_node_index, is_new) =
+                        if let Some(idx) = self.type_cache.get_node(&type_key) {
+                            (idx, false)
+                        } else {
+                            // 创建新节点
+                            let idx = self.graph.add_type_node(&generic_name);
+                            self.graph.node_types.insert(idx, NodeType::Generic);
+                            self.type_cache.insert_node(type_key.clone(), idx);
+                            (idx, true)
+                        };
+
+                    self.generic_scopes.insert(owner_id, HashSet::new());
+                    self.generic_scopes
+                        .get_mut(&owner_id)
+                        .unwrap()
+                        .insert(param.name.clone());
+
+                    // 插入两个 key:完整名和短名
+                    self.type_cache.insert_generic(
+                        generic_name.clone(),
+                        Some(param.name.clone()),
+                        generic_node_index,
+                    );
+
+                    debug!(
+                        "创建生命周期泛型参数: {} (存储为 {} 和 {}), outlives: {:?}, TypeCache key: {:?}",
+                        generic_name, generic_name, param.name, outlives, type_key
+                    );
+
+                    // 创建 Include 边:类型/Trait -> 泛型参数
+                    let owner_node = self.type_cache.get_by_id(&owner_id);
+                    if let Some(owner) = owner_node {
+                        self.graph.add_type_relation(
+                            owner,
+                            generic_node_index,
+                            EdgeMode::Include,
+                            Some(format!("has lifetime generic {}", param.name)),
+                        );
+                    }
+
+                    // 创建 GenericInfo(仅在新创建时)
+                    if is_new {
+                        let generic_info = GenericInfo {
+                            name: param.name.clone(),
+                            owner: owner_node,
+                            bounds: Vec::new(), // 生命周期参数没有 trait bounds
+                            default_type: None,
+                        };
+                        self.graph
+                            .node_infos
+                            .insert(generic_node_index, NodeInfo::Generic(generic_info));
+                    }
+
+                    (type_key, "Lifetime")
+                }
+                GenericParamDefKind::Const { type_, default } => {
+                    let type_key = TypeKey::Generic {
+                        name: param.name.clone(),
+                        scope: scope.clone(),
+                        kind: GenericParamKind::Const {
+                            type_: format!("{:?}", type_),
+                            default: default.clone(),
+                        },
+                    };
+
+                    // 检查是否已存在
+                    let (generic_node_index, is_new) =
+                        if let Some(idx) = self.type_cache.get_node(&type_key) {
+                            (idx, false)
+                        } else {
+                            // 创建新节点
+                            let idx = self.graph.add_type_node(&generic_name);
+                            self.graph.node_types.insert(idx, NodeType::Generic);
+                            self.type_cache.insert_node(type_key.clone(), idx);
+                            (idx, true)
+                        };
+
+                    self.generic_scopes.insert(owner_id, HashSet::new());
+                    self.generic_scopes
+                        .get_mut(&owner_id)
+                        .unwrap()
+                        .insert(param.name.clone());
+
+                    // 插入两个 key:完整名和短名
+                    self.type_cache.insert_generic(
+                        generic_name.clone(),
+                        Some(param.name.clone()),
+                        generic_node_index,
+                    );
+
+                    debug!(
+                        "创建常量泛型参数: {} (存储为 {} 和 {}), type: {:?}, default: {:?}, TypeCache key: {:?}",
+                        generic_name, generic_name, param.name, type_, default, type_key
+                    );
+
+                    // 创建 Include 边:类型/Trait -> 泛型参数
+                    let owner_node = self.type_cache.get_by_id(&owner_id);
+                    if let Some(owner) = owner_node {
+                        self.graph.add_type_relation(
+                            owner,
+                            generic_node_index,
+                            EdgeMode::Include,
+                            Some(format!("has const generic {}", param.name)),
+                        );
+                    }
+
+                    // 创建 GenericInfo(仅在新创建时)
+                    if is_new {
+                        let generic_info = GenericInfo {
+                            name: param.name.clone(),
+                            owner: owner_node,
+                            bounds: Vec::new(), // 常量参数没有 trait bounds
+                            default_type: None,
+                        };
+                        self.graph
+                            .node_infos
+                            .insert(generic_node_index, NodeInfo::Generic(generic_info));
+                    }
+
+                    (type_key, "Const")
+                }
+            };
+
+            // _kind_str 用于调试,已在上面的 match 分支中使用
         }
     }
 
@@ -1164,7 +1302,7 @@ impl<'ir> IrGraphBuilder<'ir> {
         trait_name: &str,
         method_ids: &[Id],
     ) {
-        use super::type_cache::{GenericScope as CacheGenericScope, TypeKey};
+        use super::type_cache::{GenericParamKind, GenericScope as CacheGenericScope, TypeKey};
         use rustdoc_types::Path;
         use std::collections::HashMap;
 
@@ -1215,6 +1353,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                 let type_key = TypeKey::Generic {
                     name: generic_name.clone(),
                     scope: CacheGenericScope::Trait(trait_id),
+                    kind: GenericParamKind::Type, // 关联类型通常是类型参数
                 };
 
                 let generic_node_index = if let Some(idx) = self.type_cache.get_node(&type_key) {
