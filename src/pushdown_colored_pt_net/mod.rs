@@ -38,6 +38,12 @@
 pub mod net;
 pub mod export;
 pub mod analysis;
+pub mod unfolding;
+pub mod unfolding_fuzz;
+#[cfg(test)]
+mod fuzz_example;
 
 pub use net::{PushdownColoredPetriNet, TokenColor, StackOperation, PcpnStats};
-pub use analysis::PcpnAnalysis;
+pub use analysis::{PcpnAnalysis, FuzzEntryInfo};
+pub use unfolding::{UnfoldedPetriNet, UnfoldingConfig, UnfoldingStats, unfold_petri_net};
+pub use unfolding_fuzz::UnfoldingBasedFuzzer;

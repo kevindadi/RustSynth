@@ -43,6 +43,8 @@ pub enum TokenColor {
         /// 引用的类型
         inner: Box<TokenColor>,
     },
+    /// 切片类型 [T]
+    Slice(Box<TokenColor>),
 }
 
 impl TokenColor {
@@ -77,6 +79,9 @@ impl TokenColor {
             TokenColor::Reference { mutable, inner } => {
                 let mut_str = if *mutable { "mut " } else { "" };
                 format!("&{} {}", mut_str, inner.to_string())
+            }
+            TokenColor::Slice(inner) => {
+                format!("[{}]", inner.to_string())
             }
         }
     }
@@ -254,6 +259,171 @@ impl PushdownColoredPetriNet {
             .entry(place_idx)
             .or_insert_with(HashMap::new)
             .insert(color, count);
+    }
+
+    /// 查找模糊测试入口点（&[u8] 类型的 place）
+    ///
+    /// 返回所有表示 `&[u8]` 类型的 place 索引
+    pub fn find_fuzz_entry_points(&self) -> Vec<usize> {
+        let u8_slice_color = TokenColor::Reference {
+            mutable: false,
+            inner: Box::new(TokenColor::Slice(Box::new(TokenColor::Primitive("u8".to_string())))),
+        };
+        
+        let mut entry_points = Vec::new();
+        for (place_idx, place_name) in self.places.iter().enumerate() {
+            // 检查 place 名称是否包含 &[u8] 或类似的模式
+            if place_name.contains("&[u8]") || place_name.contains("[u8]") {
+                entry_points.push(place_idx);
+            }
+            // 检查初始标记中是否有 &[u8] 类型的 token
+            if let Some(colors) = self.initial_marking.get(&place_idx) {
+                if colors.contains_key(&u8_slice_color) {
+                    entry_points.push(place_idx);
+                }
+            }
+        }
+        entry_points
+    }
+
+    /// 添加从 &[u8] 到目标类型的转换变迁
+    ///
+    /// 这会创建一个特殊的变迁，从 `&[u8]` place 生成目标类型的 token
+    ///
+    /// # 参数
+    /// - `fuzz_entry_idx`: 模糊测试入口点（&[u8] 类型的 place 索引）
+    /// - `target_color`: 目标 token 颜色
+    /// - `target_place_idx`: 目标 place 索引（如果为 None，会创建一个新的 place）
+    ///
+    /// # 返回
+    /// 返回创建的变迁索引和目标 place 索引
+    pub fn add_fuzz_conversion(
+        &mut self,
+        fuzz_entry_idx: usize,
+        target_color: TokenColor,
+        target_place_idx: Option<usize>,
+    ) -> (usize, usize) {
+        // 获取或创建目标 place
+        let target_place = if let Some(idx) = target_place_idx {
+            idx
+        } else {
+            // 根据颜色创建 place 名称
+            let place_name = format!("fuzz_generated_{}", target_color.to_string());
+            self.add_place(place_name)
+        };
+
+        // 创建转换变迁
+        let trans_name = format!(
+            "fuzz_parse_{}_from_u8_slice",
+            target_color.to_string().replace(" ", "_").replace("<", "_").replace(">", "_")
+        );
+        let trans_idx = self.add_transition(trans_name);
+
+        // 添加输入弧：从 &[u8] place 到转换变迁
+        let u8_slice_color = TokenColor::Reference {
+            mutable: false,
+            inner: Box::new(TokenColor::Slice(Box::new(TokenColor::Primitive("u8".to_string())))),
+        };
+        self.add_input_arc(
+            fuzz_entry_idx,
+            trans_idx,
+            EdgeMode::Ref, // 使用 Ref，因为 &[u8] 可以被多次读取
+            1,
+            Some("fuzz_input".to_string()),
+            Some(u8_slice_color),
+        );
+
+        // 添加输出弧：从转换变迁到目标 place
+        self.color_set.insert(target_color.clone());
+        self.add_output_arc(
+            trans_idx,
+            target_place,
+            EdgeMode::Move,
+            1,
+            Some("parsed_value".to_string()),
+            Some(target_color),
+        );
+
+        (trans_idx, target_place)
+    }
+
+    /// 自动添加从 &[u8] 到常见类型的转换
+    ///
+    /// 这会为所有模糊测试入口点添加常见类型的转换变迁
+    pub fn add_common_fuzz_conversions(&mut self) {
+        let entry_points = self.find_fuzz_entry_points();
+        
+        if entry_points.is_empty() {
+            // 如果没有找到入口点，创建一个虚拟的 &[u8] place
+            let fuzz_entry = self.add_place("fuzz_input: &[u8]".to_string());
+            self.set_initial_marking(fuzz_entry, TokenColor::Reference {
+                mutable: false,
+                inner: Box::new(TokenColor::Slice(Box::new(TokenColor::Primitive("u8".to_string())))),
+            }, 1);
+            
+            // 为常见类型添加转换
+            self.add_conversions_for_entry(fuzz_entry);
+        } else {
+            for entry_idx in entry_points {
+                self.add_conversions_for_entry(entry_idx);
+            }
+        }
+    }
+
+    /// 为指定的入口点添加常见类型转换
+    fn add_conversions_for_entry(&mut self, entry_idx: usize) {
+        // 基本整数类型
+        let integer_types = vec![
+            "u8", "u16", "u32", "u64", "usize",
+            "i8", "i16", "i32", "i64", "isize",
+        ];
+        
+        for int_type in integer_types {
+            let color = TokenColor::Primitive(int_type.to_string());
+            self.add_fuzz_conversion(entry_idx, color, None);
+        }
+
+        // 布尔类型
+        let bool_color = TokenColor::Primitive("bool".to_string());
+        self.add_fuzz_conversion(entry_idx, bool_color, None);
+
+        // 字符类型
+        let char_color = TokenColor::Primitive("char".to_string());
+        self.add_fuzz_conversion(entry_idx, char_color, None);
+
+        // 字符串类型
+        let str_color = TokenColor::Primitive("str".to_string());
+        self.add_fuzz_conversion(entry_idx, str_color, None);
+        
+        let string_color = TokenColor::Composite {
+            name: "String".to_string(),
+            type_args: Vec::new(),
+        };
+        self.add_fuzz_conversion(entry_idx, string_color, None);
+
+        // Vec<u8>
+        let vec_u8_color = TokenColor::Composite {
+            name: "Vec".to_string(),
+            type_args: vec![TokenColor::Primitive("u8".to_string())],
+        };
+        self.add_fuzz_conversion(entry_idx, vec_u8_color, None);
+
+        // Option<T> 类型（对于常见类型）
+        let option_u8 = TokenColor::Composite {
+            name: "Option".to_string(),
+            type_args: vec![TokenColor::Primitive("u8".to_string())],
+        };
+        self.add_fuzz_conversion(entry_idx, option_u8, None);
+
+        // Result<T, E> 类型
+        let result_u8_string = TokenColor::Composite {
+            name: "Result".to_string(),
+            type_args: vec![
+                TokenColor::Primitive("u8".to_string()),
+                TokenColor::Primitive("String".to_string()),
+            ],
+        };
+        self.add_fuzz_conversion(entry_idx, result_u8_string, None);
     }
 
     /// 获取统计信息

@@ -270,7 +270,7 @@ impl<'ir> IrGraphBuilder<'ir> {
         use super::type_cache::{GenericParamKind, GenericScope as CacheGenericScope, TypeKey};
 
         for param in &generics.params {
-            let generic_name = format!("{}:{}", method_name, param.name);
+                let generic_name = format!("{}:{}", method_name, param.name);
             let scope = CacheGenericScope::Method(method_id);
 
             // 根据泛型参数类型创建对应的 TypeKey
@@ -288,57 +288,57 @@ impl<'ir> IrGraphBuilder<'ir> {
                     } else {
                         // 创建新节点
                         let idx = self.graph.add_type_node(&generic_name);
-                        self.graph
-                            .node_types
+                self.graph
+                    .node_types
                             .insert(idx, NodeType::Generic);
                         self.type_cache.insert_node(type_key.clone(), idx);
                         idx
                     };
 
-                    // 插入两个 key:完整名和短名
-                    self.type_cache.insert_generic(
-                        generic_name.clone(),
-                        Some(param.name.clone()),
-                        generic_node_idx,
-                    );
+                // 插入两个 key:完整名和短名
+                self.type_cache.insert_generic(
+                    generic_name.clone(),
+                    Some(param.name.clone()),
+                    generic_node_idx,
+                );
 
-                    debug!(
+                debug!(
                         "创建方法类型泛型参数: {} (存储为 {} 和 {}), TypeCache key: {:?}",
                         generic_name, generic_name, param.name, type_key
-                    );
+                );
 
-                    // 处理 Trait 约束
-                    for bound in bounds {
-                        if let GenericBound::TraitBound { trait_, .. } = bound {
-                            let trait_id = trait_.id;
+                // 处理 Trait 约束
+                for bound in bounds {
+                    if let GenericBound::TraitBound { trait_, .. } = bound {
+                        let trait_id = trait_.id;
 
-                            // 获取 Trait 的完整名称(包含具体类型参数)
-                            let trait_full_name = Self::get_trait_full_name(trait_);
-                            let (has_concrete_args, _) =
-                                Self::check_trait_args_for_concrete_type(&trait_.args);
+                        // 获取 Trait 的完整名称(包含具体类型参数)
+                        let trait_full_name = Self::get_trait_full_name(trait_);
+                        let (has_concrete_args, _) =
+                            Self::check_trait_args_for_concrete_type(&trait_.args);
 
-                            // 获取或创建 Trait 节点
-                            let trait_node = self.insert_trait_node(
-                                trait_,
-                                trait_id,
-                                &trait_full_name,
-                                has_concrete_args,
-                            );
+                        // 获取或创建 Trait 节点
+                        let trait_node = self.insert_trait_node(
+                            trait_,
+                            trait_id,
+                            &trait_full_name,
+                            has_concrete_args,
+                        );
 
-                            // 创建 Require 边:Trait -> 泛型(Petri 网语义)
-                            self.graph.add_type_relation(
-                                trait_node,
-                                generic_node_idx,
-                                EdgeMode::Require,
-                                Some(format!("required by {}", param.name)),
-                            );
-                            debug!(
-                                "泛型约束: trait {} -> {} (Petri net flow)",
-                                trait_full_name, param.name
-                            );
-                        }
+                        // 创建 Require 边:Trait -> 泛型(Petri 网语义)
+                        self.graph.add_type_relation(
+                            trait_node,
+                            generic_node_idx,
+                            EdgeMode::Require,
+                            Some(format!("required by {}", param.name)),
+                        );
+                        debug!(
+                            "泛型约束: trait {} -> {} (Petri net flow)",
+                            trait_full_name, param.name
+                        );
                     }
                 }
+            }
                 GenericParamDefKind::Lifetime { outlives } => {
                     let type_key = TypeKey::Generic {
                         name: param.name.clone(),
