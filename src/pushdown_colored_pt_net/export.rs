@@ -5,20 +5,17 @@ use serde_json;
 
 impl PetriNetExport for PushdownColoredPetriNet {
     fn to_pnml(&self) -> String {
-        // PNML 格式导出（简化版，实际应该支持颜色和栈操作）
         let mut xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         xml.push_str("<pnml>\n");
         xml.push_str("  <net id=\"pcpn\" type=\"http://www.pnml.org/version-2009/grammar/pnmlcoremodel\">\n");
 
-        // Places
         for (idx, place) in self.places.iter().enumerate() {
             xml.push_str(&format!(
                 "    <place id=\"p{}\">\n",
                 idx
             ));
             xml.push_str(&format!("      <name><text>{}</text></name>\n", escape_xml(place)));
-            
-            // 初始标记（按颜色）
+                        
             if let Some(colors) = self.initial_marking.get(&idx) {
                 for (color, count) in colors {
                     if *count > 0 {

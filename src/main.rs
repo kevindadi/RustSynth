@@ -8,6 +8,7 @@ mod parse;
 mod petri_net_traits;
 mod pipeline;
 pub mod support_types;
+pub mod llm_client;
 
 use crate::config::Config;
 use crate::pipeline::Pipeline;

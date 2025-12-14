@@ -9,7 +9,6 @@
 use crate::pushdown_colored_pt_net::net::{PushdownColoredPetriNet, TokenColor, StackOperation};
 use std::collections::{HashMap, HashSet, VecDeque};
 
-/// 展开后的 Petri 网（Occurrence Net）
 #[derive(Debug, Clone)]
 pub struct UnfoldedPetriNet {
     /// 事件列表（展开后的变迁实例）
@@ -64,7 +63,6 @@ pub struct Condition {
     pub has_token: bool,
 }
 
-/// 展开配置
 #[derive(Debug, Clone)]
 pub struct UnfoldingConfig {
     /// 最大展开深度
@@ -104,9 +102,6 @@ impl UnfoldedPetriNet {
         }
     }
 
-    /// 获取所有配置（可能的执行序列）
-    ///
-    /// 配置是一个事件集合，表示一个可能的执行序列
     pub fn get_configurations(&self, max_size: usize) -> Vec<Vec<usize>> {
         let mut configurations = Vec::new();
         let mut stack: Vec<Vec<usize>> = vec![Vec::new()];
@@ -116,14 +111,12 @@ impl UnfoldedPetriNet {
                 continue;
             }
 
-            // 检查当前配置是否完整（没有更多可触发的事件）
             let enabled = self.get_enabled_events(&current);
             if enabled.is_empty() {
                 configurations.push(current);
                 continue;
             }
 
-            // 为每个可触发的事件创建新配置
             for event_id in enabled {
                 let mut new_config = current.clone();
                 new_config.push(event_id);
@@ -134,20 +127,15 @@ impl UnfoldedPetriNet {
         configurations
     }
 
-    /// 获取在当前配置下可触发的事件
     fn get_enabled_events(&self, configuration: &[usize]) -> Vec<usize> {
-        // 找出所有前置条件都满足的事件
         let mut enabled = Vec::new();
 
         for event in &self.events {
-            // 检查是否已经在配置中
             if configuration.contains(&event.id) {
                 continue;
             }
 
-            // 检查前置条件是否都满足
             let all_satisfied = event.preconditions.iter().all(|&cond_id| {
-                // 条件必须满足：要么是初始条件，要么被配置中的某个事件产生
                 self.initial_conditions.contains(&cond_id)
                     || configuration.iter().any(|&event_id| {
                         self.events
@@ -158,7 +146,6 @@ impl UnfoldedPetriNet {
                     })
             });
 
-            // 检查是否与配置中的事件冲突
             let conflicts = self.conflict.get(&event.id).cloned().unwrap_or_default();
             let has_conflict = configuration.iter().any(|&eid| conflicts.contains(&eid));
 
@@ -170,18 +157,14 @@ impl UnfoldedPetriNet {
         enabled
     }
 
-    /// 将配置转换为事件序列
     pub fn configuration_to_sequence(&self, configuration: &[usize]) -> Vec<String> {
-        // 根据因果关系排序
         let mut sorted = configuration.to_vec();
         sorted.sort_by(|&a, &b| {
-            // 如果 a 是 b 的原因，a 应该在前面
             if self.causality.get(&a).map(|s| s.contains(&b)).unwrap_or(false) {
                 std::cmp::Ordering::Less
             } else if self.causality.get(&b).map(|s| s.contains(&a)).unwrap_or(false) {
                 std::cmp::Ordering::Greater
             } else {
-                // 并发事件可以任意顺序
                 a.cmp(&b)
             }
         });
@@ -197,7 +180,6 @@ impl UnfoldedPetriNet {
             .collect()
     }
 
-    /// 获取统计信息
     pub fn stats(&self) -> UnfoldingStats {
         UnfoldingStats {
             event_count: self.events.len(),
@@ -211,7 +193,6 @@ impl UnfoldedPetriNet {
     }
 }
 
-/// 展开统计信息
 #[derive(Debug, Clone)]
 pub struct UnfoldingStats {
     pub event_count: usize,
@@ -229,9 +210,6 @@ impl Default for UnfoldedPetriNet {
     }
 }
 
-/// 展开 Petri 网
-///
-/// 将原始的 Petri 网展开为无环的 Occurrence Net
 pub fn unfold_petri_net(
     pcpn: &PushdownColoredPetriNet,
     config: UnfoldingConfig,
@@ -240,7 +218,6 @@ pub fn unfold_petri_net(
     let mut event_counter = 0;
     let mut condition_counter = 0;
 
-    // 创建初始条件（从初始标记）
     let mut initial_conditions_map: HashMap<usize, Vec<usize>> = HashMap::new();
     for (place_idx, colors) in &pcpn.initial_marking {
         for (color, count) in colors {
@@ -270,7 +247,6 @@ pub fn unfold_petri_net(
         }
     }
 
-    // 如果没有初始标记，为每个 place 创建一个初始条件
     if initial_conditions_map.is_empty() {
         for (place_idx, _) in pcpn.places.iter().enumerate() {
             let cond_id = condition_counter;
@@ -295,7 +271,6 @@ pub fn unfold_petri_net(
         }
     }
 
-    // BFS 展开：从初始条件开始，逐步展开可触发的事件
     let mut queue: VecDeque<(Vec<usize>, usize)> = VecDeque::new();
     queue.push_back((initial_conditions_map.values().flatten().copied().collect(), 0));
 
@@ -304,14 +279,12 @@ pub fn unfold_petri_net(
 
     while let Some((current_conditions, depth)) = queue.pop_front() {
         if depth >= config.max_depth || unfolded.events.len() >= config.max_events {
-            // 标记当前条件为最终条件
             for cond_id in &current_conditions {
                 unfolded.final_conditions.insert(*cond_id);
             }
             continue;
         }
 
-        // 检查是否已访问过此配置（简化检查）
         let config_key = current_conditions.clone();
         if visited_configs.contains(&config_key) {
             continue;
@@ -320,21 +293,17 @@ pub fn unfold_petri_net(
 
         let _current_conditions = &current_conditions;
 
-        // 找出所有可触发的事件
         let enabled_transitions = find_enabled_transitions(pcpn, &current_conditions, &place_to_conditions);
 
         for trans_idx in enabled_transitions {
-            // 创建新事件
             let event_id = event_counter;
             event_counter += 1;
 
-            // 收集前置条件
             let mut preconditions = Vec::new();
             let mut consumed_conditions = Vec::new();
 
             for arc in &pcpn.arcs {
                 if arc.is_input_arc && arc.to_idx == trans_idx {
-                    // 找到对应的条件
                     if let Some(conditions) = place_to_conditions.get(&arc.from_idx) {
                         if let Some(&cond_id) = conditions.first() {
                             preconditions.push(cond_id);
@@ -344,7 +313,6 @@ pub fn unfold_petri_net(
                 }
             }
 
-            // 创建后置条件
             let mut postconditions = Vec::new();
             for arc in &pcpn.arcs {
                 if !arc.is_input_arc && arc.from_idx == trans_idx {
@@ -363,7 +331,6 @@ pub fn unfold_petri_net(
                     postconditions.push(cond_id);
                     unfolded.condition_to_place.insert(cond_id, arc.to_idx);
 
-                    // 更新 place 到条件的映射
                     place_to_conditions
                         .entry(arc.to_idx)
                         .or_insert_with(Vec::new)
@@ -371,7 +338,6 @@ pub fn unfold_petri_net(
                 }
             }
 
-            // 创建事件
             let event = Event {
                 id: event_id,
                 transition_idx: trans_idx,
@@ -384,7 +350,6 @@ pub fn unfold_petri_net(
             unfolded.events.push(event);
             unfolded.event_to_transition.insert(event_id, trans_idx);
 
-            // 建立因果关系（条件 -> 事件）
             for pre in &preconditions {
                 unfolded
                     .causality
@@ -393,7 +358,6 @@ pub fn unfold_petri_net(
                     .insert(event_id);
             }
 
-            // 更新当前条件（移除消耗的条件，添加产生的条件）
             let mut new_conditions = current_conditions.clone();
             for (place_idx, cond_id) in &consumed_conditions {
                 new_conditions.retain(|&c| c != *cond_id);
@@ -403,18 +367,15 @@ pub fn unfold_petri_net(
             }
             new_conditions.extend(&postconditions);
 
-            // 添加到队列继续展开
             queue.push_back((new_conditions, depth + 1));
         }
     }
 
-    // 计算冲突关系（简化版：如果两个事件共享前置条件，它们可能冲突）
     for i in 0..unfolded.events.len() {
         for j in (i + 1)..unfolded.events.len() {
             let event_i = &unfolded.events[i];
             let event_j = &unfolded.events[j];
 
-            // 如果两个事件共享前置条件，它们可能冲突
             let shared_pre = event_i
                 .preconditions
                 .iter()
@@ -438,7 +399,6 @@ pub fn unfold_petri_net(
     unfolded
 }
 
-/// 找出在当前条件下可触发的变迁
 fn find_enabled_transitions(
     pcpn: &PushdownColoredPetriNet,
     _current_conditions: &[usize],
@@ -449,10 +409,8 @@ fn find_enabled_transitions(
     for (trans_idx, _) in pcpn.transitions.iter().enumerate() {
         let mut can_fire = true;
 
-        // 检查所有输入弧是否满足
         for arc in &pcpn.arcs {
             if arc.is_input_arc && arc.to_idx == trans_idx {
-                // 检查对应的 place 是否有可用的条件
                 if let Some(conditions) = place_to_conditions.get(&arc.from_idx) {
                     if conditions.is_empty() {
                         can_fire = false;
@@ -482,7 +440,6 @@ mod tests {
     fn test_simple_unfolding() {
         let mut pcpn = PushdownColoredPetriNet::new();
         
-        // 创建简单的 Petri 网：P1 -> T1 -> P2
         let p1 = pcpn.add_place("P1".to_string());
         let t1 = pcpn.add_transition("T1".to_string());
         let p2 = pcpn.add_place("P2".to_string());

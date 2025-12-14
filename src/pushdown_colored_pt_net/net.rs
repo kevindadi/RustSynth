@@ -48,7 +48,6 @@ pub enum TokenColor {
 }
 
 impl TokenColor {
-    /// 转换为字符串表示
     pub fn to_string(&self) -> String {
         match self {
             TokenColor::Primitive(name) => name.clone(),

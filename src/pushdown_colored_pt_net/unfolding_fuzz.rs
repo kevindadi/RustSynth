@@ -11,15 +11,12 @@ pub struct UnfoldingBasedFuzzer {
 }
 
 impl UnfoldingBasedFuzzer {
-    /// 创建新的基于展开的模糊测试器
     pub fn new(pcpn: &PushdownColoredPetriNet, config: UnfoldingConfig) -> Self {
         let unfolded = crate::pushdown_colored_pt_net::unfolding::unfold_petri_net(pcpn, config);
         Self { unfolded }
     }
 
-    /// 生成所有可能的执行序列（配置）
-    ///
-    /// 这比原始 Petri 网更容易，因为展开后的结构是无环的
+    /// 生成所有可能的执行序列
     pub fn generate_all_sequences(&self, max_sequence_length: usize) -> Vec<Vec<String>> {
         let configurations = self.unfolded.get_configurations(max_sequence_length);
         
@@ -29,14 +26,10 @@ impl UnfoldingBasedFuzzer {
             .collect()
     }
 
-    /// 生成覆盖所有事件的测试序列
-    ///
-    /// 返回一个序列集合，确保每个事件至少被覆盖一次
     pub fn generate_coverage_sequences(&self) -> Vec<Vec<String>> {
         let mut covered_events = HashSet::new();
         let mut sequences = Vec::new();
 
-        // 贪心策略：选择覆盖最多未覆盖事件的配置
         while covered_events.len() < self.unfolded.events.len() {
             let mut best_config = None;
             let mut best_coverage = 0;
@@ -70,9 +63,6 @@ impl UnfoldingBasedFuzzer {
         sequences
     }
 
-    /// 生成针对特定目标的测试序列
-    ///
-    /// 返回能够到达目标条件的序列
     pub fn generate_targeted_sequences(
         &self,
         target_place_idx: usize,
@@ -82,7 +72,6 @@ impl UnfoldingBasedFuzzer {
         let configurations = self.unfolded.get_configurations(max_depth);
 
         for config in configurations {
-            // 检查配置是否包含目标 place 的条件
             let reaches_target = self
                 .unfolded
                 .conditions
@@ -108,7 +97,6 @@ impl UnfoldingBasedFuzzer {
         sequences
     }
 
-    /// 获取展开统计信息
     pub fn stats(&self) -> crate::pushdown_colored_pt_net::unfolding::UnfoldingStats {
         self.unfolded.stats()
     }
@@ -126,7 +114,6 @@ mod tests {
     fn test_unfolding_fuzzer() {
         let mut pcpn = PushdownColoredPetriNet::new();
         
-        // 创建简单的 Petri 网
         let p1 = pcpn.add_place("P1".to_string());
         let t1 = pcpn.add_transition("T1".to_string());
         let p2 = pcpn.add_place("P2".to_string());
