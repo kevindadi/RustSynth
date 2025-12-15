@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-SyPetype 是一个将 Rust 项目的 API 依赖关系解析为图结构，并转换为着色 Petri 网(Labeled Petri Net)的工具，用于智能 Fuzzing 测试。项目采用模块化设计，将 rustdoc JSON 输出转换为中间表示(IR Graph)，再转换为 Petri 网。
+SyPetype 是一个将 Rust 项目的 API 依赖关系解析为图结构,并转换为着色 Petri 网(Labeled Petri Net)的工具,用于智能 Fuzzing 测试.项目采用模块化设计,将 rustdoc JSON 输出转换为中间表示(IR Graph),再转换为 Petri 网.
 
 ## 核心架构
 
@@ -10,9 +10,9 @@ SyPetype 是一个将 Rust 项目的 API 依赖关系解析为图结构，并转
 
 ```
 src/
-├── main.rs              # 主程序入口，使用 Pipeline 执行工作流
+├── main.rs              # 主程序入口,使用 Pipeline 执行工作流
 ├── config.rs            # 命令行配置解析(使用 clap)
-├── pipeline.rs          # 工作流管道，协调各阶段执行
+├── pipeline.rs          # 工作流管道,协调各阶段执行
 ├── parse/               # 解析模块：处理 rustdoc JSON 输出
 │   └── mod.rs          # 提取类型、函数、Trait 实现关系
 ├── ir_graph/            # IR Graph 模块：构建中间表示图
@@ -60,9 +60,9 @@ src/
 
 4. 预解析 USE 链:
    - `use_resolutions: HashMap<Id, Id>` - USE ID → 最终定义 ID
-   - 解决 pub use 重导出，避免重复节点
+   - 解决 pub use 重导出,避免重复节点
 
-**输出**: `ParsedCrate` 结构，包含原始 `Crate` 数据和预处理信息
+**输出**: `ParsedCrate` 结构,包含原始 `Crate` 数据和预处理信息
 
 ### 阶段 2: 构建 IR Graph (ir_graph 模块)
 
@@ -73,20 +73,20 @@ src/
 #### 2.1 处理类型节点及其字段/变体 (`build_types()`)
 
 - **Struct**: 
-  - 创建类型节点，记录字段信息
+  - 创建类型节点,记录字段信息
   - 处理三种结构: Unit, Tuple, Plain
   - 为每个字段创建类型节点并建立 `Ref` 边
 
 - **Enum**:
   - 创建枚举节点
   - 处理三种变体: Plain, Tuple, Struct
-  - 为每个变体创建节点，建立 `Move` 和 `Ref` 双向边
+  - 为每个变体创建节点,建立 `Move` 和 `Ref` 双向边
 
-- **Union**: 类似 Struct，但字段共享内存
+- **Union**: 类似 Struct,但字段共享内存
 
 - **字段处理** (`build_type_fields()`):
   - 遍历所有 `StructField` 和 `Variant`
-  - 使用 `TypeCache` 统一管理类型节点，避免重复
+  - 使用 `TypeCache` 统一管理类型节点,避免重复
 
 #### 2.2 处理 Trait 节点 (`build_traits_nodes()`)
 
@@ -98,7 +98,7 @@ src/
 
 - 为每个 Associated Type 创建 `Trait.AssocType` 节点
 - 建立 `Include` 边: Trait → Trait.AssocType
-- 如果有默认类型，建立 `Alias` 边: Trait.AssocType → TargetType
+- 如果有默认类型,建立 `Alias` 边: Trait.AssocType → TargetType
 
 #### 2.4 处理类型和 Trait 的泛型参数 (`build_type_generics()`)
 
@@ -109,7 +109,7 @@ src/
   - 支持带具体类型参数的 Trait(如 `AsRef<[u8]>`)
 
 - **归一化 Trait 方法泛型** (`normalize_trait_method_generics()`):
-  - 如果多个方法有同名泛型且约束相同，合并为一个节点
+  - 如果多个方法有同名泛型且约束相同,合并为一个节点
   - 使用 `Trait:GenericName` 作为归一化名称
 
 #### 2.5 构建 Trait 定义的方法 (`build_trait_defined_methods()`)
@@ -122,7 +122,7 @@ src/
 #### 2.6 展开 impl 块为方法 ID (`expand_impl_blocks()`)
 
 - 将 `struct_data.impls` 中的 impl 块 ID 展开为方法 ID
-- 对于 trait impl，创建 `Implements` 边: 类型 → Trait
+- 对于 trait impl,创建 `Implements` 边: 类型 → Trait
 - 处理 impl 块中的 Associated Type 重新定义
 
 #### 2.7 构建类型实现的方法节点 (`build_impl_methods()`)
@@ -130,7 +130,7 @@ src/
 - 为每个类型实现的方法创建 `ImplMethod` 节点
 - 处理方法的输入参数(识别 `self` 并连接到类型)
 - 处理返回值(包括 Result/Option 展开)
-- 过滤黑名单方法，但记录对应的 Trait
+- 过滤黑名单方法,但记录对应的 Trait
 
 #### 2.8 处理 Constant 和 Static (`build_constants_and_statics()`)
 
@@ -148,7 +148,7 @@ src/
 - 检查哪些 Primitive 类型满足泛型参数的 Trait 约束
 - 为满足约束的 Primitive 添加 `Instance` 边: Primitive → Generic
 
-**输出**: `IrGraph` 结构，包含:
+**输出**: `IrGraph` 结构,包含:
 - `type_graph: DiGraph<String, TypeRelation>` - 类型依赖图
 - `node_types: HashMap<NodeIndex, NodeType>` - 节点类型映射
 - `node_infos: HashMap<NodeIndex, NodeInfo>` - 节点详细信息
@@ -183,7 +183,7 @@ src/
    - 为基本类型添加构造器 transition(如 `u8::new()`)
    - 用于 Fuzzing 时生成基本类型实例
 
-**输出**: `LabeledPetriNet` 结构，包含:
+**输出**: `LabeledPetriNet` 结构,包含:
 - `places: Vec<String>` - 库所列表
 - `transitions: Vec<String>` - 变迁列表
 - `transition_attrs: Vec<TransitionAttr>` - 变迁属性(is_const, is_async, is_unsafe)
@@ -199,7 +199,7 @@ src/
 - **PNML**: Petri Net Markup Language (XML 格式)
 
 **导出逻辑** (`label_pt_net::export.rs`):
-- `to_dot()`: 生成 DOT 格式，Places 为圆形，Transitions 为方框
+- `to_dot()`: 生成 DOT 格式,Places 为圆形,Transitions 为方框
 - `to_json()`: 使用 serde 序列化整个结构
 - `to_pnml()`: 生成标准 PNML XML 格式
 
@@ -209,7 +209,7 @@ src/
 
 **处理过程** (`Pipeline::gen_fuzz()`):
 1. 创建 `fuzz/` 目录结构
-2. 生成 `Cargo.toml`，包含 libfuzzer-sys 和 arbitrary 依赖
+2. 生成 `Cargo.toml`,包含 libfuzzer-sys 和 arbitrary 依赖
 3. 生成基础的 `fuzz_target_1.rs` 模板
 4. 配置被测库的路径依赖
 
@@ -217,7 +217,7 @@ src/
 
 ### TypeCache 系统
 
-**目的**: 统一管理类型节点，避免重复创建
+**目的**: 统一管理类型节点,避免重复创建
 
 **核心结构**:
 - `id_to_node: HashMap<Id, NodeIndex>` - rustdoc ID → 图节点索引
@@ -240,13 +240,13 @@ src/
 
 ### EdgeMode 语义
 
-- **Move**: 按值移动，所有权转移(消耗性)
-- **Ref**: 共享引用 `&T`(非消耗性，需要借用检查)
-- **MutRef**: 可变引用 `&mut T`(非消耗性，独占)
+- **Move**: 按值移动,所有权转移(消耗性)
+- **Ref**: 共享引用 `&T`(非消耗性,需要借用检查)
+- **MutRef**: 可变引用 `&mut T`(非消耗性,独占)
 - **Implements**: 类型实现 Trait(关系边)
 - **Require**: 泛型需要满足 Trait 约束(关系边)
 - **Include**: 类型包含泛型参数(关系边)
-- **Alias**: 类型别名，如 Associated Type(关系边)
+- **Alias**: 类型别名,如 Associated Type(关系边)
 - **Instance**: Const/Static 是某个类型的实例(关系边)
 - **UnwrapOk/UnwrapErr/UnwrapNone**: Result/Option 展开操作
 
@@ -259,7 +259,7 @@ src/
    - `&mut self` → `MutRef` 边: 类型 → 方法
 
 2. 处理其他参数:
-   - 解析参数类型，创建或获取类型节点
+   - 解析参数类型,创建或获取类型节点
    - 建立输入弧: 类型 → 方法
 
 **返回值处理** (`process_function_output()`):
@@ -282,7 +282,7 @@ src/
 
 **方法黑名单** (`support_types::method_blacklist`):
 - 过滤标准库中的通用方法(如 `clone`, `fmt` 等)
-- 但记录对应的 Trait，用于类型信息完整性
+- 但记录对应的 Trait,用于类型信息完整性
 
 ### 泛型约束处理
 
@@ -324,7 +324,7 @@ cargo run -- lib.json -f all
 # 同时导出 IR Graph
 cargo run -- lib.json -e ir -v
 
-# 仅解析，打印统计
+# 仅解析,打印统计
 cargo run -- lib.json -s parse
 
 # 生成 fuzz 项目
@@ -372,11 +372,11 @@ LabeledPetriNet
 
 ## 关键设计决策
 
-1. **使用 TypeCache 统一管理类型节点**: 避免重复创建，支持泛型作用域区分
-2. **分离数据节点和操作节点**: 符合 Petri 网语义，便于后续分析
+1. **使用 TypeCache 统一管理类型节点**: 避免重复创建,支持泛型作用域区分
+2. **分离数据节点和操作节点**: 符合 Petri 网语义,便于后续分析
 3. **保留原始 rustdoc ID 映射**: 便于回溯和调试
 4. **支持多种导出格式**: DOT(可视化)、JSON(程序处理)、PNML(标准格式)
-5. **模块化设计**: 每个阶段职责清晰，便于扩展和维护
+5. **模块化设计**: 每个阶段职责清晰,便于扩展和维护
 
 ## 扩展点
 
@@ -398,6 +398,6 @@ LabeledPetriNet
 ## 注意事项
 
 1. **需要 nightly Rust**: rustdoc JSON 输出格式需要 nightly 工具链
-2. **内存占用**: 大型项目的图可能很大，注意内存使用
-3. **泛型约束简化**: 当前实现简化了复杂的泛型约束，可能不完全准确
-4. **黑名单机制**: 某些标准库 Trait/方法被过滤，可能影响完整性
+2. **内存占用**: 大型项目的图可能很大,注意内存使用
+3. **泛型约束简化**: 当前实现简化了复杂的泛型约束,可能不完全准确
+4. **黑名单机制**: 某些标准库 Trait/方法被过滤,可能影响完整性

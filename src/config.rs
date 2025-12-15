@@ -4,13 +4,13 @@ use std::path::PathBuf;
 /// SyPetype: Rust API → Petri Net 转换工具
 #[derive(Parser, Debug, Clone)]
 #[command(name = "sypetype", version)]
-#[command(about = "解析 rustdoc JSON，生成 IR Graph 和 Petri Net")]
+#[command(about = "解析 rustdoc JSON,生成 IR Graph 和 Petri Net")]
 #[command(after_help = "\
 示例:
   sypetype lib.json                 # 导出 Petri Net (DOT)
   sypetype lib.json -o out -f all   # 导出所有格式到 out/
-  sypetype lib.json -e ir -v        # 同时导出 IR Graph，详细输出
-  sypetype lib.json -s parse        # 仅解析，打印统计
+  sypetype lib.json -e ir -v        # 同时导出 IR Graph,详细输出
+  sypetype lib.json -s parse        # 仅解析,打印统计
   sypetype lib.json --fuzz -c foo   # 生成 fuzz 项目 (crate: foo)
 ")]
 pub struct Config {
@@ -42,7 +42,7 @@ pub struct Config {
     #[arg(short, long)]
     pub crate_name: Option<String>,
 
-    /// 被测库路径 (--fuzz 时，相对于 fuzz 目录)
+    /// 被测库路径 (--fuzz 时,相对于 fuzz 目录)
     #[arg(long)]
     pub lib_path: Option<String>,
 
