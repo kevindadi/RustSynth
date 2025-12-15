@@ -1,6 +1,6 @@
 //! 下推着色 Petri 网分析工具
 //!
-//! 提供对下推着色 Petri 网的分析功能，包括：
+//! 提供对下推着色 Petri 网的分析功能,包括：
 //! - 可达性分析
 //! - 颜色约束检查
 //! - 栈操作验证
@@ -44,7 +44,7 @@ impl PcpnAnalysis {
             *analysis.stack_operation_stats.entry(*stack_op).or_insert(0) += 1;
         }
 
-        // 分析颜色分布（从初始标记开始）
+        // 分析颜色分布(从初始标记开始)
         for (place_idx, colors) in &pcpn.initial_marking {
             analysis.color_distribution.insert(*place_idx, colors.clone());
         }
@@ -79,13 +79,13 @@ impl PcpnAnalysis {
 
         // BFS 探索
         while let Some(place_idx) = queue.pop_front() {
-            // 找出所有从这个 place 出发的弧（输入弧，place -> transition）
+            // 找出所有从这个 place 出发的弧(输入弧,place -> transition)
             for arc in &pcpn.arcs {
                 if arc.is_input_arc && arc.from_idx == place_idx {
                     let trans_idx = arc.to_idx;
                     self.fuzz_reachable_transitions.insert(trans_idx);
                     
-                    // 找出这个变迁的所有输出弧（transition -> place）
+                    // 找出这个变迁的所有输出弧(transition -> place)
                     for output_arc in &pcpn.arcs {
                         if !output_arc.is_input_arc && output_arc.from_idx == trans_idx {
                             let target_place = output_arc.to_idx;

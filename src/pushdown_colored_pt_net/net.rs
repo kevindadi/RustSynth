@@ -6,21 +6,21 @@ use std::collections::{HashMap, HashSet};
 use crate::ir_graph::{EdgeMode, IrGraph, NodeInfo, NodeType};
 use crate::petri_net_traits::{FromIrGraph, PetriNetKind};
 
-/// Token 颜色（类型）
+/// Token 颜色(类型)
 ///
-/// 在着色 Petri 网中，token 有不同的颜色，表示不同的类型
+/// 在着色 Petri 网中,token 有不同的颜色,表示不同的类型
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TokenColor {
-    /// 基本类型（如 u8, i32, bool, str）
+    /// 基本类型(如 u8, i32, bool, str)
     Primitive(String),
-    /// 复合类型（如 Vec<T>, Option<T>）
+    /// 复合类型(如 Vec<T>, Option<T>)
     Composite {
         /// 类型名称
         name: String,
-        /// 类型参数（泛型实例化）
+        /// 类型参数(泛型实例化)
         type_args: Vec<TokenColor>,
     },
-    /// 泛型参数（未实例化）
+    /// 泛型参数(未实例化)
     Generic {
         /// 泛型参数名
         name: String,
@@ -95,22 +95,22 @@ pub enum StackOperation {
     Push,
     /// Pop：从栈中弹出元素
     Pop,
-    /// PushPop：先 push 再 pop（用于作用域进入和退出）
+    /// PushPop：先 push 再 pop(用于作用域进入和退出)
     PushPop,
 }
 
 /// 下推着色 Petri 网结构
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PushdownColoredPetriNet {
-    /// 库所列表（数据类型节点）
+    /// 库所列表(数据类型节点)
     pub places: Vec<String>,
-    /// 变迁列表（操作节点）
+    /// 变迁列表(操作节点)
     pub transitions: Vec<String>,
     /// 变迁属性
     pub transition_attrs: Vec<TransitionAttr>,
-    /// 弧列表，带有颜色约束
+    /// 弧列表,带有颜色约束
     pub arcs: Vec<ColoredArc>,
-    /// 初始标记：每个 place 的初始 token（按颜色分组）
+    /// 初始标记：每个 place 的初始 token(按颜色分组)
     /// HashMap<place_idx, HashMap<color, count>>
     pub initial_marking: HashMap<usize, HashMap<TokenColor, usize>>,
     /// 变迁的栈操作
@@ -138,19 +138,19 @@ pub struct TransitionAttr {
 /// 带颜色约束的弧
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ColoredArc {
-    /// 源索引（place 或 transition 的索引）
+    /// 源索引(place 或 transition 的索引)
     pub from_idx: usize,
-    /// 目标索引（transition 或 place 的索引）
+    /// 目标索引(transition 或 place 的索引)
     pub to_idx: usize,
-    /// 是否是输入弧（place → transition）
+    /// 是否是输入弧(place → transition)
     pub is_input_arc: bool,
-    /// 弧的标签（EdgeMode）
+    /// 弧的标签(EdgeMode)
     pub label: EdgeMode,
-    /// 弧的权重（默认为 1）
+    /// 弧的权重(默认为 1)
     pub weight: usize,
     /// 可选的字段/参数名称
     pub name: Option<String>,
-    /// Token 颜色约束：None 表示接受任何颜色，Some 表示只接受特定颜色
+    /// Token 颜色约束：None 表示接受任何颜色,Some 表示只接受特定颜色
     pub color_constraint: Option<TokenColor>,
 }
 
@@ -170,14 +170,14 @@ impl PushdownColoredPetriNet {
         }
     }
 
-    /// 添加一个 place，返回其索引
+    /// 添加一个 place,返回其索引
     pub fn add_place(&mut self, name: String) -> usize {
         let idx = self.places.len();
         self.places.push(name);
         idx
     }
 
-    /// 添加一个 transition，返回其索引
+    /// 添加一个 transition,返回其索引
     pub fn add_transition(&mut self, name: String) -> usize {
         let idx = self.transitions.len();
         self.transitions.push(name);
@@ -185,7 +185,7 @@ impl PushdownColoredPetriNet {
         idx
     }
 
-    /// 添加一个带属性的 transition，返回其索引
+    /// 添加一个带属性的 transition,返回其索引
     pub fn add_transition_with_attr(&mut self, name: String, attr: TransitionAttr) -> usize {
         let idx = self.transitions.len();
         self.transitions.push(name);
@@ -198,7 +198,7 @@ impl PushdownColoredPetriNet {
         self.stack_operations.insert(transition_idx, op);
     }
 
-    /// 添加输入弧（place → transition），带颜色约束
+    /// 添加输入弧(place → transition),带颜色约束
     pub fn add_input_arc(
         &mut self,
         place_idx: usize,
@@ -222,7 +222,7 @@ impl PushdownColoredPetriNet {
         });
     }
 
-    /// 添加输出弧（transition → place），带颜色约束
+    /// 添加输出弧(transition → place),带颜色约束
     pub fn add_output_arc(
         &mut self,
         transition_idx: usize,
@@ -246,7 +246,7 @@ impl PushdownColoredPetriNet {
         });
     }
 
-    /// 设置 place 的初始标记（特定颜色的 token）
+    /// 设置 place 的初始标记(特定颜色的 token)
     pub fn set_initial_marking(
         &mut self,
         place_idx: usize,
@@ -260,7 +260,7 @@ impl PushdownColoredPetriNet {
             .insert(color, count);
     }
 
-    /// 查找模糊测试入口点（&[u8] 类型的 place）
+    /// 查找模糊测试入口点(&[u8] 类型的 place)
     ///
     /// 返回所有表示 `&[u8]` 类型的 place 索引
     pub fn find_fuzz_entry_points(&self) -> Vec<usize> {
@@ -287,12 +287,12 @@ impl PushdownColoredPetriNet {
 
     /// 添加从 &[u8] 到目标类型的转换变迁
     ///
-    /// 这会创建一个特殊的变迁，从 `&[u8]` place 生成目标类型的 token
+    /// 这会创建一个特殊的变迁,从 `&[u8]` place 生成目标类型的 token
     ///
     /// # 参数
-    /// - `fuzz_entry_idx`: 模糊测试入口点（&[u8] 类型的 place 索引）
+    /// - `fuzz_entry_idx`: 模糊测试入口点(&[u8] 类型的 place 索引)
     /// - `target_color`: 目标 token 颜色
-    /// - `target_place_idx`: 目标 place 索引（如果为 None，会创建一个新的 place）
+    /// - `target_place_idx`: 目标 place 索引(如果为 None,会创建一个新的 place)
     ///
     /// # 返回
     /// 返回创建的变迁索引和目标 place 索引
@@ -326,7 +326,7 @@ impl PushdownColoredPetriNet {
         self.add_input_arc(
             fuzz_entry_idx,
             trans_idx,
-            EdgeMode::Ref, // 使用 Ref，因为 &[u8] 可以被多次读取
+            EdgeMode::Ref, // 使用 Ref,因为 &[u8] 可以被多次读取
             1,
             Some("fuzz_input".to_string()),
             Some(u8_slice_color),
@@ -353,7 +353,7 @@ impl PushdownColoredPetriNet {
         let entry_points = self.find_fuzz_entry_points();
         
         if entry_points.is_empty() {
-            // 如果没有找到入口点，创建一个虚拟的 &[u8] place
+            // 如果没有找到入口点,创建一个虚拟的 &[u8] place
             let fuzz_entry = self.add_place("fuzz_input: &[u8]".to_string());
             self.set_initial_marking(fuzz_entry, TokenColor::Reference {
                 mutable: false,
@@ -407,7 +407,7 @@ impl PushdownColoredPetriNet {
         };
         self.add_fuzz_conversion(entry_idx, vec_u8_color, None);
 
-        // Option<T> 类型（对于常见类型）
+        // Option<T> 类型(对于常见类型)
         let option_u8 = TokenColor::Composite {
             name: "Option".to_string(),
             type_args: vec![TokenColor::Primitive("u8".to_string())],
@@ -481,9 +481,9 @@ pub struct PcpnStats {
 ///    - 泛型参数 → Generic color
 ///
 /// 3. **栈操作**:
-///    - 函数调用 → Push（进入作用域）
-///    - 函数返回 → Pop（退出作用域）
-///    - 泛型实例化 → Push（压入类型参数）
+///    - 函数调用 → Push(进入作用域)
+///    - 函数返回 → Pop(退出作用域)
+///    - 泛型实例化 → Push(压入类型参数)
 ///
 /// 4. **弧的颜色约束**:
 ///    - 根据边的类型信息设置颜色约束
@@ -494,10 +494,10 @@ impl FromIrGraph for PushdownColoredPetriNet {
 
         // NodeIndex → (is_place, pcpn_index) 的映射
         let mut node_mapping: HashMap<NodeIndex, (bool, usize)> = HashMap::new();
-        // NodeIndex → TokenColor 的映射（用于推断颜色）
+        // NodeIndex → TokenColor 的映射(用于推断颜色)
         let mut node_colors: HashMap<NodeIndex, TokenColor> = HashMap::new();
 
-        // 第一步：遍历所有节点，分类为 place 或 transition，并推断颜色
+        // 第一步：遍历所有节点,分类为 place 或 transition,并推断颜色
         for node_idx in ir.type_graph.node_indices() {
             let node_label = &ir.type_graph[node_idx];
             let node_type = ir.node_types.get(&node_idx);
@@ -554,7 +554,7 @@ impl FromIrGraph for PushdownColoredPetriNet {
             node_mapping.insert(node_idx, (is_place, pcpn_idx));
         }
 
-        // 第二步：设置初始标记（从 ConstantInfo/StaticInfo）
+        // 第二步：设置初始标记(从 ConstantInfo/StaticInfo)
         for (node_idx, node_info) in &ir.node_infos {
             if let Some(&(true, place_idx)) = node_mapping.get(node_idx) {
                 if let Some(color) = node_colors.get(node_idx) {
@@ -570,7 +570,7 @@ impl FromIrGraph for PushdownColoredPetriNet {
             }
         }
 
-        // 第三步：遍历边，创建带颜色约束的弧
+        // 第三步：遍历边,创建带颜色约束的弧
         for edge_ref in ir.type_graph.edge_references() {
             let source_idx = edge_ref.source();
             let target_idx = edge_ref.target();
@@ -584,7 +584,7 @@ impl FromIrGraph for PushdownColoredPetriNet {
                 Some(&(target_is_place, target_pcpn_idx)),
             ) = (source_mapping, target_mapping)
             {
-                // 获取源节点的颜色（用于设置弧的颜色约束）
+                // 获取源节点的颜色(用于设置弧的颜色约束)
                 let source_color = node_colors.get(&source_idx).cloned();
 
                 match (source_is_place, target_is_place) {
@@ -601,7 +601,7 @@ impl FromIrGraph for PushdownColoredPetriNet {
                     }
                     // Transition → Place:输出弧
                     (false, true) => {
-                        // 对于输出弧，颜色约束来自目标节点
+                        // 对于输出弧,颜色约束来自目标节点
                         let target_color = node_colors.get(&target_idx).cloned();
                         pcpn.add_output_arc(
                             source_pcpn_idx,
@@ -652,7 +652,7 @@ impl FromIrGraph for PushdownColoredPetriNet {
             if let Some(node_info) = ir.node_infos.get(&node_idx) {
                 match node_info {
                     NodeInfo::Method(_) | NodeInfo::Function(_) => {
-                        // 函数调用需要 Push（进入作用域）
+                        // 函数调用需要 Push(进入作用域)
                         stack_ops.push((*trans_idx, StackOperation::Push));
                     }
                     _ => {}
@@ -681,7 +681,7 @@ fn infer_token_color(
                 return TokenColor::Primitive(prim_info.name.clone());
             }
             NodeInfo::Struct(struct_info) => {
-                // 简化：使用结构体名称，实际应该解析泛型参数
+                // 简化：使用结构体名称,实际应该解析泛型参数
                 return TokenColor::Composite {
                     name: struct_info.path.name.clone(),
                     type_args: Vec::new(), // TODO: 解析泛型参数

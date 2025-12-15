@@ -61,24 +61,24 @@ impl PromptBuilder {
 
     fn build_system_prompt(&self) -> String {
         format!(
-            r#"你是一个专业的 Rust 代码生成专家。你的任务是根据提供的 API 调用序列生成完整的、可执行的测试用例代码。
+            r#"你是一个专业的 Rust 代码生成专家.你的任务是根据提供的 API 调用序列生成完整的、可执行的测试用例代码.
 
 要求：
 1. 生成的代码必须是完整、可编译的 Rust 代码
-2. 使用提供的 API 调用序列，按照顺序生成测试用例
-3. 代码应该包含必要的导入语句（use 语句）
+2. 使用提供的 API 调用序列,按照顺序生成测试用例
+3. 代码应该包含必要的导入语句(use 语句)
 4. 为测试函数生成合理的测试数据
 5. 添加适当的注释说明测试的目的
-6. 如果 API 调用可能失败，应该包含错误处理
-7. 生成的代码应该可以直接运行，不需要额外的修改
+6. 如果 API 调用可能失败,应该包含错误处理
+7. 生成的代码应该可以直接运行,不需要额外的修改
 
 代码格式要求：
-- 使用标准的 Rust 测试格式（#[cfg(test)] 和 #[test]）
-- 使用合适的命名（测试函数名应该描述测试内容）
+- 使用标准的 Rust 测试格式(#[cfg(test)] 和 #[test])
+- 使用合适的命名(测试函数名应该描述测试内容)
 - 添加必要的错误处理和断言
 - 使用清晰的变量命名
 
-请只返回 Rust 代码，不要包含 markdown 代码块标记（```rust 或 ```），直接返回代码内容。"#
+请只返回 Rust 代码,不要包含 markdown 代码块标记(```rust 或 ```),直接返回代码内容."#
         )
     }
 
@@ -106,7 +106,7 @@ impl PromptBuilder {
 
         // API 序列
         prompt.push_str("## API 调用序列\n\n");
-        prompt.push_str("请按照以下顺序生成测试用例，每个 API 调用都应该在测试中体现：\n\n");
+        prompt.push_str("请按照以下顺序生成测试用例,每个 API 调用都应该在测试中体现：\n\n");
         for (i, api_call) in self.api_sequence.iter().enumerate() {
             prompt.push_str(&format!("{}. `{}`\n", i + 1, api_call));
         }
@@ -114,7 +114,7 @@ impl PromptBuilder {
 
         // 生成要求
         prompt.push_str("## 生成要求\n\n");
-        prompt.push_str(r#"请生成一个完整的 Rust 测试函数，满足以下要求：
+        prompt.push_str(r#"请生成一个完整的 Rust 测试函数,满足以下要求：
 
 1. 函数名为 `test_api_sequence`
 2. 使用 `#[test]` 属性
@@ -124,7 +124,7 @@ impl PromptBuilder {
 6. 添加必要的断言来验证结果
 7. 包含所有必需的导入语句
 
-请直接返回 Rust 代码，不要包含任何 markdown 格式或代码块标记。"#);
+请直接返回 Rust 代码,不要包含任何 markdown 格式或代码块标记."#);
 
         prompt
     }
@@ -174,7 +174,7 @@ pub fn build_advanced_prompt(
     if let Some(net) = pcpn {
         let stats = net.stats();
         builder = builder.add_context(format!(
-            "Petri 网包含 {} 个 places 和 {} 个 transitions，有 {} 种不同的 token 颜色",
+            "Petri 网包含 {} 个 places 和 {} 个 transitions,有 {} 种不同的 token 颜色",
             stats.place_count, stats.transition_count, stats.color_count
         ));
     }

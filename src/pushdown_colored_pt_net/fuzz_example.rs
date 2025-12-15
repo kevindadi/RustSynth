@@ -11,10 +11,10 @@ pub fn setup_fuzz_entries_example(pcpn: &mut PushdownColoredPetriNet) {
     let entry_points = pcpn.find_fuzz_entry_points();
     
     if entry_points.is_empty() {
-        // 2. 如果没有找到，创建一个 &[u8] 类型的 place
+        // 2. 如果没有找到,创建一个 &[u8] 类型的 place
         let fuzz_entry = pcpn.add_place("fuzz_input: &[u8]".to_string());
         
-        // 3. 设置初始标记（表示有可用的模糊测试输入）
+        // 3. 设置初始标记(表示有可用的模糊测试输入)
         let u8_slice_color = TokenColor::Reference {
             mutable: false,
             inner: Box::new(TokenColor::Slice(Box::new(TokenColor::Primitive("u8".to_string())))),

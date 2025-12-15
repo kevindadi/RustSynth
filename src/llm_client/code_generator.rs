@@ -16,7 +16,7 @@ pub struct GeneratedTestCase {
 }
 
 pub struct CodeGenerator {
-    llm_client: LlmClient,
+    pub(crate) llm_client: LlmClient,
 }
 
 impl CodeGenerator {

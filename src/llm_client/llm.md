@@ -71,7 +71,7 @@ for (i, test_case) in test_cases.iter().enumerate() {
 提示词会根据以下信息自动构建：
 - Crate 名称和路径
 - API 调用序列
-- 额外的上下文信息（可选）
+- 额外的上下文信息(可选)
 
 
 

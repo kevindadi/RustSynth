@@ -10,9 +10,6 @@ pub mod prompts;
 pub mod code_generator;
 pub mod integration;
 
-#[cfg(test)]
-mod example;
-
 pub use client::{LlmClient, LlmProvider, LlmConfig, LlmError};
 pub use prompts::{TestGenerationPrompt, PromptBuilder};
 pub use code_generator::{CodeGenerator, GeneratedTestCase, BatchCodeGenerator};

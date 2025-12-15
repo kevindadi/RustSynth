@@ -30,7 +30,7 @@ impl PetriNetTestGenerator {
         // 1. 展开 Petri 网
         let fuzzer = UnfoldingBasedFuzzer::new(pcpn, unfolding_config);
         
-        // 2. 生成所有序列（限制数量）
+        // 2. 生成所有序列(限制数量)
         let all_sequences = fuzzer.generate_all_sequences(10);
         let sequences_to_generate = all_sequences.into_iter().take(max_sequences).collect::<Vec<_>>();
 
@@ -113,16 +113,3 @@ pub fn create_claude_config(api_key: String) -> LlmConfig {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    #[ignore] // 需要真实的 API key
-    async fn test_integration() {
-        // 这个测试需要真实的 API key 和 Petri 网
-        // let config = create_deepseek_config("test-key".to_string());
-        // let generator = PetriNetTestGenerator::new(config, "test_crate".to_string()).unwrap();
-        // 实际测试代码...
-    }
-}

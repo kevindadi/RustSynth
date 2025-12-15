@@ -18,11 +18,11 @@ pub struct LlmConfig {
     pub provider: LlmProvider,
     /// API Key
     pub api_key: String,
-    /// API 基础 URL（可选，某些提供商可能需要自定义）
+    /// API 基础 URL(可选,某些提供商可能需要自定义)
     pub base_url: Option<String>,
-    /// 模型名称（如 "gpt-4", "claude-3-opus-20240229", "deepseek-chat"）
+    /// 模型名称(如 "gpt-4", "claude-3-opus-20240229", "deepseek-chat")
     pub model: String,
-    /// 温度参数（0.0-2.0）
+    /// 温度参数(0.0-2.0)
     pub temperature: f64,
     /// 最大 tokens
     pub max_tokens: Option<u32>,

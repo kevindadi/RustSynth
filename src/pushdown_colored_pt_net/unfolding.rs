@@ -1,29 +1,29 @@
 //! Petri 网展开 (Unfolding) 模块
 //!
 //! - **Occurrence Net**: 展开后的无环 Petri 网
-//! - **Event**: 展开后的变迁实例（每个事件只发生一次）
+//! - **Event**: 展开后的变迁实例(每个事件只发生一次)
 //! - **Condition**: 展开后的 place 实例
 //! - **Cut**: 一个配置的最终状态
-//! - **Configuration**: 一个事件集合，表示一个可能的执行序列
+//! - **Configuration**: 一个事件集合,表示一个可能的执行序列
 
 use crate::pushdown_colored_pt_net::net::{PushdownColoredPetriNet, TokenColor, StackOperation};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug, Clone)]
 pub struct UnfoldedPetriNet {
-    /// 事件列表（展开后的变迁实例）
+    /// 事件列表(展开后的变迁实例)
     pub events: Vec<Event>,
-    /// 条件列表（展开后的 place 实例）
+    /// 条件列表(展开后的 place 实例)
     pub conditions: Vec<Condition>,
-    /// 事件之间的因果关系（< 关系）
+    /// 事件之间的因果关系(< 关系)
     pub causality: HashMap<usize, HashSet<usize>>,
-    /// 事件之间的冲突关系（# 关系）
+    /// 事件之间的冲突关系(# 关系)
     pub conflict: HashMap<usize, HashSet<usize>>,
-    /// 事件之间的并发关系（|| 关系）
+    /// 事件之间的并发关系(|| 关系)
     pub concurrency: HashMap<usize, HashSet<usize>>,
     /// 初始条件集合
     pub initial_conditions: HashSet<usize>,
-    /// 最终条件集合（可能的终止状态）
+    /// 最终条件集合(可能的终止状态)
     pub final_conditions: HashSet<usize>,
     /// 事件到原始变迁的映射
     pub event_to_transition: HashMap<usize, usize>,
@@ -31,7 +31,7 @@ pub struct UnfoldedPetriNet {
     pub condition_to_place: HashMap<usize, usize>,
 }
 
-/// 展开后的事件（变迁实例）
+/// 展开后的事件(变迁实例)
 #[derive(Debug, Clone)]
 pub struct Event {
     /// 事件 ID
@@ -40,15 +40,15 @@ pub struct Event {
     pub transition_idx: usize,
     /// 变迁名称
     pub name: String,
-    /// 前置条件（输入 places）
+    /// 前置条件(输入 places)
     pub preconditions: Vec<usize>,
-    /// 后置条件（输出 places）
+    /// 后置条件(输出 places)
     pub postconditions: Vec<usize>,
     /// 栈操作
     pub stack_operation: Option<StackOperation>,
 }
 
-/// 展开后的条件（place 实例）
+/// 展开后的条件(place 实例)
 #[derive(Debug, Clone)]
 pub struct Condition {
     /// 条件 ID
@@ -59,7 +59,7 @@ pub struct Condition {
     pub name: String,
     /// Token 颜色
     pub color: Option<TokenColor>,
-    /// 是否有 token（初始标记）
+    /// 是否有 token(初始标记)
     pub has_token: bool,
 }
 
