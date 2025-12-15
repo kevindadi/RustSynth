@@ -4,7 +4,6 @@
 
 pub mod config;
 pub mod ir_graph;
-pub mod label_pt_net;
 pub mod parse;
 pub mod petri_net_traits;
 pub mod pipeline;

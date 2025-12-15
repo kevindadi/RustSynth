@@ -1,8 +1,6 @@
 use anyhow::Result;
 mod config;
-// mod generate;  // TODO: 更新以适配 LabeledPetriNet
 pub mod ir_graph;  // 改为 pub 以便 bin 文件访问
-pub mod label_pt_net;
 pub mod pushdown_colored_pt_net;
 pub mod parse;  // 改为 pub 以便 bin 文件访问
 mod petri_net_traits;

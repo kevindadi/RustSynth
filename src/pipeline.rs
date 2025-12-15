@@ -3,9 +3,10 @@
 use crate::config::{Config, Format, Stage};
 use crate::ir_graph::builder::IrGraphBuilder;
 use crate::ir_graph::structure::IrGraph;
-use crate::label_pt_net::net::LabeledPetriNet;
+
 use crate::parse::ParsedCrate;
 use crate::petri_net_traits::{ExportFormat, FromIrGraph, PetriNetExport, PetriNetKind};
+use crate::pushdown_colored_pt_net::net::PushdownColoredPetriNet;
 use anyhow::Result;
 use std::fs;
 
@@ -42,12 +43,12 @@ impl Pipeline {
         }
 
         // Step 3: 构建 Petri Net
-        let pn_kind = format!("Step 3: Build {:?}", LabeledPetriNet::kind_name(),);
+        let pn_kind = format!("Step 3: Build {:?}", PushdownColoredPetriNet::kind_name(),);
         self.config.log(&pn_kind);
         let pn = self.build_pn(&ir)?;
 
         // Step 4: 导出 Petri Net
-        let pn_desc = format!("Step 4: Export {:?}", LabeledPetriNet::description());
+        let pn_desc = format!("Step 4: Export {:?}", PushdownColoredPetriNet::description());
         self.config.log(&pn_desc);
         self.export_pn(&pn)?;
 
@@ -99,19 +100,18 @@ impl Pipeline {
         Ok(())
     }
 
-    fn build_pn(&self, ir: &IrGraph) -> Result<LabeledPetriNet> {
-        let mut pn = LabeledPetriNet::from_ir_graph(ir);
-        pn.add_primitive_shims(ir);
+    fn build_pn(&self, ir: &IrGraph) -> Result<PushdownColoredPetriNet> {
+        let pn = PushdownColoredPetriNet::from_ir_graph(ir);
 
         self.config.log_verbose(&format!(
             "  {:?}: {}",
-            LabeledPetriNet::kind_name(),
+            PushdownColoredPetriNet::kind_name(),
             pn.get_stats_string()
         ));
         Ok(pn)
     }
 
-    fn export_pn(&self, pn: &LabeledPetriNet) -> Result<()> {
+    fn export_pn(&self, pn: &PushdownColoredPetriNet) -> Result<()> {
         fs::create_dir_all(&self.config.output)?;
 
         for fmt in self.config.pn_formats() {
