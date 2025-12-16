@@ -14,7 +14,7 @@ use anyhow::Result;
 
 // 使用库 crate 导出的模块
 use rustdoc_petri_net_builder::ir_graph::builder::IrGraphBuilder;
-use rustdoc_petri_net_builder::ir_graph::node_info::NodeInfo;
+use rustdoc_petri_net_builder::ir_graph::node_info::{GenericParamKind, NodeInfo};
 use rustdoc_petri_net_builder::ir_graph::structure::{IrGraph, NodeType};
 use rustdoc_petri_net_builder::ir_graph::trait_ordering::{TraitBound, TraitOrdering};
 use rustdoc_petri_net_builder::parse::ParsedCrate;
@@ -59,9 +59,14 @@ fn main() -> Result<()> {
     let mut generic_count = 0;
     let mut total_satisfying_types = 0;
 
-    // 遍历所有节点，找出泛型参数
-    for (node_idx, node_info) in &graph.node_infos {
+    // 遍历所有节点，找出泛型参数（只处理类型参数和常量参数，跳过生命周期参数）
+    for (_, node_info) in &graph.node_infos {
         if let NodeInfo::Generic(generic_info) = node_info {
+            // 过滤掉生命周期泛型参数，只保留类型参数和常量参数
+            if generic_info.kind == GenericParamKind::Lifetime {
+                continue;
+            }
+            
             generic_count += 1;
 
             // 获取泛型参数的来源信息

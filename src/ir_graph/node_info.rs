@@ -324,6 +324,19 @@ pub struct GenericInfo {
     pub bounds: Vec<NodeIndex>,
     /// 默认类型(如果有)
     pub default_type: Option<NodeIndex>,
+    /// 泛型参数类型:Type(类型参数)、Const(常量参数)、Lifetime(生命周期参数)
+    pub kind: GenericParamKind,
+}
+
+/// 泛型参数的类型
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum GenericParamKind {
+    /// 类型参数,如 `struct Foo<T>`
+    Type,
+    /// 生命周期参数,如 `fn foo<'a>(x: &'a str)`
+    Lifetime,
+    /// 常量参数,如 `struct Array<T, const N: usize>`
+    Const,
 }
 
 /// 类型别名信息

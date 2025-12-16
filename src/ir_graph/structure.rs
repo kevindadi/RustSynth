@@ -95,7 +95,7 @@ pub enum NodeType {
 }
 
 /// IR 图:整个程序的中间表示
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IrGraph {
     /// 节点是字符串(Id.0.to_string()),边是 TypeRelation
     pub type_graph: DiGraph<String, TypeRelation>,

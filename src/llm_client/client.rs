@@ -202,20 +202,3 @@ impl LlmClient {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    #[ignore]
-    async fn test_openai_client() {
-        let config = LlmConfig {
-            provider: LlmProvider::OpenAi,
-            api_key: "test-key".to_string(),
-            base_url: None,
-            model: "gpt-4".to_string(),
-            temperature: 0.7,
-            max_tokens: Some(1000),
-        };
-    }
-}

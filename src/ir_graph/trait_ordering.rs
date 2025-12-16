@@ -51,6 +51,7 @@ use crate::support_types::primitives::get_primitive_default_traits;
 use petgraph::graph::NodeIndex;
 use petgraph::visit::EdgeRef;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 /// Trait 偏序关系系统
 ///
@@ -58,10 +59,16 @@ use std::collections::{HashMap, HashSet};
 /// - 直接实现关系（通过 Implements 边）
 /// - 间接实现关系（通过 supertrait 继承）
 /// - 标准库 Trait 的隐式实现
+///
+/// # 安全性
+///
+/// 使用 `Arc<IrGraph>` 来安全地共享 IR Graph 的所有权，允许 `TraitOrdering` 被安全地克隆。
+/// 只要任何 `TraitOrdering` 实例存在，底层的 `IrGraph` 就不会被释放。
 #[derive(Debug, Clone)]
 pub struct TraitOrdering {
-    /// IR Graph 的引用（只读）
-    graph: *const IrGraph,
+    /// IR Graph 的共享引用（只读）
+    /// 使用 Arc 确保安全的所有权共享，避免悬空指针
+    graph: Arc<IrGraph>,
     /// Trait 继承关系图：supertrait -> subtrait（子 Trait 继承父 Trait）
     /// 如果 A 是 B 的 supertrait，则 A -> B
     trait_inheritance: HashMap<NodeIndex, HashSet<NodeIndex>>,
@@ -75,9 +82,43 @@ pub struct TraitOrdering {
 
 impl TraitOrdering {
     /// 从 IR Graph 构建 Trait 偏序关系系统
+    ///
+    /// # 参数
+    /// * `graph` - IR Graph 的引用，将被包装在 `Arc` 中以安全共享
+    ///
+    /// # 安全性
+    /// 使用 `Arc` 包装 `IrGraph` 以确保即使原始引用被丢弃，只要 `TraitOrdering` 存在，
+    /// `IrGraph` 就不会被释放，从而避免悬空指针。
+    ///
+    /// # 注意
+    /// 这个方法接受引用并创建 `Arc`。如果 `IrGraph` 已经包装在 `Arc` 中，
+    /// 使用 `new_from_arc` 方法更高效。
     pub fn new(graph: &IrGraph) -> Self {
+        Self::new_from_arc(Arc::new(graph.clone()))
+    }
+
+    /// 从 `Arc<IrGraph>` 构建 Trait 偏序关系系统
+    ///
+    /// 这是推荐的方法，因为它避免了克隆 `IrGraph`。如果图已经包装在 `Arc` 中，
+    /// 使用这个方法更高效。
+    ///
+    /// # 参数
+    /// * `graph` - 已经包装在 `Arc` 中的 IR Graph
+    ///
+    /// # 示例
+    /// ```rust,no_run
+    /// use std::sync::Arc;
+    /// use crate::ir_graph::{IrGraph, TraitOrdering};
+    ///
+    /// let graph: IrGraph = /* ... */;
+    /// let graph_arc = Arc::new(graph);
+    /// let ordering = TraitOrdering::new_from_arc(graph_arc.clone());
+    /// // 现在可以安全地克隆 ordering，graph 不会被释放
+    /// let ordering2 = ordering.clone();
+    /// ```
+    pub fn new_from_arc(graph: Arc<IrGraph>) -> Self {
         let mut ordering = Self {
-            graph: graph as *const IrGraph,
+            graph,
             trait_inheritance: HashMap::new(),
             type_impl_cache: HashMap::new(),
             trait_name_to_node: HashMap::new(),
@@ -126,7 +167,7 @@ impl TraitOrdering {
 
     /// 获取 IR Graph 的引用（安全访问）
     fn graph(&self) -> &IrGraph {
-        unsafe { &*self.graph }
+        &self.graph
     }
 
     /// 构建 Trait 继承关系图
@@ -208,6 +249,7 @@ impl TraitOrdering {
     /// 获取 Trait 的所有子 Trait（通过继承关系）
     ///
     /// 返回所有直接或间接继承自给定 Trait 的 Trait 集合
+    #[allow(unused)]
     fn get_all_subtraits(&self, trait_node: NodeIndex) -> HashSet<NodeIndex> {
         let mut result = HashSet::new();
         result.insert(trait_node); // 包含自身
@@ -501,7 +543,6 @@ impl From<&str> for TraitBound {
 mod tests {
     use super::*;
     use crate::ir_graph::structure::IrGraph;
-    use crate::ir_graph::node_info::*;
 
     #[test]
     fn test_trait_ordering_creation() {

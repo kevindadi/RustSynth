@@ -928,6 +928,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                                 // TODO: 处理默认类型节点
                                 None
                             }),
+                        kind: crate::ir_graph::node_info::GenericParamKind::Type,
                     };
                     self.graph
                         .node_infos
@@ -993,6 +994,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                             owner: owner_node,
                             bounds: Vec::new(), // 生命周期参数没有 trait bounds
                             default_type: None,
+                            kind: crate::ir_graph::node_info::GenericParamKind::Lifetime,
                         };
                         self.graph
                             .node_infos
@@ -1059,6 +1061,7 @@ impl<'ir> IrGraphBuilder<'ir> {
                             owner: owner_node,
                             bounds: Vec::new(), // 常量参数没有 trait bounds
                             default_type: None,
+                            kind: crate::ir_graph::node_info::GenericParamKind::Const,
                         };
                         self.graph
                             .node_infos
