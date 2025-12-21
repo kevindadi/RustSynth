@@ -43,7 +43,29 @@ pub mod unfolding_fuzz;
 #[cfg(test)]
 mod fuzz_example;
 
+// PCPN 运行时模块
+pub mod types;
+pub mod runtime;
+pub mod env;
+pub mod build;
+pub mod search;
+pub mod emit;
+
+#[cfg(test)]
+mod tests;
+
 pub use net::{PushdownColoredPetriNet, TokenColor, StackOperation, PcpnStats};
 pub use analysis::{PcpnAnalysis, FuzzEntryInfo};
 pub use unfolding::{UnfoldedPetriNet, UnfoldingConfig, UnfoldingStats, unfold_petri_net};
 pub use unfolding_fuzz::UnfoldingBasedFuzzer;
+
+// 重新导出运行时类型
+pub use types::{TypeExpr, ValueId, Color};
+pub use runtime::{
+    MultiSet, Place, Marking, Stack, StackFrame, Config,
+    Transition, TransitionId, Choice, ValueIdGenerator,
+};
+pub use env::{Env, MockEnv};
+pub use build::{StructuralTransition, StructuralTransitionKind, SignatureTransition};
+pub use search::{SearchConfig, SearchResult, WitnessStep, BFSSearcher, search_until};
+pub use emit::{CodeEmitter, TransitionInfo, TransitionKind};
