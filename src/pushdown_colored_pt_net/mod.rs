@@ -38,10 +38,6 @@
 pub mod net;
 pub mod export;
 pub mod analysis;
-pub mod unfolding;
-pub mod unfolding_fuzz;
-#[cfg(test)]
-mod fuzz_example;
 
 // PCPN 运行时模块
 pub mod types;
@@ -56,8 +52,6 @@ mod tests;
 
 pub use net::{PushdownColoredPetriNet, TokenColor, StackOperation, PcpnStats};
 pub use analysis::{PcpnAnalysis, FuzzEntryInfo};
-pub use unfolding::{UnfoldedPetriNet, UnfoldingConfig, UnfoldingStats, unfold_petri_net};
-pub use unfolding_fuzz::UnfoldingBasedFuzzer;
 
 // 重新导出运行时类型
 pub use types::{TypeExpr, ValueId, Color};

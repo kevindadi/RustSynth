@@ -343,7 +343,6 @@ pub fn explore_all(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pushdown_colored_pt_net::build::StructuralTransition;
 
     #[test]
     fn test_bfs_search() {
