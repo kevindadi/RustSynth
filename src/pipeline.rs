@@ -1,4 +1,4 @@
-//! SyPetype 工作流管道
+//! SyPetype 工作流
 
 use crate::config::{Config, Format, Stage};
 use crate::ir_graph::builder::IrGraphBuilder;
@@ -48,7 +48,10 @@ impl Pipeline {
         let pn = self.build_pn(&ir)?;
 
         // Step 4: 导出 Petri Net
-        let pn_desc = format!("Step 4: Export {:?}", PushdownColoredPetriNet::description());
+        let pn_desc = format!(
+            "Step 4: Export {:?}",
+            PushdownColoredPetriNet::description()
+        );
         self.config.log(&pn_desc);
         self.export_pn(&pn)?;
 
