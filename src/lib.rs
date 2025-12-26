@@ -7,9 +7,10 @@ pub mod ir_graph;
 pub mod parse;
 pub mod petri_net_traits;
 pub mod pipeline;
-pub mod pushdown_colored_pt_net;
 pub mod support_types;
 pub mod llm_client;
+
+pub mod pcpn;
 
 pub use ir_graph::*;
 pub use parse::ParsedCrate;
