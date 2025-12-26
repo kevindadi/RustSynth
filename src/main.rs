@@ -5,7 +5,7 @@ pub mod pcpn;  // 新的下推着色 Petri 网模块
 pub mod parse; 
 mod petri_net_traits;
 mod pipeline;
-pub mod pushdown_colored_pt_net;
+pub mod llm_client;
 pub mod support_types;
 
 use crate::config::Config;
