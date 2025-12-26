@@ -1,4 +1,4 @@
-//! SyPetype 工作流管道
+//! SyPetype 工作流
 
 use crate::config::{Config, Format, Stage};
 use crate::ir_graph::builder::IrGraphBuilder;
