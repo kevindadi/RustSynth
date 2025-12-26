@@ -221,6 +221,7 @@ impl<'a> ReachabilityAnalyzer<'a> {
             for binding in enabled {
                 // 克隆配置并触发变迁
                 let mut new_config = current.config.clone();
+                #[allow(unused)]
                 let mut temp_gen = value_gen.clone();
 
                 if firing_rule.fire(&mut new_config, &binding) {

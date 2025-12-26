@@ -1,6 +1,5 @@
 use crate::llm_client::code_generator::CodeGenerator;
 use crate::llm_client::client::{LlmConfig, LlmProvider};
-use crate::pushdown_colored_pt_net::net::PushdownColoredPetriNet;
 
 pub struct PetriNetTestGenerator {
     code_generator: CodeGenerator,

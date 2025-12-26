@@ -1,8 +1,8 @@
 use anyhow::Result;
 mod config;
-pub mod ir_graph;  // 改为 pub 以便 bin 文件访问
-pub mod pushdown_colored_pt_net;
-pub mod parse;  // 改为 pub 以便 bin 文件访问
+pub mod ir_graph; 
+pub mod pcpn;  // 新的下推着色 Petri 网模块
+pub mod parse; 
 mod petri_net_traits;
 mod pipeline;
 pub mod support_types;

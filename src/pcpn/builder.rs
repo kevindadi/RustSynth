@@ -344,14 +344,18 @@ impl PcpnBuilder {
 
     /// 创建结构变迁
     fn create_structural_transitions(&mut self, _ir: &IrGraph) {
-        // 先收集所有类型及其 Copy 属性
-        let type_infos: Vec<(TypeId, bool)> = self.node_to_type
+        // 收集所有类型及其 Copy/Clone 属性
+        let type_infos: Vec<(TypeId, bool, bool)> = self.node_to_type
             .values()
-            .map(|&type_id| (type_id, self.net.types.is_copy(type_id)))
+            .map(|&type_id| {
+                let is_copy = self.net.types.is_copy(type_id);
+                let is_clone = self.net.types.implements_trait(type_id, "Clone");
+                (type_id, is_copy, is_clone)
+            })
             .collect();
 
         // 为每个类型创建必要的结构变迁
-        for (type_id, is_copy) in type_infos {
+        for (type_id, is_copy, is_clone) in type_infos {
             // Move 变迁
             self.net.add_structural_transition(StructuralKind::Move, type_id);
 
@@ -368,6 +372,12 @@ impl PcpnBuilder {
             if is_copy {
                 self.net.add_structural_transition(StructuralKind::CopyUse, type_id);
                 self.net.add_structural_transition(StructuralKind::DupCopy, type_id);
+            }
+
+            // Clone 类型的变迁（只有 Clone 没有 Copy 的类型）
+            if is_clone && !is_copy {
+                self.net.add_structural_transition(StructuralKind::CloneUse, type_id);
+                self.net.add_structural_transition(StructuralKind::DupClone, type_id);
             }
         }
     }

@@ -220,15 +220,15 @@ impl<'a> FiringRule<'a> {
     /// 检查守卫条件
     fn check_guard(
         &self,
-        config: &Config,
+        _config: &Config,
         transition: &Transition,
         binding: &EnabledBinding,
     ) -> bool {
         match &transition.kind {
             TransitionKind::Structural(kind) => {
                 match kind {
-                    StructuralKind::CopyUse | StructuralKind::DupCopy => {
-                        // 类型必须是 Copy
+                    // Copy 操作需要类型实现 Copy trait
+                    StructuralKind::CopyUse => {
                         if let Some(tokens) = binding.input_bindings.values().next() {
                             if let Some(token) = tokens.first() {
                                 return self.net.types.is_copy(token.type_id);
@@ -236,14 +236,35 @@ impl<'a> FiringRule<'a> {
                         }
                         false
                     }
+                    // DupCopy 需要 Copy 且有预算
                     StructuralKind::DupCopy => {
-                        // 还需要检查预算
-                        transition.dup_budget.map(|b| b > 0).unwrap_or(false)
+                        let is_copy = binding.input_bindings.values().next()
+                            .and_then(|tokens| tokens.first())
+                            .map(|token| self.net.types.is_copy(token.type_id))
+                            .unwrap_or(false);
+                        is_copy && transition.dup_budget.map(|b| b > 0).unwrap_or(false)
+                    }
+                    // Clone 操作需要类型实现 Clone trait（但不需要 Copy）
+                    StructuralKind::CloneUse => {
+                        if let Some(tokens) = binding.input_bindings.values().next() {
+                            if let Some(token) = tokens.first() {
+                                return self.net.types.implements_trait(token.type_id, "Clone");
+                            }
+                        }
+                        false
+                    }
+                    // DupClone 需要 Clone 且有预算
+                    StructuralKind::DupClone => {
+                        let is_clone = binding.input_bindings.values().next()
+                            .and_then(|tokens| tokens.first())
+                            .map(|token| self.net.types.implements_trait(token.type_id, "Clone"))
+                            .unwrap_or(false);
+                        is_clone && transition.dup_budget.map(|b| b > 0).unwrap_or(false)
                     }
                     _ => true,
                 }
             }
-            TransitionKind::Signature(sig) => {
+            TransitionKind::Signature(_sig) => {
                 // 检查所有参数类型匹配
                 true // 已在输入弧检查中处理
             }
