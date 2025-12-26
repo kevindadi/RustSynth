@@ -62,16 +62,6 @@ pub enum ExportFormat {
     Json,
 }
 
-/// XML 转义
-pub(crate) fn escape_xml(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&apos;")
-}
-
-/// DOT 转义
 pub(crate) fn escape_dot(s: &str) -> String {
     s.replace('\\', "\\\\")
         .replace('"', "\\\"")

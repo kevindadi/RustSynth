@@ -1,14 +1,12 @@
 use anyhow::Result;
 mod config;
-// mod generate;  // TODO: 更新以适配 LabeledPetriNet
-mod ir_graph;
-pub mod label_pt_net;
-pub mod pushdown_colored_pt_net;
-mod parse;
+pub mod ir_graph; 
+pub mod pcpn;  // 新的下推着色 Petri 网模块
+pub mod parse; 
 mod petri_net_traits;
 mod pipeline;
-pub mod support_types;
 pub mod llm_client;
+pub mod support_types;
 
 use crate::config::Config;
 use crate::pipeline::Pipeline;
@@ -19,7 +17,6 @@ fn main() -> Result<()> {
 
     let config = Config::parse();
 
-    // 使用 Pipeline 执行工作流
     let pipeline = Pipeline::new(config);
     pipeline.run()?;
 

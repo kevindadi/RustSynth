@@ -31,19 +31,15 @@ struct ScopeFrame {
 /// 泛型作用域管理器
 #[derive(Debug)]
 pub struct GenericScope {
-    /// 作用域栈(从外到内)
     stack: Vec<ScopeFrame>,
 }
 
 impl GenericScope {
-    /// 创建新的作用域管理器
     pub fn new() -> Self {
         Self { stack: Vec::new() }
     }
 
     /// 进入新作用域
-    ///
-    /// 参数:
     /// - owner_id: 作用域所有者 ID
     /// - generics: 泛型参数映射(名称 -> TypeNode)
     #[allow(unused)]
@@ -81,22 +77,14 @@ impl GenericScope {
     /// 解析泛型参数
     ///
     /// 从栈顶向下查找泛型参数名,返回对应的 Id
-    ///
-    /// 参数:
-    /// - name: 泛型参数名(如 "T")
-    ///
-    /// 返回:
-    /// - Some(Id): 找到对应的泛型 Id
-    /// - None: 未找到(可能是未定义的泛型)
     #[allow(unused)]
     pub fn resolve(&self, name: &str) -> Option<Id> {
-        // 从栈顶向下查找(最内层作用域优先)
         for frame in self.stack.iter().rev() {
             if let Some(node) = frame.generics.get(name) {
                 return Some(node.clone());
             }
         }
-        None
+        None // 未找到对应的泛型参数
     }
 
     /// 获取当前作用域的所有者 ID

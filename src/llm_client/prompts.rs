@@ -1,4 +1,4 @@
-use crate::pushdown_colored_pt_net::net::PushdownColoredPetriNet;
+use crate::pcpn::PcpnNet;
 
 pub struct TestGenerationPrompt {
     pub system_prompt: String,
@@ -159,7 +159,7 @@ pub fn build_prompt_from_sequence(
 
 pub fn build_advanced_prompt(
     sequence: Vec<String>,
-    pcpn: Option<&PushdownColoredPetriNet>,
+    pcpn: Option<&PcpnNet>,
     crate_name: String,
     crate_path: Option<String>,
 ) -> TestGenerationPrompt {
@@ -174,8 +174,8 @@ pub fn build_advanced_prompt(
     if let Some(net) = pcpn {
         let stats = net.stats();
         builder = builder.add_context(format!(
-            "Petri 网包含 {} 个 places 和 {} 个 transitions,有 {} 种不同的 token 颜色",
-            stats.place_count, stats.transition_count, stats.color_count
+            "Petri 网包含 {} 个 places 和 {} 个 transitions，有 {} 种不同的类型",
+            stats.place_count, stats.transition_count, stats.type_count
         ));
     }
 

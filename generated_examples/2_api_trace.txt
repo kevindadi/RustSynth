@@ -1,0 +1,7 @@
+// base64 API Sequence
+// Total: 4 API calls
+
+1. new
+2. encode_padding
+3. with_decode_allow_trailing_bits
+4. new

@@ -9,8 +9,10 @@ pub mod node_info;
 /// 2. 所有权信息存储在边上(Move, &, &mut 等)
 /// 3. 统一处理函数、构造器等操作
 pub mod structure;
+pub mod trait_ordering;
 pub mod type_cache;
 pub mod utils;
 
 pub use node_info::*;
 pub use structure::{EdgeMode, IrGraph, NodeType};
+pub use trait_ordering::{TraitBound, TraitOrdering};

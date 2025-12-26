@@ -1,0 +1,23 @@
+{
+  "api_calls": 10,
+  "api_trace": [
+    "decode_vec",
+    "with_decode_allow_trailing_bits",
+    "encode_slice",
+    "encode_string",
+    "new",
+    "new",
+    "into_inner",
+    "with_encode_padding",
+    "decode",
+    "new"
+  ],
+  "crate_name": "base64",
+  "pcpn_stats": {
+    "api_transition_count": 34,
+    "place_count": 95,
+    "structural_transition_count": 555,
+    "transition_count": 589
+  },
+  "witness_length": 10
+}
