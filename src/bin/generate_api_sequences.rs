@@ -14,7 +14,8 @@ use rustdoc_petri_net_builder::pcpn::{
     PcpnBuilder, PcpnConfig, ReachabilityAnalyzer, SearchConfig, SearchStrategy,
     CodeGenerator, GenerationMode, Witness,
     marking::{Marking, Token, ValueIdGen},
-    types::{RustType, PrimitiveType},
+    types::{RustType, PrimitiveKind, Mutability},
+    place::PlaceKind,
     firing::Config,
 };
 
@@ -52,7 +53,7 @@ struct Args {
     max_graph_states: usize,
 
     /// DeepSeek API Key（用于代码补全）
-    #[arg(long, env = "DEEPSEEK_API_KEY")]
+    #[arg(long)]
     deepseek_api_key: Option<String>,
 }
 
@@ -149,7 +150,33 @@ fn main() -> Result<()> {
     // 如果有 DeepSeek API Key，尝试补全代码
     if let Some(api_key) = args.deepseek_api_key {
         log::info!("🤖 调用 DeepSeek API 补全代码...");
-        complete_with_deepseek(&pcpn, &witness, &args.output, &crate_name, &api_key)?;
+        let config = PcpnConfig {
+            generation_mode: GenerationMode::WithPlaceholders,
+            generate_compilable_code: false,
+            include_type_annotations: false,
+            generate_test_harness: true,
+            ..Default::default()
+        };
+        let mut generator = CodeGenerator::new(&pcpn, &config);
+        let code = generator.generate(&witness);
+        let prompt = generate_llm_prompt(&pcpn, &witness, &crate_name, &code.code);
+        
+        // 保存提示词
+        let prompt_path = args.output.join("deepseek_prompt.md");
+        fs::write(&prompt_path, &prompt)?;
+        
+        // 调用 DeepSeek API
+        match call_deepseek_api(&prompt, &api_key) {
+            Ok(completed_code) => {
+                let output_path = args.output.join("5_deepseek_completed.rs");
+                fs::write(&output_path, &completed_code)?;
+                log::info!("  ✓ DeepSeek 补全成功: {}", output_path.display());
+            }
+            Err(e) => {
+                log::warn!("  ⚠ DeepSeek API 调用失败: {}", e);
+                log::info!("  ✓ 提示词已保存: {}", prompt_path.display());
+            }
+        }
     }
 
     log::info!("✨ 完成! 输出目录: {}", args.output.display());
@@ -177,95 +204,113 @@ fn create_initial_marking(pcpn: &mut rustdoc_petri_net_builder::pcpn::PcpnNet) -
 
     // 添加基本类型（可重复使用）
     let primitives = [
-        ("u8", PrimitiveType::U8),
-        ("u16", PrimitiveType::U16),
-        ("u32", PrimitiveType::U32),
-        ("u64", PrimitiveType::U64),
-        ("usize", PrimitiveType::Usize),
-        ("i8", PrimitiveType::I8),
-        ("i32", PrimitiveType::I32),
-        ("i64", PrimitiveType::I64),
-        ("bool", PrimitiveType::Bool),
-        ("char", PrimitiveType::Char),
+        ("u8", PrimitiveKind::U8),
+        ("u16", PrimitiveKind::U16),
+        ("u32", PrimitiveKind::U32),
+        ("u64", PrimitiveKind::U64),
+        ("usize", PrimitiveKind::Usize),
+        ("i8", PrimitiveKind::I8),
+        ("i32", PrimitiveKind::I32),
+        ("i64", PrimitiveKind::I64),
+        ("bool", PrimitiveKind::Bool),
+        ("char", PrimitiveKind::Char),
     ];
 
     for (name, prim) in primitives {
         // 注册类型
         let type_id = pcpn.types.register(RustType::Primitive(prim));
         
-        // 找到或创建对应的 place
-        if let Some(place_id) = pcpn.find_or_create_place_for_type(type_id) {
-            // 添加多个 token（基本类型可重复使用）
-            for _ in 0..3 {
-                marking.add(place_id, Token {
-                    type_id,
-                    value_id: value_gen.next(),
-                });
-            }
-            log::info!("    + {} (3 tokens)", name);
+        // 创建 place
+        let place_id = pcpn.add_place(
+            format!("initial_{}", name),
+            PlaceKind::Own,
+            type_id,
+        );
+        
+        // 添加多个 token（基本类型可重复使用）
+        for _ in 0..3 {
+            marking.add(place_id, Token {
+                type_id,
+                value_id: value_gen.next(),
+            });
         }
+        log::info!("    + {} (3 tokens)", name);
     }
 
     // 添加 [u8] 切片类型
-    let u8_type_id = pcpn.types.register(RustType::Primitive(PrimitiveType::U8));
-    let slice_type_id = pcpn.types.register(RustType::Slice(Box::new(RustType::Primitive(PrimitiveType::U8))));
-    if let Some(place_id) = pcpn.find_or_create_place_for_type(slice_type_id) {
-        for _ in 0..3 {
-            marking.add(place_id, Token {
-                type_id: slice_type_id,
-                value_id: value_gen.next(),
-            });
-        }
-        log::info!("    + [u8] (3 tokens)");
+    let slice_type = RustType::Slice(Box::new(RustType::Primitive(PrimitiveKind::U8)));
+    let slice_type_id = pcpn.types.register(slice_type.clone());
+    let slice_place_id = pcpn.add_place(
+        "initial_[u8]".to_string(),
+        PlaceKind::Own,
+        slice_type_id,
+    );
+    for _ in 0..3 {
+        marking.add(slice_place_id, Token {
+            type_id: slice_type_id,
+            value_id: value_gen.next(),
+        });
     }
+    log::info!("    + [u8] (3 tokens)");
 
     // 添加 &[u8] 引用类型
-    let ref_slice_type_id = pcpn.types.register(RustType::Reference {
-        is_mut: false,
-        inner: Box::new(RustType::Slice(Box::new(RustType::Primitive(PrimitiveType::U8)))),
-    });
-    if let Some(place_id) = pcpn.find_or_create_place_for_type(ref_slice_type_id) {
-        for _ in 0..3 {
-            marking.add(place_id, Token {
-                type_id: ref_slice_type_id,
-                value_id: value_gen.next(),
-            });
-        }
-        log::info!("    + &[u8] (3 tokens)");
+    let ref_slice_type = RustType::Reference {
+        mutability: Mutability::Shared,
+        lifetime: None,
+        inner: Box::new(RustType::Slice(Box::new(RustType::Primitive(PrimitiveKind::U8)))),
+    };
+    let ref_slice_type_id = pcpn.types.register(ref_slice_type);
+    let ref_slice_place_id = pcpn.add_place(
+        "initial_&[u8]".to_string(),
+        PlaceKind::Own,
+        ref_slice_type_id,
+    );
+    for _ in 0..3 {
+        marking.add(ref_slice_place_id, Token {
+            type_id: ref_slice_type_id,
+            value_id: value_gen.next(),
+        });
     }
+    log::info!("    + &[u8] (3 tokens)");
 
     // 添加 String 类型
-    let string_type_id = pcpn.types.register(RustType::Named {
+    let string_type = RustType::Named {
         path: "String".to_string(),
         type_args: vec![],
-    });
-    if let Some(place_id) = pcpn.find_or_create_place_for_type(string_type_id) {
-        for _ in 0..2 {
-            marking.add(place_id, Token {
-                type_id: string_type_id,
-                value_id: value_gen.next(),
-            });
-        }
-        log::info!("    + String (2 tokens)");
+    };
+    let string_type_id = pcpn.types.register(string_type);
+    let string_place_id = pcpn.add_place(
+        "initial_String".to_string(),
+        PlaceKind::Own,
+        string_type_id,
+    );
+    for _ in 0..2 {
+        marking.add(string_place_id, Token {
+            type_id: string_type_id,
+            value_id: value_gen.next(),
+        });
     }
+    log::info!("    + String (2 tokens)");
 
     // 添加 &str 类型
-    let str_type_id = pcpn.types.register(RustType::Reference {
-        is_mut: false,
-        inner: Box::new(RustType::Primitive(PrimitiveType::Str)),
-    });
-    if let Some(place_id) = pcpn.find_or_create_place_for_type(str_type_id) {
-        for _ in 0..2 {
-            marking.add(place_id, Token {
-                type_id: str_type_id,
-                value_id: value_gen.next(),
-            });
-        }
-        log::info!("    + &str (2 tokens)");
+    let str_type = RustType::Reference {
+        mutability: Mutability::Shared,
+        lifetime: None,
+        inner: Box::new(RustType::Primitive(PrimitiveKind::Str)),
+    };
+    let str_type_id = pcpn.types.register(str_type);
+    let str_place_id = pcpn.add_place(
+        "initial_&str".to_string(),
+        PlaceKind::Own,
+        str_type_id,
+    );
+    for _ in 0..2 {
+        marking.add(str_place_id, Token {
+            type_id: str_type_id,
+            value_id: value_gen.next(),
+        });
     }
-
-    // 标记这些类型为可无限使用（Copy 语义）
-    let _ = u8_type_id; // 使用变量避免警告
+    log::info!("    + &str (2 tokens)");
 
     marking
 }
@@ -414,66 +459,49 @@ assert_eq!(input.as_slice(), decoded.as_slice());
     prompt
 }
 
-/// 使用 DeepSeek API 补全代码
-fn complete_with_deepseek(
-    pcpn: &rustdoc_petri_net_builder::pcpn::PcpnNet,
-    witness: &Witness,
-    output_dir: &Path,
-    crate_name: &str,
-    api_key: &str,
-) -> Result<()> {
-    // 生成提示词
-    let config = PcpnConfig {
-        generation_mode: GenerationMode::WithPlaceholders,
-        generate_compilable_code: false,
-        include_type_annotations: false,
-        generate_test_harness: true,
-        ..Default::default()
-    };
-    let mut generator = CodeGenerator::new(pcpn, &config);
-    let code = generator.generate(witness);
-    let prompt = generate_llm_prompt(pcpn, witness, crate_name, &code.code);
-
-    // 构建请求
-    let request = serde_json::json!({
+/// 调用 DeepSeek API 补全代码
+fn call_deepseek_api(prompt: &str, api_key: &str) -> Result<String> {
+    let client = reqwest::blocking::Client::new();
+    
+    let request_body = serde_json::json!({
         "model": "deepseek-chat",
         "messages": [
             {
                 "role": "system",
-                "content": "你是一个 Rust 代码生成专家。请根据给定的 API 调用序列模板，生成完整的、可编译的 Rust 测试代码。只输出代码，不要解释。"
+                "content": "你是一个 Rust 代码生成专家。请根据给定的 API 调用序列模板，生成完整的、可编译的 Rust 测试代码。只输出代码，不要解释。代码用 ```rust 和 ``` 包裹。"
             },
             {
-                "role": "user", 
+                "role": "user",
                 "content": prompt
             }
         ],
         "temperature": 0.3,
         "max_tokens": 4000
     });
-
-    // 发送请求
-    let client = reqwest::blocking::Client::new();
+    
     let response = client
-        .post("https://api.deepseek.com/v1/chat/completions")
+        .post("https://api.deepseek.com/chat/completions")
         .header("Authorization", format!("Bearer {}", api_key))
         .header("Content-Type", "application/json")
-        .json(&request)
+        .json(&request_body)
         .send()?;
-
-    if response.status().is_success() {
-        let result: serde_json::Value = response.json()?;
-        if let Some(content) = result["choices"][0]["message"]["content"].as_str() {
-            // 提取代码块
-            let code = extract_code_block(content);
-            let path = output_dir.join("5_deepseek_completed.rs");
-            fs::write(&path, &code)?;
-            log::info!("  ✓ DeepSeek 补全代码: {}", path.display());
-        }
-    } else {
-        log::warn!("  ⚠ DeepSeek API 请求失败: {}", response.status());
+    
+    if !response.status().is_success() {
+        let status = response.status();
+        let text = response.text().unwrap_or_default();
+        anyhow::bail!("API 返回错误 {}: {}", status, text);
     }
-
-    Ok(())
+    
+    let result: serde_json::Value = response.json()?;
+    
+    // 提取生成的代码
+    let content = result["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("无法解析 API 响应"))?;
+    
+    // 提取代码块
+    let code = extract_code_block(content);
+    Ok(code)
 }
 
 /// 从 markdown 中提取代码块
@@ -488,6 +516,12 @@ fn extract_code_block(content: &str) -> String {
     // 尝试提取 ``` ... ``` 块
     if let Some(start) = content.find("```") {
         let rest = &content[start + 3..];
+        // 跳过语言标识符（如果有）
+        let rest = if let Some(newline) = rest.find('\n') {
+            &rest[newline + 1..]
+        } else {
+            rest
+        };
         if let Some(end) = rest.find("```") {
             return rest[..end].trim().to_string();
         }
