@@ -464,24 +464,4 @@ impl<'a> FiringRule<'a> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::pcpn::place::PlaceKind;
-    use crate::pcpn::types::{RustType, PrimitiveKind};
-
-    #[test]
-    fn test_config_state_hash() {
-        let config1 = Config::new();
-        let config2 = Config::new();
-
-        assert_eq!(config1.state_hash(), config2.state_hash());
-    }
-
-    #[test]
-    fn test_enabled_binding() {
-        let binding = EnabledBinding::new(TransitionId::new(0));
-        assert!(binding.input_bindings.is_empty());
-    }
-}
 

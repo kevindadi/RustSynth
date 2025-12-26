@@ -4,9 +4,9 @@
 
 use std::collections::HashMap;
 
-use super::types::{TypeId, RustType, TypeRegistry};
-use super::transition::{Transition, TransitionKind, SignatureInfo, ParamPassing, SelfKind};
-use super::witness::{Witness, WitnessStep};
+use super::types::{TypeId, RustType};
+use super::transition::{TransitionKind, SignatureInfo, ParamPassing, SelfKind};
+use super::witness::Witness;
 use super::config::{PcpnConfig, GenerationMode};
 use super::net::PcpnNet;
 
@@ -116,76 +116,362 @@ impl<'a> CodeGenerator<'a> {
     fn generate_api_call(&mut self, sig: &SignatureInfo) -> (String, Option<String>) {
         let mut stmt = String::new();
 
-        // 处理返回值
-        let return_var = if let Some(ret_type) = sig.return_type {
-            let var = self.new_var("result");
-            if self.config.include_type_annotations {
-                if let Some(ty) = self.net.types.get(ret_type) {
-                    stmt.push_str(&format!("let {}: {} = ", var, ty.short_name()));
-                } else {
-                    stmt.push_str(&format!("let {} = ", var));
-                }
-            } else {
-                stmt.push_str(&format!("let {} = ", var));
-            }
-            self.register_var(ret_type, var.clone());
+        // 处理返回值 - 不标注类型，让编译器推导
+        let return_var = if let Some(ret_type_id) = sig.return_type {
+            // 使用返回类型名称生成更有意义的变量名
+            let type_short = sig.return_type_name.as_ref()
+                .map(|n| Self::extract_base_type(n).to_lowercase())
+                .unwrap_or_else(|| "result".to_string());
+            let var = self.new_var(&type_short);
+            stmt.push_str(&format!("let {} = ", var));
+            // 注册这个变量到 available_vars
+            self.available_vars.entry(ret_type_id).or_default().push(var.clone());
             Some(var)
         } else {
+            stmt.push_str("let _ = ");
             None
         };
 
         // 生成调用表达式
-        if sig.is_method {
-            // 方法调用
-            if let Some(self_kind) = &sig.self_param {
-                // 需要一个 self 参数
-                let self_expr = self.generate_self_expr(self_kind, sig);
-                match self_kind {
-                    SelfKind::Owned => {
-                        stmt.push_str(&format!("{}.{}(", self_expr, sig.name));
-                    }
-                    SelfKind::Ref => {
-                        stmt.push_str(&format!("{}.{}(", self_expr, sig.name));
-                    }
-                    SelfKind::MutRef => {
-                        stmt.push_str(&format!("{}.{}(", self_expr, sig.name));
-                    }
-                }
+        if let Some(ref self_kind) = sig.self_param {
+            // 方法调用（有 self 参数）- 尝试从 available_vars 中找一个
+            let self_expr = self.generate_self_expr_with_lookup(self_kind, sig);
+            stmt.push_str(&format!("{}.{}(", self_expr, sig.name));
+        } else if sig.owner_type.is_some() {
+            // 关联函数（没有 self 参数，如 Type::new()）
+            let owner = sig.owner_type.as_deref().unwrap();
+            stmt.push_str(&format!("{}::{}(", owner, sig.name));
+        } else if !sig.path.is_empty() && sig.path != sig.name {
+            // 有路径的独立函数（如 crate::module::func）
+            // 检查路径是否以模块格式存在
+            if sig.path.contains("::") {
+                // 完整路径
+                stmt.push_str(&format!("{}::{}(", sig.path.rsplit("::").skip(1).collect::<Vec<_>>().into_iter().rev().collect::<Vec<_>>().join("::"), sig.name));
             } else {
-                // 关联函数
                 stmt.push_str(&format!("{}::{}(", sig.path, sig.name));
             }
         } else {
-            // 独立函数
-            stmt.push_str(&format!("{}(", sig.path));
+            // 独立函数或无法确定的情况
+            stmt.push_str(&format!("{}(", sig.name));
         }
 
-        // 生成参数
+        // 生成参数（排除 self 参数）
         let params: Vec<String> = sig.params.iter()
-            .map(|p| self.generate_param_expr(p.type_id, p.passing))
+            .filter(|p| p.name != "self")
+            .map(|p| self.generate_param_expr_with_lookup(p))
             .collect();
         stmt.push_str(&params.join(", "));
         stmt.push_str(");");
 
-        // 计算 import
-        let import = if !sig.path.is_empty() {
-            Some(sig.path.clone())
-        } else {
-            None
-        };
+        // 计算 import（使用 owner_path 或 path）
+        let import = sig.owner_path.clone()
+            .or_else(|| if !sig.path.is_empty() { Some(sig.path.clone()) } else { None });
+
+        // 如果返回值变量被创建，但类型是 Copy，不要从 available_vars 中移除它
+        let _ = return_var; // 目前只是注册，不移除
 
         (stmt, import)
     }
 
-    /// 生成 self 表达式
-    fn generate_self_expr(&mut self, self_kind: &SelfKind, sig: &SignatureInfo) -> String {
-        // 尝试从可用变量中获取
-        // 简化实现：生成一个占位符
-        match self_kind {
-            SelfKind::Owned => "value".to_string(),
-            SelfKind::Ref => "&value".to_string(),
-            SelfKind::MutRef => "&mut value".to_string(),
+    /// 生成 self 表达式，优先使用已有变量
+    fn generate_self_expr_with_lookup(&mut self, self_kind: &SelfKind, sig: &SignatureInfo) -> String {
+        // 尝试从 available_vars 中找到匹配类型的变量
+        // 注意：这里简化处理，使用类型名称匹配
+        let owner_type = sig.owner_type.as_deref().unwrap_or("Unknown");
+        let var_name = owner_type.to_lowercase();
+        
+        // 检查是否已有这个类型的变量
+        for (type_id, vars) in &self.available_vars {
+            if let Some(ty) = self.net.types.get(*type_id) {
+                let type_short = ty.short_name().to_lowercase();
+                if type_short == var_name && !vars.is_empty() {
+                    let existing_var = vars.last().unwrap().clone();
+                    return match self_kind {
+                        SelfKind::Owned => existing_var,
+                        SelfKind::Ref => format!("&{}", existing_var),
+                        SelfKind::MutRef => format!("&mut {}", existing_var),
+                    };
+                }
+            }
         }
+        
+        // 没有找到，生成一个 todo!
+        format!("todo!(\"need {} instance\")", owner_type)
+    }
+
+    /// 生成参数表达式，优先使用已有变量
+    fn generate_param_expr_with_lookup(&mut self, param: &super::transition::ParamInfo) -> String {
+        // 清理类型名称
+        let clean_type = Self::extract_base_type(&param.type_name);
+        
+        // 如果是外部类型或泛型，生成 todo!() 占位符
+        if param.is_external || Self::is_generic_type(&clean_type) {
+            let comment = if clean_type.len() <= 3 { 
+                format!("/* {} */ ", clean_type) 
+            } else { 
+                String::new() 
+            };
+            return format!("{}todo!(\"{}\")", comment, param.name);
+        }
+        
+        // 尝试从 available_vars 中找一个匹配类型的变量
+        if let Some(vars) = self.available_vars.get(&param.type_id) {
+            if !vars.is_empty() {
+                let existing_var = vars.last().unwrap().clone();
+                return match param.passing {
+                    ParamPassing::ByRef => format!("&{}", existing_var),
+                    ParamPassing::ByMutRef => format!("&mut {}", existing_var),
+                    ParamPassing::ByValue => existing_var,
+                };
+            }
+        }
+        
+        // 没有现有变量，生成值
+        let base_expr = self.generate_value_for_type(&clean_type);
+        
+        // 根据传递方式添加引用（但避免双重引用）
+        match param.passing {
+            ParamPassing::ByRef => {
+                if base_expr.starts_with('&') {
+                    base_expr
+                } else {
+                    format!("&{}", base_expr)
+                }
+            }
+            ParamPassing::ByMutRef => {
+                if base_expr.starts_with("&mut ") {
+                    base_expr
+                } else {
+                    format!("&mut {}", base_expr)
+                }
+            }
+            ParamPassing::ByValue => base_expr,
+        }
+    }
+
+    /// 清理类型名称（从 rustdoc 格式转换为 Rust 代码格式）
+    fn clean_type_name(type_name: &str) -> String {
+        // 处理 rustdoc-types 的调试格式
+        let name = type_name.to_string();
+        
+        // 处理 Primitive("xxx")
+        if name.starts_with("Primitive(\"") && name.ends_with("\")") {
+            return name[11..name.len()-2].to_string();
+        }
+        
+        // 处理 Generic("xxx")
+        if name.starts_with("Generic(\"") && name.ends_with("\")") {
+            let generic_name = &name[9..name.len()-2];
+            // Self 类型需要特殊处理
+            if generic_name == "Self" {
+                return "Self".to_string();
+            }
+            // 其他泛型参数标记为占位符
+            return format!("/* {} */ _", generic_name);
+        }
+        
+        // 处理 ResolvedPath(Path { path: "xxx", ... })
+        if name.contains("ResolvedPath(Path {") {
+            // 提取 path: "xxx" 部分
+            if let Some(path_start) = name.find("path: \"") {
+                let rest = &name[path_start + 7..];
+                if let Some(path_end) = rest.find('"') {
+                    let path_name = &rest[..path_end];
+                    // 处理 Result 和 Option
+                    if path_name == "Result" || path_name == "Option" || path_name == "Vec" {
+                        return path_name.to_string();
+                    }
+                    return path_name.to_string();
+                }
+            }
+        }
+        
+        // 处理 BorrowedRef { ... }
+        if name.starts_with("BorrowedRef {") {
+            if name.contains("is_mutable: true") {
+                return "&mut _".to_string();
+            } else {
+                return "&_".to_string();
+            }
+        }
+        
+        // 处理 QualifiedPath { name: "xxx", ... }
+        if name.contains("QualifiedPath {") {
+            if let Some(name_start) = name.find("name: \"") {
+                let rest = &name[name_start + 7..];
+                if let Some(name_end) = rest.find('"') {
+                    return rest[..name_end].to_string();
+                }
+            }
+        }
+        
+        // 如果是普通的类型名称，简化路径
+        let mut result = name.clone();
+        
+        // 移除生命周期标注
+        if let Ok(re) = regex::Regex::new(r"'[a-z_]+\s*") {
+            result = re.replace_all(&result, "").to_string();
+        }
+        
+        // 简化常见路径
+        result = result.replace("&& ", "&");
+        
+        // 如果类型名称中有多个 ::，取最后一部分
+        if result.contains("::") && !result.starts_with("Result<") && !result.starts_with("Option<") {
+            if let Some(generic_start) = result.find('<') {
+                let base = &result[..generic_start];
+                let generics = &result[generic_start..];
+                let short_base = base.rsplit("::").next().unwrap_or(base);
+                result = format!("{}{}", short_base, generics);
+            } else {
+                result = result.rsplit("::").next().unwrap_or(&result).to_string();
+            }
+        }
+        
+        result
+    }
+
+
+    /// 提取基础类型名称（处理 rustdoc 格式）
+    fn extract_base_type(type_str: &str) -> String {
+        let s = type_str.trim();
+        
+        // 处理 Primitive("xxx")
+        if s.starts_with("Primitive(\"") {
+            if let Some(end) = s.find("\")") {
+                return s[11..end].to_string();
+            }
+        }
+        
+        // 处理 Generic("xxx")
+        if s.starts_with("Generic(\"") {
+            if let Some(end) = s.find("\")") {
+                return s[9..end].to_string();
+            }
+        }
+        
+        // 处理 ResolvedPath(Path { path: "xxx", ... })
+        if s.contains("ResolvedPath(Path {") || s.contains("path: \"") {
+            if let Some(path_start) = s.find("path: \"") {
+                let rest = &s[path_start + 7..];
+                if let Some(path_end) = rest.find('"') {
+                    return rest[..path_end].to_string();
+                }
+            }
+        }
+        
+        // 处理 BorrowedRef { ... type_: ... }
+        if s.contains("BorrowedRef {") || s.contains("type_: ") {
+            if let Some(type_start) = s.find("type_: ") {
+                let rest = &s[type_start + 7..];
+                // 递归提取内部类型
+                return Self::extract_base_type(rest);
+            }
+        }
+        
+        // 处理 Slice(xxx)
+        if s.starts_with("Slice(") {
+            // 找到匹配的括号
+            if let Some(paren_start) = s.find('(') {
+                let inner = &s[paren_start + 1..];
+                // 移除尾部的括号
+                let inner = inner.trim_end_matches(|c| c == ')' || c == ' ');
+                let elem_type = Self::extract_base_type(inner);
+                return format!("[{}]", elem_type);
+            }
+        }
+        
+        // 处理带大括号的复杂类型 - 直接返回简化的占位符
+        if s.contains("{") || s.contains("}") {
+            // 尝试提取 path 或 name
+            if let Some(path_start) = s.find("path: \"") {
+                let rest = &s[path_start + 7..];
+                if let Some(path_end) = rest.find('"') {
+                    return rest[..path_end].to_string();
+                }
+            }
+            if let Some(name_start) = s.find("name: \"") {
+                let rest = &s[name_start + 7..];
+                if let Some(name_end) = rest.find('"') {
+                    return rest[..name_end].to_string();
+                }
+            }
+            return "_".to_string();
+        }
+        
+        s.to_string()
+    }
+
+    /// 检查是否是泛型类型
+    fn is_generic_type(type_name: &str) -> bool {
+        // 单个大写字母通常是泛型
+        if type_name.len() == 1 && type_name.chars().all(|c| c.is_uppercase()) {
+            return true;
+        }
+        // Self 也是泛型
+        if type_name == "Self" {
+            return true;
+        }
+        false
+    }
+
+    /// 为类型生成值
+    fn generate_value_for_type(&self, type_name: &str) -> String {
+        let clean = type_name.trim();
+        
+        // 基本类型
+        match clean {
+            "bool" => return "true".to_string(),
+            "char" => return "'a'".to_string(),
+            "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => return "0".to_string(),
+            "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => return "0".to_string(),
+            "f32" | "f64" => return "0.0".to_string(),
+            "()" | "" => return "()".to_string(),
+            _ => {}
+        }
+        
+        // &str 和 String
+        if clean == "&str" || clean == "str" {
+            return "\"test\"".to_string();
+        }
+        if clean == "String" {
+            return "String::new()".to_string();
+        }
+        
+        // 切片类型
+        if clean.starts_with("[") && clean.ends_with("]") {
+            // [u8] -> &[]
+            return "&[]".to_string();
+        }
+        
+        // Vec
+        if clean == "Vec" || clean.starts_with("Vec<") {
+            return "Vec::new()".to_string();
+        }
+        
+        // Option
+        if clean == "Option" || clean.starts_with("Option<") {
+            return "None".to_string();
+        }
+        
+        // Result
+        if clean == "Result" || clean.starts_with("Result<") {
+            return "Ok(())".to_string();
+        }
+        
+        // 常见类型
+        match clean {
+            "DecodeError" | "EncodeSliceError" | "DecodeSliceError" => {
+                return "todo!(\"error value\")".to_string();
+            }
+            "DecodePaddingMode" => {
+                return "DecodePaddingMode::RequireNone".to_string();
+            }
+            _ => {}
+        }
+        
+        // 默认：尝试使用 Default trait
+        format!("{}::default()", clean)
     }
 
     /// 生成参数表达式

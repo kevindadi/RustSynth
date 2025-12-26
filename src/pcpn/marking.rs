@@ -235,6 +235,20 @@ impl Marking {
             .map(|(p, _)| *p)
             .collect()
     }
+
+    /// 迭代所有库所和它们的 token
+    pub fn iter_places(&self) -> impl Iterator<Item = (&PlaceId, &MultiSet)> {
+        self.places.iter()
+    }
+
+    /// 获取所有库所的快照
+    pub fn place_summary(&self) -> Vec<(PlaceId, usize)> {
+        self.places
+            .iter()
+            .filter(|(_, ms)| !ms.is_empty())
+            .map(|(p, ms)| (*p, ms.total()))
+            .collect()
+    }
 }
 
 impl fmt::Display for Marking {

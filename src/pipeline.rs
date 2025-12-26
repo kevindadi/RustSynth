@@ -4,7 +4,6 @@ use crate::config::{Config, Format, Stage};
 use crate::ir_graph::builder::IrGraphBuilder;
 use crate::ir_graph::structure::IrGraph;
 use crate::parse::ParsedCrate;
-use crate::petri_net_traits::ExportFormat;
 
 // PCPN 模块
 use crate::pcpn::{

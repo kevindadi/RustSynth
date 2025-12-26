@@ -110,7 +110,6 @@ impl PcpnBuilder {
                     };
                 }
                 NodeInfo::Tuple(info) => {
-                    // 简化处理
                     return RustType::Tuple(Vec::new());
                 }
                 NodeInfo::Slice(info) => {
@@ -261,10 +260,15 @@ impl PcpnBuilder {
                             EdgeMode::MutRef => ParamPassing::ByMutRef,
                             _ => ParamPassing::ByValue,
                         };
+                        // 检查是否是外部类型
+                        let is_external = Self::is_external_type(&p.type_str);
+                        
                         ParamInfo {
                             name: p.name.clone(),
                             type_id,
+                            type_name: p.type_str.clone(),
                             passing,
+                            is_external,
                         }
                     })
                     .collect();
@@ -281,20 +285,37 @@ impl PcpnBuilder {
                 let return_type = method_info.return_info.type_node
                     .and_then(|n| self.node_to_type.get(&n).copied());
 
+                // 获取所属类型信息
+                let (owner_type, owner_path) = method_info.owner
+                    .and_then(|o| ir.node_infos.get(&o))
+                    .map(|info| {
+                        let name = info.name().to_string();
+                        let path = info.path().map(|p| p.full_path.clone());
+                        (Some(name), path)
+                    })
+                    .unwrap_or((None, None));
+
+                // 收集外部类型
+                let external_types: Vec<String> = params.iter()
+                    .filter(|p| p.is_external)
+                    .map(|p| p.type_name.clone())
+                    .collect();
+
                 let sig_info = SignatureInfo {
-                    path: method_info.owner
-                        .and_then(|o| ir.node_infos.get(&o))
-                        .and_then(|info| info.path())
-                        .map(|p| p.full_path.clone())
-                        .unwrap_or_default(),
+                    path: owner_path.clone().unwrap_or_default(),
                     name: method_info.name.clone(),
+                    owner_type,
+                    owner_path,
                     params,
                     return_type,
+                    return_type_name: Some(method_info.return_info.type_str.clone()),
                     is_const: method_info.is_const,
                     is_async: method_info.is_async,
                     is_unsafe: method_info.is_unsafe,
                     is_method: self_param.is_some(),
                     self_param,
+                    has_external_deps: !external_types.is_empty(),
+                    external_types,
                 };
 
                 Some(Transition::signature(trans_id, sig_info))
@@ -313,10 +334,13 @@ impl PcpnBuilder {
                             EdgeMode::MutRef => ParamPassing::ByMutRef,
                             _ => ParamPassing::ByValue,
                         };
+                        let is_external = Self::is_external_type(&p.type_str);
                         ParamInfo {
                             name: p.name.clone(),
                             type_id,
+                            type_name: p.type_str.clone(),
                             passing,
+                            is_external,
                         }
                     })
                     .collect();
@@ -324,16 +348,26 @@ impl PcpnBuilder {
                 let return_type = func_info.return_info.type_node
                     .and_then(|n| self.node_to_type.get(&n).copied());
 
+                let external_types: Vec<String> = params.iter()
+                    .filter(|p| p.is_external)
+                    .map(|p| p.type_name.clone())
+                    .collect();
+
                 let sig_info = SignatureInfo {
                     path: func_info.path.full_path.clone(),
                     name: func_info.path.name.clone(),
+                    owner_type: None,
+                    owner_path: None,
                     params,
                     return_type,
+                    return_type_name: Some(func_info.return_info.type_str.clone()),
                     is_const: func_info.is_const,
                     is_async: func_info.is_async,
                     is_unsafe: func_info.is_unsafe,
                     is_method: false,
                     self_param: None,
+                    has_external_deps: !external_types.is_empty(),
+                    external_types,
                 };
 
                 Some(Transition::signature(trans_id, sig_info))
@@ -380,6 +414,45 @@ impl PcpnBuilder {
                 self.net.add_structural_transition(StructuralKind::DupClone, type_id);
             }
         }
+    }
+
+    /// 检查类型是否是外部类型（来自其他 crate，如 std）
+    fn is_external_type(type_str: &str) -> bool {
+        // 标准库类型
+        let external_prefixes = [
+            "std::", "core::", "alloc::",
+            "io::", "fs::", "net::", "sync::",
+            "Box<", "Arc<", "Rc<", "Mutex<", "RwLock<",
+        ];
+        
+        // 常见外部 trait 类型
+        let external_traits = [
+            "Read", "Write", "BufRead", "Seek",
+            "Iterator", "IntoIterator",
+            "Display", "Debug", "Error",
+        ];
+        
+        for prefix in &external_prefixes {
+            if type_str.contains(prefix) {
+                return true;
+            }
+        }
+        
+        for trait_name in &external_traits {
+            // 检查 dyn Trait 或 impl Trait
+            if type_str.contains(&format!("dyn {}", trait_name))
+                || type_str.contains(&format!("impl {}", trait_name)) {
+                return true;
+            }
+        }
+        
+        // 检查泛型参数（如 R, W, T 等单字母）
+        // 这些通常表示外部类型约束
+        if type_str.len() == 1 && type_str.chars().all(|c| c.is_uppercase()) {
+            return true;
+        }
+        
+        false
     }
 
     /// 创建自动构造变迁

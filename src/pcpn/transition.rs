@@ -158,14 +158,20 @@ impl StructuralKind {
 /// 签名信息（API 调用）
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignatureInfo {
-    /// 完整路径
+    /// 完整路径（如 "base64::engine::GeneralPurpose"）
     pub path: String,
-    /// 函数名
+    /// 函数/方法名
     pub name: String,
+    /// 所属类型名称（如 "GeneralPurpose"）
+    pub owner_type: Option<String>,
+    /// 所属类型完整路径
+    pub owner_path: Option<String>,
     /// 参数信息
     pub params: Vec<ParamInfo>,
     /// 返回类型
     pub return_type: Option<TypeId>,
+    /// 返回类型名称（用于代码生成）
+    pub return_type_name: Option<String>,
     /// 是否是 const fn
     pub is_const: bool,
     /// 是否是 async fn
@@ -176,6 +182,10 @@ pub struct SignatureInfo {
     pub is_method: bool,
     /// self 参数的传递方式（如果是方法）
     pub self_param: Option<SelfKind>,
+    /// 是否有外部依赖（参数类型来自外部 crate）
+    pub has_external_deps: bool,
+    /// 外部类型列表（需要 LLM 辅助处理）
+    pub external_types: Vec<String>,
 }
 
 /// 参数信息
@@ -183,10 +193,14 @@ pub struct SignatureInfo {
 pub struct ParamInfo {
     /// 参数名
     pub name: String,
-    /// 参数类型
+    /// 参数类型 ID
     pub type_id: TypeId,
+    /// 参数类型名称（用于代码生成）
+    pub type_name: String,
     /// 传递方式
     pub passing: ParamPassing,
+    /// 是否是外部类型
+    pub is_external: bool,
 }
 
 /// 参数传递方式
