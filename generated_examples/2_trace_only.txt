@@ -1,2 +1,0 @@
-// API Trace (10 calls)
-// decode_vec -> with_decode_allow_trailing_bits -> encode_slice -> encode_string -> new -> new -> into_inner -> with_encode_padding -> decode -> new

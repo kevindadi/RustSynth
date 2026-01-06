@@ -1,38 +1,23 @@
 [package]
-name = "rustdoc-petri-net-builder"
-version = "56.2.0"
+name = "sypetype"
+version = "0.1.0"
 edition = "2024"
-authors = ["Kevin Zhang <zhangkaiwenyy@gmail.com>"]
-license = "Apache-2.0 OR MIT"
-description = "Rustdoc Petri Net Builder"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[features]
-default = []
-fuzz = ["arbitrary", "libfuzzer-sys"]
+authors = ["Kevin <zhangkw@tongji.edu.cn>"]
+description = "签名层协议可达性分析与见证代码生成器 - 基于 Colored Petri Net"
 
 [dependencies]
-rustdoc-types = "0.57.0"
-chrono = "0.4.42"
-petgraph = { version = "0.8.3", features = ["serde-1"] }
+clap = { version = "4.5", features = ["derive"] }
+anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-toml = "0.9"
-log = "0.4"
-env_logger = "0.11"
-simplelog = "0.12.0"
-anyhow = "1.0"
-clap = { version = "4.5", features = ["derive"] }
-reqwest = { version = "0.12", features = ["json", "blocking"] }
-thiserror = "2.0.17"
-regex = "1.10"
-futures = "0.3"
-tokio = { version = "1", features = ["full"] }
+rustdoc-types = "0.57.0"
+indexmap = { version = "2.0", features = ["serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-# Optional fuzz dependencies
-arbitrary = { version = "1.3", optional = true, features = ["derive"] }
-libfuzzer-sys = { version = "0.4", optional = true }
+[dev-dependencies]
+tempfile = "3.8"
 
-[lints.clippy]
-collapsible_if = "allow"
+[dependencies.tempfile]
+version = "3.8"
+
