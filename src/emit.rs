@@ -69,8 +69,20 @@ pub fn emit_code(
                     })
                     .collect();
 
-                // 生成调用
-                let call_expr = format!("{}({})", call.api.full_path, args.join(", "));
+                // 生成调用 - 检测是否是方法调用
+                let call_expr = if call.api.is_method && !args.is_empty() {
+                    // 方法调用语法: obj.method(args...)
+                    let receiver = &args[0];
+                    let method_name = call.api.full_path.split("::").last().unwrap_or(&call.api.full_path);
+                    if args.len() > 1 {
+                        format!("{}.{}({})", receiver, method_name, args[1..].join(", "))
+                    } else {
+                        format!("{}.{}()", receiver, method_name)
+                    }
+                } else {
+                    // 普通函数调用
+                    format!("{}({})", call.api.full_path, args.join(", "))
+                };
 
                 // 如果有返回值，绑定到变量
                 if let Some(return_id) = call.return_var {
@@ -92,6 +104,22 @@ pub fn emit_code(
                 }
             }
             Transition::Structural(structural) => match structural {
+                StructuralTransition::CreatePrimitive { ty, new_id } => {
+                    let var_name = alloc_var_name(
+                        *new_id,
+                        false,
+                        &mut var_names,
+                        &mut next_x_id,
+                        &mut next_r_id,
+                    );
+                    // 根据类型生成不同的常量
+                    let value = match ty.as_str() {
+                        "bool" => "false",
+                        "i32" | "u32" | "i64" | "u64" | "usize" => "0",
+                        _ => "Default::default()",
+                    };
+                    output.push_str(&format!("    let {}: {} = {};\n", var_name, ty, value));
+                }
                 StructuralTransition::DropOwned { token_id } => {
                     if let Some(var_name) = var_names.get(token_id) {
                         output.push_str(&format!("    drop({});\n", var_name));

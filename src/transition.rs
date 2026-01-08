@@ -7,7 +7,7 @@
 use anyhow::{Context, Result};
 
 use crate::api_extract::{ApiSignature, ParamMode, ReturnMode};
-use crate::model::{BorrowFlag, Capability, State, Token, VarId};
+use crate::model::{BorrowFlag, Capability, State, Token, TypeKey, VarId};
 use crate::type_norm::TypeContext;
 
 /// Transition 类型
@@ -94,6 +94,8 @@ pub enum StructuralTransition {
     BorrowMut { owner_id: VarId, ref_id: VarId },
     /// 结束借用 (drop ref)
     EndBorrow { ref_id: VarId, owner_id: VarId },
+    /// 从常量创建 primitive token (例如: let x = 42;)
+    CreatePrimitive { ty: TypeKey, new_id: VarId },
 }
 
 impl StructuralTransition {
@@ -108,6 +110,9 @@ impl StructuralTransition {
             }
             StructuralTransition::EndBorrow { ref_id, owner_id } => {
                 format!("end_borrow v{} (owner v{})", ref_id, owner_id)
+            }
+            StructuralTransition::CreatePrimitive { ty, new_id } => {
+                format!("let v{}: {} = const", new_id, ty)
             }
         }
     }
@@ -276,6 +281,20 @@ fn generate_structural_transitions(state: &State, max_borrow_depth: usize) -> Ve
         .as_ref()
         .map(|s| s.len())
         .unwrap_or(0);
+
+    // 0. 创建 primitive constants (限制数量避免爆炸)
+    const PRIMITIVE_TYPES: &[&str] = &["i32", "u32", "i64", "u64", "bool", "usize"];
+    for &prim_ty in PRIMITIVE_TYPES {
+        let type_key = prim_ty.to_string();
+        let count = state.places.get(&type_key).map(|t| t.len()).unwrap_or(0);
+        // 每种 primitive 最多创建 1 个（避免爆炸）
+        if count < 1 {
+            transitions.push(Transition::Structural(StructuralTransition::CreatePrimitive {
+                ty: type_key,
+                new_id: state.next_var_id, // 这个 ID 会在 apply 时被更新
+            }));
+        }
+    }
 
     // 1. Drop owned tokens (未被借用的)
     for tokens in state.places.values() {
@@ -446,6 +465,12 @@ fn apply_api_call(
 /// 应用结构性变迁
 fn apply_structural(state: &mut State, structural: &StructuralTransition) -> Result<()> {
     match structural {
+        StructuralTransition::CreatePrimitive { ty, new_id: _ } => {
+            // 创建一个新的 primitive token
+            let new_id = state.alloc_var_id();
+            let token = Token::owned(new_id, ty.clone(), true); // primitives 都是 Copy
+            state.add_token(token);
+        }
         StructuralTransition::DropOwned { token_id } => {
             let token = state
                 .find_tokens(|t| t.id == *token_id)

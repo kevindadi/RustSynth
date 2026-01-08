@@ -1,0 +1,21 @@
+digraph ApiGraph {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  n0 [label="print_counter\n(Counter)", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n1 [label="new\n() → Counter", fillcolor=lightblue, style="rounded,filled", shape=doubleoctagon];
+  n2 [label="increment\n(Counter)", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n3 [label="get\n(Counter) → i32", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n4 [label="reset\n(Counter)", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n5 [label="create_counter_with_value\n(i32) → Counter", fillcolor=lightblue, style="rounded,filled", shape=doubleoctagon];
+
+  n1 -> n0 [label="Counter", color="black"];
+  n1 -> n2 [label="Counter", color="black"];
+  n1 -> n3 [label="Counter", color="black"];
+  n1 -> n4 [label="Counter", color="black"];
+  n5 -> n0 [label="Counter", color="black"];
+  n5 -> n2 [label="Counter", color="black"];
+  n5 -> n3 [label="Counter", color="black"];
+  n5 -> n4 [label="Counter", color="black"];
+  n3 -> n5 [label="i32", color="gray"];
+}

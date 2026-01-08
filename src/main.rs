@@ -1,4 +1,5 @@
 mod api_extract;
+mod api_graph;
 mod canonicalize;
 mod emit;
 mod model;
@@ -60,6 +61,10 @@ struct Args {
     /// 输出内部 trace
     #[arg(short, long)]
     verbose: bool,
+
+    /// 生成 API 依赖图（DOT 格式）
+    #[arg(long)]
+    graph: Option<PathBuf>,
 }
 
 fn main() -> Result<()> {
@@ -95,6 +100,38 @@ fn main() -> Result<()> {
 
     if apis.is_empty() {
         anyhow::bail!("未找到任何公开 API，请检查输入文件或模块过滤条件");
+    }
+
+    // 构建 API 依赖图
+    if let Some(graph_path) = &args.graph {
+        tracing::info!("构建 API 依赖图...");
+        let graph = api_graph::ApiGraph::build(&apis, &krate, &type_context)?;
+        
+        let total_nodes = graph.nodes.len();
+        let trait_nodes = graph.nodes.iter().filter(|n| matches!(n.source, api_graph::ApiSource::TraitImpl { .. })).count();
+        let field_nodes = graph.nodes.iter().filter(|n| matches!(n.source, api_graph::ApiSource::FieldAccess { .. })).count();
+        
+        tracing::info!(
+            "API 图: {} 个节点 (普通: {}, Trait: {}, 字段: {}), {} 条边",
+            total_nodes,
+            total_nodes - trait_nodes - field_nodes,
+            trait_nodes,
+            field_nodes,
+            graph.edges.len()
+        );
+
+        // 生成 DOT 文件
+        let dot_content = graph.to_dot();
+        std::fs::write(graph_path, &dot_content)
+            .context(format!("写入图文件失败: {:?}", graph_path))?;
+        
+        tracing::info!("✓ API 依赖图已生成: {:?}", graph_path);
+        tracing::info!("  使用 'dot -Tpng {} -o graph.png' 生成图片", graph_path.display());
+        
+        // 如果只生成图，就不继续搜索
+        if args.output.is_none() && !args.verify {
+            return Ok(());
+        }
     }
 
     // 构建搜索配置

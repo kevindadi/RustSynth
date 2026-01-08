@@ -4,7 +4,7 @@
 //! - Place(TypeKey): multiset<Token>
 //! - Token 携带 capability (own/shr/mut) + 变量 id + 借用关系
 //! - OwnerStatus 跟踪借用约束 (Free/ShrCount/MutActive)
-//! - LoanStack (可选) 用于 pushdown LIFO 借用栈
+//! - LoanStack 用于 pushdown LIFO 借用栈
 
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};

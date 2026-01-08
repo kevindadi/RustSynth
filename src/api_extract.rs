@@ -91,11 +91,21 @@ pub fn extract_apis(
     module_filter: &[String],
 ) -> Result<Vec<ApiSignature>> {
     let mut apis = Vec::new();
+    
+    // 首先收集所有 impl 块中的方法 ID，避免重复提取
+    let mut impl_method_ids = std::collections::HashSet::new();
+    for item in krate.index.values() {
+        if let ItemEnum::Impl(impl_) = &item.inner {
+            impl_method_ids.extend(impl_.items.iter().cloned());
+        }
+    }
 
     // 遍历所有 items
     for (id, item) in &krate.index {
-        // 检查可见性
-        if !is_public(item) {
+        // Impl 块的可见性通常是 "default"，我们需要检查其中的方法是否 public
+        let should_process = is_public(item) || matches!(item.inner, ItemEnum::Impl(_));
+        
+        if !should_process {
             continue;
         }
 
@@ -110,11 +120,26 @@ pub fn extract_apis(
         // 提取函数/方法
         match &item.inner {
             ItemEnum::Function(func) => {
-                if let Ok(sig) = extract_function_signature(item, &func.sig, type_ctx, false) {
-                    apis.push(sig);
+                // 跳过 impl 块中的方法（它们会在处理 Impl 时被提取）
+                if impl_method_ids.contains(id) {
+                    continue;
+                }
+                
+                if is_public(item) {  // Function 必须是 public
+                    if let Ok(sig) = extract_function_signature(item, &func.sig, type_ctx, false, None) {
+                        apis.push(sig);
+                    }
                 }
             }
             ItemEnum::Impl(impl_) => {
+                // 获取 impl 的 Self 类型
+                tracing::debug!("Processing impl block, impl_.for_ = {:?}", impl_.for_);
+                let self_type = type_ctx.normalize_type(&impl_.for_)
+                    .ok()
+                    .map(|(ty, _, _)| ty);
+                
+                tracing::debug!("Impl block: self_type = {:?}", self_type);
+                
                 // 提取 impl 块中的方法
                 for item_id in &impl_.items {
                     if let Some(method_item) = type_ctx.get_item(item_id) {
@@ -125,6 +150,7 @@ pub fn extract_apis(
                                     &func.sig,
                                     type_ctx,
                                     true,
+                                    self_type.clone(),
                                 ) {
                                     apis.push(sig);
                                 }
@@ -152,6 +178,7 @@ fn extract_function_signature(
     sig: &rustdoc_types::FunctionSignature,
     type_ctx: &TypeContext,
     is_method: bool,
+    impl_self_type: Option<TypeKey>,
 ) -> Result<ApiSignature> {
     let full_path = item
         .name
@@ -165,15 +192,15 @@ fn extract_function_signature(
     for (name, ty) in &sig.inputs {
         // 检查是否是 self 参数
         if name == "self" && is_method {
-            self_mode = Some(parse_param_mode(ty, type_ctx)?);
+            self_mode = Some(parse_param_mode(ty, type_ctx, impl_self_type.as_ref())?);
         } else {
-            params.push(parse_param_mode(ty, type_ctx)?);
+            params.push(parse_param_mode(ty, type_ctx, impl_self_type.as_ref())?);
         }
     }
 
     // 解析返回值
     let return_mode = if let Some(output) = &sig.output {
-        parse_return_mode(output, type_ctx)?
+        parse_return_mode(output, type_ctx, impl_self_type.as_ref())?
     } else {
         ReturnMode::Unit
     };
@@ -184,13 +211,17 @@ fn extract_function_signature(
         self_mode,
         params,
         return_mode,
-        is_unsafe: false, // 简化：从 FnSig 无法直接获取，需要检查 header
+        is_unsafe: false,
     })
 }
 
 /// 解析参数模式
-fn parse_param_mode(ty: &rustdoc_types::Type, type_ctx: &TypeContext) -> Result<ParamMode> {
-    let (type_key, cap, is_copy) = type_ctx.normalize_type(ty)?;
+fn parse_param_mode(
+    ty: &rustdoc_types::Type, 
+    type_ctx: &TypeContext,
+    impl_self_type: Option<&TypeKey>,
+) -> Result<ParamMode> {
+    let (type_key, cap, is_copy) = type_ctx.normalize_type_with_context(ty, impl_self_type)?;
 
     match cap {
         Capability::Own => Ok(ParamMode::ByValue(type_key, is_copy)),
@@ -200,8 +231,12 @@ fn parse_param_mode(ty: &rustdoc_types::Type, type_ctx: &TypeContext) -> Result<
 }
 
 /// 解析返回值模式
-fn parse_return_mode(ty: &rustdoc_types::Type, type_ctx: &TypeContext) -> Result<ReturnMode> {
-    let (type_key, cap, is_copy) = type_ctx.normalize_type(ty)?;
+fn parse_return_mode(
+    ty: &rustdoc_types::Type, 
+    type_ctx: &TypeContext,
+    impl_self_type: Option<&TypeKey>,
+) -> Result<ReturnMode> {
+    let (type_key, cap, is_copy) = type_ctx.normalize_type_with_context(ty, impl_self_type)?;
 
     match cap {
         Capability::Own => {

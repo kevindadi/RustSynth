@@ -1,0 +1,17 @@
+digraph ApiGraph {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  n0 [label="reset\n($Self)", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n1 [label="print_counter\n(Counter)", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n2 [label="create_counter_with_value\n(i32) → Counter", fillcolor=lightblue, style="rounded,filled", shape=doubleoctagon];
+  n3 [label="new\n() → $Self", fillcolor=lightblue, style="rounded,filled", shape=doubleoctagon];
+  n4 [label="increment\n($Self)", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n5 [label="get\n($Self) → i32", fillcolor=lightblue, style="rounded,filled", shape=box];
+
+  n2 -> n1 [label="Counter", color="black"];
+  n3 -> n0 [label="$Self", color="black"];
+  n3 -> n4 [label="$Self", color="black"];
+  n3 -> n5 [label="$Self", color="black"];
+  n5 -> n2 [label="i32", color="gray"];
+}

@@ -49,17 +49,19 @@ pub fn search(
         }
 
         let current_hash = state_hash_key(&state);
+        
+        // 计算当前深度
+        let depth = compute_depth(&visited, &current_hash);
 
         // 检查目标条件
-        if check_goal(&state, config) {
-            tracing::info!("✓ 找到目标状态 (迭代 {})", iterations);
+        if check_goal(&state, config, depth) {
+            tracing::info!("✓ 找到目标状态 (迭代 {}, 深度 {})", iterations, depth);
             // 重建 trace
             let trace = reconstruct_trace(&visited, &current_hash);
             return Ok(Some((state, trace)));
         }
 
         // 检查步数限制
-        let depth = compute_depth(&visited, &current_hash);
         if depth >= config.max_steps {
             continue; // 不继续扩展
         }
@@ -102,7 +104,7 @@ pub fn search(
 }
 
 /// 检查是否达到目标
-fn check_goal(state: &State, config: &SearchConfig) -> bool {
+fn check_goal(state: &State, config: &SearchConfig, depth: usize) -> bool {
     // 目标 1: 达到封闭状态 (无未结束的借用)
     if !state.is_closed() {
         return false;
@@ -110,6 +112,12 @@ fn check_goal(state: &State, config: &SearchConfig) -> bool {
 
     // 目标 2: 至少有一些 tokens (非空)
     if state.total_tokens() == 0 {
+        return false;
+    }
+    
+    // 目标 2.5: 鼓励更长的轨迹 - 至少要有一定深度
+    // 除非明确指定了 target_type，否则要求至少 3 步
+    if config.target_type.is_none() && depth < 3 {
         return false;
     }
 

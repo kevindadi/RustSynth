@@ -114,10 +114,49 @@ impl TypeContext {
     /// - 对 &T: (typekey, Shr, true)
     /// - 对 &mut T: (typekey, Mut, false)
     pub fn normalize_type(&self, ty: &Type) -> Result<(TypeKey, Capability, bool)> {
+        self.normalize_type_with_context(ty, None)
+    }
+    
+    /// 归一化类型（带上下文，可替换 Self）
+    pub fn normalize_type_with_context(
+        &self,
+        ty: &Type,
+        self_type: Option<&TypeKey>,
+    ) -> Result<(TypeKey, Capability, bool)> {
         match ty {
             Type::ResolvedPath(path) => {
-                let type_key = self.resolve_path_to_key(&path.id)?;
+                // 直接使用 path.path 字段，它已经包含了完整的类型路径
+                // 例如: "Counter", "std::vec::Vec", "simple_counter::Counter"
+                tracing::debug!("Normalizing ResolvedPath: path.path = '{}', path.id = {:?}", path.path, path.id);
+                
+                let type_key = if path.path.is_empty() {
+                    // 降级：如果 path 为空，尝试通过 id 查找
+                    let key = self.resolve_path_to_key(&path.id)?;
+                    tracing::debug!("  path.path is empty, resolved via id: '{}'", key);
+                    key
+                } else {
+                    // 标准化路径：去除 crate 前缀，统一使用 crate:: 格式
+                    let normalized = if path.path.starts_with("crate::") {
+                        path.path.clone()
+                    } else if let Some(item) = self.items.get(&path.id) {
+                        // 如果是当前 crate 的类型，添加 crate:: 前缀
+                        if item.crate_id == 0 {
+                            let result = format!("crate::{}", path.path);
+                            tracing::debug!("  normalized to: '{}'", result);
+                            result
+                        } else {
+                            tracing::debug!("  external crate, keeping: '{}'", path.path);
+                            path.path.clone()
+                        }
+                    } else {
+                        tracing::debug!("  item not found, keeping: '{}'", path.path);
+                        path.path.clone()
+                    };
+                    normalized
+                };
+                
                 let is_copy = self.copy_types.contains(&type_key);
+                tracing::debug!("  final type_key = '{}', is_copy = {}", type_key, is_copy);
                 Ok((type_key, Capability::Own, is_copy))
             }
             Type::Primitive(name) => {
@@ -130,7 +169,7 @@ impl TypeContext {
                 ..
             } => {
                 // 提取 base type
-                let (base_key, _, _) = self.normalize_type(inner)?;
+                let (base_key, _, _) = self.normalize_type_with_context(inner, self_type)?;
                 let cap = if *is_mutable {
                     Capability::Mut
                 } else {
@@ -150,7 +189,18 @@ impl TypeContext {
             Type::Slice(_) => Ok(("slice".to_string(), Capability::Own, false)),
             Type::Array { .. } => Ok(("array".to_string(), Capability::Own, true)),
             Type::Generic(name) => {
-                // 泛型参数：使用参数名作为 key
+                // 泛型参数：如果有 self_type 上下文且名称是 Self，则替换
+                tracing::debug!("Normalizing Generic: name = '{}', self_type = {:?}", name, self_type);
+                if name == "Self" {
+                    if let Some(self_ty) = self_type {
+                        let is_copy = self.copy_types.contains(self_ty);
+                        tracing::debug!("  Replacing Self with: '{}'", self_ty);
+                        return Ok((self_ty.clone(), Capability::Own, is_copy));
+                    } else {
+                        tracing::debug!("  No self_type context, using $Self");
+                    }
+                }
+                // 其他泛型参数：使用参数名作为 key
                 Ok((format!("${}", name), Capability::Own, false))
             }
             Type::QualifiedPath { .. } => {
