@@ -22,10 +22,10 @@ pub struct ApiNode {
     pub index: usize,
     /// API 签名
     pub api: ApiSignature,
-    /// 输入类型（参数）
-    pub inputs: Vec<TypeKey>,
-    /// 输出类型（返回值）
-    pub outputs: Vec<TypeKey>,
+    /// 输入类型（参数）- 保留完整信息
+    pub inputs: Vec<(TypeKey, crate::model::Capability)>,
+    /// 输出类型（返回值）- 保留完整信息
+    pub outputs: Vec<(TypeKey, crate::model::Capability)>,
     /// 是否是入口 API（无参数或只需 primitive）
     pub is_entry: bool,
     /// 来源（Normal API / Trait Impl / Field Access）
@@ -52,6 +52,8 @@ pub struct TypeEdge {
     pub to_api: usize,
     /// 通过什么类型
     pub type_key: TypeKey,
+    /// Capability: Own / Shr / Mut
+    pub capability: crate::model::Capability,
 }
 
 /// API 依赖图
@@ -151,30 +153,42 @@ impl ApiGraph {
 
     /// 添加 API 节点
     fn add_api_node(&mut self, index: usize, api: ApiSignature, source: ApiSource) {
-        let inputs: Vec<TypeKey> = api
+        use crate::api_extract::{ParamMode, ReturnMode};
+        use crate::model::Capability;
+        
+        // 提取输入参数及其 Capability
+        let inputs: Vec<(TypeKey, Capability)> = api
             .all_params()
             .iter()
-            .map(|p| p.type_key().clone())
+            .map(|p| {
+                let cap = match p {
+                    ParamMode::ByValue(_, _) => Capability::Own,
+                    ParamMode::SharedRef(_) => Capability::Shr,
+                    ParamMode::MutRef(_) => Capability::Mut,
+                };
+                (p.type_key().clone(), cap)
+            })
             .collect();
 
-        let outputs: Vec<TypeKey> = match &api.return_mode {
-            crate::api_extract::ReturnMode::OwnedValue(ty, _) => vec![ty.clone()],
-            crate::api_extract::ReturnMode::SharedRef(ty) => vec![ty.clone()],
-            crate::api_extract::ReturnMode::MutRef(ty) => vec![ty.clone()],
-            crate::api_extract::ReturnMode::Unit => vec![],
+        // 提取输出及其 Capability
+        let outputs: Vec<(TypeKey, Capability)> = match &api.return_mode {
+            ReturnMode::OwnedValue(ty, _) => vec![(ty.clone(), Capability::Own)],
+            ReturnMode::SharedRef(ty) => vec![(ty.clone(), Capability::Shr)],
+            ReturnMode::MutRef(ty) => vec![(ty.clone(), Capability::Mut)],
+            ReturnMode::Unit => vec![],
         };
 
         let is_entry = inputs.is_empty()
-            || inputs.iter().all(|t| Self::is_primitive(t) || Self::is_simple_literal(t));
+            || inputs.iter().all(|(t, _)| Self::is_primitive(t) || Self::is_simple_literal(t));
 
         // 记录生产者和消费者
-        for ty in &outputs {
+        for (ty, _) in &outputs {
             self.producers
                 .entry(ty.clone())
                 .or_insert_with(Vec::new)
                 .push(index);
         }
-        for ty in &inputs {
+        for (ty, _) in &inputs {
             self.consumers
                 .entry(ty.clone())
                 .or_insert_with(Vec::new)
@@ -193,44 +207,37 @@ impl ApiGraph {
 
     /// 构建类型依赖边（考虑引用兼容性）
     fn build_edges(&mut self) {
+        use crate::model::Capability;
+        
         for producer_node in &self.nodes {
-            for output_ty in &producer_node.outputs {
-                // 1. 直接匹配：输出类型 = 输入类型
-                if let Some(consumer_indices) = self.consumers.get(output_ty) {
-                    for &consumer_idx in consumer_indices {
-                        self.edges.push(TypeEdge {
-                            from_api: producer_node.index,
-                            to_api: consumer_idx,
-                            type_key: output_ty.clone(),
-                        });
-                    }
-                }
-                
-                // 2. 引用兼容：owned T 可以传给 &T 和 &mut T
-                // 查找所有需要此类型引用的 API
+            for (output_ty, output_cap) in &producer_node.outputs {
+                // 遍历所有消费者，检查类型和 Capability 兼容性
                 for consumer_node in &self.nodes {
-                    for input_ty in &consumer_node.inputs {
-                        // 检查是否是同一个基础类型的引用版本
-                        // 简化：通过参数模式判断
-                        let base_matches = input_ty == output_ty;
-                        
-                        if base_matches {
-                            // 已经有直接边了，跳过
+                    for (input_ty, input_cap) in &consumer_node.inputs {
+                        // 检查类型是否匹配
+                        if output_ty != input_ty {
                             continue;
                         }
                         
-                        // 检查是否有隐式的引用兼容
-                        // 这需要查看实际的参数模式，而不仅仅是 TypeKey
-                        // 暂时通过简单的字符串匹配
-                        let output_base = output_ty.trim_start_matches("&mut ").trim_start_matches('&');
-                        let input_base = input_ty.trim_start_matches("&mut ").trim_start_matches('&');
+                        // 检查 Capability 是否兼容
+                        let compatible = match (output_cap, input_cap) {
+                            // Own 可以传给任何类型（通过临时借用）
+                            (Capability::Own, _) => true,
+                            // Shr 只能传给 Shr（共享引用可以复制）
+                            (Capability::Shr, Capability::Shr) => true,
+                            // Mut 可以传给 Shr 或 Mut
+                            (Capability::Mut, Capability::Shr) => true,
+                            (Capability::Mut, Capability::Mut) => true,
+                            // 其他情况不兼容
+                            _ => false,
+                        };
                         
-                        if output_base == input_base && output_ty == output_base {
-                            // output 是 owned，input 是引用
+                        if compatible {
                             self.edges.push(TypeEdge {
                                 from_api: producer_node.index,
                                 to_api: consumer_node.index,
-                                type_key: format!("{} (as ref)", output_ty),
+                                type_key: output_ty.clone(),
+                                capability: *input_cap,  // 边的 capability 是消费者要求的
                             });
                         }
                     }
@@ -414,30 +421,39 @@ impl ApiGraph {
 
         dot.push_str("\n");
 
-        // 边（按类型分组）
-        let mut type_edges: IndexMap<TypeKey, Vec<(usize, usize)>> = IndexMap::new();
+        // 边（显示类型和 Capability）
         for edge in &self.edges {
-            type_edges
-                .entry(edge.type_key.clone())
-                .or_insert_with(Vec::new)
-                .push((edge.from_api, edge.to_api));
-        }
-
-        for (ty, edges) in type_edges {
-            let color = Self::type_to_color(&ty);
-            for (from, to) in edges {
-                dot.push_str(&format!(
-                    "  n{} -> n{} [label=\"{}\", color=\"{}\"];\n",
-                    from,
-                    to,
-                    Self::simplify_type(&ty),
-                    color
-                ));
-            }
+            let color = Self::type_to_color(&edge.type_key);
+            let cap_label = Self::capability_to_label(&edge.capability);
+            let type_label = Self::simplify_type(&edge.type_key);
+            
+            // 标签格式：Type (capability)
+            let label = if edge.capability == crate::model::Capability::Own {
+                type_label  // Own 不需要特殊标记
+            } else {
+                format!("{} ({})", type_label, cap_label)
+            };
+            
+            dot.push_str(&format!(
+                "  n{} -> n{} [label=\"{}\", color=\"{}\"];\n",
+                edge.from_api,
+                edge.to_api,
+                label,
+                color
+            ));
         }
 
         dot.push_str("}\n");
         dot
+    }
+    
+    /// Capability 转标签
+    fn capability_to_label(cap: &crate::model::Capability) -> &'static str {
+        match cap {
+            crate::model::Capability::Own => "own",
+            crate::model::Capability::Shr => "&",
+            crate::model::Capability::Mut => "&mut",
+        }
     }
 
     /// 格式化节点标签
@@ -450,17 +466,33 @@ impl ApiGraph {
             ApiSource::FieldAccess { .. } => " [field]",
         };
 
+        // 格式化输入参数，带 Capability 标注
         let inputs = node
             .inputs
             .iter()
-            .map(|t| Self::simplify_type(t))
+            .map(|(ty, cap)| {
+                let ty_str = Self::simplify_type(ty);
+                match cap {
+                    crate::model::Capability::Own => ty_str,
+                    crate::model::Capability::Shr => format!("&{}", ty_str),
+                    crate::model::Capability::Mut => format!("&mut {}", ty_str),
+                }
+            })
             .collect::<Vec<_>>()
             .join(", ");
 
+        // 格式化输出，带 Capability 标注
         let outputs = node
             .outputs
             .iter()
-            .map(|t| Self::simplify_type(t))
+            .map(|(ty, cap)| {
+                let ty_str = Self::simplify_type(ty);
+                match cap {
+                    crate::model::Capability::Own => ty_str,
+                    crate::model::Capability::Shr => format!("&{}", ty_str),
+                    crate::model::Capability::Mut => format!("&mut {}", ty_str),
+                }
+            })
             .collect::<Vec<_>>()
             .join(", ");
 
