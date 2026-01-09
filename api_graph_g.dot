@@ -1,0 +1,51 @@
+digraph ApiGraph {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  n0 [label="longest\n(&str, &str) → &str", fillcolor=lightblue, style="rounded,filled", shape=doubleoctagon];
+  n1 [label="find_max\n(&Container) → &$T", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n2 [label="make_int_pair\n(i32, i32) → Pair", fillcolor=lightblue, style="rounded,filled", shape=doubleoctagon];
+  n3 [label="make_string_container\n(String) → Container", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n4 [label="first_str\n(&str, &str) → &str", fillcolor=lightblue, style="rounded,filled", shape=doubleoctagon];
+  n5 [label="clone_inner\n(&Container) → $T", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n6 [label="new\n($A, $B) → Pair", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n7 [label="swap\n(Pair) → Pair", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n8 [label="new\n($T) → Container", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n9 [label="get\n(&Container) → &$T", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n10 [label="get_mut\n(&mut Container) → &mut $T", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n11 [label="into_inner\n(Container) → $T", fillcolor=lightblue, style="rounded,filled", shape=box];
+  n12 [label="Pair.first [field]\n(&Pair) → $A", fillcolor=lightyellow, style="rounded,filled", shape=box];
+  n13 [label="Pair.second [field]\n(&Pair) → $B", fillcolor=lightyellow, style="rounded,filled", shape=box];
+
+  n0 -> n0 [label="str (&)", color="gray"];
+  n0 -> n0 [label="str (&)", color="gray"];
+  n0 -> n4 [label="str (&)", color="gray"];
+  n0 -> n4 [label="str (&)", color="gray"];
+  n2 -> n7 [label="Pair", color="black"];
+  n2 -> n12 [label="Pair (&)", color="black"];
+  n2 -> n13 [label="Pair (&)", color="black"];
+  n3 -> n1 [label="Container (&)", color="black"];
+  n3 -> n5 [label="Container (&)", color="black"];
+  n3 -> n9 [label="Container (&)", color="black"];
+  n3 -> n10 [label="Container (&mut)", color="black"];
+  n3 -> n11 [label="Container", color="black"];
+  n4 -> n0 [label="str (&)", color="gray"];
+  n4 -> n0 [label="str (&)", color="gray"];
+  n4 -> n4 [label="str (&)", color="gray"];
+  n4 -> n4 [label="str (&)", color="gray"];
+  n5 -> n8 [label="$T", color="black"];
+  n6 -> n7 [label="Pair", color="black"];
+  n6 -> n12 [label="Pair (&)", color="black"];
+  n6 -> n13 [label="Pair (&)", color="black"];
+  n7 -> n7 [label="Pair", color="black"];
+  n7 -> n12 [label="Pair (&)", color="black"];
+  n7 -> n13 [label="Pair (&)", color="black"];
+  n8 -> n1 [label="Container (&)", color="black"];
+  n8 -> n5 [label="Container (&)", color="black"];
+  n8 -> n9 [label="Container (&)", color="black"];
+  n8 -> n10 [label="Container (&mut)", color="black"];
+  n8 -> n11 [label="Container", color="black"];
+  n11 -> n8 [label="$T", color="black"];
+  n12 -> n6 [label="$A", color="black"];
+  n13 -> n6 [label="$B", color="black"];
+}
