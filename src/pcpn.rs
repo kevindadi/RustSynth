@@ -232,6 +232,22 @@ impl LifetimeStack {
     pub fn is_blocked(&self, token_id: TokenId) -> bool {
         self.frames.iter().any(|f| f.blocks.contains(&token_id))
     }
+
+    /// 查找并移除包含指定 borrow token 的帧
+    /// 返回被解除阻塞的源 token IDs
+    pub fn remove_borrow(&mut self, borrow_id: TokenId) -> Vec<TokenId> {
+        // 查找包含此 borrow_id 的帧
+        if let Some(pos) = self
+            .frames
+            .iter()
+            .position(|f| f.borrows.contains(&borrow_id))
+        {
+            let frame = self.frames.remove(pos);
+            frame.blocks // 返回被阻塞的源 token IDs
+        } else {
+            Vec::new()
+        }
+    }
 }
 
 /// Token 结构（带唯一 ID）

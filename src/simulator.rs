@@ -586,6 +586,10 @@ impl<'a> Simulator<'a> {
                     if let Some(borrow_token) = new_state.remove_token(input_arc.place_id) {
                         consumes.push(borrow_token.type_key.clone());
 
+                        // 弹栈：移除包含此 borrow_token 的生命周期帧
+                        let _unblocked_tokens =
+                            new_state.lifetime_stack.remove_borrow(borrow_token.id);
+
                         // 恢复原 token（简化：创建新的 owned token）
                         if let Some(output_arc) = trans.output_arcs.first() {
                             let restored_token = Token::new_owned(
