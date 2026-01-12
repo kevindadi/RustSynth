@@ -9,8 +9,8 @@ digraph ApiGraph {
     label="Types";
     style=dashed;
     color=gray;
-    T0 [label="Counter", shape=ellipse, style=filled, fillcolor=lightblue];
-    T1 [label="i32", shape=ellipse, style=filled, fillcolor=lightgray];
+    T0 [label="i32", shape=ellipse, style=filled, fillcolor=lightgray];
+    T1 [label="Counter", shape=ellipse, style=filled, fillcolor=lightblue];
   }
 
   // Function nodes (方框)
@@ -18,21 +18,21 @@ digraph ApiGraph {
     label="Functions";
     style=dashed;
     color=blue;
-    F0 [label="Counter::new", shape=doubleoctagon, style=filled, fillcolor=palegreen];
-    F1 [label="Counter::increment", shape=box, style=filled, fillcolor=palegreen];
-    F2 [label="Counter::get", shape=box, style=filled, fillcolor=palegreen];
-    F3 [label="Counter::reset", shape=box, style=filled, fillcolor=palegreen];
-    F4 [label="create_counter_with_value", shape=doubleoctagon, style=filled, fillcolor=palegreen];
-    F5 [label="print_counter", shape=box, style=filled, fillcolor=palegreen];
+    F0 [label="create_counter_with_value", shape=doubleoctagon, style=filled, fillcolor=palegreen];
+    F1 [label="print_counter", shape=box, style=filled, fillcolor=palegreen];
+    F2 [label="Counter::new", shape=doubleoctagon, style=filled, fillcolor=palegreen];
+    F3 [label="Counter::increment", shape=box, style=filled, fillcolor=palegreen];
+    F4 [label="Counter::get", shape=box, style=filled, fillcolor=palegreen];
+    F5 [label="Counter::reset", shape=box, style=filled, fillcolor=palegreen];
   }
 
   // Edges
-  F0 -> T0 [label="→", color=black, style=solid];
-  T0 -> F1 [label="&mut", color=red, style=solid];
-  T0 -> F2 [label="&", color=blue, style=solid];
+  T0 -> F0 [label="copy", color=gray, style=solid];
+  F0 -> T1 [label="→", color=black, style=solid];
+  T1 -> F1 [label="&", color=blue, style=solid];
   F2 -> T1 [label="→", color=black, style=solid];
-  T0 -> F3 [label="&mut", color=red, style=solid];
-  T1 -> F4 [label="copy", color=gray, style=solid];
+  T1 -> F3 [label="&mut", color=red, style=solid];
+  T1 -> F4 [label="&", color=blue, style=solid];
   F4 -> T0 [label="→", color=black, style=solid];
-  T0 -> F5 [label="&", color=blue, style=solid];
+  T1 -> F5 [label="&mut", color=red, style=solid];
 }

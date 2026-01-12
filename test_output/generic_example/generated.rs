@@ -8,9 +8,9 @@
 #![allow(dead_code)]
 
 fn main() {
-    let v0 = Stack<Stack::T>::new(); // Stack<Stack::T>::new
-    let v1 = Stack<Stack::T>::new(); // Stack<Stack::T>::new
-    let v2 = Stack<Stack::T>::new(); // Stack<Stack::T>::new
-    let v3 = Counter::new(); // Counter::new
-    let v4 = Counter::new(); // Counter::new
+    let mut v0 = Stack<i32>::new(); // Stack<i32>::new
+    let mut v1 = Stack<i32>::new(); // Stack<i32>::new
+    let mut v2 = Stack<i32>::new(); // Stack<i32>::new
+    let mut v3 = Stack<Range>::new(); // Stack<Range>::new
+    let mut v4 = Stack<Range>::new(); // Stack<Range>::new
 }

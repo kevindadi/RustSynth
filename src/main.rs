@@ -11,7 +11,7 @@
 //! 5. 从 firing 序列生成可编译 Rust 代码
 
 mod apigraph;
-mod emitter;
+// mod emitter; // 简化版不生成 Rust 代码
 mod extract;
 mod pcpn;
 mod rustdoc_loader;
@@ -94,11 +94,11 @@ enum Commands {
         input: PathBuf,
 
         /// 每个 place 的最大 token 数
-        #[arg(long, default_value = "3")]
+        #[arg(long, default_value = "10")]
         max_tokens: usize,
 
         /// 最大栈深度
-        #[arg(long, default_value = "5")]
+        #[arg(long, default_value = "100")]
         max_stack: usize,
 
         /// 最大步数
@@ -147,6 +147,33 @@ enum Commands {
         /// 搜索策略 (bfs/dfs)
         #[arg(long, default_value = "bfs")]
         strategy: String,
+
+        /// 仅探索指定模块 (可多次指定)
+        #[arg(long = "module")]
+        modules: Vec<String>,
+    },
+
+    /// 生成可达图（状态空间图）
+    Reachability {
+        /// Rustdoc JSON 文件路径
+        #[arg(short, long)]
+        input: PathBuf,
+
+        /// 输出目录
+        #[arg(short, long, default_value = ".")]
+        out: PathBuf,
+
+        /// 最大状态数
+        #[arg(long, default_value = "100")]
+        max_states: usize,
+
+        /// 每个 place 的最大 token 数
+        #[arg(long, default_value = "2")]
+        max_tokens: usize,
+
+        /// 最大栈深度
+        #[arg(long, default_value = "3")]
+        max_stack: usize,
 
         /// 仅探索指定模块 (可多次指定)
         #[arg(long = "module")]
@@ -213,6 +240,16 @@ fn main() -> Result<()> {
             run_generate(
                 &input, &out, max_tokens, max_stack, max_steps, min_steps, &strategy, &modules,
             )?;
+        }
+        Commands::Reachability {
+            input,
+            out,
+            max_states,
+            max_tokens,
+            max_stack,
+            modules,
+        } => {
+            run_reachability(&input, &out, max_states, max_tokens, max_stack, &modules)?;
         }
     }
 
@@ -303,8 +340,8 @@ fn run_pcpn(input: &PathBuf, out: &PathBuf, modules: &[String]) -> Result<()> {
 
 fn run_simulate(
     input: &PathBuf,
-    max_tokens: usize,
-    max_stack: usize,
+    _max_tokens: usize, // 简化版使用 budget
+    _max_stack: usize,  // 简化版不使用栈深度
     max_steps: usize,
     min_steps: usize,
     strategy: &str,
@@ -312,21 +349,18 @@ fn run_simulate(
 ) -> Result<()> {
     let (pcpn, _) = build_pcpn(input, modules)?;
 
-    // 配置仿真器
+    // 配置仿真器（简化版）
     let config = simulator::SimConfig {
-        max_tokens_per_place: max_tokens,
-        max_stack_depth: max_stack,
+        dup_limit: 2,
         max_steps,
         min_steps,
         strategy: parse_strategy(strategy),
-        target_place: None,
     };
 
     tracing::info!(
-        "运行仿真器 (策略={:?}, max_tokens={}, max_stack={}, max_steps={})",
+        "运行仿真器 (策略={:?}, dup_limit={}, max_steps={})",
         config.strategy,
-        config.max_tokens_per_place,
-        config.max_stack_depth,
+        config.dup_limit,
         config.max_steps
     );
 
@@ -336,7 +370,6 @@ fn run_simulate(
     if result.found {
         tracing::info!("✓ 找到 witness (探索 {} 个状态)", result.states_explored);
         simulator::print_trace(&result.trace);
-        simulator::print_final_state(&result.final_state, &pcpn);
     } else {
         tracing::warn!("✗ 未找到 witness (探索 {} 个状态)", result.states_explored);
     }
@@ -347,8 +380,8 @@ fn run_simulate(
 fn run_generate(
     input: &PathBuf,
     out: &PathBuf,
-    max_tokens: usize,
-    max_stack: usize,
+    _max_tokens: usize, // 简化版使用 budget
+    _max_stack: usize,  // 简化版不使用栈深度
     max_steps: usize,
     min_steps: usize,
     strategy: &str,
@@ -364,21 +397,18 @@ fn run_generate(
     std::fs::write(&pcpn_dot_path, pcpn.to_dot()).context("写入 pcpn.dot 失败")?;
     tracing::info!("✓ PCPN DOT 已生成: {:?}", pcpn_dot_path);
 
-    // 配置仿真器
+    // 配置仿真器（简化版）
     let config = simulator::SimConfig {
-        max_tokens_per_place: max_tokens,
-        max_stack_depth: max_stack,
+        dup_limit: 2,
         max_steps,
         min_steps,
         strategy: parse_strategy(strategy),
-        target_place: None,
     };
 
     tracing::info!(
-        "运行仿真器 (策略={:?}, max_tokens={}, max_stack={}, max_steps={})",
+        "运行仿真器 (策略={:?}, dup_limit={}, max_steps={})",
         config.strategy,
-        config.max_tokens_per_place,
-        config.max_stack_depth,
+        config.dup_limit,
         config.max_steps
     );
 
@@ -389,24 +419,82 @@ fn run_generate(
         tracing::info!("✓ 找到 witness (探索 {} 个状态)", result.states_explored);
         simulator::print_trace(&result.trace);
 
-        // 生成 Rust 代码
-        let rust_code = emitter::emit_rust_code(&result.trace);
-        let code_path = out.join("generated.rs");
-        std::fs::write(&code_path, &rust_code).context("写入 generated.rs 失败")?;
-        tracing::info!("✓ Rust 代码已生成: {:?}", code_path);
-
-        // 也打印到控制台
-        println!("\n=== Generated Rust Code ===");
-        println!("{}", rust_code);
+        // 保存抽象 trace 到文件
+        let trace_path = out.join("trace.txt");
+        let trace_content = result
+            .trace
+            .iter()
+            .enumerate()
+            .map(|(i, f)| format!("{}. {}", i + 1, f))
+            .collect::<Vec<_>>()
+            .join("\n");
+        std::fs::write(&trace_path, &trace_content).context("写入 trace.txt 失败")?;
+        tracing::info!("✓ 抽象 Trace 已生成: {:?}", trace_path);
     } else {
         tracing::warn!("✗ 未找到 witness (探索 {} 个状态)", result.states_explored);
-        tracing::info!("尝试增加 --max-steps 或 --max-tokens 参数");
+        tracing::info!("尝试增加 --max-steps 参数");
     }
 
     // 输出 API Graph（用于参考）
     let graph_dot_path = out.join("apigraph.dot");
     std::fs::write(&graph_dot_path, graph.to_dot()).context("写入 apigraph.dot 失败")?;
     tracing::info!("✓ API Graph DOT 已生成: {:?}", graph_dot_path);
+
+    Ok(())
+}
+
+/// 生成可达图
+fn run_reachability(
+    input: &PathBuf,
+    out: &PathBuf,
+    max_states: usize,
+    _max_tokens: usize, // 简化版使用 budget
+    _max_stack: usize,  // 简化版不使用栈深度
+    modules: &[String],
+) -> Result<()> {
+    let (pcpn, _graph) = build_pcpn(input, modules)?;
+
+    // 确保输出目录存在
+    std::fs::create_dir_all(out).context("创建输出目录失败")?;
+
+    // 配置仿真器（简化版）
+    let config = simulator::SimConfig {
+        dup_limit: 2,
+        max_steps: max_states * 2,
+        min_steps: 0,
+        strategy: simulator::SearchStrategy::Bfs,
+    };
+
+    let sim = simulator::Simulator::new(&pcpn, config);
+    tracing::info!(
+        "生成可达图 (max_states={}, dup_limit={})",
+        max_states,
+        config.dup_limit
+    );
+
+    let reachability = sim.generate_reachability_graph(max_states);
+
+    // 输出统计信息
+    tracing::info!("{}", reachability.stats());
+
+    // 输出 DOT 文件
+    let dot_path = out.join("reachability.dot");
+    std::fs::write(&dot_path, reachability.to_dot(&pcpn)).context("写入 reachability.dot 失败")?;
+    tracing::info!("✓ 可达图 DOT 已生成: {:?}", dot_path);
+
+    // 打印部分信息
+    println!("\n=== 可达图统计 ===");
+    println!("状态数: {}", reachability.states.len());
+    println!("边数: {}", reachability.edges.len());
+
+    // 打印前几条边
+    println!("\n=== 部分转移 (前 20 条) ===");
+    for (i, (from, to, label)) in reachability.edges.iter().take(20).enumerate() {
+        println!("  {}. s{} --[{}]--> s{}", i + 1, from, label, to);
+    }
+    if reachability.edges.len() > 20 {
+        println!("  ... (还有 {} 条)", reachability.edges.len() - 20);
+    }
 
     Ok(())
 }

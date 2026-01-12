@@ -8,9 +8,14 @@
 #![allow(dead_code)]
 
 fn main() {
-    let v0 = Counter::new(); // Counter::new
-    let v1 = Counter::new(); // Counter::new
-    let v2 = Counter::new(); // Counter::new
-    let mut v0 = v0; // let mut = Counter
-    let mut v1 = v1; // let mut = Counter
+    let mut v0 = Counter::new(); // Counter::new
+    let mut v1 = Counter::new(); // Counter::new
+    let mut v2 = Counter::new(); // Counter::new
+    let r3 = &v0; // &Counter [first]
+    let mut v4 = Counter::new(); // Counter::new
+    let r5 = &v1; // &Counter [first]
+    drop(r3); // drop &Counter [unfreeze]
+    drop(v2); // drop Counter
+    let v6: i32 = 0; // const i32
+    drop(r5); // drop &Counter [unfreeze]
 }

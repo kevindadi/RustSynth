@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// 单态类型键 - 用于 API Graph 和 PCPN
-/// 
+///
 /// 类型宇宙：Ty ::= T | RefShr(T) | RefMut(T)
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum TypeKey {
@@ -249,7 +249,11 @@ impl TypeKey {
             TypeKey::RefMut(inner) => format!("&mut {}", inner.rust_type_name()),
             TypeKey::FnPtr { inputs, output } => {
                 let inputs_str: Vec<_> = inputs.iter().map(|i| i.rust_type_name()).collect();
-                format!("fn({}) -> {}", inputs_str.join(", "), output.rust_type_name())
+                format!(
+                    "fn({}) -> {}",
+                    inputs_str.join(", "),
+                    output.rust_type_name()
+                )
             }
             TypeKey::RawPtr { mutable, inner } => {
                 if *mutable {
@@ -268,6 +272,123 @@ impl TypeKey {
     pub fn is_generic_param(&self) -> bool {
         matches!(self, TypeKey::GenericParam { .. })
     }
+
+    /// 检查类型是否包含任何泛型参数
+    pub fn contains_generic_param(&self) -> bool {
+        match self {
+            TypeKey::GenericParam { .. } => true,
+            TypeKey::Path { args, .. } => args.iter().any(|a| a.contains_generic_param()),
+            TypeKey::Tuple(elems) => elems.iter().any(|e| e.contains_generic_param()),
+            TypeKey::Slice(inner) => inner.contains_generic_param(),
+            TypeKey::Array { elem, .. } => elem.contains_generic_param(),
+            TypeKey::RefShr(inner) | TypeKey::RefMut(inner) => inner.contains_generic_param(),
+            TypeKey::FnPtr { inputs, output } => {
+                inputs.iter().any(|i| i.contains_generic_param()) || output.contains_generic_param()
+            }
+            TypeKey::RawPtr { inner, .. } => inner.contains_generic_param(),
+            _ => false,
+        }
+    }
+
+    /// 收集类型中所有的泛型参数
+    pub fn collect_generic_params(&self) -> Vec<(String, String, Vec<String>)> {
+        let mut params = Vec::new();
+        self.collect_generic_params_inner(&mut params);
+        params
+    }
+
+    fn collect_generic_params_inner(&self, params: &mut Vec<(String, String, Vec<String>)>) {
+        match self {
+            TypeKey::GenericParam {
+                context,
+                name,
+                bounds,
+            } => {
+                let key = (context.clone(), name.clone(), bounds.clone());
+                if !params.contains(&key) {
+                    params.push(key);
+                }
+            }
+            TypeKey::Path { args, .. } => {
+                for arg in args {
+                    arg.collect_generic_params_inner(params);
+                }
+            }
+            TypeKey::Tuple(elems) => {
+                for elem in elems {
+                    elem.collect_generic_params_inner(params);
+                }
+            }
+            TypeKey::Slice(inner) => inner.collect_generic_params_inner(params),
+            TypeKey::Array { elem, .. } => elem.collect_generic_params_inner(params),
+            TypeKey::RefShr(inner) | TypeKey::RefMut(inner) => {
+                inner.collect_generic_params_inner(params)
+            }
+            TypeKey::FnPtr { inputs, output } => {
+                for input in inputs {
+                    input.collect_generic_params_inner(params);
+                }
+                output.collect_generic_params_inner(params);
+            }
+            TypeKey::RawPtr { inner, .. } => inner.collect_generic_params_inner(params),
+            _ => {}
+        }
+    }
+
+    /// 用具体类型替换泛型参数
+    /// substitutions: (context, name) -> concrete_type
+    pub fn substitute(
+        &self,
+        substitutions: &std::collections::HashMap<(String, String), TypeKey>,
+    ) -> TypeKey {
+        match self {
+            TypeKey::GenericParam { context, name, .. } => {
+                let key = (context.clone(), name.clone());
+                substitutions
+                    .get(&key)
+                    .cloned()
+                    .unwrap_or_else(|| self.clone())
+            }
+            TypeKey::Path { crate_path, args } => TypeKey::Path {
+                crate_path: crate_path.clone(),
+                args: args.iter().map(|a| a.substitute(substitutions)).collect(),
+            },
+            TypeKey::Tuple(elems) => {
+                TypeKey::Tuple(elems.iter().map(|e| e.substitute(substitutions)).collect())
+            }
+            TypeKey::Slice(inner) => TypeKey::Slice(Box::new(inner.substitute(substitutions))),
+            TypeKey::Array { elem, len } => TypeKey::Array {
+                elem: Box::new(elem.substitute(substitutions)),
+                len: *len,
+            },
+            TypeKey::RefShr(inner) => TypeKey::RefShr(Box::new(inner.substitute(substitutions))),
+            TypeKey::RefMut(inner) => TypeKey::RefMut(Box::new(inner.substitute(substitutions))),
+            TypeKey::FnPtr { inputs, output } => TypeKey::FnPtr {
+                inputs: inputs.iter().map(|i| i.substitute(substitutions)).collect(),
+                output: Box::new(output.substitute(substitutions)),
+            },
+            TypeKey::RawPtr { mutable, inner } => TypeKey::RawPtr {
+                mutable: *mutable,
+                inner: Box::new(inner.substitute(substitutions)),
+            },
+            _ => self.clone(),
+        }
+    }
+
+    /// 获取泛型参数的 bounds
+    pub fn get_bounds(&self) -> Option<&Vec<String>> {
+        match self {
+            TypeKey::GenericParam { bounds, .. } => Some(bounds),
+            _ => None,
+        }
+    }
+
+    /// 检查是否有特定的 bound
+    pub fn has_bound(&self, bound: &str) -> bool {
+        self.get_bounds()
+            .map(|b| b.iter().any(|s| s == bound))
+            .unwrap_or(false)
+    }
 }
 
 impl fmt::Display for TypeKey {
@@ -277,7 +398,7 @@ impl fmt::Display for TypeKey {
 }
 
 /// 值传递模式（用于 API Graph 的边标注）
-/// 
+///
 /// 参数绑定规则：
 /// - T (Move/Copy) → Own(T)
 /// - &T (BorrowShr) → Own(RefShr(T))
@@ -308,7 +429,10 @@ impl PassingMode {
 
     /// 是否消耗 token
     pub fn consumes(&self) -> bool {
-        matches!(self, PassingMode::Move | PassingMode::BorrowShr | PassingMode::BorrowMut)
+        matches!(
+            self,
+            PassingMode::Move | PassingMode::BorrowShr | PassingMode::BorrowMut
+        )
     }
 
     /// 是否是返回模式
