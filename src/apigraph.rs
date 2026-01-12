@@ -6,7 +6,7 @@
 //!
 //! 边上标注值传递模式 (PassingMode)
 
-use indexmap::{IndexMap, IndexSet};
+// indexmap 暂时未使用，保留以备扩展
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

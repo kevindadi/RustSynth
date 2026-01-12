@@ -1,0 +1,66 @@
+digraph PCPN {
+  rankdir=LR;
+  fontname="Helvetica";
+  node [fontname="Helvetica"];
+  edge [fontname="Helvetica"];
+  // PCPN: Own/Frz/Blk capability places
+
+  // ========== Places ==========
+  p0 [label="Counter[own]", shape=circle, style=filled, fillcolor=lightblue, peripheries=2];
+  p1 [label="Counter[frz]", shape=circle, style=filled, fillcolor=lightyellow, peripheries=1];
+  p2 [label="Counter[blk]", shape=circle, style=filled, fillcolor=lightcoral, peripheries=1];
+  p3 [label="i32[own]", shape=circle, style=filled, fillcolor=lightgray, peripheries=2];
+  p4 [label="i32[frz]", shape=circle, style=filled, fillcolor=lightyellow, peripheries=1];
+  p5 [label="i32[blk]", shape=circle, style=filled, fillcolor=lightcoral, peripheries=1];
+  p6 [label="&Counter[own]", shape=circle, style=filled, fillcolor=lightcyan, peripheries=2];
+  p7 [label="&mut Counter[own]", shape=circle, style=filled, fillcolor=mistyrose, peripheries=2];
+  p8 [label="&i32[own]", shape=circle, style=filled, fillcolor=lightcyan, peripheries=2];
+  p9 [label="&mut i32[own]", shape=circle, style=filled, fillcolor=mistyrose, peripheries=2];
+
+  // ========== Transitions ==========
+  t0 [label="Counter::new", shape=box, style=filled, fillcolor=palegreen];
+  t1 [label="Counter::increment", shape=box, style=filled, fillcolor=palegreen];
+  t2 [label="Counter::get", shape=box, style=filled, fillcolor=palegreen];
+  t3 [label="Counter::reset", shape=box, style=filled, fillcolor=palegreen];
+  t4 [label="create_counter_with_value", shape=box, style=filled, fillcolor=palegreen];
+  t5 [label="print_counter", shape=box, style=filled, fillcolor=palegreen];
+  t6 [label="&Counter [first]", shape=box, style=filled, fillcolor=lavender];
+  t7 [label="&Counter [next]", shape=box, style=filled, fillcolor=lavender];
+  t8 [label="drop &Counter [keep_frz]\n[has_other_shr]", shape=box, style=filled, fillcolor=honeydew];
+  t9 [label="drop &Counter [unfreeze]\n[last_shr]", shape=box, style=filled, fillcolor=honeydew];
+  t10 [label="&mut Counter\n[bind_mut]", shape=box, style=filled, fillcolor=pink];
+  t11 [label="drop &mut Counter", shape=box, style=filled, fillcolor=honeydew];
+  t12 [label="let mut = Counter", shape=box, style=filled, fillcolor=lightyellow];
+  t13 [label="drop Counter\n[can_drop]", shape=box, style=filled, fillcolor=gray90];
+  t14 [label="const i32", shape=diamond, style=filled, fillcolor=lightcyan];
+
+  // ========== Arcs ==========
+  t0 -> p0 [color="black"];
+  p7 -> t1 [style=solid, arrowhead=normal, color="red"];
+  p6 -> t2 [style=solid, arrowhead=normal, color="blue"];
+  t2 -> p3 [color="black"];
+  p7 -> t3 [style=solid, arrowhead=normal, color="red"];
+  p3 -> t4 [style=dashed, arrowhead=odot, color="black"];
+  t4 -> p0 [color="black"];
+  p6 -> t5 [style=solid, arrowhead=normal, color="blue"];
+  p0 -> t6 [style=solid, arrowhead=normal, color="black"];
+  t6 -> p1 [color="orange"];
+  t6 -> p6 [color="blue"];
+  p1 -> t7 [style=dashed, arrowhead=odot, color="orange"];
+  t7 -> p6 [color="blue"];
+  p1 -> t8 [style=dashed, arrowhead=odot, color="orange"];
+  p6 -> t8 [style=solid, arrowhead=normal, color="blue"];
+  p1 -> t9 [style=solid, arrowhead=normal, color="orange"];
+  p6 -> t9 [style=solid, arrowhead=normal, color="blue"];
+  t9 -> p0 [color="black"];
+  p0 -> t10 [style=solid, arrowhead=normal, color="black"];
+  t10 -> p2 [color="darkred"];
+  t10 -> p7 [color="red"];
+  p2 -> t11 [style=solid, arrowhead=normal, color="darkred"];
+  p7 -> t11 [style=solid, arrowhead=normal, color="red"];
+  t11 -> p0 [color="black"];
+  p0 -> t12 [style=solid, arrowhead=normal, color="black"];
+  t12 -> p0 [color="black"];
+  p0 -> t13 [style=solid, arrowhead=normal, color="black"];
+  t14 -> p3 [color="black"];
+}

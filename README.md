@@ -1,446 +1,281 @@
-# SyPetype - 签名层协议可达性分析与见证代码生成器
+# SyPetype - Rust API 签名分析与 PCPN 构建工具
 
-[![Rust](https://img.shields.io/badge/rust-2021%2B-orange.svg)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/rust-nightly-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 
-基于 Colored Petri Net (CPN) 和 Pushdown Colored Petri Net (PCPN) 理论的 Rust API 可达性搜索工具。
+SyPetype 是一个从 Rust crate 的 rustdoc JSON 提取 API 签名，构建二分 API Graph，转换为下推着色 Petri 网 (PCPN)，并生成可编译 Rust 代码的工具。
 
-## 概述
+## 目录
 
-SyPetype 从 rustdoc JSON 中提取公开 API 签名，构建一个资源状态机/着色网模型，执行有界可达性搜索，找到可行的 API 调用序列并生成对应的 Rust 代码片段（可通过 `cargo check` 验证）。
+- [功能特性](#功能特性)
+- [安装指南](#安装指南)
+- [快速开始](#快速开始)
+- [使用说明](#使用说明)
+- [PCPN 模型说明](#pcpn-模型说明)
+- [示例](#示例)
+- [技术说明](#技术说明)
+- [限制与简化](#限制与简化)
+- [许可证](#许可证)
 
-### 核心特性
+## 功能特性
 
-- ✅ **类型规范化**：将所有类型归一化为全称路径 TypeKey
-- ✅ **资源 Token 建模**：Token 携带 capability (own/shr/mut)、变量 ID、借用关系
-- ✅ **借用约束追踪**：通过 OwnerStatus 实现 Rust 借用规则（共享/可变互斥）
-- ✅ **API + 结构性变迁**：支持函数调用 + borrow/drop 等操作
-- ✅ **参数自动适配**：own→shr (&)、own→mut (&mut)、mut→shr (&*)
-- ✅ **状态规范化 (α-重命名)**：去重状态空间，提高搜索效率
-- ✅ **可选 Pushdown 模式**：支持 LoanStack LIFO 借用栈
-- ✅ **代码生成**：输出简洁可编译的 Rust 代码片段
+- **API Graph 构建**：从 rustdoc JSON 提取函数签名，构建类型-函数二分图
+- **PCPN 转换**：将 API Graph 转换为下推着色 Petri 网，完整建模 Rust 所有权和借用语义
+- **有界仿真**：BFS/DFS 状态空间探索，找到满足约束的 witness 轨迹
+- **代码生成**：从 firing 序列生成可编译的 Rust 代码
+- **可视化**：输出 DOT 格式，可用 Graphviz 生成图片
+
+## 安装指南
+
+### 安装 Rust
+
+SyPetype 需要 Rust nightly 工具链（用于生成 rustdoc JSON）。
+
+#### macOS / Linux
+
+```bash
+# 安装 rustup
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# 按照提示完成安装，然后重新加载环境
+source ~/.cargo/env
+
+# 安装 nightly 工具链
+rustup install nightly
+
+# 验证安装
+rustc --version
+cargo --version
+```
+
+#### Windows
+
+1. 下载并运行 [rustup-init.exe](https://win.rustup.rs/)
+2. 按照安装向导完成安装
+3. 打开新的命令行窗口，执行：
+
+```powershell
+rustup install nightly
+rustc --version
+cargo --version
+```
+
+### 安装 Graphviz (可选)
+
+Graphviz 用于将 DOT 文件转换为图片。
+
+```bash
+# macOS
+brew install graphviz
+
+# Ubuntu / Debian
+sudo apt-get install graphviz
+
+# Windows: 从 https://graphviz.org/download/ 下载
+```
+
+### 编译 SyPetype
+
+```bash
+git clone <repository-url>
+cd SyPetype
+cargo build --release
+```
 
 ## 快速开始
 
-### 安装
-
 ```bash
-git clone <repository>
-cd SyPetype
-cargo build --release
-```
-
-### 运行示例
-
-```bash
-# 1. 生成示例 crate 的 rustdoc JSON
+# 1. 进入示例目录，生成 rustdoc JSON
 cd examples/simple_counter
-cargo +nightly rustdoc --lib -- -Z unstable-options --output-format json
-
-# 2. 运行 SyPetype
+cargo +nightly rustdoc -- -Z unstable-options --output-format json
 cd ../..
-cargo run --release -- \
-    --input examples/simple_counter/target/doc/simple_counter.json \
-    --verbose
+
+# 2. 运行完整流水线（生成 PCPN + 仿真 + 代码生成）
+cargo run --release -- generate \
+  --input examples/simple_counter/target/doc/simple_counter.json \
+  --out output/
+
+# 3. (可选) 生成可视化图片
+dot -Tpng output/pcpn.dot -o output/pcpn.png
 ```
 
-### 预期输出
+## 使用说明
+
+### 生成 rustdoc JSON
+
+```bash
+cd your-crate
+cargo +nightly rustdoc -- -Z unstable-options --output-format json
+```
+
+生成的 JSON 文件位于 `target/doc/<crate_name>.json`。
+
+### 命令列表
+
+| 命令 | 说明 |
+|------|------|
+| `apigraph` | 构建 API Graph（二分图） |
+| `pcpn` | 构建 PCPN（下推着色 Petri 网） |
+| `all` | 同时生成 API Graph 和 PCPN |
+| `simulate` | 运行 PCPN 仿真器 |
+| `generate` | 完整流水线：PCPN → 仿真 → 代码生成 |
+
+### generate 命令（推荐）
+
+```bash
+sypetype generate --input <rustdoc.json> --out <output-dir> [OPTIONS]
+```
+
+**选项**：
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--max-tokens` | 3 | 每个 place 的最大 token 数 |
+| `--max-stack` | 5 | 借用栈的最大深度 |
+| `--max-steps` | 50 | 最大探索步数 |
+| `--min-steps` | 5 | 最小步数（目标条件） |
+| `--strategy` | bfs | 搜索策略：`bfs` 或 `dfs` |
+
+**输出文件**：
+- `pcpn.dot` - PCPN 的 Graphviz DOT 格式
+- `apigraph.dot` - API Graph 的 DOT 格式
+- `generated.rs` - 生成的可编译 Rust 代码
+
+## PCPN 模型说明
+
+### 类型宇宙（已单态化）
+
+```
+Ty ::= T | RefShr(T) | RefMut(T)
+```
+
+### Places（库所）
+
+每个基础类型 T 有三个库所：
+
+| Place | 含义 |
+|-------|------|
+| `Own(T)` | 拥有 T 的所有权 |
+| `Frz(T)` | T 被冻结（有活跃的共享借用） |
+| `Blk(T)` | T 被阻塞（有活跃的可变借用） |
+
+引用类型有单独的 Own 库所：
+- `Own(RefShr(T))` - 拥有 `&T` 引用
+- `Own(RefMut(T))` - 拥有 `&mut T` 引用
+
+### Token 结构
 
 ```rust
-fn generated_witness() {
-    // Step 0: call crate::Counter::new()
-    let x0 = Counter::new();
-    // Step 1: call crate::Counter::increment with args (&mut x0)
-    Counter::increment(&mut x0);
-    // Step 2: call crate::Counter::get with args (&x0)
-    let x1 = Counter::get(&x0);
+Token {
+    vid: u32,           // 变量 ID
+    bind_mut: bool,     // 是否 let mut
+    region: Option<u32> // None: owned, Some(L): 引用的 region
 }
 ```
 
-## 使用方法
-
-### 基本用法
-
-```bash
-sypetype --input <rustdoc-json> [OPTIONS]
-```
-
-### 常用选项
-
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-i, --input <FILE>` | Rustdoc JSON 文件路径 | 必需 |
-| `-o, --output <FILE>` | 输出代码文件路径 | stdout |
-| `--max-steps <N>` | 最大搜索步数 | 20 |
-| `--max-tokens-per-type <N>` | 每种类型最大 token 数 | 5 |
-| `--max-borrow-depth <N>` | 最大借用嵌套深度 | 3 |
-| `--enable-loan-stack` | 启用 LIFO 借用栈 | false |
-| `--module <PATH>` | 仅探索指定模块 | 全部 |
-| `--target-type <TYPE>` | 目标类型 | - |
-| `--verify` | 验证生成的代码 | false |
-| `-v, --verbose` | 输出详细 trace | false |
-
-### 生成 Rustdoc JSON
-
-```bash
-# 对于库 crate
-cargo +nightly rustdoc --lib -- -Z unstable-options --output-format json
-
-# 对于二进制 crate
-cargo +nightly rustdoc --bin <name> -- -Z unstable-options --output-format json
-
-# JSON 文件位于: target/doc/<crate_name>.json
-```
-
-## 工作原理
-
-### 1. 类型归一化
-
-所有类型使用全称路径字符串作为 TypeKey：
-- `std::vec::Vec` (忽略泛型参数)
-- `crate::model::User`
-- `bool`, `i32` 等 primitive
-
-引用类型提取为 base type + capability：
-- `&T` → TypeKey=T, cap=shr
-- `&mut T` → TypeKey=T, cap=mut
-
-### 2. Token 模型
-
-每个 Token 携带：
-- `cap`: own/shr/mut
-- `id`: 变量 ID
-- `ty`: TypeKey (base type)
-- `origin`: 借用来源（仅 shr/mut）
-- `is_copy`: 是否 Copy 类型
-
-### 3. 借用规则
-
-通过 `OwnerStatus` 追踪每个 owned token 的借用状态：
-- `Free`: 无借用
-- `ShrCount(n)`: n 个共享借用活跃
-- `MutActive`: 一个可变借用活跃
-
-规则：
-- 可变借用互斥（MutActive 时禁止任何借用）
-- 共享借用可多个但与可变互斥
-
-### 4. 搜索算法
-
-BFS 搜索状态空间：
-- 初始状态：空
-- 每步生成所有 enabled transitions
-- 应用 transition 得到新状态
-- 状态去重（通过 α-重命名）
-- 目标：封闭状态（无未结束借用）+ 至少有 tokens
-
-## 项目结构
-
-```
-src/
-├── main.rs           # CLI 入口
-├── model.rs          # 核心数据模型 (Token, State, OwnerStatus)
-├── rustdoc_loader.rs # Rustdoc JSON 加载
-├── type_norm.rs      # 类型归一化
-├── api_extract.rs    # API 签名提取
-├── transition.rs     # Transition 定义与应用
-├── canonicalize.rs   # 状态规范化 (α-重命名)
-├── search.rs         # 可达性搜索 (BFS)
-└── emit.rs           # Rust 代码生成与验证
-
-examples/
-└── simple_counter/   # 示例 crate
-
-docs/
-├── USAGE.md          # 详细使用指南
-└── ARCHITECTURE.md   # 架构设计文档
-```
-
-## 理论背景
-
-本工具的理论基础源自：
-
-1. **Colored Petri Net (CPN)**: Place/Transition 系统 + Token 着色
-2. **Pushdown CPN**: 增加栈结构追踪 LIFO 借用
-3. **Binding-Element Enabling**: 参数到 token 的绑定 + 使能条件检查
-4. **α-Equivalence**: 状态规范化与去重
-
-关键创新：
-- 将 Rust 借用检查建模为 Place 中的 capability 约束
-- 用 OwnerStatus 而非拆分 Place 实现借用互斥
-- 参数适配策略（临时借用 vs 持久借用）
-
-## 限制与未来工作
-
-### 当前限制
-
-1. **泛型不展开**：TypeKey 只保留 base path，不处理具体泛型实例化
-2. **Copy trait 近似判断**：从 rustdoc 推断，可能不准确
-3. **返回引用 origin 推断**：简化为使用第一个参数
-4. **组合爆炸**：参数绑定枚举限制为前 3 个候选
-5. **Unsafe 不支持**：不处理 unsafe 代码
-
-### 未来增强
-
-- [ ] 更精确的 trait 分析（Copy, Clone）
-- [ ] 支持泛型单态化
-- [ ] Reborrow 和 Deref 变迁
-- [ ] 返回值生命周期分析
-- [ ] 并行搜索
-- [ ] 交互式调试模式
-- [ ] 图形化可视化
-
-## 文档
-
-- [使用指南](USAGE.md) - 详细的使用说明和示例
-- [架构设计](ARCHITECTURE.md) - 系统架构和算法详解
-
-## 许可证
-
-双许可：MIT / Apache-2.0
-
-## 作者
-
-资深 Rust 工具链工程师 + 形式化语义工程师
-
----
-
-**注意**: 本工具用于研究和教学目的。生成的代码片段可能不符合最佳实践，仅用于展示 API 可达性。 - 签名层协议可达性分析与见证代码生成器
-
-基于 Colored Petri Net (CPN) 和 Pushdown Colored Petri Net (PCPN) 理论的 Rust API 可达性搜索工具。
-
-## 概述
-
-SyPetype 从 rustdoc JSON 中提取公开 API 签名，构建一个资源状态机/着色网模型，执行有界可达性搜索，找到可行的调用轨迹并生成对应的 Rust 代码片段（可通过 `cargo check` 验证）。
-
-### 核心特性
-
-- **类型规范化**：将所有类型归一化为全称路径 TypeKey
-- **资源 Token 建模**：Token 携带 capability (own/shr/mut)、变量 ID、借用关系
-- **借用约束追踪**：通过 OwnerStatus 实现 Rust 借用规则（共享/可变互斥）
-- **API + 结构性变迁**：支持函数调用 + borrow/drop/reborrow 等操作
-- **参数自动适配**：own→shr (&)、own→mut (&mut)、mut→shr (&*) 
-- **状态规范化 (α-重命名)**：去重状态空间，提高搜索效率
-- **可选 Pushdown 模式**：支持 LoanStack LIFO 借用栈
-- **代码生成**：输出简洁可编译的 Rust 代码片段
-
-## 安装
-
-### 前置要求
-
-- Rust nightly (用于生成 rustdoc JSON)
-- Cargo
-
-### 构建
-
-```bash
-git clone <repository>
-cd SyPetype
-cargo build --release
-```
-
-## 使用方法
-
-### 1. 生成目标 crate 的 rustdoc JSON
-
-首先需要为你想分析的 crate 生成 rustdoc JSON：
-
-```bash
-# 进入目标 crate 目录
-cd /path/to/your/crate
-
-# 生成 rustdoc JSON (需要 nightly)
-cargo +nightly rustdoc --lib -- -Z unstable-options --output-format json
-
-# JSON 文件会生成在 target/doc/<crate_name>.json
-```
-
-### 2. 运行 SyPetype
-
-```bash
-# 基本用法
-sypetype --input target/doc/your_crate.json
-
-# 指定最大步数和 token 数量
-sypetype --input target/doc/your_crate.json --max-steps 30 --max-tokens-per-type 10
-
-# 仅探索特定模块
-sypetype --input target/doc/your_crate.json --module crate::model
-
-# 尝试合成指定类型
-sypetype --input target/doc/your_crate.json --target-type "crate::User"
-
-# 启用详细输出（显示内部 trace）
-sypetype --input target/doc/your_crate.json --verbose
-
-# 验证生成的代码（运行 cargo check）
-sypetype --input target/doc/your_crate.json --verify
-
-# 输出到文件
-sypetype --input target/doc/your_crate.json --output witness.rs
-```
-
-### 3. 命令行参数
-
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `-i, --input` | Rustdoc JSON 文件路径（必需） | - |
-| `-o, --output` | 输出代码文件路径（可选） | stdout |
-| `--max-steps` | 最大搜索步数 | 20 |
-| `--max-tokens-per-type` | 每种类型最大 token 数 | 5 |
-| `--max-borrow-depth` | 最大借用嵌套深度 | 3 |
-| `--enable-loan-stack` | 启用 LIFO 借用栈 (pushdown) | false |
-| `--module` | 仅探索指定模块（可多次指定） | 全部 |
-| `--target-type` | 目标类型（尝试合成此类型） | - |
-| `--verify` | 在临时 crate 中验证代码 | false |
-| `-v, --verbose` | 输出详细 trace | false |
+### 函数参数绑定规则（关键）
+
+| Rust 参数类型 | 连接到的 Place |
+|--------------|---------------|
+| `T` | `Own(T)` |
+| `&T` | `Own(RefShr(T))` |
+| `&mut T` | `Own(RefMut(T))` |
+
+**注意**：函数参数直接连接到正确的引用库所，而不是先连到 `Own(T)` 再借用。
+
+### 结构性变迁
+
+| 变迁 | 效果 | 说明 |
+|------|------|------|
+| `BorrowShrFirst` | `Own(T) → Frz(T) + Own(&T)` | 首次共享借用 |
+| `BorrowShrNext` | `Frz(T) → Frz(T) + Own(&T)` | 后续共享借用 |
+| `EndShrKeepFrz` | `Frz(T) + Own(&T) → Frz(T)` | 结束借用，保持冻结 |
+| `EndShrUnfreeze` | `Frz(T) + Own(&T) → Own(T)` | 结束最后一个借用，解冻 |
+| `BorrowMut` | `Own(T) → Blk(T) + Own(&mut T)` | 可变借用（需要 bind_mut） |
+| `EndMut` | `Blk(T) + Own(&mut T) → Own(T)` | 结束可变借用 |
+| `MakeMutByMove` | `Own(T, mut=false) → Own(T, mut=true)` | `let mut y = x;` |
+| `Drop` | `Own(T) → ε` | drop 值 |
+
+### & / &mut 冲突的自然抑制
+
+通过库所设计自动保证借用规则：
+
+1. **共享借用时**：owner 在 `Frz(T)`，`BorrowMut` 的前条件 `Own(T)` 不满足 → 自动禁止可变借用
+2. **可变借用时**：owner 在 `Blk(T)`，任何 borrow 的前条件都不满足 → 自动禁止其他借用
 
 ## 示例
 
-### 示例 1: 分析简单的 crate
-
-假设有以下简单 crate:
+### simple_counter
 
 ```rust
-// lib.rs
-pub struct Counter {
-    value: i32,
-}
+pub struct Counter { value: i32 }
 
 impl Counter {
-    pub fn new() -> Self {
-        Counter { value: 0 }
-    }
-    
-    pub fn increment(&mut self) {
-        self.value += 1;
-    }
-    
-    pub fn get(&self) -> i32 {
-        self.value
-    }
+    pub fn new() -> Self { ... }
+    pub fn get(&self) -> i32 { ... }
+    pub fn increment(&mut self) { ... }
 }
 ```
 
-运行 SyPetype:
-
-```bash
-cargo +nightly rustdoc --lib -- -Z unstable-options --output-format json
-sypetype --input target/doc/counter.json --verbose
-```
-
-可能生成的代码：
+运行后生成的 Rust 代码示例：
 
 ```rust
-fn generated_witness() {
-    // Step 0: call crate::Counter::new()
-    let x0 = Counter::new();
-    // Step 1: call crate::Counter::increment with args (&mut x0)
-    Counter::increment(&mut x0);
-    // Step 2: call crate::Counter::get with args (&x0)
-    let x1 = Counter::get(&x0);
-    // Step 3: drop x0
-    drop(x0);
+fn main() {
+    let v0 = Counter::new();
+    let v1 = Counter::new();
+    let mut v0 = v0;  // MakeMutByMove
+    let r2 = &mut v0; // BorrowMut
+    Counter::increment(r2);
+    drop(r2);         // EndMut
 }
 ```
 
-## 工作原理
+### generic_example
 
-### 1. 类型归一化
+包含泛型结构体、关联类型、Trait bounds 等复杂场景的测试。
 
-所有类型使用全称路径字符串作为 TypeKey：
-- `std::vec::Vec` (忽略泛型参数)
-- `crate::model::User`
-- `bool`, `i32` 等 primitive
+## 技术说明
 
-引用类型提取为 base type + capability：
-- `&T` → TypeKey=T, cap=shr
-- `&mut T` → TypeKey=T, cap=mut
-
-### 2. Token 模型
-
-每个 Token 携带：
-- `cap`: own/shr/mut
-- `id`: 变量 ID
-- `ty`: TypeKey (base type)
-- `origin`: 借用来源（仅 shr/mut）
-- `is_copy`: 是否 Copy 类型
-
-### 3. 借用规则
-
-通过 `OwnerStatus` 追踪每个 owned token 的借用状态：
-- `Free`: 无借用
-- `ShrCount(n)`: n 个共享借用活跃
-- `MutActive`: 一个可变借用活跃
-
-规则：
-- 可变借用互斥（MutActive 时禁止任何借用）
-- 共享借用可多个但与可变互斥
-
-### 4. Transition
-
-**API Transition**: 
-- 参数匹配（ByValue/SharedRef/MutRef）
-- 自动适配（own→&, own→&mut, mut→&*）
-- 返回值产生
-
-**Structural Transition**:
-- `DropOwned`: drop 非借用的 owned token
-- `BorrowShr/BorrowMut`: 创建引用
-- `EndBorrow`: 结束借用
-
-### 5. 搜索
-
-BFS 搜索状态空间：
-- 初始状态：空
-- 每步生成所有 enabled transitions
-- 应用 transition 得到新状态
-- 状态去重（通过 α-重命名）
-- 目标：封闭状态（无未结束借用）+ 至少有 tokens
-
-### 6. 代码生成
-
-从 trace 生成 Rust 代码：
-- 变量命名：x0, x1, ... (owned), r0, r1, ... (refs)
-- 不写类型注解（让编译器推导）
-- 不写生命周期（依赖 NLL）
-- 使用 scope block 控制借用生命周期
-
-## 项目结构
+### 项目结构
 
 ```
-src/
-├── main.rs           # CLI 入口
-├── model.rs          # 核心数据模型 (Token, State, OwnerStatus)
-├── rustdoc_loader.rs # Rustdoc JSON 加载
-├── type_norm.rs      # 类型归一化
-├── api_extract.rs    # API 签名提取
-├── transition.rs     # Transition 定义与应用
-├── canonicalize.rs   # 状态规范化 (α-重命名)
-├── search.rs         # 可达性搜索 (BFS)
-└── emit.rs           # Rust 代码生成与验证
+SyPetype/
+├── src/
+│   ├── main.rs          # CLI 入口
+│   ├── apigraph.rs      # API Graph 数据结构
+│   ├── extract.rs       # rustdoc JSON 解析
+│   ├── pcpn.rs          # PCPN 数据结构和转换
+│   ├── simulator.rs     # 有界仿真器
+│   ├── emitter.rs       # Rust 代码生成
+│   ├── type_model.rs    # 类型表示
+│   └── rustdoc_loader.rs# rustdoc JSON 加载
+├── examples/
+│   ├── simple_counter/  # 简单示例
+│   └── generic_example/ # 泛型示例
+├── Cargo.toml
+└── README.md
 ```
 
-## 限制与未来工作
+### 工具流水线
 
-### 当前限制
+```
+rustdoc JSON → API-Graph → PCPN → Simulator → Firing Sequence → Rust Code
+     ↓            ↓           ↓        ↓              ↓              ↓
+ 签名提取     二分图构建   Petri网   状态搜索      witness轨迹    可编译代码
+```
 
-1. **泛型不展开**：TypeKey 只保留 base path，不处理具体泛型实例化
-2. **Copy trait 近似判断**：从 rustdoc 推断，可能不准确
-3. **返回引用 origin 推断**：简化为使用第一个参数
-4. **组合爆炸**：参数绑定枚举限制为前 3 个候选
-5. **Unsafe 不支持**：不处理 unsafe 代码
+## 限制与简化
 
-### 未来增强
+本工具是工程化原型，有以下简化：
 
-- [ ] 更精确的 trait 分析（Copy, Clone）
-- [ ] 支持泛型单态化
-- [ ] Reborrow 和 Deref 变迁
-- [ ] 返回值生命周期分析
-- [ ] 并行搜索
-- [ ] 交互式调试模式
-- [ ] 图形化可视化
+1. **不支持**：`unsafe`、`dyn Trait`、HRTB
+2. **生命周期**：仅考虑函数签名中的 `&T`/`&mut T`，不考虑复杂 outlives
+3. **借用规则**：LIFO + 显式 drop（比 NLL 保守）
+4. **泛型**：在 API-Graph 阶段完成单态化，PCPN 中不出现类型变量
 
+## 许可证
 
+双许可：MIT 或 Apache-2.0，任选其一。
 
-
+- [MIT License](LICENSE-MIT)
+- [Apache License 2.0](LICENSE-APACHE)

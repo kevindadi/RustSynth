@@ -1,13 +1,17 @@
 //! 内部类型表示：TypeKey（单态类型）
 //!
-//! 作为 HashMap key、图节点、PCPN place 索引；必须稳定可序列化。
-//! API Graph 的类型节点不区分 own/shr/mut（borrowing 是边的属性）。
+//! 类型宇宙（已单态化）：
+//! - Ty ::= T | RefShr(T) | RefMut(T)
+//!
+//! API Graph 的类型节点不区分 own/shr/mut（借用是边的属性）。
 //! PCPN 内部需要显式的 ref token 类型。
 
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// 单态类型键 - 用于 API Graph 和 PCPN
+/// 
+/// 类型宇宙：Ty ::= T | RefShr(T) | RefMut(T)
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum TypeKey {
     /// 原始类型: "u32", "bool", "str", "()"
@@ -28,10 +32,10 @@ pub enum TypeKey {
     /// 数组类型: [T; N]
     Array { elem: Box<TypeKey>, len: usize },
 
-    /// 共享引用类型（PCPN 内部使用）: &T
+    /// 共享引用类型: &T → RefShr(T)
     RefShr(Box<TypeKey>),
 
-    /// 可变引用类型（PCPN 内部使用）: &mut T
+    /// 可变引用类型: &mut T → RefMut(T)
     RefMut(Box<TypeKey>),
 
     /// 函数指针类型: fn(A, B) -> C
@@ -87,12 +91,12 @@ impl TypeKey {
         }
     }
 
-    /// 创建共享引用类型
+    /// 创建共享引用类型 RefShr(T)
     pub fn ref_shr(inner: TypeKey) -> Self {
         TypeKey::RefShr(Box::new(inner))
     }
 
-    /// 创建可变引用类型
+    /// 创建可变引用类型 RefMut(T)
     pub fn ref_mut(inner: TypeKey) -> Self {
         TypeKey::RefMut(Box::new(inner))
     }
@@ -105,9 +109,27 @@ impl TypeKey {
         }
     }
 
+    /// 获取 base 类型（owned）
+    pub fn into_base_type(self) -> TypeKey {
+        match self {
+            TypeKey::RefShr(inner) | TypeKey::RefMut(inner) => inner.into_base_type(),
+            other => other,
+        }
+    }
+
     /// 是否是引用类型
     pub fn is_ref(&self) -> bool {
         matches!(self, TypeKey::RefShr(_) | TypeKey::RefMut(_))
+    }
+
+    /// 是否是共享引用
+    pub fn is_ref_shr(&self) -> bool {
+        matches!(self, TypeKey::RefShr(_))
+    }
+
+    /// 是否是可变引用
+    pub fn is_ref_mut(&self) -> bool {
+        matches!(self, TypeKey::RefMut(_))
     }
 
     /// 是否是原始类型
@@ -142,7 +164,7 @@ impl TypeKey {
     pub fn is_copy(&self) -> bool {
         match self {
             TypeKey::Primitive(_) => true,
-            TypeKey::RefShr(_) => true, // &T is always Copy
+            TypeKey::RefShr(_) => true,  // &T is always Copy
             TypeKey::RefMut(_) => false, // &mut T is not Copy
             TypeKey::Tuple(elems) => elems.iter().all(|e| e.is_copy()),
             TypeKey::Array { elem, .. } => elem.is_copy(),
@@ -189,7 +211,6 @@ impl TypeKey {
                 name,
                 bounds,
             } => {
-                // 格式: context::name 或 context::name:bounds
                 let prefix = if context.is_empty() {
                     String::new()
                 } else {
@@ -205,98 +226,98 @@ impl TypeKey {
         }
     }
 
+    /// Rust 类型名（用于代码生成）
+    pub fn rust_type_name(&self) -> String {
+        match self {
+            TypeKey::Primitive(s) => s.clone(),
+            TypeKey::Path { crate_path, args } => {
+                let base = crate_path.split("::").last().unwrap_or(crate_path);
+                if args.is_empty() {
+                    base.to_string()
+                } else {
+                    let args_str: Vec<_> = args.iter().map(|a| a.rust_type_name()).collect();
+                    format!("{}<{}>", base, args_str.join(", "))
+                }
+            }
+            TypeKey::Tuple(elems) => {
+                let elems_str: Vec<_> = elems.iter().map(|e| e.rust_type_name()).collect();
+                format!("({})", elems_str.join(", "))
+            }
+            TypeKey::Slice(inner) => format!("[{}]", inner.rust_type_name()),
+            TypeKey::Array { elem, len } => format!("[{}; {}]", elem.rust_type_name(), len),
+            TypeKey::RefShr(inner) => format!("&{}", inner.rust_type_name()),
+            TypeKey::RefMut(inner) => format!("&mut {}", inner.rust_type_name()),
+            TypeKey::FnPtr { inputs, output } => {
+                let inputs_str: Vec<_> = inputs.iter().map(|i| i.rust_type_name()).collect();
+                format!("fn({}) -> {}", inputs_str.join(", "), output.rust_type_name())
+            }
+            TypeKey::RawPtr { mutable, inner } => {
+                if *mutable {
+                    format!("*mut {}", inner.rust_type_name())
+                } else {
+                    format!("*const {}", inner.rust_type_name())
+                }
+            }
+            TypeKey::AssociatedType(path) => path.clone(),
+            TypeKey::GenericParam { name, .. } => name.clone(),
+            TypeKey::Unknown(s) => format!("/* unknown: {} */", s),
+        }
+    }
+
     /// 是否是泛型参数
     pub fn is_generic_param(&self) -> bool {
         matches!(self, TypeKey::GenericParam { .. })
-    }
-
-    /// 获取泛型参数的 bounds
-    pub fn get_bounds(&self) -> Option<&[String]> {
-        match self {
-            TypeKey::GenericParam { bounds, .. } => Some(bounds),
-            _ => None,
-        }
-    }
-
-    /// 检查泛型参数是否满足某个 bound
-    pub fn has_bound(&self, bound: &str) -> bool {
-        match self {
-            TypeKey::GenericParam { bounds, .. } => bounds.iter().any(|b| b == bound),
-            _ => false,
-        }
     }
 }
 
 impl fmt::Display for TypeKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            TypeKey::Primitive(s) => write!(f, "{}", s),
-            TypeKey::Path { crate_path, args } => {
-                if args.is_empty() {
-                    write!(f, "{}", crate_path)
-                } else {
-                    let args_str: Vec<_> = args.iter().map(|a| a.to_string()).collect();
-                    write!(f, "{}<{}>", crate_path, args_str.join(", "))
-                }
-            }
-            TypeKey::Tuple(elems) => {
-                let elems_str: Vec<_> = elems.iter().map(|e| e.to_string()).collect();
-                write!(f, "({})", elems_str.join(", "))
-            }
-            TypeKey::Slice(inner) => write!(f, "[{}]", inner),
-            TypeKey::Array { elem, len } => write!(f, "[{}; {}]", elem, len),
-            TypeKey::RefShr(inner) => write!(f, "&{}", inner),
-            TypeKey::RefMut(inner) => write!(f, "&mut {}", inner),
-            TypeKey::FnPtr { inputs, output } => {
-                let inputs_str: Vec<_> = inputs.iter().map(|i| i.to_string()).collect();
-                write!(f, "fn({}) -> {}", inputs_str.join(", "), output)
-            }
-            TypeKey::RawPtr { mutable, inner } => {
-                if *mutable {
-                    write!(f, "*mut {}", inner)
-                } else {
-                    write!(f, "*const {}", inner)
-                }
-            }
-            TypeKey::AssociatedType(path) => write!(f, "{}", path),
-            TypeKey::GenericParam {
-                context,
-                name,
-                bounds,
-            } => {
-                let prefix = if context.is_empty() {
-                    String::new()
-                } else {
-                    format!("{}::", context)
-                };
-                if bounds.is_empty() {
-                    write!(f, "{}{}", prefix, name)
-                } else {
-                    write!(f, "{}{}:{}", prefix, name, bounds.join("+"))
-                }
-            }
-            TypeKey::Unknown(s) => write!(f, "?{}", s),
-        }
+        write!(f, "{}", self.short_name())
     }
 }
 
 /// 值传递模式（用于 API Graph 的边标注）
+/// 
+/// 参数绑定规则：
+/// - T (Move/Copy) → Own(T)
+/// - &T (BorrowShr) → Own(RefShr(T))
+/// - &mut T (BorrowMut) → Own(RefMut(T))
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PassingMode {
-    /// 移动所有权 (T where T: !Copy)
+    /// 移动所有权 (T where T: !Copy) → 消耗 Own(T)
     Move,
-    /// 复制 (T where T: Copy)
+    /// 复制 (T where T: Copy) → 读取 Own(T)，不消耗
     Copy,
-    /// 共享借用 (&T)
+    /// 共享借用 (&T) → 消耗 Own(RefShr(T))，返回后放回
     BorrowShr,
-    /// 可变借用 (&mut T)
+    /// 可变借用 (&mut T) → 消耗 Own(RefMut(T))，返回后放回
     BorrowMut,
-    /// 返回所有权值
+    /// 返回所有权值 → 产生 Own(T)
     ReturnOwned,
-    /// 返回共享引用
+    /// 返回共享引用 → 产生 Own(RefShr(T))
     ReturnBorrowShr,
-    /// 返回可变引用
+    /// 返回可变引用 → 产生 Own(RefMut(T))
     ReturnBorrowMut,
+}
+
+impl PassingMode {
+    /// 是否是借用模式
+    pub fn is_borrow(&self) -> bool {
+        matches!(self, PassingMode::BorrowShr | PassingMode::BorrowMut)
+    }
+
+    /// 是否消耗 token
+    pub fn consumes(&self) -> bool {
+        matches!(self, PassingMode::Move | PassingMode::BorrowShr | PassingMode::BorrowMut)
+    }
+
+    /// 是否是返回模式
+    pub fn is_return(&self) -> bool {
+        matches!(
+            self,
+            PassingMode::ReturnOwned | PassingMode::ReturnBorrowShr | PassingMode::ReturnBorrowMut
+        )
+    }
 }
 
 impl fmt::Display for PassingMode {
@@ -320,7 +341,7 @@ mod tests {
     #[test]
     fn test_type_key_display() {
         let vec_u8 = TypeKey::path_with_args("alloc::vec::Vec", vec![TypeKey::primitive("u8")]);
-        assert_eq!(vec_u8.to_string(), "alloc::vec::Vec<u8>");
+        assert_eq!(vec_u8.to_string(), "Vec<u8>");
         assert_eq!(vec_u8.short_name(), "Vec<u8>");
 
         let ref_i32 = TypeKey::ref_shr(TypeKey::primitive("i32"));
@@ -333,5 +354,14 @@ mod tests {
         assert!(TypeKey::ref_shr(TypeKey::primitive("i32")).is_copy());
         assert!(!TypeKey::ref_mut(TypeKey::primitive("i32")).is_copy());
         assert!(!TypeKey::path("String").is_copy());
+    }
+
+    #[test]
+    fn test_base_type() {
+        let ref_counter = TypeKey::ref_shr(TypeKey::path("Counter"));
+        assert_eq!(ref_counter.base_type(), &TypeKey::path("Counter"));
+
+        let ref_mut_counter = TypeKey::ref_mut(TypeKey::path("Counter"));
+        assert_eq!(ref_mut_counter.base_type(), &TypeKey::path("Counter"));
     }
 }

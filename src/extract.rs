@@ -2,7 +2,7 @@
 //!
 //! 提取函数签名、类型信息，并构建二分图
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use rustdoc_types::{Crate, Item, ItemEnum, Type, Visibility};
 
 use crate::apigraph::{
