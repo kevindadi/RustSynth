@@ -1,75 +1,77 @@
-mod api_extract;
-mod api_graph;
-mod canonicalize;
-mod emit;
-mod model;
+//! SyPetype - Rust API 签名分析与 PCPN 构建工具
+//!
+//! 从 rustdoc JSON 提取 API 签名，构建二分 API Graph，
+//! 并转换为下推着色 Petri 网 (PCPN)。
+
+mod apigraph;
+mod extract;
 mod pcpn;
 mod rustdoc_loader;
-mod search;
-mod transition;
-mod type_norm;
+mod type_model;
 
 use anyhow::{Context, Result};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use tracing_subscriber::EnvFilter;
 
 #[derive(Parser, Debug)]
 #[command(
     name = "sypetype",
-    about = "签名层协议可达性分析与见证代码生成器",
-    long_about = "基于 Colored Petri Net 的 Rust API 可达性搜索工具\n\
-                  从 rustdoc JSON 中提取 API 签名，构建资源状态机，\n\
-                  搜索可行调用轨迹并生成可编译的 Rust 代码片段"
+    about = "Rust API 签名分析与 PCPN 构建工具",
+    long_about = "从 rustdoc JSON 提取 API 签名，构建二分 API Graph，\n\
+                  并转换为下推着色 Petri 网 (PCPN)。"
 )]
 struct Args {
-    /// Rustdoc JSON 文件路径 (由 cargo +nightly rustdoc -- -Z unstable-options --output-format json 生成)
-    #[arg(short, long)]
-    input: PathBuf,
+    #[command(subcommand)]
+    command: Commands,
+}
 
-    /// 输出代码片段路径 (可选, 默认输出到 stdout)
-    #[arg(short, long)]
-    output: Option<PathBuf>,
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// 构建 API Graph（二分图：函数节点 + 类型节点）
+    Apigraph {
+        /// Rustdoc JSON 文件路径
+        #[arg(short, long)]
+        input: PathBuf,
 
-    /// 最大搜索步数
-    #[arg(long, default_value = "20")]
-    max_steps: usize,
+        /// 输出目录
+        #[arg(short, long, default_value = ".")]
+        out: PathBuf,
 
-    /// 每种类型最大 token 数量
-    #[arg(long, default_value = "5")]
-    max_tokens_per_type: usize,
+        /// 仅探索指定模块 (可多次指定)
+        #[arg(long = "module")]
+        modules: Vec<String>,
+    },
 
-    /// 最大借用嵌套深度
-    #[arg(long, default_value = "3")]
-    max_borrow_depth: usize,
+    /// 构建 PCPN（下推着色 Petri 网）
+    Pcpn {
+        /// Rustdoc JSON 文件路径
+        #[arg(short, long)]
+        input: PathBuf,
 
-    /// 是否启用 LIFO 借用栈 (pushdown 模式)
-    #[arg(long)]
-    enable_loan_stack: bool,
+        /// 输出目录
+        #[arg(short, long, default_value = ".")]
+        out: PathBuf,
 
-    /// 仅探索指定模块 (可多次指定)
-    #[arg(long = "module")]
-    modules: Vec<String>,
+        /// 仅探索指定模块 (可多次指定)
+        #[arg(long = "module")]
+        modules: Vec<String>,
+    },
 
-    /// 目标类型 (尝试合成此类型的 owned token)
-    #[arg(long)]
-    target_type: Option<String>,
+    /// 同时生成 API Graph 和 PCPN
+    All {
+        /// Rustdoc JSON 文件路径
+        #[arg(short, long)]
+        input: PathBuf,
 
-    /// 在临时 crate 中验证生成的代码
-    #[arg(long)]
-    verify: bool,
+        /// 输出目录
+        #[arg(short, long, default_value = ".")]
+        out: PathBuf,
 
-    /// 输出内部 trace
-    #[arg(short, long)]
-    verbose: bool,
-
-    /// 生成 API 依赖图（DOT 格式）
-    #[arg(long)]
-    graph: Option<PathBuf>,
-
-    /// 生成 PCPN Petri 网（DOT 格式）
-    #[arg(long)]
-    pcpn: Option<PathBuf>,
+        /// 仅探索指定模块 (可多次指定)
+        #[arg(long = "module")]
+        modules: Vec<String>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -82,152 +84,96 @@ fn main() -> Result<()> {
 
     let args = Args::parse();
 
-    tracing::info!("加载 rustdoc JSON: {:?}", args.input);
-    let krate = rustdoc_loader::load_rustdoc_json(&args.input)
-        .context("加载 rustdoc JSON 失败")?;
-
-    // 获取 crate 信息
-    let crate_name = if let Some(root_item) = krate.index.get(&krate.root) {
-        root_item.name.clone().unwrap_or_else(|| "unknown".to_string())
-    } else {
-        "unknown".to_string()
-    };
-    tracing::info!("解析 crate: {} (version: {})", crate_name, krate.crate_version.as_deref().unwrap_or("unknown"));
-
-    // 构建类型归一化上下文
-    tracing::info!("构建类型归一化映射...");
-    let type_context = type_norm::TypeContext::from_crate(&krate)?;
-
-    // 提取 API 签名
-    tracing::info!("提取 API 签名...");
-    let apis = api_extract::extract_apis(&krate, &type_context, &args.modules)?;
-    tracing::info!("提取到 {} 个 API", apis.len());
-
-    if apis.is_empty() {
-        anyhow::bail!("未找到任何公开 API，请检查输入文件或模块过滤条件");
-    }
-
-    // 构建 API 依赖图
-    let graph = if args.graph.is_some() || args.pcpn.is_some() {
-        tracing::info!("构建 API 依赖图...");
-        let graph = api_graph::ApiGraph::build(&apis, &krate, &type_context)?;
-        
-        let total_nodes = graph.nodes.len();
-        let trait_nodes = graph.nodes.iter().filter(|n| matches!(n.source, api_graph::ApiSource::TraitImpl { .. })).count();
-        let field_nodes = graph.nodes.iter().filter(|n| matches!(n.source, api_graph::ApiSource::FieldAccess { .. })).count();
-        
-        tracing::info!(
-            "API 图: {} 个节点 (普通: {}, Trait: {}, 字段: {}), {} 条边",
-            total_nodes,
-            total_nodes - trait_nodes - field_nodes,
-            trait_nodes,
-            field_nodes,
-            graph.edges.len()
-        );
-
-        // 生成 API Graph DOT 文件
-        if let Some(graph_path) = &args.graph {
-            let dot_content = graph.to_dot();
-            std::fs::write(graph_path, &dot_content)
-                .context(format!("写入图文件失败: {:?}", graph_path))?;
-            
-            tracing::info!("✓ API 依赖图已生成: {:?}", graph_path);
-            tracing::info!("  使用 'dot -Tpng {} -o graph.png' 生成图片", graph_path.display());
+    match args.command {
+        Commands::Apigraph { input, out, modules } => {
+            run_apigraph(&input, &out, &modules)?;
         }
-        
-        Some(graph)
-    } else {
-        None
-    };
-
-    // 构建 PCPN 并输出
-    if let Some(pcpn_path) = &args.pcpn {
-        let graph = graph.as_ref().expect("PCPN 需要先构建 API graph");
-        
-        tracing::info!("构建 PCPN (Parameterized Colored Petri Net)...");
-        let pcpn = pcpn::Pcpn::from_api_graph(graph);
-        
-        let stats = pcpn.stats();
-        tracing::info!("{}", stats);
-        
-        // 生成 PCPN DOT 文件
-        let dot_content = pcpn.to_dot();
-        std::fs::write(pcpn_path, &dot_content)
-            .context(format!("写入 PCPN 文件失败: {:?}", pcpn_path))?;
-        
-        tracing::info!("✓ PCPN 已生成: {:?}", pcpn_path);
-        tracing::info!("  使用 'dot -Tpng {} -o pcpn.png' 生成图片", pcpn_path.display());
-        
-        // 如果只生成 PCPN，就不继续搜索
-        if args.output.is_none() && !args.verify && args.graph.is_none() {
-            return Ok(());
+        Commands::Pcpn { input, out, modules } => {
+            run_pcpn(&input, &out, &modules)?;
         }
-    }
-
-    // 如果只生成图/PCPN，就不继续搜索
-    if (args.graph.is_some() || args.pcpn.is_some()) && args.output.is_none() && !args.verify {
-        return Ok(());
-    }
-
-    // 构建搜索配置
-    let config = search::SearchConfig {
-        max_steps: args.max_steps,
-        max_tokens_per_type: args.max_tokens_per_type,
-        max_borrow_depth: args.max_borrow_depth,
-        enable_loan_stack: args.enable_loan_stack,
-        target_type: args.target_type.clone(),
-    };
-
-    // 执行可达性搜索
-    tracing::info!("开始可达性搜索 (max_steps={})...", args.max_steps);
-    let result = search::search(&apis, &type_context, &config)?;
-
-    match result {
-        Some((_final_state, trace)) => {
-            tracing::info!("✓ 找到可行轨迹 (共 {} 步)", trace.len());
-
-            // 生成 Rust 代码
-            let snippet = emit::emit_code(&trace, &type_context, args.verbose)?;
-
-            // 输出代码
-            if let Some(output_path) = &args.output {
-                std::fs::write(output_path, &snippet)
-                    .context(format!("写入输出文件失败: {:?}", output_path))?;
-                tracing::info!("✓ 代码已写入: {:?}", output_path);
-            } else {
-                println!("\n{}", "=".repeat(60));
-                println!("生成的代码片段:");
-                println!("{}", "=".repeat(60));
-                println!("{}", snippet);
-                println!("{}", "=".repeat(60));
-            }
-
-            // 可选：验证生成的代码
-            if args.verify {
-                tracing::info!("验证生成的代码...");
-                emit::verify_code(&snippet, &type_context.crate_name)?;
-            }
-
-            // 输出 trace
-            if args.verbose {
-                println!("\n{}", "=".repeat(60));
-                println!("执行轨迹:");
-                println!("{}", "=".repeat(60));
-                for (i, step) in trace.iter().enumerate() {
-                    println!("Step {}: {}", i, step.description());
-                }
-                println!("{}", "=".repeat(60));
-            }
-        }
-        None => {
-            tracing::warn!("✗ 未找到可行轨迹");
-            tracing::info!(
-                "提示: 尝试增加 --max-steps 或 --max-tokens-per-type，或检查 API 签名"
-            );
-            std::process::exit(1);
+        Commands::All { input, out, modules } => {
+            run_apigraph(&input, &out, &modules)?;
+            run_pcpn(&input, &out, &modules)?;
         }
     }
 
     Ok(())
 }
 
+fn run_apigraph(input: &PathBuf, out: &PathBuf, modules: &[String]) -> Result<()> {
+    tracing::info!("加载 rustdoc JSON: {:?}", input);
+    let krate = rustdoc_loader::load_rustdoc_json(input).context("加载 rustdoc JSON 失败")?;
+
+    let crate_name = if let Some(root_item) = krate.index.get(&krate.root) {
+        root_item.name.clone().unwrap_or_else(|| "unknown".to_string())
+    } else {
+        "unknown".to_string()
+    };
+    tracing::info!(
+        "解析 crate: {} (version: {})",
+        crate_name,
+        krate.crate_version.as_deref().unwrap_or("unknown")
+    );
+
+    tracing::info!("构建 API Graph...");
+    let graph = extract::build_api_graph(&krate, modules)?;
+
+    let stats = graph.stats();
+    tracing::info!("{}", stats);
+
+    // 输出 DOT
+    let dot_path = out.join("apigraph.dot");
+    std::fs::write(&dot_path, graph.to_dot()).context("写入 apigraph.dot 失败")?;
+    tracing::info!("✓ API Graph DOT 已生成: {:?}", dot_path);
+
+    // 输出 JSON
+    let json_path = out.join("apigraph.json");
+    let json = serde_json::to_string_pretty(&graph).context("序列化 API Graph 失败")?;
+    std::fs::write(&json_path, json).context("写入 apigraph.json 失败")?;
+    tracing::info!("✓ API Graph JSON 已生成: {:?}", json_path);
+
+    tracing::info!("  使用 'dot -Tpng {} -o apigraph.png' 生成图片", dot_path.display());
+
+    Ok(())
+}
+
+fn run_pcpn(input: &PathBuf, out: &PathBuf, modules: &[String]) -> Result<()> {
+    tracing::info!("加载 rustdoc JSON: {:?}", input);
+    let krate = rustdoc_loader::load_rustdoc_json(input).context("加载 rustdoc JSON 失败")?;
+
+    let crate_name = if let Some(root_item) = krate.index.get(&krate.root) {
+        root_item.name.clone().unwrap_or_else(|| "unknown".to_string())
+    } else {
+        "unknown".to_string()
+    };
+    tracing::info!(
+        "解析 crate: {} (version: {})",
+        crate_name,
+        krate.crate_version.as_deref().unwrap_or("unknown")
+    );
+
+    tracing::info!("构建 API Graph...");
+    let graph = extract::build_api_graph(&krate, modules)?;
+    tracing::info!("{}", graph.stats());
+
+    tracing::info!("转换为 PCPN...");
+    let pcpn = pcpn::Pcpn::from_api_graph(&graph);
+
+    let stats = pcpn.stats();
+    tracing::info!("{}", stats);
+
+    // 输出 DOT
+    let dot_path = out.join("pcpn.dot");
+    std::fs::write(&dot_path, pcpn.to_dot()).context("写入 pcpn.dot 失败")?;
+    tracing::info!("✓ PCPN DOT 已生成: {:?}", dot_path);
+
+    // 输出 JSON
+    let json_path = out.join("pcpn.json");
+    let json = serde_json::to_string_pretty(&pcpn).context("序列化 PCPN 失败")?;
+    std::fs::write(&json_path, json).context("写入 pcpn.json 失败")?;
+    tracing::info!("✓ PCPN JSON 已生成: {:?}", json_path);
+
+    tracing::info!("  使用 'dot -Tpng {} -o pcpn.png' 生成图片", dot_path.display());
+
+    Ok(())
+}

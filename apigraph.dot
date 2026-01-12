@@ -1,0 +1,39 @@
+digraph ApiGraph {
+  rankdir=LR;
+  fontname="Helvetica";
+  node [fontname="Helvetica"];
+  edge [fontname="Helvetica"];
+
+  // Type nodes (椭圆)
+  subgraph cluster_types {
+    label="Types";
+    style=dashed;
+    color=gray;
+    T0 [label="Counter", shape=ellipse, style=filled, fillcolor=lightblue];
+    T1 [label="i32", shape=ellipse, style=filled, fillcolor=lightgray];
+    T2 [label="?Self", shape=ellipse, style=filled, fillcolor=lightblue];
+  }
+
+  // Function nodes (方框)
+  subgraph cluster_functions {
+    label="Functions";
+    style=dashed;
+    color=blue;
+    F0 [label="print_counter", shape=box, style=filled, fillcolor=palegreen];
+    F1 [label="create_counter_with_value", shape=doubleoctagon, style=filled, fillcolor=palegreen];
+    F2 [label="new", shape=doubleoctagon, style=filled, fillcolor=palegreen];
+    F3 [label="increment", shape=box, style=filled, fillcolor=palegreen];
+    F4 [label="get", shape=box, style=filled, fillcolor=palegreen];
+    F5 [label="reset", shape=box, style=filled, fillcolor=palegreen];
+  }
+
+  // Edges
+  T0 -> F0 [label="&", color=blue, style=solid];
+  T1 -> F1 [label="copy", color=gray, style=solid];
+  F1 -> T0 [label="→", color=black, style=solid];
+  F2 -> T2 [label="→", color=black, style=solid];
+  T0 -> F3 [label="&mut", color=red, style=solid];
+  T0 -> F4 [label="&", color=blue, style=solid];
+  F4 -> T1 [label="→", color=black, style=solid];
+  T0 -> F5 [label="&mut", color=red, style=solid];
+}

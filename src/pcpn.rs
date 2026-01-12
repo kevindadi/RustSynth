@@ -1,31 +1,51 @@
-//! PCPN (Parameterized Colored Petri Net) - 参数化着色 Petri 网
+//! PCPN (Pushdown Colored Petri Net) - 下推着色 Petri 网
 //!
-//! 核心结构：
-//! - Place: 每种类型 T 有三个库所：T[own], T[shr], T[mut]
-//!   - T[own]: 持有所有权的 token
-//!   - T[shr]: 共享引用 token
-//!   - T[mut]: 可变引用 token
-//! - Token: 着色 token，颜色 = VarId，定义在 model::Token
-//! - Transition: API 变迁或结构性变迁
-//! - Arc: 连接 Place 和 Transition
+//! 由 API Graph 转换而来：
+//! - Place: 每种类型有三个库所 T[own], T[shr], T[mut]
+//! - Transition: 每个函数对应一个变迁 + 结构性变迁 (borrow/drop)
+//! - Token: 着色 token，颜色 = VarId
 //!
-//! 借用语义（正确建模）：
-//! - borrow_shr: T[own] → T[own] + T[shr]（owner 不消失，产生引用）
-//! - borrow_mut: T[own] → T[mut]（owner 冻结，产生可变引用）
-//! - end_shr: T[shr] → ε（引用结束）
-//! - end_mut: T[mut] → T[own]（归还可变引用，恢复 owner）
-//! - drop: T[own] → ε（消耗所有权）
+//! 转换规则：
+//! - API Graph 的类型节点 T → PCPN 的三个库所 T[own], T[shr], T[mut]
+//! - API Graph 的函数节点 → PCPN 的变迁
+//! - API Graph 的边 (PassingMode) → PCPN 的弧 + 结构性变迁
 
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::api_extract::{ApiSignature, ParamMode, ReturnMode};
-use crate::api_graph::{ApiGraph, ApiNode, ApiSource};
-use crate::model::{Capability, TypeKey};
+use crate::apigraph::{ApiGraph, EdgeDirection, FunctionNode};
+use crate::type_model::{PassingMode, TypeKey};
+
+/// Place 标识
+pub type PlaceId = usize;
+
+/// Transition 标识
+pub type TransitionId = usize;
+
+/// Capability (所有权/借用模式)
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Capability {
+    /// 拥有所有权 (owned)
+    Own,
+    /// 共享借用 (&T)
+    Shr,
+    /// 可变借用 (&mut T)
+    Mut,
+}
+
+impl std::fmt::Display for Capability {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Capability::Own => write!(f, "own"),
+            Capability::Shr => write!(f, "&"),
+            Capability::Mut => write!(f, "&mut"),
+        }
+    }
+}
 
 /// PCPN Place (库所)
-/// 每种类型有三个库所：own, shr, mut
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Place {
     /// Place 唯一标识
     pub id: PlaceId,
@@ -37,15 +57,9 @@ pub struct Place {
     pub is_primitive: bool,
 }
 
-/// Place 标识
-pub type PlaceId = usize;
-
-/// Transition 标识
-pub type TransitionId = usize;
-
 /// PCPN Transition (变迁)
-#[derive(Debug, Clone)]
-pub struct PcpnTransition {
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Transition {
     /// Transition 唯一标识
     pub id: TransitionId,
     /// 名称
@@ -61,284 +75,303 @@ pub struct PcpnTransition {
 }
 
 /// 变迁类型
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TransitionKind {
     /// API 调用
-    ApiCall { api_index: usize, source: ApiSource },
+    ApiCall { fn_id: usize },
     /// 创建 primitive 常量
     CreatePrimitive { type_key: TypeKey },
-    /// 共享借用: own -> own + shr
+    /// 共享借用: T[own] → T[own] + T[shr]
     BorrowShr { type_key: TypeKey },
-    /// 可变借用: own -> mut (own 被冻结)
+    /// 可变借用: T[own] → T[mut]
     BorrowMut { type_key: TypeKey },
-    /// 结束共享借用: shr + own -> own
+    /// 结束共享借用: T[shr] → ε
     EndBorrowShr { type_key: TypeKey },
-    /// 结束可变借用: mut -> own (解冻)
+    /// 结束可变借用: T[mut] → T[own]
     EndBorrowMut { type_key: TypeKey },
-    /// Drop: own -> (消除)
+    /// Drop: T[own] → ε
     Drop { type_key: TypeKey },
 }
 
 /// 弧 (连接 Place 和 Transition)
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Arc {
-    /// 连接的 Place (库所已经区分了 capability)
+    /// 连接的 Place
     pub place_id: PlaceId,
-    /// 权重 (通常为 1)
-    pub weight: usize,
     /// 是否消耗 token (false = 读取/测试弧)
     pub consumes: bool,
 }
 
 /// PCPN 网络
-#[derive(Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Pcpn {
     /// 所有库所
     pub places: Vec<Place>,
     /// 所有变迁
-    pub transitions: Vec<PcpnTransition>,
+    pub transitions: Vec<Transition>,
     /// (类型, Capability) 到库所的映射
+    #[serde(skip)]
     pub type_cap_to_place: HashMap<(TypeKey, Capability), PlaceId>,
-    /// API 到变迁的映射
-    pub api_to_transition: HashMap<usize, TransitionId>,
-    /// 初始标识 (primitive places 可以无限产生 tokens)
+    /// 初始标识 (primitive places)
     pub initial_places: Vec<PlaceId>,
 }
 
+impl Default for Pcpn {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Pcpn {
-    /// 从 ApiGraph 构建 PCPN
-    /// 每种类型创建三个库所：own, shr, mut
-    pub fn from_api_graph(graph: &ApiGraph) -> Self {
-        let mut pcpn = Pcpn {
+    /// 创建空的 PCPN
+    pub fn new() -> Self {
+        Pcpn {
             places: Vec::new(),
             transitions: Vec::new(),
             type_cap_to_place: HashMap::new(),
-            api_to_transition: HashMap::new(),
             initial_places: Vec::new(),
-        };
+        }
+    }
 
-        // 1. 收集所有类型
-        let mut all_types = IndexSet::new();
-        for node in &graph.nodes {
-            for (ty, _) in &node.inputs {
-                all_types.insert(ty.clone());
-            }
-            for (ty, _) in &node.outputs {
-                all_types.insert(ty.clone());
-            }
+    /// 从 ApiGraph 转换为 PCPN
+    ///
+    /// 转换规则：
+    /// 1. 每个类型节点 T → 三个库所 T[own], T[shr], T[mut]
+    /// 2. 每个函数节点 → 一个变迁
+    /// 3. 边的 PassingMode 决定弧的连接方式
+    pub fn from_api_graph(graph: &ApiGraph) -> Self {
+        let mut pcpn = Pcpn::new();
+
+        // 1. 为每个类型创建三个库所
+        for type_node in &graph.type_nodes {
+            pcpn.create_type_places(&type_node.type_key, type_node.is_primitive);
         }
 
-        // 2. 为每种类型创建三个库所: own, shr, mut
-        for type_key in &all_types {
-            let is_primitive = Self::is_primitive(type_key);
-
-            for cap in [Capability::Own, Capability::Shr, Capability::Mut] {
-                let place_id = pcpn.places.len();
-                pcpn.places.push(Place {
-                    id: place_id,
-                    type_key: type_key.clone(),
-                    capability: cap,
-                    is_primitive,
-                });
-                pcpn.type_cap_to_place
-                    .insert((type_key.clone(), cap), place_id);
-
-                // Primitive 类型的 own 库所可以作为初始 place
-                if is_primitive && cap == Capability::Own {
-                    pcpn.initial_places.push(place_id);
-                }
-            }
+        // 2. 为每个函数创建变迁
+        for fn_node in &graph.fn_nodes {
+            pcpn.create_function_transition(graph, fn_node);
         }
 
-        // 3. 为每个 API 创建 Transition
-        for node in &graph.nodes {
-            let trans_id = pcpn.transitions.len();
-
-            // 构建输入弧 - 根据 capability 连接到对应的库所
-            let input_arcs: Vec<Arc> = node
-                .inputs
-                .iter()
-                .map(|(ty, cap)| {
-                    let place_id = *pcpn.type_cap_to_place.get(&(ty.clone(), *cap)).unwrap();
-                    Arc {
-                        place_id,
-                        weight: 1,
-                        // shr/mut 引用在使用后消耗，own 要看是否 move
-                        consumes: true,
-                    }
-                })
-                .collect();
-
-            // 构建输出弧
-            let output_arcs: Vec<Arc> = node
-                .outputs
-                .iter()
-                .map(|(ty, cap)| {
-                    let place_id = *pcpn.type_cap_to_place.get(&(ty.clone(), *cap)).unwrap();
-                    Arc {
-                        place_id,
-                        weight: 1,
-                        consumes: false,
-                    }
-                })
-                .collect();
-
-            pcpn.transitions.push(PcpnTransition {
-                id: trans_id,
-                name: Self::format_transition_name(&node.api, &node.source),
-                kind: TransitionKind::ApiCall {
-                    api_index: node.index,
-                    source: node.source.clone(),
-                },
-                input_arcs,
-                output_arcs,
-                guard: None,
-            });
-            pcpn.api_to_transition.insert(node.index, trans_id);
-        }
-
-        // 4. 为每种非 primitive 类型添加结构性变迁
-        let non_primitive_types: Vec<TypeKey> = all_types
+        // 3. 为非 primitive 类型添加结构性变迁
+        let non_primitive_types: Vec<TypeKey> = graph
+            .type_nodes
             .iter()
-            .filter(|ty| !Self::is_primitive(ty))
-            .cloned()
+            .filter(|t| !t.is_primitive)
+            .map(|t| t.type_key.clone())
             .collect();
 
         for type_key in non_primitive_types {
-            let own_place = *pcpn
-                .type_cap_to_place
-                .get(&(type_key.clone(), Capability::Own))
-                .unwrap();
-            let shr_place = *pcpn
-                .type_cap_to_place
-                .get(&(type_key.clone(), Capability::Shr))
-                .unwrap();
-            let mut_place = *pcpn
-                .type_cap_to_place
-                .get(&(type_key.clone(), Capability::Mut))
-                .unwrap();
-
-            // BorrowShr: T[own] -> T[own] + T[shr] (owner 不消失，产生引用)
-            pcpn.add_structural_transition(
-                TransitionKind::BorrowShr {
-                    type_key: type_key.clone(),
-                },
-                format!("&{}", Self::simplify_type(&type_key)),
-                vec![Arc {
-                    place_id: own_place,
-                    weight: 1,
-                    consumes: false, // 读取 own，不消耗
-                }],
-                vec![Arc {
-                    place_id: shr_place,
-                    weight: 1,
-                    consumes: false,
-                }],
-                Some("can_borrow_shr".to_string()),
-            );
-
-            // BorrowMut: T[own] -> T[mut] (owner 冻结)
-            pcpn.add_structural_transition(
-                TransitionKind::BorrowMut {
-                    type_key: type_key.clone(),
-                },
-                format!("&mut {}", Self::simplify_type(&type_key)),
-                vec![Arc {
-                    place_id: own_place,
-                    weight: 1,
-                    consumes: true, // 消耗 own (冻结)
-                }],
-                vec![Arc {
-                    place_id: mut_place,
-                    weight: 1,
-                    consumes: false,
-                }],
-                Some("can_borrow_mut".to_string()),
-            );
-
-            // EndBorrowShr: T[shr] -> ε (引用结束)
-            pcpn.add_structural_transition(
-                TransitionKind::EndBorrowShr {
-                    type_key: type_key.clone(),
-                },
-                format!("end &{}", Self::simplify_type(&type_key)),
-                vec![Arc {
-                    place_id: shr_place,
-                    weight: 1,
-                    consumes: true,
-                }],
-                vec![],
-                None,
-            );
-
-            // EndBorrowMut: T[mut] -> T[own] (归还可变引用，恢复 owner)
-            pcpn.add_structural_transition(
-                TransitionKind::EndBorrowMut {
-                    type_key: type_key.clone(),
-                },
-                format!("end &mut {}", Self::simplify_type(&type_key)),
-                vec![Arc {
-                    place_id: mut_place,
-                    weight: 1,
-                    consumes: true,
-                }],
-                vec![Arc {
-                    place_id: own_place,
-                    weight: 1,
-                    consumes: false,
-                }],
-                None,
-            );
-
-            // Drop: T[own] -> ε (消耗所有权)
-            pcpn.add_structural_transition(
-                TransitionKind::Drop {
-                    type_key: type_key.clone(),
-                },
-                format!("drop {}", Self::simplify_type(&type_key)),
-                vec![Arc {
-                    place_id: own_place,
-                    weight: 1,
-                    consumes: true,
-                }],
-                vec![],
-                Some("can_drop".to_string()),
-            );
+            pcpn.create_structural_transitions(&type_key);
         }
 
-        // 5. 为 primitive 类型添加创建变迁
+        // 4. 为 primitive 类型添加创建变迁
         for &place_id in &pcpn.initial_places.clone() {
             let type_key = pcpn.places[place_id].type_key.clone();
-            pcpn.add_structural_transition(
-                TransitionKind::CreatePrimitive {
-                    type_key: type_key.clone(),
-                },
-                format!("const {}", Self::simplify_type(&type_key)),
-                vec![], // 无输入
-                vec![Arc {
-                    place_id,
-                    weight: 1,
-                    consumes: false,
-                }],
-                None,
-            );
+            pcpn.create_primitive_transition(&type_key, place_id);
         }
 
         pcpn
     }
 
-    /// 添加结构性变迁
-    fn add_structural_transition(
+    /// 为类型创建三个库所
+    fn create_type_places(&mut self, type_key: &TypeKey, is_primitive: bool) {
+        for cap in [Capability::Own, Capability::Shr, Capability::Mut] {
+            let place_id = self.places.len();
+            self.places.push(Place {
+                id: place_id,
+                type_key: type_key.clone(),
+                capability: cap,
+                is_primitive,
+            });
+            self.type_cap_to_place
+                .insert((type_key.clone(), cap), place_id);
+
+            // Primitive 类型的 own 库所作为初始 place
+            if is_primitive && cap == Capability::Own {
+                self.initial_places.push(place_id);
+            }
+        }
+    }
+
+    /// 为函数创建变迁
+    fn create_function_transition(&mut self, graph: &ApiGraph, fn_node: &FunctionNode) {
+        let trans_id = self.transitions.len();
+        let mut input_arcs = Vec::new();
+        let mut output_arcs = Vec::new();
+
+        // 获取函数的边
+        let input_edges = graph.get_input_edges(fn_node.id);
+        let output_edges = graph.get_output_edges(fn_node.id);
+
+        // 处理输入边
+        for edge in input_edges {
+            let type_key = &graph.type_nodes[edge.type_node].type_key;
+            let (place_cap, consumes) = match edge.passing_mode {
+                PassingMode::Move => (Capability::Own, true),
+                PassingMode::Copy => (Capability::Own, false), // Copy 不消耗
+                PassingMode::BorrowShr => (Capability::Shr, true),
+                PassingMode::BorrowMut => (Capability::Mut, true),
+                _ => continue,
+            };
+
+            if let Some(&place_id) = self.type_cap_to_place.get(&(type_key.clone(), place_cap)) {
+                input_arcs.push(Arc { place_id, consumes });
+            }
+        }
+
+        // 处理输出边
+        for edge in output_edges {
+            let type_key = &graph.type_nodes[edge.type_node].type_key;
+            let place_cap = match edge.passing_mode {
+                PassingMode::ReturnOwned => Capability::Own,
+                PassingMode::ReturnBorrowShr => Capability::Shr,
+                PassingMode::ReturnBorrowMut => Capability::Mut,
+                _ => continue,
+            };
+
+            if let Some(&place_id) = self.type_cap_to_place.get(&(type_key.clone(), place_cap)) {
+                output_arcs.push(Arc {
+                    place_id,
+                    consumes: false,
+                });
+            }
+        }
+
+        self.transitions.push(Transition {
+            id: trans_id,
+            name: fn_node.name.clone(),
+            kind: TransitionKind::ApiCall { fn_id: fn_node.id },
+            input_arcs,
+            output_arcs,
+            guard: None,
+        });
+    }
+
+    /// 创建结构性变迁
+    fn create_structural_transitions(&mut self, type_key: &TypeKey) {
+        let own_place = *self
+            .type_cap_to_place
+            .get(&(type_key.clone(), Capability::Own))
+            .unwrap();
+        let shr_place = *self
+            .type_cap_to_place
+            .get(&(type_key.clone(), Capability::Shr))
+            .unwrap();
+        let mut_place = *self
+            .type_cap_to_place
+            .get(&(type_key.clone(), Capability::Mut))
+            .unwrap();
+
+        let short_name = type_key.short_name();
+
+        // BorrowShr: T[own] → T[own] + T[shr]
+        self.add_transition(
+            format!("&{}", short_name),
+            TransitionKind::BorrowShr {
+                type_key: type_key.clone(),
+            },
+            vec![Arc {
+                place_id: own_place,
+                consumes: false,
+            }],
+            vec![Arc {
+                place_id: shr_place,
+                consumes: false,
+            }],
+            Some("can_borrow_shr".to_string()),
+        );
+
+        // BorrowMut: T[own] → T[mut]
+        self.add_transition(
+            format!("&mut {}", short_name),
+            TransitionKind::BorrowMut {
+                type_key: type_key.clone(),
+            },
+            vec![Arc {
+                place_id: own_place,
+                consumes: true,
+            }],
+            vec![Arc {
+                place_id: mut_place,
+                consumes: false,
+            }],
+            Some("can_borrow_mut".to_string()),
+        );
+
+        // EndBorrowShr: T[shr] → ε
+        self.add_transition(
+            format!("end &{}", short_name),
+            TransitionKind::EndBorrowShr {
+                type_key: type_key.clone(),
+            },
+            vec![Arc {
+                place_id: shr_place,
+                consumes: true,
+            }],
+            vec![],
+            None,
+        );
+
+        // EndBorrowMut: T[mut] → T[own]
+        self.add_transition(
+            format!("end &mut {}", short_name),
+            TransitionKind::EndBorrowMut {
+                type_key: type_key.clone(),
+            },
+            vec![Arc {
+                place_id: mut_place,
+                consumes: true,
+            }],
+            vec![Arc {
+                place_id: own_place,
+                consumes: false,
+            }],
+            None,
+        );
+
+        // Drop: T[own] → ε
+        self.add_transition(
+            format!("drop {}", short_name),
+            TransitionKind::Drop {
+                type_key: type_key.clone(),
+            },
+            vec![Arc {
+                place_id: own_place,
+                consumes: true,
+            }],
+            vec![],
+            Some("can_drop".to_string()),
+        );
+    }
+
+    /// 创建 primitive 常量变迁
+    fn create_primitive_transition(&mut self, type_key: &TypeKey, place_id: PlaceId) {
+        self.add_transition(
+            format!("const {}", type_key.short_name()),
+            TransitionKind::CreatePrimitive {
+                type_key: type_key.clone(),
+            },
+            vec![],
+            vec![Arc {
+                place_id,
+                consumes: false,
+            }],
+            None,
+        );
+    }
+
+    /// 添加变迁
+    fn add_transition(
         &mut self,
-        kind: TransitionKind,
         name: String,
+        kind: TransitionKind,
         input_arcs: Vec<Arc>,
         output_arcs: Vec<Arc>,
         guard: Option<String>,
     ) {
-        let trans_id = self.transitions.len();
-        self.transitions.push(PcpnTransition {
-            id: trans_id,
+        let id = self.transitions.len();
+        self.transitions.push(Transition {
+            id,
             name,
             kind,
             input_arcs,
@@ -347,52 +380,7 @@ impl Pcpn {
         });
     }
 
-    /// 判断是否是 primitive 类型
-    fn is_primitive(ty: &str) -> bool {
-        matches!(
-            ty,
-            "bool"
-                | "i8"
-                | "i16"
-                | "i32"
-                | "i64"
-                | "i128"
-                | "isize"
-                | "u8"
-                | "u16"
-                | "u32"
-                | "u64"
-                | "u128"
-                | "usize"
-                | "f32"
-                | "f64"
-                | "()"
-                | "char"
-                | "str"
-        )
-    }
-
-    /// 简化类型名
-    fn simplify_type(ty: &str) -> String {
-        ty.split("::").last().unwrap_or(ty).to_string()
-    }
-
-    /// 格式化变迁名称
-    fn format_transition_name(api: &ApiSignature, source: &ApiSource) -> String {
-        let base_name = api.full_path.split("::").last().unwrap_or(&api.full_path);
-        match source {
-            ApiSource::Normal => base_name.to_string(),
-            ApiSource::TraitImpl { trait_name } => format!("{}::{}", trait_name, base_name),
-            ApiSource::FieldAccess {
-                struct_name,
-                field_name,
-            } => {
-                format!("{}.{}", Self::simplify_type(struct_name), field_name)
-            }
-        }
-    }
-
-    /// 生成 DOT 格式输出
+    /// 生成 DOT 格式
     pub fn to_dot(&self) -> String {
         let mut dot = String::new();
         dot.push_str("digraph PCPN {\n");
@@ -400,10 +388,10 @@ impl Pcpn {
         dot.push_str("  fontname=\"Helvetica\";\n");
         dot.push_str("  node [fontname=\"Helvetica\"];\n");
         dot.push_str("  edge [fontname=\"Helvetica\"];\n");
-        dot.push_str("  // PCPN: 每种类型有三个库所 T[own], T[shr], T[mut]\n\n");
+        dot.push_str("  // PCPN: T[own], T[shr], T[mut] places per type\n\n");
 
-        // Place 样式 - 类型库所，按 capability 着色
-        dot.push_str("  // ========== Places (库所 = 类型 × Capability) ==========\n");
+        // Places
+        dot.push_str("  // ========== Places ==========\n");
         for place in &self.places {
             let (fillcolor, peripheries) = match place.capability {
                 Capability::Own => {
@@ -417,29 +405,20 @@ impl Pcpn {
                 Capability::Mut => ("mistyrose", 1),
             };
 
-            let cap_suffix = match place.capability {
-                Capability::Own => "[own]",
-                Capability::Shr => "[&]",
-                Capability::Mut => "[&mut]",
-            };
-            let label = format!("{}{}", Self::simplify_type(&place.type_key), cap_suffix);
+            let label = format!("{}[{}]", place.type_key.short_name(), place.capability);
 
             dot.push_str(&format!(
-                "  p{} [label=\"{}\", shape=circle, style=filled, fillcolor={}, peripheries={}, width=0.9];\n",
+                "  p{} [label=\"{}\", shape=circle, style=filled, fillcolor={}, peripheries={}];\n",
                 place.id, label, fillcolor, peripheries
             ));
         }
         dot.push_str("\n");
 
-        // Transition 样式
-        dot.push_str("  // ========== Transitions (变迁) ==========\n");
+        // Transitions
+        dot.push_str("  // ========== Transitions ==========\n");
         for trans in &self.transitions {
             let (color, shape) = match &trans.kind {
-                TransitionKind::ApiCall { source, .. } => match source {
-                    ApiSource::Normal => ("palegreen", "box"),
-                    ApiSource::TraitImpl { .. } => ("lightyellow", "box"),
-                    ApiSource::FieldAccess { .. } => ("peachpuff", "box"),
-                },
+                TransitionKind::ApiCall { .. } => ("palegreen", "box"),
                 TransitionKind::CreatePrimitive { .. } => ("lightcyan", "diamond"),
                 TransitionKind::BorrowShr { .. } => ("lavender", "box"),
                 TransitionKind::BorrowMut { .. } => ("pink", "box"),
@@ -462,29 +441,25 @@ impl Pcpn {
         }
         dot.push_str("\n");
 
-        // 弧 (Arcs)
-        dot.push_str("  // ========== Arcs (弧) ==========\n");
-        dot.push_str("  // 实线=消耗 token, 虚线=读取 token (不消耗)\n");
+        // Arcs
+        dot.push_str("  // ========== Arcs ==========\n");
         for trans in &self.transitions {
-            // 输入弧: Place -> Transition
             for arc in &trans.input_arcs {
                 let style = if arc.consumes { "solid" } else { "dashed" };
                 let arrow = if arc.consumes { "normal" } else { "odot" };
-                // 弧颜色根据库所的 capability
-                let arc_color = Self::capability_color(self.places[arc.place_id].capability);
+                let color = Self::cap_color(self.places[arc.place_id].capability);
 
                 dot.push_str(&format!(
-                    "  p{} -> t{} [style={}, arrowhead={}, color=\"{}\", penwidth=1.5];\n",
-                    arc.place_id, trans.id, style, arrow, arc_color
+                    "  p{} -> t{} [style={}, arrowhead={}, color=\"{}\"];\n",
+                    arc.place_id, trans.id, style, arrow, color
                 ));
             }
 
-            // 输出弧: Transition -> Place
             for arc in &trans.output_arcs {
-                let arc_color = Self::capability_color(self.places[arc.place_id].capability);
+                let color = Self::cap_color(self.places[arc.place_id].capability);
                 dot.push_str(&format!(
-                    "  t{} -> p{} [color=\"{}\", penwidth=1.5];\n",
-                    trans.id, arc.place_id, arc_color
+                    "  t{} -> p{} [color=\"{}\"];\n",
+                    trans.id, arc.place_id, color
                 ));
             }
         }
@@ -493,17 +468,7 @@ impl Pcpn {
         dot
     }
 
-    /// Capability 到标签
-    fn capability_label(cap: Capability) -> &'static str {
-        match cap {
-            Capability::Own => "own",
-            Capability::Shr => "&",
-            Capability::Mut => "&mut",
-        }
-    }
-
-    /// Capability 到颜色
-    fn capability_color(cap: Capability) -> &'static str {
+    fn cap_color(cap: Capability) -> &'static str {
         match cap {
             Capability::Own => "black",
             Capability::Shr => "blue",
@@ -511,26 +476,26 @@ impl Pcpn {
         }
     }
 
-    /// 生成统计信息
+    /// 统计信息
     pub fn stats(&self) -> PcpnStats {
-        let api_transitions = self
+        let api_trans = self
             .transitions
             .iter()
             .filter(|t| matches!(t.kind, TransitionKind::ApiCall { .. }))
             .count();
-        let structural_transitions = self.transitions.len() - api_transitions;
+        let structural_trans = self.transitions.len() - api_trans;
 
         PcpnStats {
             num_places: self.places.len(),
             num_transitions: self.transitions.len(),
-            num_api_transitions: api_transitions,
-            num_structural_transitions: structural_transitions,
+            num_api_transitions: api_trans,
+            num_structural_transitions: structural_trans,
             num_primitive_places: self.initial_places.len(),
         }
     }
 }
 
-/// PCPN 统计信息
+/// PCPN 统计
 #[derive(Debug)]
 pub struct PcpnStats {
     pub num_places: usize,
@@ -557,12 +522,48 @@ impl std::fmt::Display for PcpnStats {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::apigraph::{ApiEdge, ApiGraph, FunctionNode, TypeNode};
 
     #[test]
-    fn test_is_primitive() {
-        assert!(Pcpn::is_primitive("i32"));
-        assert!(Pcpn::is_primitive("bool"));
-        assert!(!Pcpn::is_primitive("Counter"));
-        assert!(!Pcpn::is_primitive("std::vec::Vec"));
+    fn test_pcpn_from_api_graph() {
+        let mut graph = ApiGraph::new();
+
+        // 添加类型节点
+        graph.type_nodes.push(TypeNode {
+            id: 0,
+            type_key: TypeKey::path("Counter"),
+            is_primitive: false,
+            is_copy: false,
+        });
+        graph.type_to_node.insert(TypeKey::path("Counter"), 0);
+
+        // 添加函数节点
+        graph.fn_nodes.push(FunctionNode {
+            id: 0,
+            path: "Counter::new".to_string(),
+            name: "new".to_string(),
+            is_method: false,
+            is_entry: true,
+            params: vec![],
+            self_param: None,
+            return_type: Some(TypeKey::path("Counter")),
+            return_mode: Some(PassingMode::ReturnOwned),
+        });
+
+        // 添加边
+        graph.edges.push(ApiEdge {
+            fn_node: 0,
+            type_node: 0,
+            direction: EdgeDirection::Output,
+            passing_mode: PassingMode::ReturnOwned,
+            param_index: None,
+        });
+
+        let pcpn = Pcpn::from_api_graph(&graph);
+
+        // 检查：1 类型 × 3 capabilities = 3 places
+        assert_eq!(pcpn.places.len(), 3);
+        // 检查：1 API + 5 structural = 6 transitions
+        assert_eq!(pcpn.transitions.len(), 6);
     }
 }
