@@ -3,6 +3,7 @@ mod api_graph;
 mod canonicalize;
 mod emit;
 mod model;
+mod pcpn;
 mod rustdoc_loader;
 mod search;
 mod transition;
@@ -65,6 +66,10 @@ struct Args {
     /// 生成 API 依赖图（DOT 格式）
     #[arg(long)]
     graph: Option<PathBuf>,
+
+    /// 生成 PCPN Petri 网（DOT 格式）
+    #[arg(long)]
+    pcpn: Option<PathBuf>,
 }
 
 fn main() -> Result<()> {
@@ -103,7 +108,7 @@ fn main() -> Result<()> {
     }
 
     // 构建 API 依赖图
-    if let Some(graph_path) = &args.graph {
+    let graph = if args.graph.is_some() || args.pcpn.is_some() {
         tracing::info!("构建 API 依赖图...");
         let graph = api_graph::ApiGraph::build(&apis, &krate, &type_context)?;
         
@@ -120,18 +125,48 @@ fn main() -> Result<()> {
             graph.edges.len()
         );
 
-        // 生成 DOT 文件
-        let dot_content = graph.to_dot();
-        std::fs::write(graph_path, &dot_content)
-            .context(format!("写入图文件失败: {:?}", graph_path))?;
+        // 生成 API Graph DOT 文件
+        if let Some(graph_path) = &args.graph {
+            let dot_content = graph.to_dot();
+            std::fs::write(graph_path, &dot_content)
+                .context(format!("写入图文件失败: {:?}", graph_path))?;
+            
+            tracing::info!("✓ API 依赖图已生成: {:?}", graph_path);
+            tracing::info!("  使用 'dot -Tpng {} -o graph.png' 生成图片", graph_path.display());
+        }
         
-        tracing::info!("✓ API 依赖图已生成: {:?}", graph_path);
-        tracing::info!("  使用 'dot -Tpng {} -o graph.png' 生成图片", graph_path.display());
+        Some(graph)
+    } else {
+        None
+    };
+
+    // 构建 PCPN 并输出
+    if let Some(pcpn_path) = &args.pcpn {
+        let graph = graph.as_ref().expect("PCPN 需要先构建 API graph");
         
-        // 如果只生成图，就不继续搜索
-        if args.output.is_none() && !args.verify {
+        tracing::info!("构建 PCPN (Parameterized Colored Petri Net)...");
+        let pcpn = pcpn::Pcpn::from_api_graph(graph);
+        
+        let stats = pcpn.stats();
+        tracing::info!("{}", stats);
+        
+        // 生成 PCPN DOT 文件
+        let dot_content = pcpn.to_dot();
+        std::fs::write(pcpn_path, &dot_content)
+            .context(format!("写入 PCPN 文件失败: {:?}", pcpn_path))?;
+        
+        tracing::info!("✓ PCPN 已生成: {:?}", pcpn_path);
+        tracing::info!("  使用 'dot -Tpng {} -o pcpn.png' 生成图片", pcpn_path.display());
+        
+        // 如果只生成 PCPN，就不继续搜索
+        if args.output.is_none() && !args.verify && args.graph.is_none() {
             return Ok(());
         }
+    }
+
+    // 如果只生成图/PCPN，就不继续搜索
+    if (args.graph.is_some() || args.pcpn.is_some()) && args.output.is_none() && !args.verify {
+        return Ok(());
     }
 
     // 构建搜索配置

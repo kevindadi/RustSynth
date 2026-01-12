@@ -1,0 +1,49 @@
+digraph PCPN {
+  rankdir=LR;
+  fontname="Helvetica";
+  node [fontname="Helvetica"];
+  edge [fontname="Helvetica"];
+  // PCPN: 每种类型有三个库所 T[own], T[shr], T[mut]
+
+  // ========== Places (库所 = 类型 × Capability) ==========
+  p0 [label="Counter[own]", shape=circle, style=filled, fillcolor=lightblue, peripheries=2, width=0.9];
+  p1 [label="Counter[&]", shape=circle, style=filled, fillcolor=lightcyan, peripheries=1, width=0.9];
+  p2 [label="Counter[&mut]", shape=circle, style=filled, fillcolor=mistyrose, peripheries=1, width=0.9];
+  p3 [label="i32[own]", shape=circle, style=filled, fillcolor=lightgray, peripheries=2, width=0.9];
+  p4 [label="i32[&]", shape=circle, style=filled, fillcolor=lightcyan, peripheries=1, width=0.9];
+  p5 [label="i32[&mut]", shape=circle, style=filled, fillcolor=mistyrose, peripheries=1, width=0.9];
+
+  // ========== Transitions (变迁) ==========
+  t0 [label="new", shape=box, style=filled, fillcolor=palegreen];
+  t1 [label="increment", shape=box, style=filled, fillcolor=palegreen];
+  t2 [label="get", shape=box, style=filled, fillcolor=palegreen];
+  t3 [label="reset", shape=box, style=filled, fillcolor=palegreen];
+  t4 [label="create_counter_with_value", shape=box, style=filled, fillcolor=palegreen];
+  t5 [label="print_counter", shape=box, style=filled, fillcolor=palegreen];
+  t6 [label="&Counter\n[can_borrow_shr]", shape=box, style=filled, fillcolor=lavender];
+  t7 [label="&mut Counter\n[can_borrow_mut]", shape=box, style=filled, fillcolor=pink];
+  t8 [label="end &Counter", shape=box, style=filled, fillcolor=honeydew];
+  t9 [label="end &mut Counter", shape=box, style=filled, fillcolor=honeydew];
+  t10 [label="drop Counter\n[can_drop]", shape=box, style=filled, fillcolor=gray90];
+  t11 [label="const i32", shape=diamond, style=filled, fillcolor=lightcyan];
+
+  // ========== Arcs (弧) ==========
+  // 实线=消耗 token, 虚线=读取 token (不消耗)
+  t0 -> p0 [color="black", penwidth=1.5];
+  p2 -> t1 [style=solid, arrowhead=normal, color="red", penwidth=1.5];
+  p1 -> t2 [style=solid, arrowhead=normal, color="blue", penwidth=1.5];
+  t2 -> p3 [color="black", penwidth=1.5];
+  p2 -> t3 [style=solid, arrowhead=normal, color="red", penwidth=1.5];
+  p3 -> t4 [style=solid, arrowhead=normal, color="black", penwidth=1.5];
+  t4 -> p0 [color="black", penwidth=1.5];
+  p1 -> t5 [style=solid, arrowhead=normal, color="blue", penwidth=1.5];
+  p0 -> t6 [style=dashed, arrowhead=odot, color="black", penwidth=1.5];
+  t6 -> p1 [color="blue", penwidth=1.5];
+  p0 -> t7 [style=solid, arrowhead=normal, color="black", penwidth=1.5];
+  t7 -> p2 [color="red", penwidth=1.5];
+  p1 -> t8 [style=solid, arrowhead=normal, color="blue", penwidth=1.5];
+  p2 -> t9 [style=solid, arrowhead=normal, color="red", penwidth=1.5];
+  t9 -> p0 [color="black", penwidth=1.5];
+  p0 -> t10 [style=solid, arrowhead=normal, color="black", penwidth=1.5];
+  t11 -> p3 [color="black", penwidth=1.5];
+}
