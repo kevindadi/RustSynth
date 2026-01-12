@@ -66,39 +66,72 @@ impl fmt::Display for TraceFiring {
 /// 仿真状态 - 简化版
 #[derive(Clone, Debug)]
 pub struct SimState {
-    /// Marking: Place -> token 数量
-    pub marking: HashMap<PlaceId, usize>,
+    /// Marking: Place -> Token 实例列表
+    pub marking: HashMap<PlaceId, Vec<crate::pcpn::Token>>,
+    /// 下一个可用的 Token ID
+    pub next_token_id: crate::pcpn::TokenId,
     /// Dup（Copy/Clone）使用计数: TypeKey -> 次数
     pub dup_count: HashMap<TypeKey, usize>,
+    /// 生命周期栈
+    pub lifetime_stack: crate::pcpn::LifetimeStack,
 }
 
 impl SimState {
     pub fn new() -> Self {
         SimState {
             marking: HashMap::new(),
+            next_token_id: 0,
             dup_count: HashMap::new(),
+            lifetime_stack: crate::pcpn::LifetimeStack::new(),
         }
     }
 
     /// 获取 place 的 token 数量
     pub fn count(&self, place: PlaceId) -> usize {
-        *self.marking.get(&place).unwrap_or(&0)
+        self.marking
+            .get(&place)
+            .map(|tokens| tokens.len())
+            .unwrap_or(0)
     }
 
-    /// 添加 token
-    pub fn add(&mut self, place: PlaceId, count: usize) {
-        *self.marking.entry(place).or_insert(0) += count;
+    /// 添加 token 实例
+    pub fn add_token(&mut self, token: crate::pcpn::Token, place: PlaceId) {
+        self.marking
+            .entry(place)
+            .or_insert_with(Vec::new)
+            .push(token);
     }
 
-    /// 移除 token
-    pub fn remove(&mut self, place: PlaceId, count: usize) -> bool {
-        if let Some(current) = self.marking.get_mut(&place) {
-            if *current >= count {
-                *current -= count;
-                return true;
+    /// 移除一个 token 实例（移除第一个）
+    pub fn remove_token(&mut self, place: PlaceId) -> Option<crate::pcpn::Token> {
+        if let Some(tokens) = self.marking.get_mut(&place) {
+            if !tokens.is_empty() {
+                return Some(tokens.remove(0));
             }
         }
-        false
+        None
+    }
+
+    /// 兼容旧接口：添加指定数量的简单 token
+    pub fn add(&mut self, place: PlaceId, count: usize) {
+        for _ in 0..count {
+            let token = crate::pcpn::Token::new_owned(
+                self.next_token_id,
+                crate::type_model::TypeKey::Primitive("i32".to_string()),
+            );
+            self.next_token_id += 1;
+            self.add_token(token, place);
+        }
+    }
+
+    /// 兼容旧接口：移除指定数量的 token
+    pub fn remove(&mut self, place: PlaceId, count: usize) -> bool {
+        for _ in 0..count {
+            if self.remove_token(place).is_none() {
+                return false;
+            }
+        }
+        true
     }
 
     /// 获取 Dup 使用次数
@@ -116,8 +149,8 @@ impl SimState {
         let mut parts: Vec<String> = self
             .marking
             .iter()
-            .filter(|&(_, &c)| c > 0)
-            .map(|(p, c)| format!("p{}:{}", p, c))
+            .filter(|(_, tokens)| !tokens.is_empty())
+            .map(|(p, tokens)| format!("p{}:{}", p, tokens.len()))
             .collect();
         parts.sort();
         parts.join("|")
@@ -309,13 +342,10 @@ impl<'a> Simulator<'a> {
     ///
     /// Primitive 类型：每个 1 token
     fn initial_state(&self) -> SimState {
-        let mut state = SimState::new();
+        let state = SimState::new();
 
-        for place in &self.pcpn.places {
-            if place.is_primitive && !place.is_ref {
-                state.add(place.id, 1);
-            }
-        }
+        // 初始标识为空，所有 token（包括基本类型）通过变迁生成
+        // CreatePrimitive 变迁持续使能，上限由 budget 控制（3 个）
 
         state
     }
@@ -325,7 +355,9 @@ impl<'a> Simulator<'a> {
     /// 统一的 firing 判定
     /// enabled(t, M) := structural_enabled ∧ dup_limit_ok
     fn enabled(&self, trans: &Transition, state: &SimState) -> bool {
-        self.structural_enabled(trans, state) && self.dup_limit_ok(trans, state)
+        self.structural_enabled(trans, state)
+            && self.dup_limit_ok(trans, state)
+            && self.guard_check(trans, state)
     }
 
     /// (1) 结构可发生性：所有前置库所都有足够 token
@@ -354,15 +386,79 @@ impl<'a> Simulator<'a> {
     /// (2) Dup（Copy/Clone）限制检查
     fn dup_limit_ok(&self, trans: &Transition, state: &SimState) -> bool {
         match &trans.kind {
-            TransitionKind::DupCopy { type_key } | TransitionKind::DupClone { type_key } => {
-                state.get_dup_count(type_key) < self.config.dup_limit
-            }
-            TransitionKind::CreatePrimitive { type_key } => {
-                // Primitive 创建也受限制
-                state.get_dup_count(type_key) < self.config.dup_limit
+            TransitionKind::CreatePrimitive { type_key: _ } => {
+                // CreatePrimitive 受 budget 限制（检查目标 place 的当前 token 数）
+                if let Some(output_arc) = trans.output_arcs.first() {
+                    let place_id = output_arc.place_id;
+                    if let Some(place) = self.pcpn.places.get(place_id) {
+                        return state.count(place_id) < place.budget;
+                    }
+                }
+                false
             }
             _ => true,
         }
+    }
+
+    /// (3) Guard 检查：强制 Rust 借用规则
+    fn guard_check(&self, trans: &Transition, state: &SimState) -> bool {
+        use crate::pcpn::{Capability, GuardKind};
+
+        for guard in &trans.guards {
+            let type_key = &guard.type_key;
+
+            match guard.kind {
+                GuardKind::RequireOwn => {
+                    // 传递所有权时，该类型的 shr 和 mut place 都不能有 token
+                    // （不能有任何借用存在）
+                    if let Some(&shr_place) = self
+                        .pcpn
+                        .type_cap_to_place
+                        .get(&(type_key.clone(), Capability::Shr))
+                    {
+                        if state.count(shr_place) > 0 {
+                            return false; // 有共享引用，无法传递所有权
+                        }
+                    }
+                    if let Some(&mut_place) = self
+                        .pcpn
+                        .type_cap_to_place
+                        .get(&(type_key.clone(), Capability::Mut))
+                    {
+                        if state.count(mut_place) > 0 {
+                            return false; // 有可变借用，无法传递所有权
+                        }
+                    }
+                }
+                GuardKind::RequireShr => {
+                    // 持有共享引用时，不能有可变借用存在
+                    if let Some(&mut_place) = self
+                        .pcpn
+                        .type_cap_to_place
+                        .get(&(type_key.clone(), Capability::Mut))
+                    {
+                        if state.count(mut_place) > 0 {
+                            return false; // 有可变借用，无法创建共享引用
+                        }
+                    }
+                }
+                GuardKind::RequireMut => {
+                    // 持有可变借用时，不能有共享引用或其他可变借用
+                    if let Some(&shr_place) = self
+                        .pcpn
+                        .type_cap_to_place
+                        .get(&(type_key.clone(), Capability::Shr))
+                    {
+                        if state.count(shr_place) > 0 {
+                            return false; // 有共享引用，无法创建可变借用
+                        }
+                    }
+                    // 注意：mut place 本身只能有 1 个 token（独占），这由 budget 控制
+                }
+            }
+        }
+
+        true // 所有 Guard 检查通过
     }
 
     /// Fire transition，返回新状态和 firing 记录
@@ -389,11 +485,9 @@ impl<'a> Simulator<'a> {
             produces.push(place.type_key.clone());
         }
 
-        // 处理 Dup 计数
+        // 处理 CreatePrimitive 计数
         match &trans.kind {
-            TransitionKind::DupCopy { type_key }
-            | TransitionKind::DupClone { type_key }
-            | TransitionKind::CreatePrimitive { type_key } => {
+            TransitionKind::CreatePrimitive { type_key } => {
                 new_state.inc_dup_count(type_key);
             }
             _ => {}
@@ -532,25 +626,37 @@ impl ReachabilityGraph {
     }
 
     fn state_label(&self, state: &SimState, pcpn: &Pcpn) -> String {
+        use crate::pcpn::Capability;
         let mut parts = Vec::new();
 
-        let mut places: Vec<_> = state.marking.iter().filter(|(_, c)| **c > 0).collect();
+        let mut places: Vec<_> = state
+            .marking
+            .iter()
+            .filter(|(_, tokens)| !tokens.is_empty())
+            .collect();
         places.sort_by_key(|(p, _)| *p);
 
-        for (place_id, count) in places.iter().take(5) {
-            let place_name = pcpn
+        for (place_id, tokens) in places.iter().take(8) {
+            // 增加显示数量到 8
+            let count = tokens.len();
+            let place_info = pcpn
                 .places
                 .get(**place_id)
                 .map(|p| {
-                    let name = p.type_key.short_name();
+                    let mut name = p.type_key.short_name();
                     if name.len() > 12 {
-                        format!("{}...", &name[..9])
-                    } else {
-                        name
+                        name = format!("{}...", &name[..9]);
                     }
+                    // 添加 capability 标注
+                    let cap = match p.capability {
+                        Capability::Own => "[own]",
+                        Capability::Shr => "[shr]",
+                        Capability::Mut => "[mut]",
+                    };
+                    format!("{}{}", name, cap)
                 })
                 .unwrap_or_else(|| format!("p{}", place_id));
-            parts.push(format!("{}:{}", place_name, count));
+            parts.push(format!("{}:{}", place_info, count));
         }
 
         if parts.is_empty() {
@@ -581,29 +687,8 @@ pub fn print_trace(trace: &[TraceFiring]) {
 
 // ==================== 兼容旧接口 ====================
 
-/// Token - 兼容旧接口
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Token {
-    pub type_key: TypeKey,
-    pub capability: crate::pcpn::Capability,
-    pub lifetime: Option<u32>,
-}
-
-impl Token {
-    pub fn owned(type_key: TypeKey) -> Self {
-        Token {
-            type_key,
-            capability: crate::pcpn::Capability::Own,
-            lifetime: None,
-        }
-    }
-}
-
-impl fmt::Display for Token {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.type_key.short_name())
-    }
-}
+// 使用 PCPN 模块中定义的 Token
+pub use crate::pcpn::{Token, TokenId};
 
 /// 兼容旧的 Capability 引用
 #[allow(unused_imports)]

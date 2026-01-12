@@ -74,6 +74,27 @@ pub struct TypeNode {
     pub is_copy: bool,
 }
 
+/// 所有权类型（用于边的标注）
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum OwnershipType {
+    /// 所有权 (own) - 持有值本身
+    Own,
+    /// 共享引用 (shr) - &T
+    Shr,
+    /// 可变借用 (mut) - &mut T
+    Mut,
+}
+
+impl std::fmt::Display for OwnershipType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OwnershipType::Own => write!(f, "own"),
+            OwnershipType::Shr => write!(f, "shr"),
+            OwnershipType::Mut => write!(f, "mut"),
+        }
+    }
+}
+
 /// API Graph 边（函数 <-> 类型）
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ApiEdge {
@@ -85,8 +106,14 @@ pub struct ApiEdge {
     pub direction: EdgeDirection,
     /// 传递模式
     pub passing_mode: PassingMode,
+    /// 所有权类型（own/shr/mut）
+    pub ownership: OwnershipType,
+    /// 是否需要解引用操作（从 shr/mut 获取 own 时）
+    pub requires_deref: bool,
     /// 参数位置（如果是输入边）
     pub param_index: Option<usize>,
+    /// 生命周期（可选，暂时忽略）
+    pub lifetime: Option<String>,
 }
 
 /// 边的方向
@@ -253,12 +280,10 @@ impl ApiGraph {
         for edge in &self.edges {
             let (from, to, color, style) = match edge.direction {
                 EdgeDirection::Input => {
-                    let color = match edge.passing_mode {
-                        PassingMode::Move => "black",
-                        PassingMode::Copy => "gray",
-                        PassingMode::BorrowShr => "blue",
-                        PassingMode::BorrowMut => "red",
-                        _ => "black",
+                    let color = match edge.ownership {
+                        OwnershipType::Own => "black",
+                        OwnershipType::Shr => "blue",
+                        OwnershipType::Mut => "red",
                     };
                     (
                         format!("T{}", edge.type_node),
@@ -268,11 +293,10 @@ impl ApiGraph {
                     )
                 }
                 EdgeDirection::Output => {
-                    let color = match edge.passing_mode {
-                        PassingMode::ReturnOwned => "black",
-                        PassingMode::ReturnBorrowShr => "blue",
-                        PassingMode::ReturnBorrowMut => "red",
-                        _ => "black",
+                    let color = match edge.ownership {
+                        OwnershipType::Own => "black",
+                        OwnershipType::Shr => "blue",
+                        OwnershipType::Mut => "red",
                     };
                     (
                         format!("F{}", edge.fn_node),
@@ -283,9 +307,11 @@ impl ApiGraph {
                 }
             };
 
+            let deref_mark = if edge.requires_deref { "*" } else { "" };
+            let label = format!("{}{}[{}]", deref_mark, edge.passing_mode, edge.ownership);
             dot.push_str(&format!(
                 "  {} -> {} [label=\"{}\", color={}, style={}];\n",
-                from, to, edge.passing_mode, color, style
+                from, to, label, color, style
             ));
         }
 
@@ -364,7 +390,10 @@ mod tests {
             type_node: counter_id,
             direction: EdgeDirection::Output,
             passing_mode: PassingMode::ReturnOwned,
+            ownership: OwnershipType::Own,
+            requires_deref: false,
             param_index: None,
+            lifetime: None,
         });
 
         assert_eq!(graph.fn_nodes.len(), 1);

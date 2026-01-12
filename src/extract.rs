@@ -6,7 +6,7 @@ use anyhow::Result;
 use rustdoc_types::{Crate, Item, ItemEnum, Type, Visibility};
 
 use crate::apigraph::{
-    ApiEdge, ApiGraph, EdgeDirection, FunctionNode, ParamInfo, SelfParam,
+    ApiEdge, ApiGraph, EdgeDirection, FunctionNode, OwnershipType, ParamInfo, SelfParam,
 };
 use crate::type_model::{PassingMode, TypeKey};
 
@@ -436,7 +436,7 @@ fn extract_function(
             is_method = true;
             // 解析 self 参数
             if let Some(self_type) = &impl_self_type {
-                let (base_type, passing_mode) = parse_self_param(ty, self_type, ctx);
+                let (base_type, passing_mode) = parse_self_param(ty, self_type);
                 self_param = Some(SelfParam {
                     base_type,
                     passing_mode,
@@ -494,7 +494,6 @@ fn extract_function(
 fn parse_self_param(
     ty: &Type,
     impl_self_type: &TypeKey,
-    _ctx: &ExtractionContext,
 ) -> (TypeKey, PassingMode) {
     match ty {
         Type::BorrowedRef { is_mutable, .. } => {
@@ -539,6 +538,21 @@ fn decompose_return_type(type_key: &TypeKey) -> (TypeKey, PassingMode) {
     }
 }
 
+/// 将 PassingMode 转换为 OwnershipType
+fn passing_mode_to_ownership(mode: &PassingMode) -> OwnershipType {
+    match mode {
+        PassingMode::Move | PassingMode::Copy | PassingMode::ReturnOwned => OwnershipType::Own,
+        PassingMode::BorrowShr | PassingMode::ReturnBorrowShr => OwnershipType::Shr,
+        PassingMode::BorrowMut | PassingMode::ReturnBorrowMut => OwnershipType::Mut,
+    }
+}
+
+/// 检查是否需要解引用
+fn requires_deref(mode: &PassingMode) -> bool {
+    // 当需要 own 但当前持有引用时，需要解引用
+    matches!(mode, PassingMode::Move) && false // 简化版：暂不检测
+}
+
 /// 为函数添加边
 fn add_function_edges(graph: &mut ApiGraph, fn_node: &FunctionNode) {
     let fn_id = graph.fn_nodes.len(); // 下一个 ID
@@ -546,12 +560,18 @@ fn add_function_edges(graph: &mut ApiGraph, fn_node: &FunctionNode) {
     // Self 参数边
     if let Some(ref self_param) = fn_node.self_param {
         let type_id = graph.get_or_create_type_node(self_param.base_type.clone());
+        let ownership = passing_mode_to_ownership(&self_param.passing_mode);
+        let requires_deref = requires_deref(&self_param.passing_mode);
+        
         graph.add_edge(ApiEdge {
             fn_node: fn_id,
             type_node: type_id,
             direction: EdgeDirection::Input,
             passing_mode: self_param.passing_mode.clone(),
+            ownership,
+            requires_deref,
             param_index: Some(0),
+            lifetime: None,
         });
     }
 
@@ -563,24 +583,35 @@ fn add_function_edges(graph: &mut ApiGraph, fn_node: &FunctionNode) {
         } else {
             i
         };
+        let ownership = passing_mode_to_ownership(&param.passing_mode);
+        let requires_deref = requires_deref(&param.passing_mode);
+        
         graph.add_edge(ApiEdge {
             fn_node: fn_id,
             type_node: type_id,
             direction: EdgeDirection::Input,
             passing_mode: param.passing_mode.clone(),
+            ownership,
+            requires_deref,
             param_index: Some(param_idx),
+            lifetime: None,
         });
     }
 
     // 返回值边
     if let (Some(return_type), Some(return_mode)) = (&fn_node.return_type, &fn_node.return_mode) {
         let type_id = graph.get_or_create_type_node(return_type.clone());
+        let ownership = passing_mode_to_ownership(return_mode);
+        
         graph.add_edge(ApiEdge {
             fn_node: fn_id,
             type_node: type_id,
             direction: EdgeDirection::Output,
             passing_mode: return_mode.clone(),
+            ownership,
+            requires_deref: false, // 返回值不需要解引用
             param_index: None,
+            lifetime: None,
         });
     }
 }
