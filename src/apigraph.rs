@@ -243,7 +243,7 @@ impl ApiGraph {
             };
             dot.push_str(&format!(
                 "    F{} [label=\"{}\", shape={}, style=filled, fillcolor=palegreen];\n",
-                fn_node.id, fn_node.name, shape
+                fn_node.id, fn_node.path, shape
             ));
         }
         dot.push_str("  }\n\n");

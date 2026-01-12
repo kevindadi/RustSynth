@@ -6,59 +6,43 @@ digraph PCPN {
   // PCPN: T[own], T[shr], T[mut] places per type
 
   // ========== Places ==========
-  p0 [label="i32[own]", shape=circle, style=filled, fillcolor=lightgray, peripheries=2];
-  p1 [label="i32[&]", shape=circle, style=filled, fillcolor=lightcyan, peripheries=1];
-  p2 [label="i32[&mut]", shape=circle, style=filled, fillcolor=mistyrose, peripheries=1];
-  p3 [label="Counter[own]", shape=circle, style=filled, fillcolor=lightblue, peripheries=2];
-  p4 [label="Counter[&]", shape=circle, style=filled, fillcolor=lightcyan, peripheries=1];
-  p5 [label="Counter[&mut]", shape=circle, style=filled, fillcolor=mistyrose, peripheries=1];
-  p6 [label="?Self[own]", shape=circle, style=filled, fillcolor=lightblue, peripheries=2];
-  p7 [label="?Self[&]", shape=circle, style=filled, fillcolor=lightcyan, peripheries=1];
-  p8 [label="?Self[&mut]", shape=circle, style=filled, fillcolor=mistyrose, peripheries=1];
+  p0 [label="Counter[own]", shape=circle, style=filled, fillcolor=lightblue, peripheries=2];
+  p1 [label="Counter[&]", shape=circle, style=filled, fillcolor=lightcyan, peripheries=1];
+  p2 [label="Counter[&mut]", shape=circle, style=filled, fillcolor=mistyrose, peripheries=1];
+  p3 [label="i32[own]", shape=circle, style=filled, fillcolor=lightgray, peripheries=2];
+  p4 [label="i32[&]", shape=circle, style=filled, fillcolor=lightcyan, peripheries=1];
+  p5 [label="i32[&mut]", shape=circle, style=filled, fillcolor=mistyrose, peripheries=1];
 
   // ========== Transitions ==========
-  t0 [label="create_counter_with_value", shape=box, style=filled, fillcolor=palegreen];
-  t1 [label="new", shape=box, style=filled, fillcolor=palegreen];
-  t2 [label="increment", shape=box, style=filled, fillcolor=palegreen];
-  t3 [label="get", shape=box, style=filled, fillcolor=palegreen];
-  t4 [label="reset", shape=box, style=filled, fillcolor=palegreen];
+  t0 [label="Counter::new", shape=box, style=filled, fillcolor=palegreen];
+  t1 [label="Counter::increment", shape=box, style=filled, fillcolor=palegreen];
+  t2 [label="Counter::get", shape=box, style=filled, fillcolor=palegreen];
+  t3 [label="Counter::reset", shape=box, style=filled, fillcolor=palegreen];
+  t4 [label="create_counter_with_value", shape=box, style=filled, fillcolor=palegreen];
   t5 [label="print_counter", shape=box, style=filled, fillcolor=palegreen];
   t6 [label="&Counter\n[can_borrow_shr]", shape=box, style=filled, fillcolor=lavender];
   t7 [label="&mut Counter\n[can_borrow_mut]", shape=box, style=filled, fillcolor=pink];
   t8 [label="end &Counter", shape=box, style=filled, fillcolor=honeydew];
   t9 [label="end &mut Counter", shape=box, style=filled, fillcolor=honeydew];
   t10 [label="drop Counter\n[can_drop]", shape=box, style=filled, fillcolor=gray90];
-  t11 [label="&?Self\n[can_borrow_shr]", shape=box, style=filled, fillcolor=lavender];
-  t12 [label="&mut ?Self\n[can_borrow_mut]", shape=box, style=filled, fillcolor=pink];
-  t13 [label="end &?Self", shape=box, style=filled, fillcolor=honeydew];
-  t14 [label="end &mut ?Self", shape=box, style=filled, fillcolor=honeydew];
-  t15 [label="drop ?Self\n[can_drop]", shape=box, style=filled, fillcolor=gray90];
-  t16 [label="const i32", shape=diamond, style=filled, fillcolor=lightcyan];
+  t11 [label="const i32", shape=diamond, style=filled, fillcolor=lightcyan];
 
   // ========== Arcs ==========
-  p0 -> t0 [style=dashed, arrowhead=odot, color="black"];
-  t0 -> p3 [color="black"];
-  t1 -> p6 [color="black"];
-  p5 -> t2 [style=solid, arrowhead=normal, color="red"];
-  p4 -> t3 [style=solid, arrowhead=normal, color="blue"];
-  t3 -> p0 [color="black"];
-  p5 -> t4 [style=solid, arrowhead=normal, color="red"];
-  p4 -> t5 [style=solid, arrowhead=normal, color="blue"];
-  p3 -> t6 [style=dashed, arrowhead=odot, color="black"];
-  t6 -> p4 [color="blue"];
-  p3 -> t7 [style=solid, arrowhead=normal, color="black"];
-  t7 -> p5 [color="red"];
-  p4 -> t8 [style=solid, arrowhead=normal, color="blue"];
-  p5 -> t9 [style=solid, arrowhead=normal, color="red"];
-  t9 -> p3 [color="black"];
-  p3 -> t10 [style=solid, arrowhead=normal, color="black"];
-  p6 -> t11 [style=dashed, arrowhead=odot, color="black"];
-  t11 -> p7 [color="blue"];
-  p6 -> t12 [style=solid, arrowhead=normal, color="black"];
-  t12 -> p8 [color="red"];
-  p7 -> t13 [style=solid, arrowhead=normal, color="blue"];
-  p8 -> t14 [style=solid, arrowhead=normal, color="red"];
-  t14 -> p6 [color="black"];
-  p6 -> t15 [style=solid, arrowhead=normal, color="black"];
-  t16 -> p0 [color="black"];
+  t0 -> p0 [color="black"];
+  p2 -> t1 [style=solid, arrowhead=normal, color="red"];
+  p1 -> t2 [style=solid, arrowhead=normal, color="blue"];
+  t2 -> p3 [color="black"];
+  p2 -> t3 [style=solid, arrowhead=normal, color="red"];
+  p3 -> t4 [style=dashed, arrowhead=odot, color="black"];
+  t4 -> p0 [color="black"];
+  p1 -> t5 [style=solid, arrowhead=normal, color="blue"];
+  p0 -> t6 [style=dashed, arrowhead=odot, color="black"];
+  t6 -> p1 [color="blue"];
+  p0 -> t7 [style=solid, arrowhead=normal, color="black"];
+  t7 -> p2 [color="red"];
+  p1 -> t8 [style=solid, arrowhead=normal, color="blue"];
+  p2 -> t9 [style=solid, arrowhead=normal, color="red"];
+  t9 -> p0 [color="black"];
+  p0 -> t10 [style=solid, arrowhead=normal, color="black"];
+  t11 -> p3 [color="black"];
 }

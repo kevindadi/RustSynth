@@ -239,7 +239,7 @@ impl Pcpn {
 
         self.transitions.push(Transition {
             id: trans_id,
-            name: fn_node.name.clone(),
+            name: fn_node.path.clone(), // 使用完整路径 (Type::method 或 function)
             kind: TransitionKind::ApiCall { fn_id: fn_node.id },
             input_arcs,
             output_arcs,

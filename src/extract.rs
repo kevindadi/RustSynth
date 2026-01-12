@@ -46,8 +46,12 @@ pub fn build_api_graph(krate: &Crate, module_filter: &[String]) -> Result<ApiGra
                 }
 
                 if is_public(item) {
+                    let fn_name = item.name.as_deref().unwrap_or("unknown");
+                    // 创建函数级别的上下文
+                    let fn_ctx = ctx.with_function_context(&func.generics, fn_name);
+                    
                     if let Some(fn_node) =
-                        extract_function(&ctx, item, &func.sig, None, &mut graph)
+                        extract_function(&fn_ctx, item, &func.sig, None, &mut graph)
                     {
                         add_function_edges(&mut graph, &fn_node);
                         graph.add_function_node(fn_node);
@@ -55,15 +59,32 @@ pub fn build_api_graph(krate: &Crate, module_filter: &[String]) -> Result<ApiGra
                 }
             }
             ItemEnum::Impl(impl_) => {
-                // 获取 Self 类型
-                let self_type = ctx.normalize_type(&impl_.for_);
+                // 先获取基础类型名称（不包含泛型参数）
+                let base_type_name = get_base_type_name(&impl_.for_);
+                
+                // 创建一个临时上下文来提取 impl 块的泛型参数
+                let temp_ctx = ctx.with_impl_context(None, &impl_.generics, &base_type_name);
+                
+                // 现在用包含泛型参数的上下文解析 Self 类型
+                let self_type = temp_ctx.normalize_type(&impl_.for_);
+                
+                // 创建最终的 impl 上下文
+                let impl_ctx = ctx.with_impl_context(
+                    self_type.clone(),
+                    &impl_.generics,
+                    &base_type_name,
+                );
 
                 for item_id in &impl_.items {
                     if let Some(method_item) = krate.index.get(item_id) {
                         if let ItemEnum::Function(func) = &method_item.inner {
                             if is_public(method_item) {
+                                let fn_name = method_item.name.as_deref().unwrap_or("unknown");
+                                // 创建方法级别的上下文（继承 impl 的泛型参数）
+                                let method_ctx = impl_ctx.with_function_context(&func.generics, fn_name);
+                                
                                 if let Some(fn_node) = extract_function(
-                                    &ctx,
+                                    &method_ctx,
                                     method_item,
                                     &func.sig,
                                     self_type.clone(),
@@ -84,10 +105,27 @@ pub fn build_api_graph(krate: &Crate, module_filter: &[String]) -> Result<ApiGra
     Ok(graph)
 }
 
+/// 泛型参数信息
+#[derive(Clone, Debug)]
+struct GenericParamInfo {
+    /// 参数名
+    name: String,
+    /// 所属上下文（类型名或函数名）
+    context: String,
+    /// Trait bounds
+    bounds: Vec<String>,
+}
+
 /// 提取上下文
 struct ExtractionContext<'a> {
     krate: &'a Crate,
     id_to_path: std::collections::HashMap<rustdoc_types::Id, String>,
+    /// 当前 impl 块的 Self 类型（用于解析 Self 泛型）
+    current_self_type: Option<TypeKey>,
+    /// 当前上下文的泛型参数映射（参数名 -> 信息）
+    generic_params: std::collections::HashMap<String, GenericParamInfo>,
+    /// 当前上下文名称
+    current_context: String,
 }
 
 impl<'a> ExtractionContext<'a> {
@@ -101,7 +139,117 @@ impl<'a> ExtractionContext<'a> {
             id_to_path.insert(id.clone(), path);
         }
 
-        ExtractionContext { krate, id_to_path }
+        ExtractionContext {
+            krate,
+            id_to_path,
+            current_self_type: None,
+            generic_params: std::collections::HashMap::new(),
+            current_context: String::new(),
+        }
+    }
+
+    /// 设置当前的 Self 类型和泛型参数（进入 impl 块时调用）
+    fn with_impl_context(
+        &self,
+        self_type: Option<TypeKey>,
+        generics: &rustdoc_types::Generics,
+        context_name: &str,
+    ) -> Self {
+        let mut ctx = ExtractionContext {
+            krate: self.krate,
+            id_to_path: self.id_to_path.clone(),
+            current_self_type: self_type,
+            generic_params: std::collections::HashMap::new(),
+            current_context: context_name.to_string(),
+        };
+        ctx.extract_generics(generics, context_name);
+        ctx
+    }
+
+    /// 创建函数级别的上下文（继承 impl 的泛型参数）
+    fn with_function_context(
+        &self,
+        generics: &rustdoc_types::Generics,
+        fn_name: &str,
+    ) -> Self {
+        let context = if self.current_context.is_empty() {
+            fn_name.to_string()
+        } else {
+            format!("{}::{}", self.current_context, fn_name)
+        };
+        
+        let mut ctx = ExtractionContext {
+            krate: self.krate,
+            id_to_path: self.id_to_path.clone(),
+            current_self_type: self.current_self_type.clone(),
+            generic_params: self.generic_params.clone(), // 继承 impl 的泛型参数
+            current_context: context.clone(),
+        };
+        ctx.extract_generics(generics, &context);
+        ctx
+    }
+
+    /// 从 Generics 提取泛型参数信息
+    fn extract_generics(&mut self, generics: &rustdoc_types::Generics, context: &str) {
+        // 1. 从 params 提取
+        for param in &generics.params {
+            if let rustdoc_types::GenericParamDefKind::Type { bounds, .. } = &param.kind {
+                let bound_names: Vec<String> = bounds
+                    .iter()
+                    .filter_map(|b| self.extract_trait_bound(b))
+                    .collect();
+                
+                self.generic_params.insert(
+                    param.name.clone(),
+                    GenericParamInfo {
+                        name: param.name.clone(),
+                        context: context.to_string(),
+                        bounds: bound_names,
+                    },
+                );
+            }
+        }
+
+        // 2. 从 where_predicates 补充 bounds
+        for predicate in &generics.where_predicates {
+            if let rustdoc_types::WherePredicate::BoundPredicate {
+                type_: Type::Generic(name),
+                bounds,
+                ..
+            } = predicate
+            {
+                let additional_bounds: Vec<String> = bounds
+                    .iter()
+                    .filter_map(|b| self.extract_trait_bound(b))
+                    .collect();
+
+                if let Some(info) = self.generic_params.get_mut(name) {
+                    for bound in additional_bounds {
+                        if !info.bounds.contains(&bound) {
+                            info.bounds.push(bound);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// 提取 trait bound 名称
+    fn extract_trait_bound(&self, bound: &rustdoc_types::GenericBound) -> Option<String> {
+        match bound {
+            rustdoc_types::GenericBound::TraitBound { trait_, .. } => {
+                // 获取 trait 路径
+                let trait_path = self
+                    .id_to_path
+                    .get(&trait_.id)
+                    .cloned()
+                    .unwrap_or_else(|| trait_.path.clone());
+                // 只取最后一段
+                Some(trait_path.split("::").last().unwrap_or(&trait_path).to_string())
+            }
+            rustdoc_types::GenericBound::Outlives(_) => None,
+            rustdoc_types::GenericBound::Use(_) => None,
+        }
     }
 
     fn get_item_path(&self, id: &rustdoc_types::Id) -> String {
@@ -187,8 +335,57 @@ impl<'a> ExtractionContext<'a> {
             }
 
             Type::Generic(name) => {
-                // 泛型参数作为 Unknown 处理（后续单态化会替换）
-                Some(TypeKey::Unknown(name.clone()))
+                // Self 替换为实际的 Self 类型
+                if name == "Self" || name == "self" {
+                    self.current_self_type.clone()
+                } else if let Some(info) = self.generic_params.get(name) {
+                    // 已知的泛型参数，使用 GenericParam
+                    Some(TypeKey::GenericParam {
+                        context: info.context.clone(),
+                        name: info.name.clone(),
+                        bounds: info.bounds.clone(),
+                    })
+                } else {
+                    // 未知的泛型参数（可能来自外部），创建无 bounds 的 GenericParam
+                    Some(TypeKey::GenericParam {
+                        context: self.current_context.clone(),
+                        name: name.clone(),
+                        bounds: vec![],
+                    })
+                }
+            }
+
+            // 关联类型：<T as Trait>::Item
+            Type::QualifiedPath {
+                name,
+                self_type,
+                trait_,
+                ..
+            } => {
+                // 构建关联类型路径
+                let self_str = self
+                    .normalize_type(self_type)
+                    .map(|t| t.short_name())
+                    .unwrap_or_else(|| "?".to_string());
+
+                let trait_str = trait_
+                    .as_ref()
+                    .map(|t| {
+                        self.id_to_path
+                            .get(&t.id)
+                            .cloned()
+                            .unwrap_or_else(|| t.path.clone())
+                    })
+                    .unwrap_or_default();
+
+                // 格式: <Self as Trait>::Item
+                let assoc_path = if trait_str.is_empty() {
+                    format!("{}::{}", self_str, name)
+                } else {
+                    format!("<{} as {}>::{}", self_str, trait_str, name)
+                };
+
+                Some(TypeKey::AssociatedType(assoc_path))
             }
 
             _ => Some(TypeKey::Unknown(format!("{:?}", ty))),
@@ -201,6 +398,19 @@ fn is_public(item: &Item) -> bool {
     matches!(item.visibility, Visibility::Public)
 }
 
+/// 获取类型的基础名称（不包含泛型参数）
+fn get_base_type_name(ty: &Type) -> String {
+    match ty {
+        Type::ResolvedPath(path) => {
+            // 只取路径的最后一段
+            path.path.split("::").last().unwrap_or(&path.path).to_string()
+        }
+        Type::Primitive(name) => name.clone(),
+        Type::Generic(name) => name.clone(),
+        _ => "Unknown".to_string(),
+    }
+}
+
 /// 提取函数信息
 fn extract_function(
     ctx: &ExtractionContext,
@@ -210,14 +420,12 @@ fn extract_function(
     graph: &mut ApiGraph,
 ) -> Option<FunctionNode> {
     let name = item.name.clone()?;
-    let path = format!(
-        "{}::{}",
-        impl_self_type
-            .as_ref()
-            .map(|t| t.short_name())
-            .unwrap_or_default(),
-        name
-    );
+    // 构建完整路径：方法用 Type::method，自由函数用 function
+    let path = if let Some(self_type) = &impl_self_type {
+        format!("{}::{}", self_type.short_name(), name)
+    } else {
+        name.clone()
+    };
 
     let mut params = Vec::new();
     let mut self_param = None;

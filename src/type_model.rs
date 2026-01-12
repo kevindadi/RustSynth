@@ -43,6 +43,19 @@ pub enum TypeKey {
     /// 原始指针: *const T, *mut T
     RawPtr { mutable: bool, inner: Box<TypeKey> },
 
+    /// 关联类型: <T as Trait>::Item
+    AssociatedType(String),
+
+    /// 泛型参数（占位符）
+    /// - context: 所属上下文（如 "Wrapper", "pair", "Container::push"）
+    /// - name: 参数名（如 "T", "A", "B"）
+    /// - bounds: Trait bounds（如 ["Default", "Clone"]）
+    GenericParam {
+        context: String,
+        name: String,
+        bounds: Vec<String>,
+    },
+
     /// 未解析/未知类型（用于错误处理）
     Unknown(String),
 }
@@ -170,7 +183,46 @@ impl TypeKey {
                     format!("*const {}", inner.short_name())
                 }
             }
+            TypeKey::AssociatedType(path) => path.clone(),
+            TypeKey::GenericParam {
+                context,
+                name,
+                bounds,
+            } => {
+                // 格式: context::name 或 context::name:bounds
+                let prefix = if context.is_empty() {
+                    String::new()
+                } else {
+                    format!("{}::", context)
+                };
+                if bounds.is_empty() {
+                    format!("{}{}", prefix, name)
+                } else {
+                    format!("{}{}:{}", prefix, name, bounds.join("+"))
+                }
+            }
             TypeKey::Unknown(s) => format!("?{}", s),
+        }
+    }
+
+    /// 是否是泛型参数
+    pub fn is_generic_param(&self) -> bool {
+        matches!(self, TypeKey::GenericParam { .. })
+    }
+
+    /// 获取泛型参数的 bounds
+    pub fn get_bounds(&self) -> Option<&[String]> {
+        match self {
+            TypeKey::GenericParam { bounds, .. } => Some(bounds),
+            _ => None,
+        }
+    }
+
+    /// 检查泛型参数是否满足某个 bound
+    pub fn has_bound(&self, bound: &str) -> bool {
+        match self {
+            TypeKey::GenericParam { bounds, .. } => bounds.iter().any(|b| b == bound),
+            _ => false,
         }
     }
 }
@@ -204,6 +256,23 @@ impl fmt::Display for TypeKey {
                     write!(f, "*mut {}", inner)
                 } else {
                     write!(f, "*const {}", inner)
+                }
+            }
+            TypeKey::AssociatedType(path) => write!(f, "{}", path),
+            TypeKey::GenericParam {
+                context,
+                name,
+                bounds,
+            } => {
+                let prefix = if context.is_empty() {
+                    String::new()
+                } else {
+                    format!("{}::", context)
+                };
+                if bounds.is_empty() {
+                    write!(f, "{}{}", prefix, name)
+                } else {
+                    write!(f, "{}{}:{}", prefix, name, bounds.join("+"))
                 }
             }
             TypeKey::Unknown(s) => write!(f, "?{}", s),
