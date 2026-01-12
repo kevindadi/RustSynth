@@ -347,6 +347,8 @@ pub enum GuardKind {
     RequireShr,
     /// 检查可变借用：持有 mut 时，不能有 shr 或其他 mut
     RequireMut,
+    /// 检查未被借用：drop 或可变操作时，token 不能被生命周期栈阻塞
+    RequireNotBorrowed,
 }
 
 /// PCPN
@@ -994,7 +996,28 @@ impl Pcpn {
         // 注意：Rust 中不存在 mut_to_shr 降权操作
         // 可变引用和共享引用通过 borrow 和 end_borrow 管理
 
+        // Deref: P[T, shr] → P[T, shr] (解引用：&&T → &T，降低 ref_level)
+        // 注意：这个变迁在同一个 place 内操作，只改变 token 的 ref_level
+        self.add_transition(
+            format!("deref({})", short_name),
+            TransitionKind::DerefRef {
+                inner_type: base_type.clone(),
+            },
+            vec![Arc {
+                place_id: shr_place,
+                consumes: true,
+                annotation: None,
+            }],
+            vec![Arc {
+                place_id: shr_place,
+                consumes: false,
+                annotation: None,
+            }],
+            vec![],
+        );
+
         // Drop: P[T, own] → ε
+        // Guard: 不能 drop 被生命周期栈阻塞的 token
         self.add_transition(
             format!("drop({})", short_name),
             TransitionKind::Drop {
@@ -1006,7 +1029,11 @@ impl Pcpn {
                 annotation: None,
             }],
             vec![],
-            vec![],
+            vec![Guard {
+                kind: GuardKind::RequireNotBorrowed,
+                type_key: base_type.clone(),
+                error_msg: format!("[ERROR] {} 被借用中，不能 drop", short_name),
+            }],
         );
 
         // 注意：删除了 dup_copy 和 dup_clone 变迁

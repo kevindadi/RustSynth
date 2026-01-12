@@ -455,6 +455,29 @@ impl<'a> Simulator<'a> {
                     }
                     // 注意：mut place 本身只能有 1 个 token（独占），这由 budget 控制
                 }
+                GuardKind::RequireNotBorrowed => {
+                    // 检查 token 是否被生命周期栈阻塞
+                    // TODO: 需要知道具体的 token ID，当前只能做简化检查
+                    // 简化版本：检查是否有任何借用存在
+                    if let Some(&shr_place) = self
+                        .pcpn
+                        .type_cap_to_place
+                        .get(&(type_key.clone(), Capability::Shr))
+                    {
+                        if state.count(shr_place) > 0 {
+                            return false; // 有共享借用，不能 drop
+                        }
+                    }
+                    if let Some(&mut_place) = self
+                        .pcpn
+                        .type_cap_to_place
+                        .get(&(type_key.clone(), Capability::Mut))
+                    {
+                        if state.count(mut_place) > 0 {
+                            return false; // 有可变借用，不能 drop
+                        }
+                    }
+                }
             }
         }
 
@@ -463,34 +486,138 @@ impl<'a> Simulator<'a> {
 
     /// Fire transition，返回新状态和 firing 记录
     fn fire(&self, trans: &Transition, state: &SimState) -> Option<(SimState, TraceFiring)> {
+        use crate::pcpn::{Token, TransitionKind};
+
         let mut new_state = state.clone();
         let mut consumes = Vec::new();
         let mut produces = Vec::new();
 
-        // 消耗输入 token
-        for arc in &trans.input_arcs {
-            if arc.consumes {
-                if !new_state.remove(arc.place_id, 1) {
-                    return None;
-                }
-                let place = &self.pcpn.places[arc.place_id];
-                consumes.push(place.type_key.clone());
-            }
-        }
-
-        // 产生输出 token
-        for arc in &trans.output_arcs {
-            new_state.add(arc.place_id, 1);
-            let place = &self.pcpn.places[arc.place_id];
-            produces.push(place.type_key.clone());
-        }
-
-        // 处理 CreatePrimitive 计数
+        // 根据变迁类型进行特殊处理
         match &trans.kind {
+            TransitionKind::BorrowMut { base_type, .. } => {
+                // 可变借用：从 own place 取 token，在 mut place 生成借用 token
+                if let Some(input_arc) = trans.input_arcs.first() {
+                    if let Some(source_token) = new_state.remove_token(input_arc.place_id) {
+                        consumes.push(source_token.type_key.clone());
+
+                        // 创建可变借用 token
+                        let borrow_token = Token::borrow_mut(
+                            new_state.next_token_id,
+                            base_type.clone(),
+                            source_token.id,
+                            None, // TODO: 从函数签名提取生命周期
+                        );
+                        new_state.next_token_id += 1;
+
+                        if let Some(output_arc) = trans.output_arcs.first() {
+                            new_state.add_token(borrow_token.clone(), output_arc.place_id);
+                            produces.push(borrow_token.type_key);
+                        }
+                    } else {
+                        return None;
+                    }
+                }
+            }
+
+            TransitionKind::BorrowShr { base_type, .. } => {
+                // 共享借用：从 own place 取 token，在 shr place 生成借用 token
+                if let Some(input_arc) = trans.input_arcs.first() {
+                    if let Some(source_token) = new_state.remove_token(input_arc.place_id) {
+                        consumes.push(source_token.type_key.clone());
+
+                        // 创建共享借用 token
+                        let borrow_token = Token::borrow_shr(
+                            new_state.next_token_id,
+                            base_type.clone(),
+                            source_token.id,
+                            None, // TODO: 从函数签名提取生命周期
+                        );
+                        new_state.next_token_id += 1;
+
+                        if let Some(output_arc) = trans.output_arcs.first() {
+                            new_state.add_token(borrow_token.clone(), output_arc.place_id);
+                            produces.push(borrow_token.type_key);
+                        }
+                    } else {
+                        return None;
+                    }
+                }
+            }
+
+            TransitionKind::EndBorrowMut { .. } | TransitionKind::EndBorrowShr { .. } => {
+                // 结束借用：从借用 place 取 token，恢复原 token 到 own place
+                if let Some(input_arc) = trans.input_arcs.first() {
+                    if let Some(borrow_token) = new_state.remove_token(input_arc.place_id) {
+                        consumes.push(borrow_token.type_key.clone());
+
+                        // 恢复原 token（简化：创建新的 owned token）
+                        if let Some(output_arc) = trans.output_arcs.first() {
+                            let restored_token = Token::new_owned(
+                                new_state.next_token_id,
+                                borrow_token.type_key.clone(),
+                            );
+                            new_state.next_token_id += 1;
+                            new_state.add_token(restored_token.clone(), output_arc.place_id);
+                            produces.push(restored_token.type_key);
+                        }
+                    } else {
+                        return None;
+                    }
+                }
+            }
+
+            TransitionKind::DerefRef { .. } => {
+                // 解引用：降低 ref_level
+                if let Some(input_arc) = trans.input_arcs.first() {
+                    if let Some(ref_token) = new_state.remove_token(input_arc.place_id) {
+                        consumes.push(ref_token.type_key.clone());
+
+                        // 解引用：ref_level - 1
+                        if let Some(deref_token) = ref_token.deref(new_state.next_token_id) {
+                            new_state.next_token_id += 1;
+                            if let Some(output_arc) = trans.output_arcs.first() {
+                                new_state.add_token(deref_token.clone(), output_arc.place_id);
+                                produces.push(deref_token.type_key);
+                            }
+                        } else {
+                            return None; // 无法解引用（ref_level 已经是 0）
+                        }
+                    } else {
+                        return None;
+                    }
+                }
+            }
+
             TransitionKind::CreatePrimitive { type_key } => {
+                // 创建 primitive token
+                let token = Token::new_owned(new_state.next_token_id, type_key.clone());
+                new_state.next_token_id += 1;
+
+                if let Some(output_arc) = trans.output_arcs.first() {
+                    new_state.add_token(token.clone(), output_arc.place_id);
+                    produces.push(token.type_key);
+                }
                 new_state.inc_dup_count(type_key);
             }
-            _ => {}
+
+            _ => {
+                // 其他变迁：使用旧逻辑（兼容性）
+                for arc in &trans.input_arcs {
+                    if arc.consumes {
+                        if !new_state.remove(arc.place_id, 1) {
+                            return None;
+                        }
+                        let place = &self.pcpn.places[arc.place_id];
+                        consumes.push(place.type_key.clone());
+                    }
+                }
+
+                for arc in &trans.output_arcs {
+                    new_state.add(arc.place_id, 1);
+                    let place = &self.pcpn.places[arc.place_id];
+                    produces.push(place.type_key.clone());
+                }
+            }
         }
 
         let firing = TraceFiring {
