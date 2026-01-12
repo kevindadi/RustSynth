@@ -353,11 +353,18 @@ impl<'a> Simulator<'a> {
     // ==================== Firing 判定（简化版）====================
 
     /// 统一的 firing 判定
-    /// enabled(t, M) := structural_enabled ∧ dup_limit_ok
+    /// enabled(t, M) := structural_enabled ∧ dup_limit_ok ∧ guard_check
     fn enabled(&self, trans: &Transition, state: &SimState) -> bool {
-        self.structural_enabled(trans, state)
-            && self.dup_limit_ok(trans, state)
-            && self.guard_check(trans, state)
+        if !self.structural_enabled(trans, state) {
+            return false;
+        }
+        if !self.dup_limit_ok(trans, state) {
+            return false;
+        }
+
+        // 预览输入 tokens 用于 Guard 检查
+        let input_tokens = self.peek_input_tokens(trans, state).unwrap_or_default();
+        self.guard_check(trans, state, &input_tokens)
     }
 
     /// (1) 结构可发生性：所有前置库所都有足够 token
@@ -400,8 +407,30 @@ impl<'a> Simulator<'a> {
         }
     }
 
+    /// 预览输入 tokens（不实际移除）
+    fn peek_input_tokens(&self, trans: &Transition, state: &SimState) -> Option<Vec<Token>> {
+        let mut tokens = Vec::new();
+
+        for arc in &trans.input_arcs {
+            if arc.consumes {
+                // 需要消耗的弧：预览第一个 token
+                if let Some(place_tokens) = state.marking.get(&arc.place_id) {
+                    if let Some(token) = place_tokens.first() {
+                        tokens.push(token.clone());
+                    } else {
+                        return None; // 没有可用 token
+                    }
+                } else {
+                    return None;
+                }
+            }
+        }
+
+        Some(tokens)
+    }
+
     /// (3) Guard 检查：强制 Rust 借用规则
-    fn guard_check(&self, trans: &Transition, state: &SimState) -> bool {
+    fn guard_check(&self, trans: &Transition, state: &SimState, input_tokens: &[Token]) -> bool {
         use crate::pcpn::{Capability, GuardKind};
 
         for guard in &trans.guards {
@@ -456,25 +485,32 @@ impl<'a> Simulator<'a> {
                     // 注意：mut place 本身只能有 1 个 token（独占），这由 budget 控制
                 }
                 GuardKind::RequireNotBorrowed => {
-                    // 检查 token 是否被生命周期栈阻塞
-                    // TODO: 需要知道具体的 token ID，当前只能做简化检查
-                    // 简化版本：检查是否有任何借用存在
-                    if let Some(&shr_place) = self
-                        .pcpn
-                        .type_cap_to_place
-                        .get(&(type_key.clone(), Capability::Shr))
-                    {
-                        if state.count(shr_place) > 0 {
-                            return false; // 有共享借用，不能 drop
+                    // 检查具体 token 是否被生命周期栈阻塞
+                    // 找到要操作的 token（第一个消耗型输入）
+                    if let Some(token) = input_tokens.first() {
+                        // 检查这个 token 是否被借用
+                        if state.lifetime_stack.is_blocked(token.id) {
+                            return false; // 被借用，不能 drop
                         }
-                    }
-                    if let Some(&mut_place) = self
-                        .pcpn
-                        .type_cap_to_place
-                        .get(&(type_key.clone(), Capability::Mut))
-                    {
-                        if state.count(mut_place) > 0 {
-                            return false; // 有可变借用，不能 drop
+                    } else {
+                        // 没有输入 token，回退到类型级别检查
+                        if let Some(&shr_place) = self
+                            .pcpn
+                            .type_cap_to_place
+                            .get(&(type_key.clone(), Capability::Shr))
+                        {
+                            if state.count(shr_place) > 0 {
+                                return false; // 有共享借用，不能 drop
+                            }
+                        }
+                        if let Some(&mut_place) = self
+                            .pcpn
+                            .type_cap_to_place
+                            .get(&(type_key.clone(), Capability::Mut))
+                        {
+                            if state.count(mut_place) > 0 {
+                                return false; // 有可变借用，不能 drop
+                            }
                         }
                     }
                 }
@@ -598,6 +634,66 @@ impl<'a> Simulator<'a> {
                     produces.push(token.type_key);
                 }
                 new_state.inc_dup_count(type_key);
+            }
+
+            TransitionKind::ApiCall { fn_id } => {
+                // API 调用：特殊处理生命周期绑定
+                let mut consumed_tokens = Vec::new();
+                let mut produced_tokens = Vec::new();
+
+                // 处理输入
+                for arc in &trans.input_arcs {
+                    if arc.consumes {
+                        if let Some(token) = new_state.remove_token(arc.place_id) {
+                            consumes.push(token.type_key.clone());
+                            consumed_tokens.push(token);
+                        } else {
+                            return None;
+                        }
+                    }
+                }
+
+                // 处理输出
+                for arc in &trans.output_arcs {
+                    let place = &self.pcpn.places[arc.place_id];
+
+                    // 创建新 token
+                    let token = Token::new_owned(new_state.next_token_id, place.type_key.clone());
+                    new_state.next_token_id += 1;
+
+                    new_state.add_token(token.clone(), arc.place_id);
+                    produces.push(token.type_key.clone());
+                    produced_tokens.push(token);
+                }
+
+                // 生命周期绑定：检查返回值是否是引用
+                // 简化版本：如果返回值在 shr 或 mut place，则认为是返回引用
+                if !produced_tokens.is_empty() && !consumed_tokens.is_empty() {
+                    let return_token = &produced_tokens[0];
+
+                    // 检查返回值的 place 是否是 shr 或 mut
+                    if let Some(output_arc) = trans.output_arcs.first() {
+                        let return_place = &self.pcpn.places[output_arc.place_id];
+
+                        if return_place.capability == Capability::Shr
+                            || return_place.capability == Capability::Mut
+                        {
+                            // 这是返回引用！需要绑定到 self 参数（第一个 consumed token）
+                            let source_token = &consumed_tokens[0];
+
+                            // 生成生命周期标识（使用函数名和 token ID）
+                            let lifetime = format!("'fn{}_{}", fn_id, source_token.id);
+
+                            // 压栈：先创建帧，然后记录借用关系
+                            new_state.lifetime_stack.push_frame(lifetime.clone());
+                            new_state.lifetime_stack.add_borrow(
+                                &lifetime,
+                                return_token.id,
+                                source_token.id,
+                            );
+                        }
+                    }
+                }
             }
 
             _ => {
