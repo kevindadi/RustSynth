@@ -1161,16 +1161,16 @@ impl Pcpn {
 
             // 为借用变迁添加 token 追踪说明
             match &trans.kind {
-                TransitionKind::BorrowMut { base_type, .. } => {
+                TransitionKind::BorrowMut { .. } => {
                     extra_info.push_str(&format!("\\n[取token_i→生成token_j]"));
                 }
-                TransitionKind::BorrowShr { base_type, .. } => {
+                TransitionKind::BorrowShr { .. } => {
                     extra_info.push_str(&format!("\\n[取token_i→生成token_j]"));
                 }
-                TransitionKind::EndBorrowMut { base_type, .. } => {
+                TransitionKind::EndBorrowMut { .. } => {
                     extra_info.push_str(&format!("\\n[归还token_j→恢复token_i]"));
                 }
-                TransitionKind::EndBorrowShr { base_type, .. } => {
+                TransitionKind::EndBorrowShr { .. } => {
                     extra_info.push_str(&format!("\\n[归还token_j→恢复token_i]"));
                 }
                 _ => {}

@@ -915,7 +915,7 @@ pub fn print_trace(trace: &[TraceFiring]) {
 // ==================== 兼容旧接口 ====================
 
 // 使用 PCPN 模块中定义的 Token
-pub use crate::pcpn::{Token, TokenId};
+pub use crate::pcpn::Token;
 
 /// 兼容旧的 Capability 引用
 #[allow(unused_imports)]

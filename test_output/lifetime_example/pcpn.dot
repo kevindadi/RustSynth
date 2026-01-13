@@ -1,0 +1,75 @@
+digraph PCPN {
+  rankdir=LR;
+  fontname="Helvetica";
+  node [fontname="Helvetica"];
+  edge [fontname="Helvetica"];
+  // PCPN: One place per type (simplified)
+
+  // ========== Places ==========
+  p0 [label="i32\n[own]\n[B=3]", shape=circle, style=filled, fillcolor=lightgray, peripheries=1];
+  p1 [label="i32\n[shr]\n[B=3]", shape=circle, style=filled, fillcolor=lightcyan, peripheries=1];
+  p2 [label="i32\n[mut]\n[B=3]", shape=circle, style=filled, fillcolor=mistyrose, peripheries=1];
+  p3 [label="Container\n[own]\n[B=3]", shape=circle, style=filled, fillcolor=lightblue, peripheries=1];
+  p4 [label="Container\n[shr]\n[B=3]", shape=circle, style=filled, fillcolor=lightcyan, peripheries=1];
+  p5 [label="Container\n[mut]\n[B=3]", shape=circle, style=filled, fillcolor=mistyrose, peripheries=1];
+
+  // ========== Transitions ==========
+  t0 [label="Container::new\n[G:1]", shape=box, style=filled, fillcolor=palegreen];
+  t1 [label="Container::get_ref\n[G:1]", shape=box, style=filled, fillcolor=palegreen];
+  t2 [label="Container::get_mut", shape=box, style=filled, fillcolor=palegreen];
+  t3 [label="Container::increment", shape=box, style=filled, fillcolor=palegreen];
+  t4 [label="Container::into_value\n[G:1]", shape=box, style=filled, fillcolor=palegreen];
+  t5 [label="borrow_and_increment", shape=box, style=filled, fillcolor=palegreen];
+  t6 [label="borrow_and_read\n[G:1]", shape=box, style=filled, fillcolor=palegreen];
+  t7 [label="borrow_mut(i32)\n[G:1]\n[取token_i→生成token_j]", shape=box, style=filled, fillcolor=lavender];
+  t8 [label="end_borrow_mut(i32)\n[归还token_j→恢复token_i]", shape=box, style=filled, fillcolor=honeydew];
+  t9 [label="borrow_shr(i32)\n[G:1]\n[取token_i→生成token_j]", shape=box, style=filled, fillcolor=lavender];
+  t10 [label="end_borrow_shr(i32)\n[归还token_j→恢复token_i]", shape=box, style=filled, fillcolor=honeydew];
+  t11 [label="deref(i32)", shape=box, style=filled, fillcolor=wheat];
+  t12 [label="drop(i32)\n[G:1]", shape=box, style=filled, fillcolor=gray90];
+  t13 [label="borrow_mut(Container)\n[G:1]\n[取token_i→生成token_j]", shape=box, style=filled, fillcolor=lavender];
+  t14 [label="end_borrow_mut(Container)\n[归还token_j→恢复token_i]", shape=box, style=filled, fillcolor=honeydew];
+  t15 [label="borrow_shr(Container)\n[G:1]\n[取token_i→生成token_j]", shape=box, style=filled, fillcolor=lavender];
+  t16 [label="end_borrow_shr(Container)\n[归还token_j→恢复token_i]", shape=box, style=filled, fillcolor=honeydew];
+  t17 [label="deref(Container)", shape=box, style=filled, fillcolor=wheat];
+  t18 [label="drop(Container)\n[G:1]", shape=box, style=filled, fillcolor=gray90];
+  t19 [label="const_i32", shape=diamond, style=filled, fillcolor=lightcyan];
+
+  // ========== Arcs ==========
+  p0 -> t0 [style=solid, arrowhead=normal, color="black"];
+  t0 -> p0 [style=solid, color="black"];
+  t0 -> p3 [style=solid, color="black"];
+  p4 -> t1 [style=solid, arrowhead=normal, color="blue"];
+  t1 -> p1 [style=solid, color="blue"];
+  p5 -> t2 [style=solid, arrowhead=normal, color="red"];
+  t2 -> p2 [style=solid, color="red"];
+  p5 -> t3 [style=solid, arrowhead=normal, color="red"];
+  p3 -> t4 [style=solid, arrowhead=normal, color="black"];
+  t4 -> p0 [style=solid, color="black"];
+  p5 -> t5 [style=solid, arrowhead=normal, color="red"];
+  p4 -> t6 [style=solid, arrowhead=normal, color="blue"];
+  t6 -> p1 [style=solid, color="blue"];
+  p0 -> t7 [style=solid, arrowhead=normal, color="black"];
+  t7 -> p2 [style=solid, color="red"];
+  p2 -> t8 [style=solid, arrowhead=normal, color="red"];
+  t8 -> p0 [style=solid, color="black"];
+  p0 -> t9 [style=solid, arrowhead=normal, color="black"];
+  t9 -> p1 [style=solid, color="blue"];
+  p1 -> t10 [style=solid, arrowhead=normal, color="blue"];
+  t10 -> p0 [style=solid, color="black"];
+  p1 -> t11 [style=solid, arrowhead=normal, color="blue"];
+  t11 -> p1 [style=solid, color="blue"];
+  p0 -> t12 [style=solid, arrowhead=normal, color="black"];
+  p3 -> t13 [style=solid, arrowhead=normal, color="black"];
+  t13 -> p5 [style=solid, color="red"];
+  p5 -> t14 [style=solid, arrowhead=normal, color="red"];
+  t14 -> p3 [style=solid, color="black"];
+  p3 -> t15 [style=solid, arrowhead=normal, color="black"];
+  t15 -> p4 [style=solid, color="blue"];
+  p4 -> t16 [style=solid, arrowhead=normal, color="blue"];
+  t16 -> p3 [style=solid, color="black"];
+  p4 -> t17 [style=solid, arrowhead=normal, color="blue"];
+  t17 -> p4 [style=solid, color="blue"];
+  p3 -> t18 [style=solid, arrowhead=normal, color="black"];
+  t19 -> p0 [style=solid, color="black"];
+}
