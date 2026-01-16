@@ -13,6 +13,7 @@
 mod apigraph;
 // mod emitter; // 简化版不生成 Rust 代码
 mod extract;
+mod lifetime_analyzer;
 mod pcpn;
 mod rustdoc_loader;
 mod simulator;
@@ -113,6 +114,56 @@ enum Commands {
         #[arg(long, default_value = "bfs")]
         strategy: String,
 
+        /// 仅探索指定模块 (可多次指定)
+        #[arg(long = "module")]
+        modules: Vec<String>,
+    },
+
+    /// TODO: 枚举所有可执行序列（从初始标识开始的所有函数链）
+    Enumerate {
+        /// Rustdoc JSON 文件路径
+        #[arg(short, long)]
+        input: PathBuf,
+        
+        /// 最大序列长度
+        #[arg(long, default_value = "10")]
+        max_length: usize,
+        
+        /// 只输出 API 调用（过滤结构性变迁）
+        #[arg(long, default_value = "true")]
+        only_api: bool,
+        
+        /// 输出格式 (text/json)
+        #[arg(long, default_value = "text")]
+        format: String,
+        
+        /// 输出文件路径
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        
+        /// 仅探索指定模块 (可多次指定)
+        #[arg(long = "module")]
+        modules: Vec<String>,
+    },
+
+    /// TODO: 生成详细统计信息
+    Stats {
+        /// Rustdoc JSON 文件路径
+        #[arg(short, long)]
+        input: PathBuf,
+        
+        /// 输出格式 (table/json)
+        #[arg(long, default_value = "table")]
+        format: String,
+        
+        /// 输出文件路径
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        
+        /// 最大状态数
+        #[arg(long, default_value = "1000")]
+        max_states: usize,
+        
         /// 仅探索指定模块 (可多次指定)
         #[arg(long = "module")]
         modules: Vec<String>,
@@ -226,6 +277,25 @@ fn main() -> Result<()> {
             run_simulate(
                 &input, max_tokens, max_stack, max_steps, min_steps, &strategy, &modules,
             )?;
+        }
+        Commands::Enumerate {
+            input,
+            max_length,
+            only_api,
+            format,
+            output,
+            modules,
+        } => {
+            run_enumerate(&input, max_length, only_api, &format, output.as_ref(), &modules)?;
+        }
+        Commands::Stats {
+            input,
+            format,
+            output,
+            max_states,
+            modules,
+        } => {
+            run_stats(&input, &format, output.as_ref(), max_states, &modules)?;
         }
         Commands::Generate {
             input,
@@ -540,4 +610,117 @@ fn parse_strategy(s: &str) -> simulator::SearchStrategy {
         "dfs" => simulator::SearchStrategy::Dfs,
         _ => simulator::SearchStrategy::Bfs,
     }
+}
+
+/// TODO: 运行序列枚举
+fn run_enumerate(
+    input: &PathBuf,
+    max_length: usize,
+    only_api: bool,
+    format: &str,
+    output: Option<&PathBuf>,
+    modules: &[String],
+) -> Result<()> {
+    let (pcpn, _graph) = build_pcpn(input, modules)?;
+    
+    // 配置仿真器
+    let config = simulator::SimConfig {
+        dup_limit: 2,
+        max_steps: max_length * 2,
+        min_steps: 0,
+        strategy: simulator::SearchStrategy::Bfs,
+    };
+    
+    let sim = simulator::Simulator::new(&pcpn, config);
+    tracing::info!("枚举所有可执行序列 (max_length={}, only_api={})", max_length, only_api);
+    
+    // 枚举序列
+    let sequences = sim.enumerate_all_sequences(max_length, only_api);
+    tracing::info!("找到 {} 条可执行序列", sequences.len());
+    
+    // 格式化输出
+    let output_text = match format {
+        "json" => {
+            // TODO: 使用 serde_json 序列化
+            format!("{{\"sequences\": {}, \"count\": {}}}", sequences.len(), sequences.len())
+        }
+        _ => {
+            let mut text = String::new();
+            text.push_str(&format!("=== 可执行序列枚举 ===\n\n"));
+            text.push_str(&format!("总共找到 {} 条序列\n\n", sequences.len()));
+            
+            for (i, seq) in sequences.iter().enumerate() {
+                if only_api {
+                    let api_calls = seq.api_calls_only();
+                    if !api_calls.is_empty() {
+                        text.push_str(&format!("序列 {}:\n", i + 1));
+                        for (j, call) in api_calls.iter().enumerate() {
+                            text.push_str(&format!("  {}. {}\n", j + 1, call));
+                        }
+                        text.push_str("\n");
+                    }
+                } else {
+                    let full_seq = seq.full_sequence();
+                    text.push_str(&format!("序列 {}:\n", i + 1));
+                    for (j, step) in full_seq.iter().enumerate() {
+                        text.push_str(&format!("  {}. {}\n", j + 1, step));
+                    }
+                    text.push_str("\n");
+                }
+            }
+            
+            text
+        }
+    };
+    
+    // 输出到文件或控制台
+    if let Some(out_path) = output {
+        std::fs::write(out_path, &output_text).context("写入输出文件失败")?;
+        tracing::info!("✓ 序列已保存到: {:?}", out_path);
+    } else {
+        println!("{}", output_text);
+    }
+    
+    Ok(())
+}
+
+/// TODO: 生成统计信息
+fn run_stats(
+    input: &PathBuf,
+    format: &str,
+    output: Option<&PathBuf>,
+    max_states: usize,
+    modules: &[String],
+) -> Result<()> {
+    let (pcpn, _graph) = build_pcpn(input, modules)?;
+    
+    // 配置仿真器
+    let config = simulator::SimConfig {
+        dup_limit: 2,
+        max_steps: max_states * 2,
+        min_steps: 0,
+        strategy: simulator::SearchStrategy::Bfs,
+    };
+    
+    let sim = simulator::Simulator::new(&pcpn, config);
+    tracing::info!("生成统计信息 (max_states={})", max_states);
+    
+    // 生成统计信息
+    let stats = sim.generate_statistics(max_states);
+    
+    // 格式化输出
+    let output_text = match format {
+        "json" => stats.to_json(),
+        _ => stats.to_table(),
+    };
+    
+    // 输出到文件或控制台
+    if let Some(out_path) = output {
+        std::fs::write(out_path, &output_text).context("写入输出文件失败")?;
+        tracing::info!("✓ 统计信息已保存到: {:?}", out_path);
+    } else {
+        println!("{}", output_text);
+    }
+    
+    Ok(())
 }

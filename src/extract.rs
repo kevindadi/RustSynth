@@ -6,8 +6,10 @@ use anyhow::Result;
 use rustdoc_types::{Crate, Item, ItemEnum, Type, Visibility};
 
 use crate::apigraph::{
-    ApiEdge, ApiGraph, EdgeDirection, FunctionNode, OwnershipType, ParamInfo, SelfParam,
+    ApiEdge, ApiGraph, EdgeDirection, FunctionNode, LifetimeBinding, OwnershipType, ParamInfo,
+    SelfParam,
 };
+use crate::lifetime_analyzer::LifetimeAnalyzer;
 use crate::type_model::{PassingMode, TypeKey};
 
 /// 从 Crate 构建 ApiGraph
@@ -50,9 +52,14 @@ pub fn build_api_graph(krate: &Crate, module_filter: &[String]) -> Result<ApiGra
                     // 创建函数级别的上下文
                     let fn_ctx = ctx.with_function_context(&func.generics, fn_name);
                     
-                    if let Some(fn_node) =
-                        extract_function(&fn_ctx, item, &func.sig, None, &mut graph)
-                    {
+                    if let Some(fn_node) = extract_function(
+                        &fn_ctx,
+                        item,
+                        &func.generics,
+                        &func.sig,
+                        None,
+                        &mut graph,
+                    ) {
                         add_function_edges(&mut graph, &fn_node);
                         graph.add_function_node(fn_node);
                     }
@@ -86,6 +93,7 @@ pub fn build_api_graph(krate: &Crate, module_filter: &[String]) -> Result<ApiGra
                                 if let Some(fn_node) = extract_function(
                                     &method_ctx,
                                     method_item,
+                                    &func.generics,
                                     &func.sig,
                                     self_type.clone(),
                                     &mut graph,
@@ -415,9 +423,10 @@ fn get_base_type_name(ty: &Type) -> String {
 fn extract_function(
     ctx: &ExtractionContext,
     item: &Item,
+    generics: &rustdoc_types::Generics,
     sig: &rustdoc_types::FunctionSignature,
     impl_self_type: Option<TypeKey>,
-    graph: &mut ApiGraph,
+    _graph: &mut ApiGraph,
 ) -> Option<FunctionNode> {
     let name = item.name.clone()?;
     // 构建完整路径：方法用 Type::method，自由函数用 function
@@ -477,6 +486,9 @@ fn extract_function(
             .iter()
             .all(|p| p.base_type.is_primitive() || matches!(p.passing_mode, PassingMode::Copy));
 
+    // 提取生命周期信息
+    let lifetime_binding = extract_lifetime_binding(generics, sig, &return_mode);
+
     Some(FunctionNode {
         id: 0, // 会在 add_function_node 中设置
         path,
@@ -487,6 +499,41 @@ fn extract_function(
         self_param,
         return_type,
         return_mode,
+        lifetime_binding,
+    })
+}
+
+/// 提取生命周期绑定信息
+fn extract_lifetime_binding(
+    generics: &rustdoc_types::Generics,
+    sig: &rustdoc_types::FunctionSignature,
+    return_mode: &Option<PassingMode>,
+) -> Option<LifetimeBinding> {
+    // 只有返回引用的函数才需要生命周期绑定
+    if !matches!(
+        return_mode,
+        Some(PassingMode::ReturnBorrowShr) | Some(PassingMode::ReturnBorrowMut)
+    ) {
+        return None;
+    }
+
+    // 使用 LifetimeAnalyzer 分析函数签名
+    let analysis = LifetimeAnalyzer::analyze(generics, sig);
+
+    // 如果分析结果包含生命周期绑定，使用它
+    if !analysis.lifetime_bindings.is_empty() {
+        let binding = &analysis.lifetime_bindings[0]; // 使用第一个绑定
+        return Some(LifetimeBinding {
+            lifetime: binding.lifetime.clone(),
+            source_param_index: binding.bound_to_param,
+        });
+    }
+
+    // 回退到启发式规则：如果返回引用但没有显式生命周期标注，
+    // 绑定到第一个参数（通常是 self）
+    Some(LifetimeBinding {
+        lifetime: "'_".to_string(), // 使用匿名生命周期
+        source_param_index: 0,      // 绑定到第一个参数（self）
     })
 }
 

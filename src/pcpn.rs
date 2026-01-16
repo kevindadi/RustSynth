@@ -379,6 +379,10 @@ pub struct Pcpn {
     pub type_cap_to_place: HashMap<(TypeKey, Capability), PlaceId>,
     /// 初始标识 (primitive 类型的 own places)
     pub initial_places: Vec<PlaceId>,
+    /// 函数节点的生命周期绑定信息 (fn_id -> lifetime_binding)
+    /// 用于在 fire 时确定返回引用绑定到哪个参数
+    #[serde(skip)]
+    pub fn_lifetime_bindings: HashMap<usize, crate::apigraph::LifetimeBinding>,
 }
 
 impl Default for Pcpn {
@@ -406,6 +410,7 @@ impl Pcpn {
             transitions: Vec::new(),
             type_cap_to_place: HashMap::new(),
             initial_places: Vec::new(),
+            fn_lifetime_bindings: HashMap::new(),
         }
     }
 
@@ -888,6 +893,12 @@ impl Pcpn {
         // 只有当有输入或输出时才创建变迁
         if output_arcs.is_empty() && input_arcs.is_empty() {
             return;
+        }
+
+        // 存储生命周期绑定信息
+        if let Some(ref lifetime_binding) = fn_node.lifetime_binding {
+            self.fn_lifetime_bindings
+                .insert(mono_fn.fn_id, lifetime_binding.clone());
         }
 
         self.transitions.push(Transition {
