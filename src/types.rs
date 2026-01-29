@@ -61,6 +61,15 @@ impl TyGround {
         TyGround::Primitive(name.to_string())
     }
 
+    /// Create a tuple type, automatically normalizing empty tuples to Unit
+    pub fn tuple(elems: Vec<TyGround>) -> Self {
+        if elems.is_empty() {
+            TyGround::Unit
+        } else {
+            TyGround::Tuple(elems)
+        }
+    }
+
     pub fn path(name: &str) -> Self {
         TyGround::Path {
             name: name.to_string(),
@@ -563,5 +572,30 @@ mod tests {
         assert!(removed.is_some());
         assert_eq!(removed.unwrap().vid, 0);
         assert_eq!(marking.count(0), 1);
+    }
+
+    #[test]
+    fn test_unit_normalization() {
+        // Test that TyGround::tuple() normalizes empty tuples to Unit
+        let unit = TyGround::Unit;
+        let via_tuple = TyGround::tuple(vec![]);
+
+        // Both represent "()" in Rust
+        assert_eq!(unit.short_name(), "()");
+        assert_eq!(via_tuple.short_name(), "()");
+
+        // After normalization, they should be equal
+        assert_eq!(unit, via_tuple, "TyGround::tuple(vec![]) should normalize to Unit");
+        
+        // HashSet should only have one entry
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(unit.clone());
+        set.insert(via_tuple.clone());
+        assert_eq!(set.len(), 1, "Unit and normalized empty tuple should be the same in HashSet");
+
+        // Non-empty tuples should remain as Tuple
+        let pair = TyGround::tuple(vec![TyGround::Unit, TyGround::Unit]);
+        assert!(matches!(pair, TyGround::Tuple(_)), "Non-empty tuple should be Tuple variant");
     }
 }

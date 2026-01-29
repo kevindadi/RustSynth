@@ -130,13 +130,10 @@ impl Pcpn {
                 Some(TyGround::path_with_args(crate_path, converted_args))
             }
             TypeKey::Tuple(elems) => {
-                if elems.is_empty() {
-                    Some(TyGround::Unit)
-                } else {
-                    let converted: Vec<TyGround> =
-                        elems.iter().filter_map(|e| self.convert_type_key(e)).collect();
-                    Some(TyGround::Tuple(converted))
-                }
+                let converted: Vec<TyGround> =
+                    elems.iter().filter_map(|e| self.convert_type_key(e)).collect();
+                // Use TyGround::tuple() to normalize empty tuples to Unit
+                Some(TyGround::tuple(converted))
             }
             TypeKey::RefShr(inner) | TypeKey::RefMut(inner) => self.convert_type_key(inner),
             TypeKey::GenericParam { .. } => None,
@@ -334,6 +331,7 @@ impl Pcpn {
             TyGround::Tuple(elems) => {
                 TypeKey::Tuple(elems.iter().map(|e| self.ty_ground_to_type_key(e)).collect())
             }
+            // Both Unit and empty Tuple map to empty TypeKey::Tuple
             TyGround::Unit => TypeKey::Tuple(vec![]),
         }
     }

@@ -65,7 +65,8 @@ impl Substitution {
             TyGround::Tuple(elems) => {
                 let new_elems: Option<Vec<_>> =
                     elems.iter().map(|e| self.apply_ground(e)).collect();
-                Some(TyGround::Tuple(new_elems?))
+                // Use TyGround::tuple() to normalize empty tuples to Unit
+                Some(TyGround::tuple(new_elems?))
             }
         }
     }
@@ -126,6 +127,7 @@ impl Substitution {
                 true
             }
 
+            // Note: Unit already matched at the top of this function
             _ => false,
         }
     }
