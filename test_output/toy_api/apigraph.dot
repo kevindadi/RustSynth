@@ -1,0 +1,78 @@
+digraph ApiGraph {
+  rankdir=LR;
+  fontname="Helvetica";
+  node [fontname="Helvetica"];
+  edge [fontname="Helvetica"];
+
+  // Type nodes (椭圆)
+  subgraph cluster_types {
+    label="Types";
+    style=dashed;
+    color=gray;
+    T0 [label="Counter", shape=ellipse, style=filled, fillcolor=lightblue];
+    T1 [label="i32", shape=ellipse, style=filled, fillcolor=lightgray];
+    T2 [label="duplicate::T:Clone", shape=ellipse, style=filled, fillcolor=lightblue];
+    T3 [label="pair::A", shape=ellipse, style=filled, fillcolor=lightblue];
+    T4 [label="pair::B", shape=ellipse, style=filled, fillcolor=lightblue];
+    T5 [label="(pair::A, pair::B)", shape=ellipse, style=filled, fillcolor=lightblue];
+    T6 [label="identity::T", shape=ellipse, style=filled, fillcolor=lightblue];
+    T7 [label="Wrapper::T", shape=ellipse, style=filled, fillcolor=lightblue];
+    T8 [label="Wrapper<Wrapper::T>", shape=ellipse, style=filled, fillcolor=lightblue];
+  }
+
+  // Function nodes (方框)
+  subgraph cluster_functions {
+    label="Functions";
+    style=dashed;
+    color=blue;
+    F0 [label="Counter::new", shape=doubleoctagon, style=filled, fillcolor=palegreen];
+    F1 [label="Counter::with_value", shape=doubleoctagon, style=filled, fillcolor=palegreen];
+    F2 [label="Counter::inc", shape=box, style=filled, fillcolor=palegreen];
+    F3 [label="Counter::dec", shape=box, style=filled, fillcolor=palegreen];
+    F4 [label="Counter::reset", shape=box, style=filled, fillcolor=palegreen];
+    F5 [label="Counter::get", shape=box, style=filled, fillcolor=palegreen];
+    F6 [label="Counter::get_ref", shape=box, style=filled, fillcolor=palegreen];
+    F7 [label="Counter::get_mut", shape=box, style=filled, fillcolor=palegreen];
+    F8 [label="Counter::into_value", shape=box, style=filled, fillcolor=palegreen];
+    F9 [label="duplicate", shape=box, style=filled, fillcolor=palegreen];
+    F10 [label="make_counter", shape=doubleoctagon, style=filled, fillcolor=palegreen];
+    F11 [label="pair", shape=box, style=filled, fillcolor=palegreen];
+    F12 [label="identity", shape=box, style=filled, fillcolor=palegreen];
+    F13 [label="Wrapper<Wrapper::T>::new", shape=box, style=filled, fillcolor=palegreen];
+    F14 [label="Wrapper<Wrapper::T>::get", shape=box, style=filled, fillcolor=palegreen];
+    F15 [label="Wrapper<Wrapper::T>::get_mut", shape=box, style=filled, fillcolor=palegreen];
+    F16 [label="Wrapper<Wrapper::T>::into_inner", shape=box, style=filled, fillcolor=palegreen];
+  }
+
+  // Edges
+  F0 -> T0 [label="→[own]", color=black, style=solid];
+  T1 -> F1 [label="copy[own]", color=black, style=solid];
+  F1 -> T0 [label="→[own]", color=black, style=solid];
+  T0 -> F2 [label="&mut[mut]", color=red, style=solid];
+  T0 -> F3 [label="&mut[mut]", color=red, style=solid];
+  T0 -> F4 [label="&mut[mut]", color=red, style=solid];
+  T0 -> F5 [label="&[shr]", color=blue, style=solid];
+  F5 -> T1 [label="→[own]", color=black, style=solid];
+  T0 -> F6 [label="&[shr]", color=blue, style=solid];
+  F6 -> T1 [label="→&[shr]", color=blue, style=solid];
+  T0 -> F7 [label="&mut[mut]", color=red, style=solid];
+  F7 -> T1 [label="→&mut[mut]", color=red, style=solid];
+  T0 -> F8 [label="move[own]", color=black, style=solid];
+  F8 -> T1 [label="→[own]", color=black, style=solid];
+  T2 -> F9 [label="&[shr]", color=blue, style=solid];
+  F9 -> T2 [label="→[own]", color=black, style=solid];
+  F10 -> T0 [label="→[own]", color=black, style=solid];
+  T3 -> F11 [label="move[own]", color=black, style=solid];
+  T4 -> F11 [label="move[own]", color=black, style=solid];
+  F11 -> T5 [label="→[own]", color=black, style=solid];
+  T6 -> F12 [label="move[own]", color=black, style=solid];
+  F12 -> T6 [label="→[own]", color=black, style=solid];
+  T7 -> F13 [label="move[own]", color=black, style=solid];
+  F13 -> T8 [label="→[own]", color=black, style=solid];
+  T8 -> F14 [label="&[shr]", color=blue, style=solid];
+  F14 -> T7 [label="→&[shr]", color=blue, style=solid];
+  T8 -> F15 [label="&mut[mut]", color=red, style=solid];
+  F15 -> T7 [label="→&mut[mut]", color=red, style=solid];
+  T8 -> F16 [label="move[own]", color=black, style=solid];
+  F16 -> T7 [label="→[own]", color=black, style=solid];
+}

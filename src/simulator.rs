@@ -186,6 +186,8 @@ pub struct SimConfig {
     pub place_bounds: HashMap<PlaceId, usize>,
     pub default_bound: usize,
     pub goal: Option<ParsedGoal>,
+    pub allow_transitions: Vec<String>,
+    pub deny_transitions: Vec<String>,
 }
 
 impl Default for SimConfig {
@@ -196,6 +198,8 @@ impl Default for SimConfig {
             place_bounds: HashMap::new(),
             default_bound: 2,
             goal: None,
+            allow_transitions: Vec::new(),
+            deny_transitions: Vec::new(),
         }
     }
 }
@@ -219,11 +223,33 @@ impl SimConfig {
             place_bounds,
             default_bound: task.search.default_place_bound,
             goal,
+            allow_transitions: task.filter.allow.clone(),
+            deny_transitions: task.filter.deny.clone(),
         }
     }
 
     pub fn get_bound(&self, place_id: PlaceId) -> usize {
         *self.place_bounds.get(&place_id).unwrap_or(&self.default_bound)
+    }
+
+    pub fn is_transition_allowed(&self, name: &str) -> bool {
+        for deny in &self.deny_transitions {
+            if name.contains(deny) || deny.contains(name) {
+                return false;
+            }
+        }
+
+        if self.allow_transitions.is_empty() {
+            return true;
+        }
+
+        for allow in &self.allow_transitions {
+            if name.contains(allow) || allow.contains(name) {
+                return true;
+            }
+        }
+
+        false
     }
 }
 
@@ -277,6 +303,9 @@ impl<'a> Simulator<'a> {
             }
 
             for trans in &self.pcpn.transitions {
+                if !self.config.is_transition_allowed(&trans.name) {
+                    continue;
+                }
                 if let Some(bindings) = self.enabled(trans, &state) {
                     if let Some((next_state, firing)) = self.fire(trans, &state, &bindings) {
                         if !self.check_bounds(&next_state) {
@@ -635,6 +664,9 @@ impl<'a> Simulator<'a> {
             let from_id = *state_ids.get(&state.canonicalize().hash_key()).unwrap();
 
             for trans in &self.pcpn.transitions {
+                if !self.config.is_transition_allowed(&trans.name) {
+                    continue;
+                }
                 if let Some(bindings) = self.enabled(trans, &state) {
                     if let Some((next_state, _)) = self.fire(trans, &state, &bindings) {
                         if !self.check_bounds(&next_state) {
