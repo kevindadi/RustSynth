@@ -1,5 +1,5 @@
 [package]
-name = "sypetype"
+name = "RustSynth"
 version = "0.1.0"
 edition = "2024"
 authors = ["Kevin <zhangkw@tongji.edu.cn>"]

@@ -3,6 +3,23 @@
 version = 4
 
 [[package]]
+name = "RustSynth"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "indexmap",
+ "rustdoc-types",
+ "serde",
+ "serde_json",
+ "smallvec",
+ "tempfile",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -410,23 +427,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "sypetype"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "indexmap",
- "rustdoc-types",
- "serde",
- "serde_json",
- "smallvec",
- "tempfile",
- "toml",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]

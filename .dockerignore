@@ -1,0 +1,26 @@
+# Build artifacts
+target/
+examples/*/target/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test output
+test_output/
+
+# Documentation
+paper/
+*.md
+!README.md
+
+# Misc
+*.log
+*.tmp
+.DS_Store

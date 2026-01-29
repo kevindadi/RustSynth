@@ -1,4 +1,4 @@
-//! 简单的计数器示例 - 用于测试 SyPetype
+//! 简单的计数器示例 - 用于测试 RustSynth
 
 /// 计数器结构
 pub struct Counter {
