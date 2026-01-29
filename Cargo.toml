@@ -3,7 +3,7 @@ name = "sypetype"
 version = "0.1.0"
 edition = "2024"
 authors = ["Kevin <zhangkw@tongji.edu.cn>"]
-description = "签名层协议可达性分析与见证代码生成器 - 基于 Colored Petri Net"
+description = "Pushdown CPN Safe Rust Synthesizer - 基于 Pushdown Colored Petri Net 的 Safe Rust 代码合成器"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
@@ -14,10 +14,9 @@ rustdoc-types = "0.57.0"
 indexmap = { version = "2.0", features = ["serde"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+toml = "0.8"
+smallvec = { version = "1.13", features = ["serde"] }
 
 [dev-dependencies]
 tempfile = "3.8"
-
-[dependencies.tempfile]
-version = "3.8"
 

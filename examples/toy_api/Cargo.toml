@@ -1,0 +1,7 @@
+[package]
+name = "toy_api"
+version = "0.1.0"
+edition = "2024"
+description = "Toy API for PCPN synthesizer testing"
+
+[dependencies]

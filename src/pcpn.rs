@@ -8,10 +8,7 @@ use std::collections::HashMap;
 
 use crate::apigraph::{ApiGraph, FunctionNode, OwnershipType};
 use crate::type_model::TypeKey;
-use crate::types::{
-    BorrowStack, Capability, Marking, Place, PlaceId, PlaceKey, RegionLabel, StackFrame, Token,
-    TransitionId, TyGround, TypeForm, VarId,
-};
+use crate::types::{Capability, Place, PlaceId, PlaceKey, TransitionId, TyGround, TypeForm};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Transition {
@@ -739,7 +736,6 @@ impl std::fmt::Display for PcpnStats {
     }
 }
 
-pub use crate::types::{BorrowStack, Capability as NewCapability, Marking, Place as NewPlace, PlaceId as NewPlaceId, PlaceKey, StackFrame, Token as NewToken, TransitionId as NewTransitionId, TyGround, TypeForm, VarId};
 
 #[cfg(test)]
 mod tests {

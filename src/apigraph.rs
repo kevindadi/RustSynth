@@ -31,6 +31,10 @@ pub struct FunctionNode {
     pub is_method: bool,
     /// 是否是入口函数（无需非 primitive 类型参数）
     pub is_entry: bool,
+    /// 是否是 const fn
+    pub is_const: bool,
+    /// 是否是 0-ary producer（无输入参数的 const fn）
+    pub is_const_producer: bool,
     /// 参数类型（不含 self）
     pub params: Vec<ParamInfo>,
     /// self 参数（如果是方法）
@@ -390,11 +394,13 @@ mod tests {
             name: "new".to_string(),
             is_method: false,
             is_entry: true,
+            is_const: true,
+            is_const_producer: true,
             params: vec![],
             self_param: None,
             return_type: Some(TypeKey::path("Counter")),
             return_mode: Some(PassingMode::ReturnOwned),
-            lifetime_binding: None, // 不返回引用，无需绑定
+            lifetime_binding: None,
         };
         let new_id = graph.add_function_node(new_fn);
 

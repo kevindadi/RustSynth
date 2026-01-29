@@ -429,7 +429,6 @@ fn extract_function(
     _graph: &mut ApiGraph,
 ) -> Option<FunctionNode> {
     let name = item.name.clone()?;
-    // 构建完整路径：方法用 Type::method，自由函数用 function
     let path = if let Some(self_type) = &impl_self_type {
         format!("{}::{}", self_type.short_name(), name)
     } else {
@@ -443,7 +442,6 @@ fn extract_function(
     for (param_name, ty) in &sig.inputs {
         if param_name == "self" {
             is_method = true;
-            // 解析 self 参数
             if let Some(self_type) = &impl_self_type {
                 let (base_type, passing_mode) = parse_self_param(ty, self_type);
                 self_param = Some(SelfParam {
@@ -452,7 +450,6 @@ fn extract_function(
                 });
             }
         } else {
-            // 普通参数
             if let Some(type_key) = ctx.normalize_type(ty) {
                 let (base_type, passing_mode) = decompose_type(&type_key);
                 params.push(ParamInfo {
@@ -464,7 +461,6 @@ fn extract_function(
         }
     }
 
-    // 解析返回类型
     let (return_type, return_mode) = if let Some(output) = &sig.output {
         if let Some(type_key) = ctx.normalize_type(output) {
             if type_key == TypeKey::unit() {
@@ -480,27 +476,39 @@ fn extract_function(
         (None, None)
     };
 
-    // 判断是否是入口函数
     let is_entry = self_param.is_none()
         && params
             .iter()
             .all(|p| p.base_type.is_primitive() || matches!(p.passing_mode, PassingMode::Copy));
 
-    // 提取生命周期信息
+    let is_const = sig.is_c_variadic == false && check_const_fn(item);
+    let is_zero_ary = self_param.is_none() && params.is_empty();
+    let is_const_producer = is_const && is_zero_ary && return_type.is_some();
+
     let lifetime_binding = extract_lifetime_binding(generics, sig, &return_mode);
 
     Some(FunctionNode {
-        id: 0, // 会在 add_function_node 中设置
+        id: 0,
         path,
         name,
         is_method,
         is_entry,
+        is_const,
+        is_const_producer,
         params,
         self_param,
         return_type,
         return_mode,
         lifetime_binding,
     })
+}
+
+fn check_const_fn(item: &Item) -> bool {
+    if let ItemEnum::Function(func) = &item.inner {
+        func.sig.is_c_variadic == false
+    } else {
+        false
+    }
 }
 
 /// 提取生命周期绑定信息

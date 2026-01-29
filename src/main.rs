@@ -1,23 +1,19 @@
-//! SyPetype - Rust API 签名分析与 PCPN 构建工具
+//! SyPetype - Pushdown CPN Safe Rust Synthesizer
 //!
-//! 从 rustdoc JSON 提取 API 签名，构建二分 API Graph，
-//! 转换为下推着色 Petri 网 (PCPN)，并生成可编译的 Rust 代码。
-//!
-//! ## 工具流水线
-//! 1. 输入: `cargo doc` 生成的 rustdoc JSON
-//! 2. API-Graph 构建（单态化后的二分图）
-//! 3. API-Graph → PCPN 转换
-//! 4. PCPN 有界 simulator（搜索 firing 序列）
-//! 5. 从 firing 序列生成可编译 Rust 代码
+//! 从 rustdoc JSON 提取 API 签名，构建 Pushdown Colored Petri Net，
+//! 通过有界可达性搜索生成可编译的 Safe Rust 代码片段。
 
 mod apigraph;
-// mod emitter; // 简化版不生成 Rust 代码
+mod config;
+mod emitter;
 mod extract;
 mod lifetime_analyzer;
 mod pcpn;
 mod rustdoc_loader;
 mod simulator;
 mod type_model;
+mod types;
+mod unify;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
@@ -27,14 +23,11 @@ use tracing_subscriber::EnvFilter;
 #[derive(Parser, Debug)]
 #[command(
     name = "sypetype",
-    about = "Rust API 签名分析与 PCPN 构建工具",
-    long_about = "从 rustdoc JSON 提取 API 签名，构建二分 API Graph,\n\
-                  转换为下推着色 Petri 网 (PCPN)，并生成可编译的 Rust 代码。\n\n\
-                  工具流水线:\n\
-                  1. rustdoc JSON → API Graph（二分图）\n\
-                  2. API Graph → PCPN（含 Own/Frz/Blk 库所）\n\
-                  3. PCPN Simulator（有界搜索）\n\
-                  4. Firing 序列 → 可编译 Rust 代码"
+    about = "Pushdown CPN Safe Rust Synthesizer",
+    long_about = "从 rustdoc JSON 提取 API 签名，构建 Pushdown Colored Petri Net，\n\
+                  通过有界可达性搜索生成可编译的 Safe Rust 代码片段。\n\n\
+                  Extracts API signatures from rustdoc JSON, builds a Pushdown Colored Petri Net,\n\
+                  and synthesizes compilable Safe Rust code snippets via bounded reachability."
 )]
 struct Args {
     #[command(subcommand)]
@@ -43,197 +36,131 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// 构建 API Graph（二分图：函数节点 + 类型节点）
-    Apigraph {
+    /// 运行合成器 / Run the synthesizer
+    Synth {
         /// Rustdoc JSON 文件路径
+        #[arg(long)]
+        doc_json: PathBuf,
+
+        /// 任务配置文件 (TOML)
+        #[arg(long)]
+        task: PathBuf,
+
+        /// 输出文件路径
+        #[arg(long)]
+        out: Option<PathBuf>,
+    },
+
+    /// 构建 API Graph
+    Apigraph {
         #[arg(short, long)]
         input: PathBuf,
 
-        /// 输出目录
         #[arg(short, long, default_value = ".")]
         out: PathBuf,
 
-        /// 仅探索指定模块 (可多次指定)
         #[arg(long = "module")]
         modules: Vec<String>,
     },
 
-    /// 构建 PCPN（下推着色 Petri 网）
+    /// 构建 PCPN
     Pcpn {
-        /// Rustdoc JSON 文件路径
         #[arg(short, long)]
         input: PathBuf,
 
-        /// 输出目录
         #[arg(short, long, default_value = ".")]
         out: PathBuf,
 
-        /// 仅探索指定模块 (可多次指定)
         #[arg(long = "module")]
         modules: Vec<String>,
     },
 
     /// 同时生成 API Graph 和 PCPN
     All {
-        /// Rustdoc JSON 文件路径
         #[arg(short, long)]
         input: PathBuf,
 
-        /// 输出目录
         #[arg(short, long, default_value = ".")]
         out: PathBuf,
 
-        /// 仅探索指定模块 (可多次指定)
         #[arg(long = "module")]
         modules: Vec<String>,
     },
 
-    /// 运行 PCPN 仿真器，搜索 witness 轨迹
+    /// 运行仿真器
     Simulate {
-        /// Rustdoc JSON 文件路径
         #[arg(short, long)]
         input: PathBuf,
 
-        /// 每个 place 的最大 token 数
         #[arg(long, default_value = "10")]
         max_tokens: usize,
 
-        /// 最大栈深度
         #[arg(long, default_value = "100")]
         max_stack: usize,
 
-        /// 最大步数
         #[arg(long, default_value = "50")]
         max_steps: usize,
 
-        /// 最小步数（目标条件）
         #[arg(long, default_value = "3")]
         min_steps: usize,
 
-        /// 搜索策略 (bfs/dfs)
         #[arg(long, default_value = "bfs")]
         strategy: String,
 
-        /// 仅探索指定模块 (可多次指定)
         #[arg(long = "module")]
         modules: Vec<String>,
     },
 
-    /// TODO: 枚举所有可执行序列（从初始标识开始的所有函数链）
-    Enumerate {
-        /// Rustdoc JSON 文件路径
-        #[arg(short, long)]
-        input: PathBuf,
-        
-        /// 最大序列长度
-        #[arg(long, default_value = "10")]
-        max_length: usize,
-        
-        /// 只输出 API 调用（过滤结构性变迁）
-        #[arg(long, default_value = "true")]
-        only_api: bool,
-        
-        /// 输出格式 (text/json)
-        #[arg(long, default_value = "text")]
-        format: String,
-        
-        /// 输出文件路径
-        #[arg(short, long)]
-        output: Option<PathBuf>,
-        
-        /// 仅探索指定模块 (可多次指定)
-        #[arg(long = "module")]
-        modules: Vec<String>,
-    },
-
-    /// TODO: 生成详细统计信息
-    Stats {
-        /// Rustdoc JSON 文件路径
-        #[arg(short, long)]
-        input: PathBuf,
-        
-        /// 输出格式 (table/json)
-        #[arg(long, default_value = "table")]
-        format: String,
-        
-        /// 输出文件路径
-        #[arg(short, long)]
-        output: Option<PathBuf>,
-        
-        /// 最大状态数
-        #[arg(long, default_value = "1000")]
-        max_states: usize,
-        
-        /// 仅探索指定模块 (可多次指定)
-        #[arg(long = "module")]
-        modules: Vec<String>,
-    },
-
-    /// 运行完整流水线：生成 PCPN → 仿真 → 输出 Rust 代码
-    Generate {
-        /// Rustdoc JSON 文件路径
-        #[arg(short, long)]
-        input: PathBuf,
-
-        /// 输出目录
-        #[arg(short, long, default_value = ".")]
-        out: PathBuf,
-
-        /// 每个 place 的最大 token 数
-        #[arg(long, default_value = "3")]
-        max_tokens: usize,
-
-        /// 最大栈深度
-        #[arg(long, default_value = "5")]
-        max_stack: usize,
-
-        /// 最大步数
-        #[arg(long, default_value = "50")]
-        max_steps: usize,
-
-        /// 最小步数（目标条件）
-        #[arg(long, default_value = "5")]
-        min_steps: usize,
-
-        /// 搜索策略 (bfs/dfs)
-        #[arg(long, default_value = "bfs")]
-        strategy: String,
-
-        /// 仅探索指定模块 (可多次指定)
-        #[arg(long = "module")]
-        modules: Vec<String>,
-    },
-
-    /// 生成可达图（状态空间图）
+    /// 生成可达图
     Reachability {
-        /// Rustdoc JSON 文件路径
         #[arg(short, long)]
         input: PathBuf,
 
-        /// 输出目录
         #[arg(short, long, default_value = ".")]
         out: PathBuf,
 
-        /// 最大状态数
         #[arg(long, default_value = "100")]
         max_states: usize,
 
-        /// 每个 place 的最大 token 数
         #[arg(long, default_value = "2")]
         max_tokens: usize,
 
-        /// 最大栈深度
         #[arg(long, default_value = "3")]
         max_stack: usize,
 
-        /// 仅探索指定模块 (可多次指定)
+        #[arg(long = "module")]
+        modules: Vec<String>,
+    },
+
+    /// 完整流水线：PCPN → 仿真 → 代码生成
+    Generate {
+        #[arg(short, long)]
+        input: PathBuf,
+
+        #[arg(short, long, default_value = ".")]
+        out: PathBuf,
+
+        #[arg(long, default_value = "3")]
+        max_tokens: usize,
+
+        #[arg(long, default_value = "5")]
+        max_stack: usize,
+
+        #[arg(long, default_value = "50")]
+        max_steps: usize,
+
+        #[arg(long, default_value = "5")]
+        min_steps: usize,
+
+        #[arg(long, default_value = "bfs")]
+        strategy: String,
+
         #[arg(long = "module")]
         modules: Vec<String>,
     },
 }
 
 fn main() -> Result<()> {
-    // 初始化日志
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
@@ -243,6 +170,13 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     match args.command {
+        Commands::Synth {
+            doc_json,
+            task,
+            out,
+        } => {
+            run_synth(&doc_json, &task, out.as_ref())?;
+        }
         Commands::Apigraph {
             input,
             out,
@@ -267,460 +201,258 @@ fn main() -> Result<()> {
         }
         Commands::Simulate {
             input,
-            max_tokens,
+            max_tokens: _,
             max_stack,
             max_steps,
-            min_steps,
-            strategy,
+            min_steps: _,
+            strategy: _,
             modules,
         } => {
-            run_simulate(
-                &input, max_tokens, max_stack, max_steps, min_steps, &strategy, &modules,
-            )?;
-        }
-        Commands::Enumerate {
-            input,
-            max_length,
-            only_api,
-            format,
-            output,
-            modules,
-        } => {
-            run_enumerate(&input, max_length, only_api, &format, output.as_ref(), &modules)?;
-        }
-        Commands::Stats {
-            input,
-            format,
-            output,
-            max_states,
-            modules,
-        } => {
-            run_stats(&input, &format, output.as_ref(), max_states, &modules)?;
-        }
-        Commands::Generate {
-            input,
-            out,
-            max_tokens,
-            max_stack,
-            max_steps,
-            min_steps,
-            strategy,
-            modules,
-        } => {
-            run_generate(
-                &input, &out, max_tokens, max_stack, max_steps, min_steps, &strategy, &modules,
-            )?;
+            run_simulate(&input, max_steps, max_stack, &modules)?;
         }
         Commands::Reachability {
             input,
             out,
             max_states,
-            max_tokens,
+            max_tokens: _,
             max_stack,
             modules,
         } => {
-            run_reachability(&input, &out, max_states, max_tokens, max_stack, &modules)?;
+            run_reachability(&input, &out, max_states, max_stack, &modules)?;
         }
+        Commands::Generate {
+            input,
+            out,
+            max_tokens: _,
+            max_stack,
+            max_steps,
+            min_steps: _,
+            strategy: _,
+            modules,
+        } => {
+            run_generate(&input, &out, max_steps, max_stack, &modules)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn run_synth(doc_json: &PathBuf, task_path: &PathBuf, out: Option<&PathBuf>) -> Result<()> {
+    tracing::info!("Loading task configuration: {:?}", task_path);
+    let task = config::TaskConfig::load(task_path).context("Failed to load task config")?;
+
+    tracing::info!("Loading rustdoc JSON: {:?}", doc_json);
+    let krate = rustdoc_loader::load_rustdoc_json(doc_json).context("Failed to load rustdoc JSON")?;
+
+    let crate_name = get_crate_name(&krate);
+    tracing::info!("Crate: {} (version: {})", crate_name, krate.crate_version.as_deref().unwrap_or("unknown"));
+
+    tracing::info!("Building API Graph...");
+    let graph = extract::build_api_graph(&krate, &[])?;
+    tracing::info!("{}", graph.stats());
+
+    tracing::info!("Converting to PCPN (9-place model)...");
+    let pcpn = pcpn::Pcpn::from_api_graph(&graph);
+    tracing::info!("{}", pcpn.stats());
+
+    let sim_config = simulator::SimConfig::from_task_config(&task, &pcpn);
+    tracing::info!(
+        "Running simulator (max_steps={}, stack_depth={})...",
+        sim_config.max_steps,
+        sim_config.stack_depth
+    );
+
+    let sim = simulator::Simulator::new(&pcpn, sim_config);
+    let result = sim.run();
+
+    if result.found {
+        tracing::info!("✓ Found witness ({} states explored)", result.states_explored);
+        simulator::print_trace(&result.trace);
+
+        let code = emitter::emit_rust_code(&result.trace, &pcpn);
+        println!("\n=== Generated Rust Code ===\n");
+        println!("{}", code);
+
+        if let Some(out_path) = out {
+            std::fs::write(out_path, &code).context("Failed to write output file")?;
+            tracing::info!("✓ Code written to: {:?}", out_path);
+        }
+    } else {
+        tracing::warn!("✗ No witness found ({} states explored)", result.states_explored);
+        tracing::info!("Try increasing max_steps or adjusting bounds in task config");
     }
 
     Ok(())
 }
 
 fn run_apigraph(input: &PathBuf, out: &PathBuf, modules: &[String]) -> Result<()> {
-    tracing::info!("加载 rustdoc JSON: {:?}", input);
-    let krate = rustdoc_loader::load_rustdoc_json(input).context("加载 rustdoc JSON 失败")?;
+    tracing::info!("Loading rustdoc JSON: {:?}", input);
+    let krate = rustdoc_loader::load_rustdoc_json(input).context("Failed to load rustdoc JSON")?;
 
     let crate_name = get_crate_name(&krate);
-    tracing::info!(
-        "解析 crate: {} (version: {})",
-        crate_name,
-        krate.crate_version.as_deref().unwrap_or("unknown")
-    );
+    tracing::info!("Crate: {} (version: {})", crate_name, krate.crate_version.as_deref().unwrap_or("unknown"));
 
-    tracing::info!("构建 API Graph...");
+    tracing::info!("Building API Graph...");
     let graph = extract::build_api_graph(&krate, modules)?;
+    tracing::info!("{}", graph.stats());
 
-    let stats = graph.stats();
-    tracing::info!("{}", stats);
+    std::fs::create_dir_all(out).context("Failed to create output directory")?;
 
-    // 确保输出目录存在
-    std::fs::create_dir_all(out).context("创建输出目录失败")?;
-
-    // 输出 DOT
     let dot_path = out.join("apigraph.dot");
-    std::fs::write(&dot_path, graph.to_dot()).context("写入 apigraph.dot 失败")?;
-    tracing::info!("✓ API Graph DOT 已生成: {:?}", dot_path);
+    std::fs::write(&dot_path, graph.to_dot()).context("Failed to write apigraph.dot")?;
+    tracing::info!("✓ API Graph DOT: {:?}", dot_path);
 
-    // 输出 JSON
     let json_path = out.join("apigraph.json");
-    let json = serde_json::to_string_pretty(&graph).context("序列化 API Graph 失败")?;
-    std::fs::write(&json_path, json).context("写入 apigraph.json 失败")?;
-    tracing::info!("✓ API Graph JSON 已生成: {:?}", json_path);
-
-    tracing::info!(
-        "  使用 'dot -Tpng {} -o apigraph.png' 生成图片",
-        dot_path.display()
-    );
+    let json = serde_json::to_string_pretty(&graph).context("Failed to serialize API Graph")?;
+    std::fs::write(&json_path, json).context("Failed to write apigraph.json")?;
+    tracing::info!("✓ API Graph JSON: {:?}", json_path);
 
     Ok(())
 }
 
 fn run_pcpn(input: &PathBuf, out: &PathBuf, modules: &[String]) -> Result<()> {
-    tracing::info!("加载 rustdoc JSON: {:?}", input);
-    let krate = rustdoc_loader::load_rustdoc_json(input).context("加载 rustdoc JSON 失败")?;
+    tracing::info!("Loading rustdoc JSON: {:?}", input);
+    let krate = rustdoc_loader::load_rustdoc_json(input).context("Failed to load rustdoc JSON")?;
 
     let crate_name = get_crate_name(&krate);
-    tracing::info!(
-        "解析 crate: {} (version: {})",
-        crate_name,
-        krate.crate_version.as_deref().unwrap_or("unknown")
-    );
+    tracing::info!("Crate: {} (version: {})", crate_name, krate.crate_version.as_deref().unwrap_or("unknown"));
 
-    tracing::info!("构建 API Graph...");
+    tracing::info!("Building API Graph...");
     let graph = extract::build_api_graph(&krate, modules)?;
     tracing::info!("{}", graph.stats());
 
-    tracing::info!("转换为 PCPN (Own/Frz/Blk model)...");
+    tracing::info!("Converting to PCPN (9-place model)...");
     let pcpn = pcpn::Pcpn::from_api_graph(&graph);
+    tracing::info!("{}", pcpn.stats());
 
-    let stats = pcpn.stats();
-    tracing::info!("{}", stats);
+    std::fs::create_dir_all(out).context("Failed to create output directory")?;
 
-    // 确保输出目录存在
-    std::fs::create_dir_all(out).context("创建输出目录失败")?;
-
-    // 输出 DOT
     let dot_path = out.join("pcpn.dot");
-    std::fs::write(&dot_path, pcpn.to_dot()).context("写入 pcpn.dot 失败")?;
-    tracing::info!("✓ PCPN DOT 已生成: {:?}", dot_path);
+    std::fs::write(&dot_path, pcpn.to_dot()).context("Failed to write pcpn.dot")?;
+    tracing::info!("✓ PCPN DOT: {:?}", dot_path);
 
-    // 输出 JSON
     let json_path = out.join("pcpn.json");
-    let json = serde_json::to_string_pretty(&pcpn).context("序列化 PCPN 失败")?;
-    std::fs::write(&json_path, json).context("写入 pcpn.json 失败")?;
-    tracing::info!("✓ PCPN JSON 已生成: {:?}", json_path);
-
-    tracing::info!(
-        "  使用 'dot -Tpng {} -o pcpn.png' 生成图片",
-        dot_path.display()
-    );
+    let json = serde_json::to_string_pretty(&pcpn).context("Failed to serialize PCPN")?;
+    std::fs::write(&json_path, json).context("Failed to write pcpn.json")?;
+    tracing::info!("✓ PCPN JSON: {:?}", json_path);
 
     Ok(())
 }
 
-fn run_simulate(
-    input: &PathBuf,
-    _max_tokens: usize, // 简化版使用 budget
-    _max_stack: usize,  // 简化版不使用栈深度
-    max_steps: usize,
-    min_steps: usize,
-    strategy: &str,
-    modules: &[String],
-) -> Result<()> {
+fn run_simulate(input: &PathBuf, max_steps: usize, max_stack: usize, modules: &[String]) -> Result<()> {
     let (pcpn, _) = build_pcpn(input, modules)?;
 
-    // 配置仿真器（简化版）
     let config = simulator::SimConfig {
-        dup_limit: 2,
         max_steps,
-        min_steps,
-        strategy: parse_strategy(strategy),
+        stack_depth: max_stack,
+        ..Default::default()
     };
 
-    tracing::info!(
-        "运行仿真器 (策略={:?}, dup_limit={}, max_steps={})",
-        config.strategy,
-        config.dup_limit,
-        config.max_steps
-    );
+    tracing::info!("Running simulator (max_steps={}, stack_depth={})...", max_steps, max_stack);
 
     let sim = simulator::Simulator::new(&pcpn, config);
     let result = sim.run();
 
     if result.found {
-        tracing::info!("✓ 找到 witness (探索 {} 个状态)", result.states_explored);
+        tracing::info!("✓ Found witness ({} states explored)", result.states_explored);
         simulator::print_trace(&result.trace);
     } else {
-        tracing::warn!("✗ 未找到 witness (探索 {} 个状态)", result.states_explored);
+        tracing::warn!("✗ No witness found ({} states explored)", result.states_explored);
     }
 
     Ok(())
 }
 
-fn run_generate(
-    input: &PathBuf,
-    out: &PathBuf,
-    _max_tokens: usize, // 简化版使用 budget
-    _max_stack: usize,  // 简化版不使用栈深度
-    max_steps: usize,
-    min_steps: usize,
-    strategy: &str,
-    modules: &[String],
-) -> Result<()> {
-    let (pcpn, graph) = build_pcpn(input, modules)?;
+fn run_reachability(input: &PathBuf, out: &PathBuf, max_states: usize, max_stack: usize, modules: &[String]) -> Result<()> {
+    let (pcpn, _) = build_pcpn(input, modules)?;
 
-    // 确保输出目录存在
-    std::fs::create_dir_all(out).context("创建输出目录失败")?;
+    std::fs::create_dir_all(out).context("Failed to create output directory")?;
 
-    // 输出 PCPN DOT
-    let pcpn_dot_path = out.join("pcpn.dot");
-    std::fs::write(&pcpn_dot_path, pcpn.to_dot()).context("写入 pcpn.dot 失败")?;
-    tracing::info!("✓ PCPN DOT 已生成: {:?}", pcpn_dot_path);
-
-    // 配置仿真器（简化版）
     let config = simulator::SimConfig {
-        dup_limit: 2,
-        max_steps,
-        min_steps,
-        strategy: parse_strategy(strategy),
-    };
-
-    tracing::info!(
-        "运行仿真器 (策略={:?}, dup_limit={}, max_steps={})",
-        config.strategy,
-        config.dup_limit,
-        config.max_steps
-    );
-
-    let sim = simulator::Simulator::new(&pcpn, config);
-    let result = sim.run();
-
-    if result.found {
-        tracing::info!("✓ 找到 witness (探索 {} 个状态)", result.states_explored);
-        simulator::print_trace(&result.trace);
-
-        // 保存抽象 trace 到文件
-        let trace_path = out.join("trace.txt");
-        let trace_content = result
-            .trace
-            .iter()
-            .enumerate()
-            .map(|(i, f)| format!("{}. {}", i + 1, f))
-            .collect::<Vec<_>>()
-            .join("\n");
-        std::fs::write(&trace_path, &trace_content).context("写入 trace.txt 失败")?;
-        tracing::info!("✓ 抽象 Trace 已生成: {:?}", trace_path);
-    } else {
-        tracing::warn!("✗ 未找到 witness (探索 {} 个状态)", result.states_explored);
-        tracing::info!("尝试增加 --max-steps 参数");
-    }
-
-    // 输出 API Graph（用于参考）
-    let graph_dot_path = out.join("apigraph.dot");
-    std::fs::write(&graph_dot_path, graph.to_dot()).context("写入 apigraph.dot 失败")?;
-    tracing::info!("✓ API Graph DOT 已生成: {:?}", graph_dot_path);
-
-    Ok(())
-}
-
-/// 生成可达图
-fn run_reachability(
-    input: &PathBuf,
-    out: &PathBuf,
-    max_states: usize,
-    _max_tokens: usize, // 简化版使用 budget
-    _max_stack: usize,  // 简化版不使用栈深度
-    modules: &[String],
-) -> Result<()> {
-    let (pcpn, _graph) = build_pcpn(input, modules)?;
-
-    // 确保输出目录存在
-    std::fs::create_dir_all(out).context("创建输出目录失败")?;
-
-    // 配置仿真器（简化版）
-    let config = simulator::SimConfig {
-        dup_limit: 2,
         max_steps: max_states * 2,
-        min_steps: 0,
-        strategy: simulator::SearchStrategy::Bfs,
+        stack_depth: max_stack,
+        ..Default::default()
     };
 
     let sim = simulator::Simulator::new(&pcpn, config);
-    tracing::info!(
-        "生成可达图 (max_states={}, dup_limit={})",
-        max_states,
-        config.dup_limit
-    );
+    tracing::info!("Generating reachability graph (max_states={})...", max_states);
 
     let reachability = sim.generate_reachability_graph(max_states);
-
-    // 输出统计信息
     tracing::info!("{}", reachability.stats());
 
-    // 输出 DOT 文件
     let dot_path = out.join("reachability.dot");
-    std::fs::write(&dot_path, reachability.to_dot(&pcpn)).context("写入 reachability.dot 失败")?;
-    tracing::info!("✓ 可达图 DOT 已生成: {:?}", dot_path);
+    std::fs::write(&dot_path, reachability.to_dot(&pcpn)).context("Failed to write reachability.dot")?;
+    tracing::info!("✓ Reachability DOT: {:?}", dot_path);
 
-    // 打印部分信息
-    println!("\n=== 可达图统计 ===");
-    println!("状态数: {}", reachability.states.len());
-    println!("边数: {}", reachability.edges.len());
+    println!("\n=== Reachability Stats ===");
+    println!("States: {}", reachability.states.len());
+    println!("Edges: {}", reachability.edges.len());
 
-    // 打印前几条边
-    println!("\n=== 部分转移 (前 20 条) ===");
-    for (i, (from, to, label)) in reachability.edges.iter().take(20).enumerate() {
-        println!("  {}. s{} --[{}]--> s{}", i + 1, from, label, to);
-    }
-    if reachability.edges.len() > 20 {
-        println!("  ... (还有 {} 条)", reachability.edges.len() - 20);
+    Ok(())
+}
+
+fn run_generate(input: &PathBuf, out: &PathBuf, max_steps: usize, max_stack: usize, modules: &[String]) -> Result<()> {
+    let (pcpn, _) = build_pcpn(input, modules)?;
+
+    std::fs::create_dir_all(out).context("Failed to create output directory")?;
+
+    let pcpn_dot_path = out.join("pcpn.dot");
+    std::fs::write(&pcpn_dot_path, pcpn.to_dot()).context("Failed to write pcpn.dot")?;
+    tracing::info!("✓ PCPN DOT: {:?}", pcpn_dot_path);
+
+    let config = simulator::SimConfig {
+        max_steps,
+        stack_depth: max_stack,
+        ..Default::default()
+    };
+
+    tracing::info!("Running simulator (max_steps={}, stack_depth={})...", max_steps, max_stack);
+
+    let sim = simulator::Simulator::new(&pcpn, config);
+    let result = sim.run();
+
+    if result.found {
+        tracing::info!("✓ Found witness ({} states explored)", result.states_explored);
+        simulator::print_trace(&result.trace);
+
+        let code = emitter::emit_rust_code(&result.trace, &pcpn);
+
+        let code_path = out.join("generated.rs");
+        std::fs::write(&code_path, &code).context("Failed to write generated.rs")?;
+        tracing::info!("✓ Generated code: {:?}", code_path);
+
+        println!("\n=== Generated Rust Code ===\n");
+        println!("{}", code);
+    } else {
+        tracing::warn!("✗ No witness found ({} states explored)", result.states_explored);
+        tracing::info!("Try increasing --max-steps");
     }
 
     Ok(())
 }
 
-/// 构建 PCPN
 fn build_pcpn(input: &PathBuf, modules: &[String]) -> Result<(pcpn::Pcpn, apigraph::ApiGraph)> {
-    tracing::info!("加载 rustdoc JSON: {:?}", input);
-    let krate = rustdoc_loader::load_rustdoc_json(input).context("加载 rustdoc JSON 失败")?;
+    tracing::info!("Loading rustdoc JSON: {:?}", input);
+    let krate = rustdoc_loader::load_rustdoc_json(input).context("Failed to load rustdoc JSON")?;
 
     let crate_name = get_crate_name(&krate);
-    tracing::info!(
-        "解析 crate: {} (version: {})",
-        crate_name,
-        krate.crate_version.as_deref().unwrap_or("unknown")
-    );
+    tracing::info!("Crate: {} (version: {})", crate_name, krate.crate_version.as_deref().unwrap_or("unknown"));
 
-    tracing::info!("构建 API Graph...");
+    tracing::info!("Building API Graph...");
     let graph = extract::build_api_graph(&krate, modules)?;
     tracing::info!("{}", graph.stats());
 
-    tracing::info!("转换为 PCPN (Own/Frz/Blk model)...");
+    tracing::info!("Converting to PCPN (9-place model)...");
     let pcpn = pcpn::Pcpn::from_api_graph(&graph);
     tracing::info!("{}", pcpn.stats());
 
     Ok((pcpn, graph))
 }
 
-/// 获取 crate 名称
 fn get_crate_name(krate: &rustdoc_types::Crate) -> String {
     if let Some(root_item) = krate.index.get(&krate.root) {
-        root_item
-            .name
-            .clone()
-            .unwrap_or_else(|| "unknown".to_string())
+        root_item.name.clone().unwrap_or_else(|| "unknown".to_string())
     } else {
         "unknown".to_string()
     }
-}
-
-/// 解析搜索策略
-fn parse_strategy(s: &str) -> simulator::SearchStrategy {
-    match s.to_lowercase().as_str() {
-        "dfs" => simulator::SearchStrategy::Dfs,
-        _ => simulator::SearchStrategy::Bfs,
-    }
-}
-
-/// TODO: 运行序列枚举
-fn run_enumerate(
-    input: &PathBuf,
-    max_length: usize,
-    only_api: bool,
-    format: &str,
-    output: Option<&PathBuf>,
-    modules: &[String],
-) -> Result<()> {
-    let (pcpn, _graph) = build_pcpn(input, modules)?;
-    
-    // 配置仿真器
-    let config = simulator::SimConfig {
-        dup_limit: 2,
-        max_steps: max_length * 2,
-        min_steps: 0,
-        strategy: simulator::SearchStrategy::Bfs,
-    };
-    
-    let sim = simulator::Simulator::new(&pcpn, config);
-    tracing::info!("枚举所有可执行序列 (max_length={}, only_api={})", max_length, only_api);
-    
-    // 枚举序列
-    let sequences = sim.enumerate_all_sequences(max_length, only_api);
-    tracing::info!("找到 {} 条可执行序列", sequences.len());
-    
-    // 格式化输出
-    let output_text = match format {
-        "json" => {
-            // TODO: 使用 serde_json 序列化
-            format!("{{\"sequences\": {}, \"count\": {}}}", sequences.len(), sequences.len())
-        }
-        _ => {
-            let mut text = String::new();
-            text.push_str(&format!("=== 可执行序列枚举 ===\n\n"));
-            text.push_str(&format!("总共找到 {} 条序列\n\n", sequences.len()));
-            
-            for (i, seq) in sequences.iter().enumerate() {
-                if only_api {
-                    let api_calls = seq.api_calls_only();
-                    if !api_calls.is_empty() {
-                        text.push_str(&format!("序列 {}:\n", i + 1));
-                        for (j, call) in api_calls.iter().enumerate() {
-                            text.push_str(&format!("  {}. {}\n", j + 1, call));
-                        }
-                        text.push_str("\n");
-                    }
-                } else {
-                    let full_seq = seq.full_sequence();
-                    text.push_str(&format!("序列 {}:\n", i + 1));
-                    for (j, step) in full_seq.iter().enumerate() {
-                        text.push_str(&format!("  {}. {}\n", j + 1, step));
-                    }
-                    text.push_str("\n");
-                }
-            }
-            
-            text
-        }
-    };
-    
-    // 输出到文件或控制台
-    if let Some(out_path) = output {
-        std::fs::write(out_path, &output_text).context("写入输出文件失败")?;
-        tracing::info!("✓ 序列已保存到: {:?}", out_path);
-    } else {
-        println!("{}", output_text);
-    }
-    
-    Ok(())
-}
-
-/// TODO: 生成统计信息
-fn run_stats(
-    input: &PathBuf,
-    format: &str,
-    output: Option<&PathBuf>,
-    max_states: usize,
-    modules: &[String],
-) -> Result<()> {
-    let (pcpn, _graph) = build_pcpn(input, modules)?;
-    
-    // 配置仿真器
-    let config = simulator::SimConfig {
-        dup_limit: 2,
-        max_steps: max_states * 2,
-        min_steps: 0,
-        strategy: simulator::SearchStrategy::Bfs,
-    };
-    
-    let sim = simulator::Simulator::new(&pcpn, config);
-    tracing::info!("生成统计信息 (max_states={})", max_states);
-    
-    // 生成统计信息
-    let stats = sim.generate_statistics(max_states);
-    
-    // 格式化输出
-    let output_text = match format {
-        "json" => stats.to_json(),
-        _ => stats.to_table(),
-    };
-    
-    // 输出到文件或控制台
-    if let Some(out_path) = output {
-        std::fs::write(out_path, &output_text).context("写入输出文件失败")?;
-        tracing::info!("✓ 统计信息已保存到: {:?}", out_path);
-    } else {
-        println!("{}", output_text);
-    }
-    
-    Ok(())
 }

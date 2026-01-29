@@ -4,10 +4,10 @@ use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::fmt;
 
 use crate::config::{ParsedGoal, TaskConfig};
-use crate::pcpn::{Arc, Guard, GuardKind, Pcpn, Transition, TransitionKind};
+use crate::pcpn::{Guard, GuardKind, Pcpn, Transition, TransitionKind};
 use crate::types::{
     BorrowStack, CanonFrame, CanonToken, Capability, Marking, PlaceId, RegionLabel, StackFrame,
-    Token, TyGround, TypeForm, VarId,
+    Token, TypeForm, VarId,
 };
 
 #[derive(Clone, Debug)]
@@ -410,9 +410,9 @@ impl<'a> Simulator<'a> {
             TransitionKind::CreatePrimitive { ty } | TransitionKind::ConstProducer { ty, .. } => {
                 let vid = new_state.fresh_vid();
                 let token = Token::new_owned(vid, ty.clone());
-                if let Some(&out_place) = trans.output_arcs.first().map(|a| &a.place_id) {
-                    new_state.marking.add(*out_place, token.clone());
-                    produced.push((*out_place, token));
+                if let Some(out_arc) = trans.output_arcs.first() {
+                    new_state.marking.add(out_arc.place_id, token.clone());
+                    produced.push((out_arc.place_id, token));
                 }
             }
 
@@ -741,6 +741,7 @@ pub fn print_trace(trace: &[TraceFiring]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::TyGround;
 
     #[test]
     fn test_canon_state_hash() {
