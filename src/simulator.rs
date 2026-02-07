@@ -6,8 +6,8 @@ use std::fmt;
 use crate::config::{ParsedGoal, TaskConfig};
 use crate::pcpn::{Guard, GuardKind, Pcpn, Transition, TransitionKind};
 use crate::types::{
-    BorrowStack, CanonFrame, CanonToken, Capability, Marking, PlaceId, RegionLabel, StackFrame,
-    Token, TypeForm, VarId,
+    BorrowStack, CanonFrame, CanonFrameKind, CanonToken, Capability, Marking, PlaceId,
+    RegionLabel, StackFrame, Token, TypeForm, VarId,
 };
 
 #[derive(Clone, Debug)]
@@ -138,7 +138,18 @@ impl SimState {
                         lr
                     })
                 });
-                CanonFrame::from(f)
+                // 使用重映射后的值构造 CanonFrame，而非原始值
+                let kind = match f {
+                    StackFrame::Freeze { .. } => CanonFrameKind::Freeze,
+                    StackFrame::Shr { .. } => CanonFrameKind::Shr,
+                    StackFrame::Mut { .. } => CanonFrameKind::Mut,
+                };
+                CanonFrame {
+                    kind,
+                    owner_vid: owner,
+                    ref_vid: ref_v,
+                    region: reg,
+                }
             })
             .collect();
 
@@ -306,8 +317,10 @@ impl<'a> Simulator<'a> {
                 if !self.config.is_transition_allowed(&trans.name) {
                     continue;
                 }
-                if let Some(bindings) = self.enabled(trans, &state) {
-                    if let Some((next_state, firing)) = self.fire(trans, &state, &bindings) {
+                if let Some((consume_bindings, read_bindings)) = self.enabled(trans, &state) {
+                    if let Some((next_state, firing)) =
+                        self.fire(trans, &state, &consume_bindings, &read_bindings)
+                    {
                         if !self.check_bounds(&next_state) {
                             continue;
                         }
@@ -340,8 +353,16 @@ impl<'a> Simulator<'a> {
         SimState::new()
     }
 
-    fn enabled(&self, trans: &Transition, state: &SimState) -> Option<Vec<(PlaceId, Token)>> {
-        let mut bindings = Vec::new();
+    /// 使能检查的结果：(消耗绑定, 读取绑定)
+    /// 消耗绑定 = 被 consume 的 token
+    /// 读取绑定 = 被 read（非 consume）的 token，用于确定借用来源
+    fn enabled(
+        &self,
+        trans: &Transition,
+        state: &SimState,
+    ) -> Option<(Vec<(PlaceId, Token)>, Vec<(PlaceId, Token)>)> {
+        let mut consume_bindings = Vec::new();
+        let mut read_bindings = Vec::new();
         let mut used_vids: HashSet<VarId> = HashSet::new();
 
         for arc in &trans.input_arcs {
@@ -356,24 +377,41 @@ impl<'a> Simulator<'a> {
                     }
                     let token = available[0].clone();
                     used_vids.insert(token.vid);
-                    bindings.push((arc.place_id, token));
+                    consume_bindings.push((arc.place_id, token));
                 } else {
                     return None;
                 }
             } else {
-                if state.marking.count(arc.place_id) == 0 {
+                // 非消耗弧：检查存在性，并记录读取绑定
+                if let Some(tokens) = state.marking.get(arc.place_id) {
+                    let available: Vec<_> = tokens
+                        .iter()
+                        .filter(|t| !used_vids.contains(&t.vid))
+                        .collect();
+                    if available.is_empty() {
+                        return None;
+                    }
+                    // 记录读取绑定（不消耗，但提供上下文信息）
+                    read_bindings.push((arc.place_id, available[0].clone()));
+                } else {
                     return None;
                 }
             }
         }
 
+        // Guard 检查时使用所有绑定
+        let all_bindings: Vec<_> = consume_bindings
+            .iter()
+            .chain(read_bindings.iter())
+            .cloned()
+            .collect();
         for guard in &trans.guards {
-            if !self.check_guard(guard, state, &bindings) {
+            if !self.check_guard(guard, state, &all_bindings) {
                 return None;
             }
         }
 
-        Some(bindings)
+        Some((consume_bindings, read_bindings))
     }
 
     fn check_guard(&self, guard: &Guard, state: &SimState, bindings: &[(PlaceId, Token)]) -> bool {
@@ -424,13 +462,14 @@ impl<'a> Simulator<'a> {
         &self,
         trans: &Transition,
         state: &SimState,
-        bindings: &[(PlaceId, Token)],
+        consume_bindings: &[(PlaceId, Token)],
+        read_bindings: &[(PlaceId, Token)],
     ) -> Option<(SimState, TraceFiring)> {
         let mut new_state = state.clone();
         let mut consumed: Vec<(PlaceId, Token)> = Vec::new();
         let mut produced: Vec<(PlaceId, Token)> = Vec::new();
 
-        for (place_id, token) in bindings {
+        for (place_id, token) in consume_bindings {
             new_state.marking.remove_by_vid(*place_id, token.vid)?;
             consumed.push((*place_id, token.clone()));
         }
@@ -496,13 +535,13 @@ impl<'a> Simulator<'a> {
             }
 
             TransitionKind::EndBorrowShrKeepFrz { .. } => {
-                if let Some((_, ref_token)) = consumed.iter().find(|(_, t)| t.is_ref()) {
+                if consumed.iter().any(|(_, t)| t.is_ref()) {
                     new_state.stack.pop();
                 }
             }
 
             TransitionKind::EndBorrowShrUnfreeze { base_type } => {
-                if let Some((_, ref_token)) = consumed.iter().find(|(_, t)| t.is_ref()) {
+                if consumed.iter().any(|(_, t)| t.is_ref()) {
                     new_state.stack.pop();
                     new_state.stack.pop();
 
@@ -563,9 +602,10 @@ impl<'a> Simulator<'a> {
                 }
             }
 
-            TransitionKind::ApiCall { fn_path, .. } => {
+            TransitionKind::ApiCall { .. } => {
                 for arc in &trans.output_arcs {
                     if arc.annotation.as_ref().map(|a| matches!(a, crate::pcpn::ArcAnnotation::ReturnArc)).unwrap_or(false) {
+                        // Copy-return: 返回被消耗 token 的副本（Copy 类型）
                         if let Some((_, orig)) = consumed.first() {
                             let copy_token = Token::new_owned(orig.vid, orig.ty.clone());
                             new_state.marking.add(arc.place_id, copy_token.clone());
@@ -578,7 +618,19 @@ impl<'a> Simulator<'a> {
                             TypeForm::Value => Token::new_owned(vid, place.base_type.clone()),
                             TypeForm::RefShr => {
                                 let region = new_state.fresh_region();
-                                let owner = consumed.first().map(|(_, t)| t.vid).unwrap_or(0);
+                                // 使用生命周期绑定确定借用来源（包含 read_bindings）
+                                let owner = self.resolve_borrow_owner(
+                                    trans,
+                                    &consumed,
+                                    read_bindings,
+                                    true,
+                                );
+                                // 仅在 owner 尚未被 freeze 时添加 Freeze 帧
+                                if !new_state.stack.has_freeze_for_owner(owner) {
+                                    new_state.stack.push(StackFrame::Freeze {
+                                        owner_vid: owner,
+                                    });
+                                }
                                 new_state.stack.push(StackFrame::Shr {
                                     owner_vid: owner,
                                     ref_vid: vid,
@@ -588,7 +640,13 @@ impl<'a> Simulator<'a> {
                             }
                             TypeForm::RefMut => {
                                 let region = new_state.fresh_region();
-                                let owner = consumed.first().map(|(_, t)| t.vid).unwrap_or(0);
+                                // 使用生命周期绑定确定借用来源（包含 read_bindings）
+                                let owner = self.resolve_borrow_owner(
+                                    trans,
+                                    &consumed,
+                                    read_bindings,
+                                    false,
+                                );
                                 new_state.stack.push(StackFrame::Mut {
                                     owner_vid: owner,
                                     ref_vid: vid,
@@ -612,6 +670,61 @@ impl<'a> Simulator<'a> {
         };
 
         Some((new_state, firing))
+    }
+
+    /// 根据生命周期绑定信息确定 API 调用返回引用的借用来源
+    /// all_input_tokens 包含消耗和读取的 token（按 input_arcs 顺序排列）
+    fn resolve_borrow_owner(
+        &self,
+        trans: &Transition,
+        consumed: &[(PlaceId, Token)],
+        read_bindings: &[(PlaceId, Token)],
+        is_shared: bool,
+    ) -> VarId {
+        // 构建完整的 input token 列表（消耗 + 读取，按 arc 顺序）
+        let mut all_inputs: Vec<Option<&Token>> = Vec::new();
+        let mut consume_idx = 0;
+        let mut read_idx = 0;
+        for arc in &trans.input_arcs {
+            if arc.consumes {
+                if consume_idx < consumed.len() {
+                    all_inputs.push(Some(&consumed[consume_idx].1));
+                    consume_idx += 1;
+                } else {
+                    all_inputs.push(None);
+                }
+            } else {
+                if read_idx < read_bindings.len() {
+                    all_inputs.push(Some(&read_bindings[read_idx].1));
+                    read_idx += 1;
+                } else {
+                    all_inputs.push(None);
+                }
+            }
+        }
+
+        // 优先使用 transition 上的 lifetime_bindings
+        for lb in &trans.lifetime_bindings {
+            if lb.is_shared == is_shared || trans.lifetime_bindings.len() == 1 {
+                if let Some(Some(token)) = all_inputs.get(lb.source_arc_index) {
+                    // 如果读取的是引用 token，追溯到其 borrowed_from（原始 owner）
+                    if let Some(owner_vid) = token.borrowed_from {
+                        return owner_vid;
+                    }
+                    return token.vid;
+                }
+            }
+        }
+
+        // 回退：优先使用读取绑定中的 token（通常是 &self 的来源）
+        if let Some((_, token)) = read_bindings.first() {
+            if let Some(owner_vid) = token.borrowed_from {
+                return owner_vid;
+            }
+            return token.vid;
+        }
+        // 最后回退到消耗的第一个 token
+        consumed.first().map(|(_, t)| t.vid).unwrap_or(0)
     }
 
     fn check_bounds(&self, state: &SimState) -> bool {
@@ -667,8 +780,10 @@ impl<'a> Simulator<'a> {
                 if !self.config.is_transition_allowed(&trans.name) {
                     continue;
                 }
-                if let Some(bindings) = self.enabled(trans, &state) {
-                    if let Some((next_state, _)) = self.fire(trans, &state, &bindings) {
+                if let Some((consume_bindings, read_bindings)) = self.enabled(trans, &state) {
+                    if let Some((next_state, _)) =
+                        self.fire(trans, &state, &consume_bindings, &read_bindings)
+                    {
                         if !self.check_bounds(&next_state) {
                             continue;
                         }

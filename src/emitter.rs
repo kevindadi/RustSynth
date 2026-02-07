@@ -6,6 +6,22 @@ use crate::pcpn::{Pcpn, TransitionKind};
 use crate::simulator::TraceFiring;
 use crate::types::{TyGround, TypeForm, VarId};
 
+/// 从 transition 的 fn_path 中提取类型名和方法名
+/// 例如 "Counter::get" -> Some(("Counter", "get"))
+/// "make_pair" -> None
+fn parse_method_path(fn_path: &str) -> Option<(&str, &str)> {
+    // 处理泛型：先去掉 <...> 后缀
+    let base = fn_path.split('<').next().unwrap_or(fn_path);
+    if let Some(pos) = base.rfind("::") {
+        let type_name = &base[..pos];
+        let method_name = &base[pos + 2..];
+        if !method_name.is_empty() {
+            return Some((type_name, method_name));
+        }
+    }
+    None
+}
+
 pub struct CodeEmitter<'a> {
     pcpn: &'a Pcpn,
     lines: Vec<String>,
@@ -120,37 +136,61 @@ impl<'a> CodeEmitter<'a> {
             self.var_types.insert(token.vid, ty.clone());
             self.var_is_ref.insert(token.vid, false);
 
-            let call = self.format_fn_call(fn_path, &[]);
-            self.emit_line(&format!("let {} = {}; // {}", var_name, call, firing.name));
+            // 使用正确的 Rust 路径语法（如 Counter::new()）
+            let call = if let Some((type_name, fn_name)) = parse_method_path(fn_path) {
+                format!("{}::{}()", type_name, fn_name)
+            } else {
+                format!("{}()", fn_path)
+            };
+            self.emit_line(&format!(
+                "let mut {}: {} = {};",
+                var_name,
+                ty.short_name(),
+                call
+            ));
         }
     }
 
     fn emit_api_call(&mut self, firing: &TraceFiring, fn_path: &str) {
         let mut args: Vec<String> = Vec::new();
-        let mut receiver: Option<String> = None;
-        let mut is_method = false;
+        let mut receiver: Option<(String, bool)> = None; // (var_name, is_ref)
+
+        // 判断是否是方法调用，以及准备参数
+        let method_info = parse_method_path(fn_path);
+        let is_method_call = method_info.is_some() && !firing.consumed.is_empty();
 
         for (i, (_, token)) in firing.consumed.iter().enumerate() {
             let var_name = self.get_var_name(token.vid);
-            if i == 0 && fn_path.contains("::") && self.is_likely_method_receiver(token.vid) {
-                is_method = true;
-                receiver = Some(var_name);
+            if i == 0 && is_method_call {
+                let is_ref = self.var_is_ref.get(&token.vid).copied().unwrap_or(false);
+                receiver = Some((var_name, is_ref));
             } else {
-                args.push(var_name);
+                // 检查是否需要传递引用
+                let is_param_ref = self.var_is_ref.get(&token.vid).copied().unwrap_or(false);
+                if is_param_ref {
+                    args.push(var_name);
+                } else {
+                    args.push(var_name);
+                }
             }
         }
 
-        let call_expr = if is_method {
-            let method_name = fn_path.split("::").last().unwrap_or(fn_path);
-            if let Some(recv) = receiver {
-                format!("{}.{}({})", recv, method_name, args.join(", "))
+        let call_expr = if let (Some((recv, _)), Some((_, method_name))) =
+            (&receiver, method_info)
+        {
+            format!("{}.{}({})", recv, method_name, args.join(", "))
+        } else {
+            // 自由函数或关联函数
+            if let Some((type_name, fn_name)) = method_info {
+                // 关联函数调用 Type::func(args)
+                format!("{}::{}({})", type_name, fn_name, args.join(", "))
             } else {
+                // 普通自由函数
                 format!("{}({})", fn_path, args.join(", "))
             }
-        } else {
-            self.format_fn_call(fn_path, &args)
         };
 
+        // 处理输出 token（过滤掉 Copy-return 的 token，它们的 vid 与 consumed 相同）
         let output_tokens: Vec<_> = firing
             .produced
             .iter()
@@ -167,16 +207,23 @@ impl<'a> CodeEmitter<'a> {
             self.var_types.insert(token.vid, place.base_type.clone());
 
             let is_ref = matches!(place.form, TypeForm::RefShr | TypeForm::RefMut);
+            let is_mut_ref = matches!(place.form, TypeForm::RefMut);
             self.var_is_ref.insert(token.vid, is_ref);
-            self.var_is_mut_ref
-                .insert(token.vid, matches!(place.form, TypeForm::RefMut));
+            self.var_is_mut_ref.insert(token.vid, is_mut_ref);
 
+            // 引用不需要 mut，值类型可能需要 mut
+            let type_annotation = match place.form {
+                TypeForm::Value => format!(": {}", place.base_type.short_name()),
+                TypeForm::RefShr => format!(": &{}", place.base_type.short_name()),
+                TypeForm::RefMut => format!(": &mut {}", place.base_type.short_name()),
+            };
             let let_kw = if is_ref { "let" } else { "let mut" };
             self.emit_line(&format!(
-                "{} {} = {}; // {}",
-                let_kw, var_name, call_expr, firing.name
+                "{} {}{} = {};",
+                let_kw, var_name, type_annotation, call_expr
             ));
         } else {
+            // 多返回值（罕见）
             self.emit_line(&format!("{}; // {}", call_expr, firing.name));
         }
     }
@@ -313,8 +360,8 @@ impl<'a> CodeEmitter<'a> {
     }
 
     fn format_fn_call(&self, fn_path: &str, args: &[String]) -> String {
-        let clean_path = fn_path.replace("::", "_");
-        format!("{}({})", clean_path, args.join(", "))
+        // 保留原始的 Rust 路径语法
+        format!("{}({})", fn_path, args.join(", "))
     }
 
     fn default_value(&self, ty: &TyGround) -> String {

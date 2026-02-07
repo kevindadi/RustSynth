@@ -2,6 +2,8 @@
 //!
 //! 提取函数签名、类型信息，并构建二分图
 
+use std::rc::Rc;
+
 use anyhow::Result;
 use rustdoc_types::{Crate, Item, ItemEnum, Type, Visibility};
 
@@ -127,7 +129,8 @@ struct GenericParamInfo {
 /// 提取上下文
 struct ExtractionContext<'a> {
     krate: &'a Crate,
-    id_to_path: std::collections::HashMap<rustdoc_types::Id, String>,
+    /// 共享的 ID 到路径映射（Rc 避免重复克隆）
+    id_to_path: Rc<std::collections::HashMap<rustdoc_types::Id, String>>,
     /// 当前 impl 块的 Self 类型（用于解析 Self 泛型）
     current_self_type: Option<TypeKey>,
     /// 当前上下文的泛型参数映射（参数名 -> 信息）
@@ -149,7 +152,7 @@ impl<'a> ExtractionContext<'a> {
 
         ExtractionContext {
             krate,
-            id_to_path,
+            id_to_path: Rc::new(id_to_path),
             current_self_type: None,
             generic_params: std::collections::HashMap::new(),
             current_context: String::new(),
@@ -165,7 +168,7 @@ impl<'a> ExtractionContext<'a> {
     ) -> Self {
         let mut ctx = ExtractionContext {
             krate: self.krate,
-            id_to_path: self.id_to_path.clone(),
+            id_to_path: Rc::clone(&self.id_to_path),
             current_self_type: self_type,
             generic_params: std::collections::HashMap::new(),
             current_context: context_name.to_string(),
@@ -188,7 +191,7 @@ impl<'a> ExtractionContext<'a> {
         
         let mut ctx = ExtractionContext {
             krate: self.krate,
-            id_to_path: self.id_to_path.clone(),
+            id_to_path: Rc::clone(&self.id_to_path),
             current_self_type: self.current_self_type.clone(),
             generic_params: self.generic_params.clone(), // 继承 impl 的泛型参数
             current_context: context.clone(),
@@ -485,7 +488,7 @@ fn extract_function(
     let is_zero_ary = self_param.is_none() && params.is_empty();
     let is_const_producer = is_const && is_zero_ary && return_type.is_some();
 
-    let lifetime_binding = extract_lifetime_binding(generics, sig, &return_mode);
+    let lifetime_bindings = extract_lifetime_bindings(generics, sig, &return_mode);
 
     Some(FunctionNode {
         id: 0,
@@ -499,7 +502,7 @@ fn extract_function(
         self_param,
         return_type,
         return_mode,
-        lifetime_binding,
+        lifetime_bindings,
     })
 }
 
@@ -511,38 +514,81 @@ fn check_const_fn(item: &Item) -> bool {
     }
 }
 
-/// 提取生命周期绑定信息
-fn extract_lifetime_binding(
+/// 提取所有生命周期绑定信息（支持多个生命周期）
+fn extract_lifetime_bindings(
     generics: &rustdoc_types::Generics,
     sig: &rustdoc_types::FunctionSignature,
     return_mode: &Option<PassingMode>,
-) -> Option<LifetimeBinding> {
+) -> Vec<LifetimeBinding> {
     // 只有返回引用的函数才需要生命周期绑定
     if !matches!(
         return_mode,
         Some(PassingMode::ReturnBorrowShr) | Some(PassingMode::ReturnBorrowMut)
     ) {
-        return None;
+        return vec![];
     }
+
+    let is_shared = matches!(return_mode, Some(PassingMode::ReturnBorrowShr));
 
     // 使用 LifetimeAnalyzer 分析函数签名
     let analysis = LifetimeAnalyzer::analyze(generics, sig);
 
-    // 如果分析结果包含生命周期绑定，使用它
+    // 如果分析结果包含生命周期绑定，使用所有绑定
     if !analysis.lifetime_bindings.is_empty() {
-        let binding = &analysis.lifetime_bindings[0]; // 使用第一个绑定
-        return Some(LifetimeBinding {
-            lifetime: binding.lifetime.clone(),
-            source_param_index: binding.bound_to_param,
-        });
+        return analysis
+            .lifetime_bindings
+            .iter()
+            .map(|binding| LifetimeBinding {
+                lifetime: binding.lifetime.clone(),
+                source_param_index: binding.bound_to_param,
+                is_shared,
+            })
+            .collect();
     }
 
-    // 回退到启发式规则：如果返回引用但没有显式生命周期标注，
-    // 绑定到第一个参数（通常是 self）
-    Some(LifetimeBinding {
-        lifetime: "'_".to_string(), // 使用匿名生命周期
-        source_param_index: 0,      // 绑定到第一个参数（self）
-    })
+    // 回退到 Rust 的生命周期省略规则：
+    // 规则1: 如果只有一个输入生命周期参数（包括 &self），所有省略的生命周期绑定到该参数
+    // 规则2: 如果有 &self 或 &mut self，省略的返回生命周期绑定到 self
+    let has_self_ref = sig.inputs.iter().any(|(name, ty)| {
+        name == "self" && matches!(ty, rustdoc_types::Type::BorrowedRef { .. })
+    });
+
+    if has_self_ref {
+        // 规则2: 绑定到 self
+        return vec![LifetimeBinding {
+            lifetime: "'_".to_string(),
+            source_param_index: 0,
+            is_shared,
+        }];
+    }
+
+    // 规则1: 统计引用参数数量
+    let ref_params: Vec<usize> = sig
+        .inputs
+        .iter()
+        .enumerate()
+        .filter(|(_, (_, ty))| matches!(ty, rustdoc_types::Type::BorrowedRef { .. }))
+        .map(|(i, _)| i)
+        .collect();
+
+    if ref_params.len() == 1 {
+        return vec![LifetimeBinding {
+            lifetime: "'_".to_string(),
+            source_param_index: ref_params[0],
+            is_shared,
+        }];
+    }
+
+    // 无法确定绑定关系，保守地绑定到第一个参数
+    if !sig.inputs.is_empty() {
+        return vec![LifetimeBinding {
+            lifetime: "'_".to_string(),
+            source_param_index: 0,
+            is_shared,
+        }];
+    }
+
+    vec![]
 }
 
 /// 解析 self 参数

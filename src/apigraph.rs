@@ -43,9 +43,9 @@ pub struct FunctionNode {
     pub return_type: Option<TypeKey>,
     /// 返回模式
     pub return_mode: Option<PassingMode>,
-    /// 生命周期绑定信息
+    /// 生命周期绑定信息（支持多个生命周期）
     /// 如果返回引用，记录返回值绑定到哪个参数（0 = self, 1+ = params）
-    pub lifetime_binding: Option<LifetimeBinding>,
+    pub lifetime_bindings: Vec<LifetimeBinding>,
 }
 
 /// 参数信息
@@ -76,6 +76,15 @@ pub struct LifetimeBinding {
     pub lifetime: String,
     /// 绑定到的参数索引（0 = self, 1+ = params）
     pub source_param_index: usize,
+    /// 返回值是否是共享引用
+    pub is_shared: bool,
+}
+
+impl LifetimeBinding {
+    /// 获取主要绑定来源参数索引
+    pub fn primary_source(bindings: &[LifetimeBinding]) -> Option<usize> {
+        bindings.first().map(|b| b.source_param_index)
+    }
 }
 
 /// 类型节点
@@ -400,7 +409,7 @@ mod tests {
             self_param: None,
             return_type: Some(TypeKey::path("Counter")),
             return_mode: Some(PassingMode::ReturnOwned),
-            lifetime_binding: None,
+            lifetime_bindings: vec![],
         };
         let new_id = graph.add_function_node(new_fn);
 

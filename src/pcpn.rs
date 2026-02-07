@@ -19,6 +19,19 @@ pub struct Transition {
     pub output_arcs: Vec<Arc>,
     pub guards: Vec<Guard>,
     pub is_const_producer: bool,
+    /// 生命周期绑定信息：返回引用的 API 调用会携带此信息，
+    /// 用于仿真时确定借用来源（source_param_index → 对应 input_arcs 中的位置）
+    #[serde(default)]
+    pub lifetime_bindings: Vec<LifetimeBindingInfo>,
+}
+
+/// 用于 PCPN Transition 的生命周期绑定信息
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LifetimeBindingInfo {
+    /// 返回引用绑定到的输入参数索引（在 input_arcs 中的位置）
+    pub source_arc_index: usize,
+    /// 是否是共享引用
+    pub is_shared: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -135,9 +148,29 @@ impl Pcpn {
                 // Use TyGround::tuple() to normalize empty tuples to Unit
                 Some(TyGround::tuple(converted))
             }
+            TypeKey::Slice(inner) => {
+                // 切片类型转为带泛型参数的 Path
+                let inner_ty = self.convert_type_key(inner)?;
+                Some(TyGround::path_with_args("[T]", vec![inner_ty]))
+            }
+            TypeKey::Array { elem, len } => {
+                let elem_ty = self.convert_type_key(elem)?;
+                Some(TyGround::path_with_args(
+                    &format!("[T;{}]", len),
+                    vec![elem_ty],
+                ))
+            }
             TypeKey::RefShr(inner) | TypeKey::RefMut(inner) => self.convert_type_key(inner),
+            TypeKey::AssociatedType(path) => {
+                // 将关联类型视为不透明路径类型
+                Some(TyGround::path(path))
+            }
+            TypeKey::FnPtr { .. } | TypeKey::RawPtr { .. } => {
+                // 函数指针和裸指针暂不参与 PCPN 模型
+                None
+            }
             TypeKey::GenericParam { .. } => None,
-            _ => None,
+            TypeKey::Unknown(_) => None,
         }
     }
 
@@ -256,10 +289,33 @@ impl Pcpn {
 
     fn satisfies_bounds(&self, ty: &TyGround, bounds: &[String]) -> bool {
         for bound in bounds {
-            let ok = match bound.to_lowercase().as_str() {
-                "copy" => ty.is_copy(),
-                "clone" | "default" | "send" | "sync" => true,
-                _ => true,
+            let ok = match bound.as_str() {
+                // 精确匹配 trait bound（区分大小写，符合 Rust 惯例）
+                "Copy" | "copy" => ty.is_copy(),
+                "Clone" | "clone" => {
+                    // Copy 蕴含 Clone
+                    ty.is_copy() || !ty.is_primitive()
+                }
+                "Default" | "default" => {
+                    // 原始类型和 Unit 都有 Default
+                    ty.is_primitive() || matches!(ty, TyGround::Unit)
+                }
+                "Send" | "Sync" | "Sized" | "Unpin" => {
+                    // 大多数类型实现这些 auto traits
+                    true
+                }
+                "Debug" | "Display" => {
+                    // 保守地假设原始类型实现
+                    ty.is_primitive()
+                }
+                "PartialEq" | "Eq" | "PartialOrd" | "Ord" | "Hash" => {
+                    // 原始类型都实现这些
+                    ty.is_primitive()
+                }
+                _ => {
+                    // 未知 bound：保守接受（允许单态化尝试）
+                    true
+                }
             };
             if !ok {
                 return false;
@@ -272,15 +328,23 @@ impl Pcpn {
         if candidates.is_empty() {
             return vec![HashMap::new()];
         }
+
+        // 限制组合爆炸：总实例化数量不超过阈值
+        const MAX_INSTANTIATIONS: usize = 64;
+
         let first = &candidates[0];
         let rest = &candidates[1..];
         let rest_products = self.cartesian_product(rest);
         let mut result = Vec::new();
         for (param, ty) in first {
             let (ctx, name, _) = param;
-            for mut rest_map in rest_products.clone() {
-                rest_map.insert((ctx.clone(), name.clone()), (*ty).clone());
-                result.push(rest_map);
+            for rest_map in &rest_products {
+                let mut new_map = rest_map.clone();
+                new_map.insert((ctx.clone(), name.clone()), (*ty).clone());
+                result.push(new_map);
+                if result.len() >= MAX_INSTANTIATIONS {
+                    return result;
+                }
             }
         }
         result
@@ -451,6 +515,35 @@ impl Pcpn {
             }
         };
 
+        // 提取生命周期绑定信息
+        let lifetime_bindings = fn_node
+            .lifetime_bindings
+            .iter()
+            .filter_map(|lb| {
+                // source_param_index 指的是 API 签名中的参数位置
+                // 需要映射到 input_arcs 中的实际索引
+                // input_arcs 的顺序跟随 get_input_edges，索引与 param_index 对应
+                let arc_idx = input_arcs.iter().position(|arc| {
+                    arc.annotation
+                        .as_ref()
+                        .map(|ann| match ann {
+                            ArcAnnotation::SelfParam => lb.source_param_index == 0,
+                            ArcAnnotation::Param { index, .. } => {
+                                *index == lb.source_param_index
+                                    || (fn_node.self_param.is_some()
+                                        && *index + 1 == lb.source_param_index)
+                            }
+                            _ => false,
+                        })
+                        .unwrap_or(false)
+                });
+                arc_idx.map(|idx| LifetimeBindingInfo {
+                    source_arc_index: idx,
+                    is_shared: lb.is_shared,
+                })
+            })
+            .collect();
+
         self.transitions.push(Transition {
             id: trans_id,
             name: mono_fn.name.clone(),
@@ -459,6 +552,7 @@ impl Pcpn {
             output_arcs,
             guards,
             is_const_producer,
+            lifetime_bindings,
         });
     }
 
@@ -618,6 +712,7 @@ impl Pcpn {
             output_arcs,
             guards,
             is_const_producer: is_const,
+            lifetime_bindings: vec![],
         });
     }
 
