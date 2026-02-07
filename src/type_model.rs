@@ -1,17 +1,17 @@
-//! 内部类型表示：TypeKey（单态类型）
+//! 内部类型表示:TypeKey(单态类型)
 //!
-//! 类型宇宙（已单态化）：
+//! 类型宇宙(已单态化):
 //! - Ty ::= T | RefShr(T) | RefMut(T)
 //!
-//! API Graph 的类型节点不区分 own/shr/mut（借用是边的属性）。
-//! PCPN 内部需要显式的 ref token 类型。
+//! API Graph 的类型节点不区分 own/shr/mut(借用是边的属性).
+//! PCPN 内部需要显式的 ref token 类型.
 
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// 单态类型键 - 用于 API Graph 和 PCPN
 ///
-/// 类型宇宙：Ty ::= T | RefShr(T) | RefMut(T)
+/// 类型宇宙:Ty ::= T | RefShr(T) | RefMut(T)
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum TypeKey {
     /// 原始类型: "u32", "bool", "str", "()"
@@ -50,17 +50,17 @@ pub enum TypeKey {
     /// 关联类型: <T as Trait>::Item
     AssociatedType(String),
 
-    /// 泛型参数（占位符）
-    /// - context: 所属上下文（如 "Wrapper", "pair", "Container::push"）
-    /// - name: 参数名（如 "T", "A", "B"）
-    /// - bounds: Trait bounds（如 ["Default", "Clone"]）
+    /// 泛型参数(占位符)
+    /// - context: 所属上下文(如 "Wrapper", "pair", "Container::push")
+    /// - name: 参数名(如 "T", "A", "B")
+    /// - bounds: Trait bounds(如 ["Default", "Clone"])
     GenericParam {
         context: String,
         name: String,
         bounds: Vec<String>,
     },
 
-    /// 未解析/未知类型（用于错误处理）
+    /// 未解析/未知类型(用于错误处理)
     Unknown(String),
 }
 
@@ -75,7 +75,7 @@ impl TypeKey {
         TypeKey::Primitive(name.to_string())
     }
 
-    /// 创建路径类型（无泛型参数）
+    /// 创建路径类型(无泛型参数)
     pub fn path(crate_path: &str) -> Self {
         TypeKey::Path {
             crate_path: crate_path.to_string(),
@@ -83,7 +83,7 @@ impl TypeKey {
         }
     }
 
-    /// 创建路径类型（带泛型参数）
+    /// 创建路径类型(带泛型参数)
     pub fn path_with_args(crate_path: &str, args: Vec<TypeKey>) -> Self {
         TypeKey::Path {
             crate_path: crate_path.to_string(),
@@ -101,7 +101,7 @@ impl TypeKey {
         TypeKey::RefMut(Box::new(inner))
     }
 
-    /// 获取 base 类型（去掉引用）
+    /// 获取 base 类型(去掉引用)
     pub fn base_type(&self) -> &TypeKey {
         match self {
             TypeKey::RefShr(inner) | TypeKey::RefMut(inner) => inner.base_type(),
@@ -109,7 +109,7 @@ impl TypeKey {
         }
     }
 
-    /// 获取 base 类型（owned）
+    /// 获取 base 类型(owned)
     pub fn into_base_type(self) -> TypeKey {
         match self {
             TypeKey::RefShr(inner) | TypeKey::RefMut(inner) => inner.into_base_type(),
@@ -160,7 +160,7 @@ impl TypeKey {
         }
     }
 
-    /// 是否是 Copy 类型（简化判断）
+    /// 是否是 Copy 类型(简化判断)
     pub fn is_copy(&self) -> bool {
         match self {
             TypeKey::Primitive(_) => true,
@@ -173,7 +173,7 @@ impl TypeKey {
         }
     }
 
-    /// 简化显示（只取最后一段路径）
+    /// 简化显示(只取最后一段路径)
     pub fn short_name(&self) -> String {
         match self {
             TypeKey::Primitive(s) => s.clone(),
@@ -226,7 +226,7 @@ impl TypeKey {
         }
     }
 
-    /// Rust 类型名（用于代码生成）
+    /// Rust 类型名(用于代码生成)
     pub fn rust_type_name(&self) -> String {
         match self {
             TypeKey::Primitive(s) => s.clone(),
@@ -397,9 +397,9 @@ impl fmt::Display for TypeKey {
     }
 }
 
-/// 值传递模式（用于 API Graph 的边标注）
+/// 值传递模式(用于 API Graph 的边标注)
 ///
-/// 参数绑定规则：
+/// 参数绑定规则:
 /// - T (Move/Copy) → Own(T)
 /// - &T (BorrowShr) → Own(RefShr(T))
 /// - &mut T (BorrowMut) → Own(RefMut(T))
@@ -407,11 +407,11 @@ impl fmt::Display for TypeKey {
 pub enum PassingMode {
     /// 移动所有权 (T where T: !Copy) → 消耗 Own(T)
     Move,
-    /// 复制 (T where T: Copy) → 读取 Own(T)，不消耗
+    /// 复制 (T where T: Copy) → 读取 Own(T),不消耗
     Copy,
-    /// 共享借用 (&T) → 消耗 Own(RefShr(T))，返回后放回
+    /// 共享借用 (&T) → 消耗 Own(RefShr(T)),返回后放回
     BorrowShr,
-    /// 可变借用 (&mut T) → 消耗 Own(RefMut(T))，返回后放回
+    /// 可变借用 (&mut T) → 消耗 Own(RefMut(T)),返回后放回
     BorrowMut,
     /// 返回所有权值 → 产生 Own(T)
     ReturnOwned,

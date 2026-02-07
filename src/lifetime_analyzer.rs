@@ -1,6 +1,6 @@
 //! 生命周期分析器 - 提取和分析函数签名中的生命周期信息
 //!
-//! 主要功能：
+//! 主要功能:
 //! 1. 从 rustdoc JSON 提取生命周期参数
 //! 2. 分析参数类型中的生命周期标注
 //! 3. 分析返回值类型中的生命周期标注
@@ -8,7 +8,7 @@
 //!
 //! ## 典型场景
 //!
-//! ```rust
+//! ```text
 //! // 场景 1: 返回值绑定到 self
 //! fn get<'a>(&'a self) -> &'a i32 { ... }
 //! // 分析结果: return lifetime 'a -> param 0 (self)
@@ -27,7 +27,7 @@ use rustdoc_types::{FunctionSignature, GenericParamDefKind, Generics, Type};
 /// 生命周期信息
 #[derive(Clone, Debug)]
 pub struct LifetimeInfo {
-    /// 生命周期参数名（如 'a, 'b）
+    /// 生命周期参数名(如 'a, 'b)
     pub name: String,
     /// 是否是 'static
     pub is_static: bool,
@@ -53,9 +53,9 @@ pub struct ReturnLifetimes {
 /// 表示返回值的生命周期绑定到哪个参数
 #[derive(Clone, Debug)]
 pub struct LifetimeBinding {
-    /// 生命周期名称（如 'a）
+    /// 生命周期名称(如 'a)
     pub lifetime: String,
-    /// 绑定到的参数索引（0 表示 self，1+ 表示其他参数）
+    /// 绑定到的参数索引(0 表示 self,1+ 表示其他参数)
     pub bound_to_param: usize,
 }
 
@@ -76,16 +76,11 @@ impl FunctionLifetimeAnalysis {
     /// 检查函数是否返回引用
     pub fn returns_reference(&self) -> bool {
         self.return_lifetimes.is_some()
-            && !self
-                .return_lifetimes
-                .as_ref()
-                .unwrap()
-                .lifetimes
-                .is_empty()
+            && !self.return_lifetimes.as_ref().unwrap().lifetimes.is_empty()
     }
 
     /// 获取返回值绑定到的主要参数索引
-    /// 如果返回值有多个生命周期，返回第一个绑定的参数
+    /// 如果返回值有多个生命周期,返回第一个绑定的参数
     pub fn primary_source_param(&self) -> Option<usize> {
         self.lifetime_bindings.first().map(|b| b.bound_to_param)
     }
@@ -174,7 +169,7 @@ impl LifetimeAnalyzer {
             Type::BorrowedRef {
                 lifetime, type_, ..
             } => {
-                // 引用类型：提取生命周期
+                // 引用类型:提取生命周期
                 if let Some(lt) = lifetime {
                     if !lifetimes.contains(lt) {
                         lifetimes.push(lt.clone());
@@ -184,10 +179,9 @@ impl LifetimeAnalyzer {
                 Self::extract_lifetimes_recursive(type_, lifetimes);
             }
             Type::ResolvedPath(path) => {
-                // 路径类型：检查泛型参数
+                // 路径类型:检查泛型参数
                 if let Some(ref args) = path.args {
-                    if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = args.as_ref()
-                    {
+                    if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = args.as_ref() {
                         for arg in args {
                             if let rustdoc_types::GenericArg::Type(t) = arg {
                                 Self::extract_lifetimes_recursive(t, lifetimes);
@@ -219,17 +213,17 @@ impl LifetimeAnalyzer {
 
     /// 建立返回值生命周期到参数的绑定
     ///
-    /// 规则：
-    /// 1. 如果返回值包含生命周期 'a，找到所有参数中也包含 'a 的参数
-    /// 2. 如果只有一个参数包含 'a，则绑定到该参数
-    /// 3. 如果多个参数包含 'a，优先绑定到 self（如果存在）
-    /// 4. 如果返回值有多个生命周期，为每个生命周期建立绑定
+    /// 规则:
+    /// 1. 如果返回值包含生命周期 'a,找到所有参数中也包含 'a 的参数
+    /// 2. 如果只有一个参数包含 'a,则绑定到该参数
+    /// 3. 如果多个参数包含 'a,优先绑定到 self(如果存在)
+    /// 4. 如果返回值有多个生命周期,为每个生命周期建立绑定
     fn build_lifetime_bindings(analysis: &FunctionLifetimeAnalysis) -> Vec<LifetimeBinding> {
         let mut bindings = Vec::new();
 
         if let Some(return_lts) = &analysis.return_lifetimes {
             for ret_lifetime in &return_lts.lifetimes {
-                // 跳过 'static（不需要绑定）
+                // 跳过 'static(不需要绑定)
                 if ret_lifetime == "'static" {
                     continue;
                 }
@@ -244,13 +238,13 @@ impl LifetimeAnalyzer {
 
                 // 确定绑定的参数
                 let bound_to = if matching_params.is_empty() {
-                    // 没有显式标注，推断为第一个参数（通常是 self）
+                    // 没有显式标注,推断为第一个参数(通常是 self)
                     0
                 } else if matching_params.len() == 1 {
-                    // 只有一个匹配，绑定到它
+                    // 只有一个匹配,绑定到它
                     matching_params[0]
                 } else {
-                    // 多个匹配，优先绑定到第一个（self）
+                    // 多个匹配,优先绑定到第一个(self)
                     matching_params[0]
                 };
 
@@ -288,7 +282,7 @@ mod tests {
     #[test]
     fn test_extract_lifetime_params() {
         // 这里需要构造 Generics 对象进行测试
-        // 由于 rustdoc_types 的结构较复杂，这里先留空
+        // 由于 rustdoc_types 的结构较复杂,这里先留空
     }
 
     #[test]

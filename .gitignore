@@ -5,7 +5,7 @@
 /paper/
 **/target/
 
-# Cargo.lock (对于库项目通常忽略，但工具项目可保留)
+# Cargo.lock (对于库项目通常忽略,但工具项目可保留)
 # Cargo.lock
 
 # IDE / 编辑器

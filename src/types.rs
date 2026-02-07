@@ -1,7 +1,7 @@
 //! 9-Place 类型系统定义
 //!
-//! 论文模型：对每个基础类型 T，区分 T、&T、&mut T 三种形态，
-//! 再乘以 capability (own/frz/blk) 得到 9 个 place。
+//! 论文模型:对每个基础类型 T,区分 T、&T、&mut T 三种形态,
+//! 再乘以 capability (own/frz/blk) 得到 9 个 place.
 
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
@@ -289,7 +289,9 @@ impl Token {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum StackFrame {
-    Freeze { owner_vid: VarId },
+    Freeze {
+        owner_vid: VarId,
+    },
     Shr {
         owner_vid: VarId,
         ref_vid: VarId,
@@ -409,9 +411,9 @@ impl Marking {
     }
 
     pub fn remove_by_vid(&mut self, place: PlaceId, vid: VarId) -> Option<Token> {
-        self.tokens.get_mut(&place).and_then(|ts| {
-            ts.iter().position(|t| t.vid == vid).map(|i| ts.remove(i))
-        })
+        self.tokens
+            .get_mut(&place)
+            .and_then(|ts| ts.iter().position(|t| t.vid == vid).map(|i| ts.remove(i)))
     }
 
     pub fn count(&self, place: PlaceId) -> usize {
@@ -525,7 +527,11 @@ mod tests {
         let key = PlaceKey::new(TyGround::path("Counter"), TypeForm::Value, Capability::Own);
         assert_eq!(key.display_name(), "own_Counter");
 
-        let key2 = PlaceKey::new(TyGround::primitive("i32"), TypeForm::RefShr, Capability::Frz);
+        let key2 = PlaceKey::new(
+            TyGround::primitive("i32"),
+            TypeForm::RefShr,
+            Capability::Frz,
+        );
         assert_eq!(key2.display_name(), "frz_&i32");
     }
 
@@ -585,17 +591,27 @@ mod tests {
         assert_eq!(via_tuple.short_name(), "()");
 
         // After normalization, they should be equal
-        assert_eq!(unit, via_tuple, "TyGround::tuple(vec![]) should normalize to Unit");
-        
+        assert_eq!(
+            unit, via_tuple,
+            "TyGround::tuple(vec![]) should normalize to Unit"
+        );
+
         // HashSet should only have one entry
         use std::collections::HashSet;
         let mut set = HashSet::new();
         set.insert(unit.clone());
         set.insert(via_tuple.clone());
-        assert_eq!(set.len(), 1, "Unit and normalized empty tuple should be the same in HashSet");
+        assert_eq!(
+            set.len(),
+            1,
+            "Unit and normalized empty tuple should be the same in HashSet"
+        );
 
         // Non-empty tuples should remain as Tuple
         let pair = TyGround::tuple(vec![TyGround::Unit, TyGround::Unit]);
-        assert!(matches!(pair, TyGround::Tuple(_)), "Non-empty tuple should be Tuple variant");
+        assert!(
+            matches!(pair, TyGround::Tuple(_)),
+            "Non-empty tuple should be Tuple variant"
+        );
     }
 }

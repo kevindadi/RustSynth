@@ -1,6 +1,6 @@
-//! 泛型示例：用于测试 RustSynth 的泛型解析能力
+//! 泛型示例:用于测试 RustSynth 的泛型解析能力
 //!
-//! 包含：
+//! 包含:
 //! - 泛型结构体
 //! - 关联类型 (Associated Types)
 //! - 基本 Trait 实现 (Default, Clone)
@@ -138,7 +138,7 @@ impl<A: Default, B: Default> Default for Pair<A, B> {
 // 关联类型 Trait
 // ============================================
 
-/// 容器 Trait（带关联类型）
+/// 容器 Trait(带关联类型)
 pub trait Container {
     /// 元素类型
     type Item;
@@ -163,7 +163,7 @@ pub trait Container {
 
 /// 简单栈实现
 pub struct Stack<T> {
-    items: [Option<T>; 8], // 固定大小，避免使用 Vec
+    items: [Option<T>; 8], // 固定大小,避免使用 Vec
     top: usize,
 }
 
@@ -229,7 +229,7 @@ pub trait MyInto<T> {
     fn my_into(self) -> T;
 }
 
-// 如果实现了 MyFrom，自动实现 MyInto
+// 如果实现了 MyFrom,自动实现 MyInto
 impl<T, U> MyInto<U> for T
 where
     U: MyFrom<T>,
@@ -254,7 +254,7 @@ impl MyFrom<Counter> for Wrapper<Counter> {
 }
 
 // ============================================
-// 迭代器 Trait（简化版）
+// 迭代器 Trait(简化版)
 // ============================================
 
 /// 简化的迭代器 trait

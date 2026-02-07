@@ -6,8 +6,8 @@ use std::fmt;
 use crate::config::{ParsedGoal, TaskConfig};
 use crate::pcpn::{Guard, GuardKind, Pcpn, Transition, TransitionKind};
 use crate::types::{
-    BorrowStack, CanonFrame, CanonFrameKind, CanonToken, Capability, Marking, PlaceId,
-    RegionLabel, StackFrame, Token, TypeForm, VarId,
+    BorrowStack, CanonFrame, CanonFrameKind, CanonToken, Capability, Marking, PlaceId, RegionLabel,
+    StackFrame, Token, TypeForm, VarId,
 };
 
 #[derive(Clone, Debug)]
@@ -22,11 +22,19 @@ impl fmt::Display for TraceFiring {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)?;
         if !self.consumed.is_empty() {
-            let c: Vec<_> = self.consumed.iter().map(|(_, t)| format!("v{}", t.vid)).collect();
+            let c: Vec<_> = self
+                .consumed
+                .iter()
+                .map(|(_, t)| format!("v{}", t.vid))
+                .collect();
             write!(f, " [-{}]", c.join(","))?;
         }
         if !self.produced.is_empty() {
-            let p: Vec<_> = self.produced.iter().map(|(_, t)| format!("v{}", t.vid)).collect();
+            let p: Vec<_> = self
+                .produced
+                .iter()
+                .map(|(_, t)| format!("v{}", t.vid))
+                .collect();
             write!(f, " [+{}]", p.join(","))?;
         }
         Ok(())
@@ -138,7 +146,7 @@ impl SimState {
                         lr
                     })
                 });
-                // 使用重映射后的值构造 CanonFrame，而非原始值
+                // 使用重映射后的值构造 CanonFrame,而非原始值
                 let kind = match f {
                     StackFrame::Freeze { .. } => CanonFrameKind::Freeze,
                     StackFrame::Shr { .. } => CanonFrameKind::Shr,
@@ -177,15 +185,12 @@ impl CanonState {
         let mut parts: Vec<String> = Vec::new();
         for (pid, tokens) in &self.marking {
             if !tokens.is_empty() {
-                let token_strs: Vec<String> = tokens.iter().map(|t| format!("v{}", t.vid)).collect();
+                let token_strs: Vec<String> =
+                    tokens.iter().map(|t| format!("v{}", t.vid)).collect();
                 parts.push(format!("p{}:[{}]", pid, token_strs.join(",")));
             }
         }
-        let stack_str: Vec<String> = self
-            .stack
-            .iter()
-            .map(|f| format!("{:?}", f.kind))
-            .collect();
+        let stack_str: Vec<String> = self.stack.iter().map(|f| format!("{:?}", f.kind)).collect();
         format!("M:{};S:{}", parts.join("|"), stack_str.join("|"))
     }
 }
@@ -240,7 +245,10 @@ impl SimConfig {
     }
 
     pub fn get_bound(&self, place_id: PlaceId) -> usize {
-        *self.place_bounds.get(&place_id).unwrap_or(&self.default_bound)
+        *self
+            .place_bounds
+            .get(&place_id)
+            .unwrap_or(&self.default_bound)
     }
 
     pub fn is_transition_allowed(&self, name: &str) -> bool {
@@ -353,10 +361,10 @@ impl<'a> Simulator<'a> {
         SimState::new()
     }
 
-    /// 使能检查的结果：(消耗绑定, 读取绑定)
+    /// 使能检查的结果:(消耗绑定, 读取绑定)
     /// 消耗绑定 = 被 consume 的 token
-    /// 读取绑定 = 被 read（非 consume）的 token，用于确定借用来源
-    fn enabled(
+    /// 读取绑定 = 被 read(非 consume)的 token,用于确定借用来源
+    pub fn enabled(
         &self,
         trans: &Transition,
         state: &SimState,
@@ -382,7 +390,7 @@ impl<'a> Simulator<'a> {
                     return None;
                 }
             } else {
-                // 非消耗弧：检查存在性，并记录读取绑定
+                // 非消耗弧:检查存在性,并记录读取绑定
                 if let Some(tokens) = state.marking.get(arc.place_id) {
                     let available: Vec<_> = tokens
                         .iter()
@@ -391,7 +399,7 @@ impl<'a> Simulator<'a> {
                     if available.is_empty() {
                         return None;
                     }
-                    // 记录读取绑定（不消耗，但提供上下文信息）
+                    // 记录读取绑定(不消耗,但提供上下文信息)
                     read_bindings.push((arc.place_id, available[0].clone()));
                 } else {
                     return None;
@@ -458,7 +466,7 @@ impl<'a> Simulator<'a> {
         }
     }
 
-    fn fire(
+    pub fn fire(
         &self,
         trans: &Transition,
         state: &SimState,
@@ -604,21 +612,31 @@ impl<'a> Simulator<'a> {
 
             TransitionKind::ApiCall { .. } => {
                 for arc in &trans.output_arcs {
-                    if arc.annotation.as_ref().map(|a| matches!(a, crate::pcpn::ArcAnnotation::ReturnArc)).unwrap_or(false) {
-                        // Copy-return: 返回被消耗 token 的副本（Copy 类型）
+                    if arc
+                        .annotation
+                        .as_ref()
+                        .map(|a| matches!(a, crate::pcpn::ArcAnnotation::ReturnArc))
+                        .unwrap_or(false)
+                    {
+                        // Copy-return: 返回被消耗 token 的副本(Copy 类型)
                         if let Some((_, orig)) = consumed.first() {
                             let copy_token = Token::new_owned(orig.vid, orig.ty.clone());
                             new_state.marking.add(arc.place_id, copy_token.clone());
                             produced.push((arc.place_id, copy_token));
                         }
-                    } else if arc.annotation.as_ref().map(|a| matches!(a, crate::pcpn::ArcAnnotation::Return)).unwrap_or(false) {
+                    } else if arc
+                        .annotation
+                        .as_ref()
+                        .map(|a| matches!(a, crate::pcpn::ArcAnnotation::Return))
+                        .unwrap_or(false)
+                    {
                         let place = &self.pcpn.places[arc.place_id];
                         let vid = new_state.fresh_vid();
                         let token = match place.form {
                             TypeForm::Value => Token::new_owned(vid, place.base_type.clone()),
                             TypeForm::RefShr => {
                                 let region = new_state.fresh_region();
-                                // 使用生命周期绑定确定借用来源（包含 read_bindings）
+                                // 使用生命周期绑定确定借用来源(包含 read_bindings)
                                 let owner = self.resolve_borrow_owner(
                                     trans,
                                     &consumed,
@@ -627,9 +645,9 @@ impl<'a> Simulator<'a> {
                                 );
                                 // 仅在 owner 尚未被 freeze 时添加 Freeze 帧
                                 if !new_state.stack.has_freeze_for_owner(owner) {
-                                    new_state.stack.push(StackFrame::Freeze {
-                                        owner_vid: owner,
-                                    });
+                                    new_state
+                                        .stack
+                                        .push(StackFrame::Freeze { owner_vid: owner });
                                 }
                                 new_state.stack.push(StackFrame::Shr {
                                     owner_vid: owner,
@@ -640,7 +658,7 @@ impl<'a> Simulator<'a> {
                             }
                             TypeForm::RefMut => {
                                 let region = new_state.fresh_region();
-                                // 使用生命周期绑定确定借用来源（包含 read_bindings）
+                                // 使用生命周期绑定确定借用来源(包含 read_bindings)
                                 let owner = self.resolve_borrow_owner(
                                     trans,
                                     &consumed,
@@ -673,7 +691,7 @@ impl<'a> Simulator<'a> {
     }
 
     /// 根据生命周期绑定信息确定 API 调用返回引用的借用来源
-    /// all_input_tokens 包含消耗和读取的 token（按 input_arcs 顺序排列）
+    /// all_input_tokens 包含消耗和读取的 token(按 input_arcs 顺序排列)
     fn resolve_borrow_owner(
         &self,
         trans: &Transition,
@@ -681,7 +699,7 @@ impl<'a> Simulator<'a> {
         read_bindings: &[(PlaceId, Token)],
         is_shared: bool,
     ) -> VarId {
-        // 构建完整的 input token 列表（消耗 + 读取，按 arc 顺序）
+        // 构建完整的 input token 列表(消耗 + 读取,按 arc 顺序)
         let mut all_inputs: Vec<Option<&Token>> = Vec::new();
         let mut consume_idx = 0;
         let mut read_idx = 0;
@@ -707,7 +725,7 @@ impl<'a> Simulator<'a> {
         for lb in &trans.lifetime_bindings {
             if lb.is_shared == is_shared || trans.lifetime_bindings.len() == 1 {
                 if let Some(Some(token)) = all_inputs.get(lb.source_arc_index) {
-                    // 如果读取的是引用 token，追溯到其 borrowed_from（原始 owner）
+                    // 如果读取的是引用 token,追溯到其 borrowed_from(原始 owner)
                     if let Some(owner_vid) = token.borrowed_from {
                         return owner_vid;
                     }
@@ -716,7 +734,7 @@ impl<'a> Simulator<'a> {
             }
         }
 
-        // 回退：优先使用读取绑定中的 token（通常是 &self 的来源）
+        // 回退:优先使用读取绑定中的 token(通常是 &self 的来源)
         if let Some((_, token)) = read_bindings.first() {
             if let Some(owner_vid) = token.borrowed_from {
                 return owner_vid;
@@ -918,5 +936,276 @@ mod tests {
 
         stack.pop();
         assert_eq!(stack.len(), 1);
+    }
+
+    // ===================================================================
+    //  Counter PCPN 可达性搜索测试
+    // ===================================================================
+
+    use crate::apigraph::build_counter_api_graph;
+    use crate::config::{GoalConfig, ParsedGoal};
+    use crate::pcpn::{Pcpn, TransitionKind};
+
+    /// 辅助：构建 Counter PCPN
+    fn counter_pcpn() -> Pcpn {
+        let graph = build_counter_api_graph();
+        Pcpn::from_api_graph(&graph)
+    }
+
+    /// 辅助：从 trace 中提取 API 调用名称（过滤掉结构转换）
+    fn api_call_names(trace: &[TraceFiring]) -> Vec<String> {
+        trace.iter()
+            .filter(|f| matches!(f.kind,
+                TransitionKind::ApiCall { .. } | TransitionKind::ConstProducer { .. }))
+            .map(|f| f.name.clone())
+            .collect()
+    }
+
+    #[test]
+    fn test_counter_reach_own_counter() {
+        // Goal: own Counter — 最短路径应为 Counter::new() (1 步)
+        let pcpn = counter_pcpn();
+        let goal = ParsedGoal::parse(&GoalConfig {
+            want: "own Counter".to_string(),
+            count: 1,
+        }).unwrap();
+
+        let config = SimConfig {
+            max_steps: 50,
+            stack_depth: 4,
+            goal: Some(goal),
+            ..Default::default()
+        };
+
+        let sim = Simulator::new(&pcpn, config);
+        let result = sim.run();
+
+        assert!(result.found, "Should find own Counter");
+        // 最短 trace 应该只有 Counter::new()
+        let api_names = api_call_names(&result.trace);
+        assert_eq!(api_names.len(), 1, "Shortest path is 1 API call");
+        assert_eq!(api_names[0], "Counter::new");
+    }
+
+    #[test]
+    fn test_counter_reach_own_i32() {
+        // Goal: own i32 — 最短路径是 const_i32 (1 步，但它是 CreatePrimitive 不是 API)
+        let pcpn = counter_pcpn();
+        let goal = ParsedGoal::parse(&GoalConfig {
+            want: "own i32".to_string(),
+            count: 1,
+        }).unwrap();
+
+        let config = SimConfig {
+            max_steps: 50,
+            stack_depth: 4,
+            goal: Some(goal),
+            ..Default::default()
+        };
+
+        let sim = Simulator::new(&pcpn, config);
+        let result = sim.run();
+
+        assert!(result.found, "Should find own i32");
+        assert!(!result.trace.is_empty(), "Trace should not be empty");
+        // trace 第一步可能是 const_i32 (CreatePrimitive) 或 Counter::new
+        // 只需验证找到了合法路径
+    }
+
+    #[test]
+    fn test_counter_reach_own_i32_via_counter_only() {
+        // 只允许 Counter 相关的 transition (禁止 const_i32)
+        // Goal: own i32 → 必须通过 Counter::new() → Counter::into_value()
+        let pcpn = counter_pcpn();
+        let goal = ParsedGoal::parse(&GoalConfig {
+            want: "own i32".to_string(),
+            count: 1,
+        }).unwrap();
+
+        let config = SimConfig {
+            max_steps: 50,
+            stack_depth: 4,
+            goal: Some(goal),
+            deny_transitions: vec!["const_i32".to_string(), "copy_use".to_string()],
+            ..Default::default()
+        };
+
+        let sim = Simulator::new(&pcpn, config);
+        let result = sim.run();
+
+        assert!(result.found, "Should find own i32 via Counter path");
+        let api_names = api_call_names(&result.trace);
+        // 应包含 Counter::new 和 Counter::into_value
+        assert!(api_names.contains(&"Counter::new".to_string()),
+            "Trace should include Counter::new, got {:?}", api_names);
+        assert!(api_names.contains(&"Counter::into_value".to_string()),
+            "Trace should include Counter::into_value, got {:?}", api_names);
+    }
+
+    #[test]
+    fn test_simulator_borrow_shr_cycle() {
+        // 验证 new → borrow_shr_first → end_shr_unfreeze 恢复原始 token
+        let pcpn = counter_pcpn();
+        let counter_ty = TyGround::path("Counter");
+
+        // 手动执行: 初始化 → new → borrow_shr → end_shr_unfreeze
+        let mut state = SimState::new();
+        let vid = state.fresh_vid();
+        let own_place = pcpn.get_place(&counter_ty, &TypeForm::Value, Capability::Own).unwrap();
+        state.marking.add(own_place, Token::new_owned(vid, counter_ty.clone()));
+
+        // 验证初始状态
+        assert_eq!(state.marking.count(own_place), 1);
+        assert!(state.stack.is_empty());
+
+        // 手动执行 borrow_shr_first
+        let bsf = pcpn.transitions.iter()
+            .find(|t| t.name == "borrow_shr_first(Counter)").unwrap();
+
+        let config = SimConfig::default();
+        let sim = Simulator::new(&pcpn, config);
+
+        if let Some((consume, read)) = sim.enabled(bsf, &state) {
+            let (state2, _firing) = sim.fire(bsf, &state, &consume, &read).unwrap();
+
+            let frz_place = pcpn.get_place(&counter_ty, &TypeForm::Value, Capability::Frz).unwrap();
+            let shr_place = pcpn.get_place(&counter_ty, &TypeForm::RefShr, Capability::Own).unwrap();
+
+            // 应该: own_Counter 空, frz_Counter 有 1 token, own_&Counter 有 1 token
+            assert_eq!(state2.marking.count(own_place), 0, "own consumed");
+            assert_eq!(state2.marking.count(frz_place), 1, "frz created");
+            assert_eq!(state2.marking.count(shr_place), 1, "ref created");
+            assert_eq!(state2.stack.len(), 2, "Freeze + Shr frames");
+
+            // 手动执行 end_shr_unfreeze
+            let esu = pcpn.transitions.iter()
+                .find(|t| t.name == "end_shr_unfreeze(Counter)").unwrap();
+
+            if let Some((consume2, read2)) = sim.enabled(esu, &state2) {
+                let (state3, _firing2) = sim.fire(esu, &state2, &consume2, &read2).unwrap();
+
+                // 应该恢复: own_Counter 有 1 token, frz/shr 都空, stack 空
+                assert_eq!(state3.marking.count(own_place), 1, "own restored");
+                assert_eq!(state3.marking.count(frz_place), 0, "frz consumed");
+                assert_eq!(state3.marking.count(shr_place), 0, "ref consumed");
+                assert!(state3.stack.is_empty(), "stack empty after unfreeze");
+            } else {
+                panic!("end_shr_unfreeze should be enabled");
+            }
+        } else {
+            panic!("borrow_shr_first should be enabled");
+        }
+    }
+
+    #[test]
+    fn test_simulator_borrow_mut_cycle() {
+        // 验证 new → borrow_mut → end_mut 恢复原始 token
+        let pcpn = counter_pcpn();
+        let counter_ty = TyGround::path("Counter");
+
+        let mut state = SimState::new();
+        let vid = state.fresh_vid();
+        let own_place = pcpn.get_place(&counter_ty, &TypeForm::Value, Capability::Own).unwrap();
+        state.marking.add(own_place, Token::new_owned(vid, counter_ty.clone()));
+
+        let bm = pcpn.transitions.iter()
+            .find(|t| t.name == "borrow_mut(Counter)").unwrap();
+
+        let config = SimConfig::default();
+        let sim = Simulator::new(&pcpn, config);
+
+        if let Some((consume, read)) = sim.enabled(bm, &state) {
+            let (state2, _) = sim.fire(bm, &state, &consume, &read).unwrap();
+
+            let blk_place = pcpn.get_place(&counter_ty, &TypeForm::Value, Capability::Blk).unwrap();
+            let mut_place = pcpn.get_place(&counter_ty, &TypeForm::RefMut, Capability::Own).unwrap();
+
+            assert_eq!(state2.marking.count(own_place), 0, "own consumed");
+            assert_eq!(state2.marking.count(blk_place), 1, "blk created");
+            assert_eq!(state2.marking.count(mut_place), 1, "mut ref created");
+            assert_eq!(state2.stack.len(), 1, "Mut frame pushed");
+
+            // end_mut
+            let em = pcpn.transitions.iter()
+                .find(|t| t.name == "end_mut(Counter)").unwrap();
+
+            if let Some((consume2, read2)) = sim.enabled(em, &state2) {
+                let (state3, _) = sim.fire(em, &state2, &consume2, &read2).unwrap();
+
+                assert_eq!(state3.marking.count(own_place), 1, "own restored");
+                assert_eq!(state3.marking.count(blk_place), 0, "blk consumed");
+                assert_eq!(state3.marking.count(mut_place), 0, "mut ref consumed");
+                assert!(state3.stack.is_empty(), "stack empty after end_mut");
+            } else {
+                panic!("end_mut should be enabled");
+            }
+        } else {
+            panic!("borrow_mut should be enabled");
+        }
+    }
+
+    #[test]
+    fn test_counter_reachability_graph() {
+        // 生成 Counter PCPN 的可达图并验证基本属性
+        let pcpn = counter_pcpn();
+        let config = SimConfig {
+            max_steps: 200,
+            stack_depth: 3,
+            default_bound: 2,
+            ..Default::default()
+        };
+
+        let sim = Simulator::new(&pcpn, config);
+        let rg = sim.generate_reachability_graph(100);
+
+        // 应该至少有初始状态 + const_i32 / Counter::new 产生的状态
+        assert!(rg.states.len() >= 2, "At least 2 states, got {}", rg.states.len());
+        assert!(rg.edges.len() >= 2, "At least 2 edges, got {}", rg.edges.len());
+
+        // 初始状态（index 0）应该有从 const_i32 和 Counter::new 出发的边
+        let from_initial: Vec<_> = rg.edges.iter()
+            .filter(|(from, _, _)| *from == 0)
+            .collect();
+        assert!(!from_initial.is_empty(), "Initial state should have outgoing edges");
+
+        // 验证存在 Counter::new 边
+        assert!(from_initial.iter().any(|(_, _, name)| name == "Counter::new"),
+            "Should have Counter::new edge from initial state");
+    }
+
+    #[test]
+    fn test_canonicalization_identity() {
+        // 两个语义相同但 vid 不同的 state 应该产生相同的 canonical hash
+        let counter_ty = TyGround::path("Counter");
+
+        let mut state1 = SimState::new();
+        state1.marking.add(0, Token::new_owned(5, counter_ty.clone()));
+        state1.marking.add(0, Token::new_owned(10, counter_ty.clone()));
+
+        let mut state2 = SimState::new();
+        state2.marking.add(0, Token::new_owned(100, counter_ty.clone()));
+        state2.marking.add(0, Token::new_owned(200, counter_ty.clone()));
+
+        let hash1 = state1.canonicalize().hash_key();
+        let hash2 = state2.canonicalize().hash_key();
+        assert_eq!(hash1, hash2, "Same structure should have same canonical hash");
+    }
+
+    #[test]
+    fn test_empty_goal_matches_any_nonempty() {
+        // 无 goal 时，任何有 token 且 stack 为空的状态都算目标
+        let pcpn = counter_pcpn();
+        let config = SimConfig {
+            max_steps: 10,
+            stack_depth: 4,
+            goal: None,
+            ..Default::default()
+        };
+
+        let sim = Simulator::new(&pcpn, config);
+        let result = sim.run();
+
+        assert!(result.found, "With no explicit goal, any non-empty state with empty stack is a goal");
+        assert!(!result.trace.is_empty());
     }
 }

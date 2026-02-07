@@ -10,7 +10,7 @@ use crate::types::{TyGround, TypeForm, VarId};
 /// 例如 "Counter::get" -> Some(("Counter", "get"))
 /// "make_pair" -> None
 fn parse_method_path(fn_path: &str) -> Option<(&str, &str)> {
-    // 处理泛型：先去掉 <...> 后缀
+    // 处理泛型:先去掉 <...> 后缀
     let base = fn_path.split('<').next().unwrap_or(fn_path);
     if let Some(pos) = base.rfind("::") {
         let type_name = &base[..pos];
@@ -136,7 +136,7 @@ impl<'a> CodeEmitter<'a> {
             self.var_types.insert(token.vid, ty.clone());
             self.var_is_ref.insert(token.vid, false);
 
-            // 使用正确的 Rust 路径语法（如 Counter::new()）
+            // 使用正确的 Rust 路径语法(如 Counter::new())
             let call = if let Some((type_name, fn_name)) = parse_method_path(fn_path) {
                 format!("{}::{}()", type_name, fn_name)
             } else {
@@ -155,7 +155,7 @@ impl<'a> CodeEmitter<'a> {
         let mut args: Vec<String> = Vec::new();
         let mut receiver: Option<(String, bool)> = None; // (var_name, is_ref)
 
-        // 判断是否是方法调用，以及准备参数
+        // 判断是否是方法调用,以及准备参数
         let method_info = parse_method_path(fn_path);
         let is_method_call = method_info.is_some() && !firing.consumed.is_empty();
 
@@ -175,8 +175,7 @@ impl<'a> CodeEmitter<'a> {
             }
         }
 
-        let call_expr = if let (Some((recv, _)), Some((_, method_name))) =
-            (&receiver, method_info)
+        let call_expr = if let (Some((recv, _)), Some((_, method_name))) = (&receiver, method_info)
         {
             format!("{}.{}({})", recv, method_name, args.join(", "))
         } else {
@@ -190,7 +189,7 @@ impl<'a> CodeEmitter<'a> {
             }
         };
 
-        // 处理输出 token（过滤掉 Copy-return 的 token，它们的 vid 与 consumed 相同）
+        // 处理输出 token(过滤掉 Copy-return 的 token,它们的 vid 与 consumed 相同)
         let output_tokens: Vec<_> = firing
             .produced
             .iter()
@@ -211,7 +210,7 @@ impl<'a> CodeEmitter<'a> {
             self.var_is_ref.insert(token.vid, is_ref);
             self.var_is_mut_ref.insert(token.vid, is_mut_ref);
 
-            // 引用不需要 mut，值类型可能需要 mut
+            // 引用不需要 mut,值类型可能需要 mut
             let type_annotation = match place.form {
                 TypeForm::Value => format!(": {}", place.base_type.short_name()),
                 TypeForm::RefShr => format!(": &{}", place.base_type.short_name()),
@@ -223,7 +222,7 @@ impl<'a> CodeEmitter<'a> {
                 let_kw, var_name, type_annotation, call_expr
             ));
         } else {
-            // 多返回值（罕见）
+            // 多返回值(罕见)
             self.emit_line(&format!("{}; // {}", call_expr, firing.name));
         }
     }
@@ -301,7 +300,12 @@ impl<'a> CodeEmitter<'a> {
 
     fn emit_end_mut(&mut self, firing: &TraceFiring) {
         for (_, token) in &firing.consumed {
-            if self.var_is_mut_ref.get(&token.vid).copied().unwrap_or(false) {
+            if self
+                .var_is_mut_ref
+                .get(&token.vid)
+                .copied()
+                .unwrap_or(false)
+            {
                 let var_name = self.get_var_name(token.vid);
                 self.emit_line(&format!("drop({}); // {}", var_name, firing.name));
                 return;
@@ -356,7 +360,11 @@ impl<'a> CodeEmitter<'a> {
 
     fn is_likely_method_receiver(&self, vid: VarId) -> bool {
         self.var_is_ref.get(&vid).copied().unwrap_or(false)
-            || self.var_types.get(&vid).map(|t| !t.is_primitive()).unwrap_or(false)
+            || self
+                .var_types
+                .get(&vid)
+                .map(|t| !t.is_primitive())
+                .unwrap_or(false)
     }
 
     fn format_fn_call(&self, fn_path: &str, args: &[String]) -> String {
@@ -409,5 +417,140 @@ mod tests {
             emitter.default_value(&TyGround::path("Counter")),
             "Default::default()"
         );
+    }
+
+    use crate::apigraph::build_counter_api_graph;
+    use crate::config::{GoalConfig, ParsedGoal};
+    use crate::pcpn::Pcpn;
+    use crate::simulator::{SimConfig, Simulator, TraceFiring};
+
+    #[test]
+    fn test_emit_const_producer() {
+        // 构造 Counter PCPN，模拟找到 "own Counter" 的 trace，然后生成代码
+        let graph = build_counter_api_graph();
+        let pcpn = Pcpn::from_api_graph(&graph);
+
+        let goal = ParsedGoal::parse(&GoalConfig {
+            want: "own Counter".to_string(),
+            count: 1,
+        }).unwrap();
+
+        let config = SimConfig {
+            max_steps: 20,
+            stack_depth: 4,
+            goal: Some(goal),
+            ..Default::default()
+        };
+
+        let sim = Simulator::new(&pcpn, config);
+        let result = sim.run();
+        assert!(result.found);
+
+        let code = emit_rust_code(&result.trace, &pcpn);
+        assert!(code.contains("fn main()"), "Generated code should contain fn main()");
+        assert!(code.contains("Counter::new()"), "Should call Counter::new()");
+    }
+
+    #[test]
+    fn test_emit_into_value_sequence() {
+        // 找到 Counter::new → Counter::into_value 的路径，生成代码
+        let graph = build_counter_api_graph();
+        let pcpn = Pcpn::from_api_graph(&graph);
+
+        let goal = ParsedGoal::parse(&GoalConfig {
+            want: "own i32".to_string(),
+            count: 1,
+        }).unwrap();
+
+        let config = SimConfig {
+            max_steps: 50,
+            stack_depth: 4,
+            goal: Some(goal),
+            deny_transitions: vec!["const_i32".to_string(), "copy_use".to_string()],
+            ..Default::default()
+        };
+
+        let sim = Simulator::new(&pcpn, config);
+        let result = sim.run();
+        assert!(result.found, "Should find path to own i32 via Counter");
+
+        let code = emit_rust_code(&result.trace, &pcpn);
+        assert!(code.contains("fn main()"));
+        // 应包含 Counter::new 调用
+        assert!(code.contains("Counter::new()"),
+            "Code should contain Counter::new(), got:\n{}", code);
+    }
+
+    #[test]
+    fn test_emit_borrow_and_method_call() {
+        // 用 get(&self) 路径: Counter::new → borrow_shr → get → end → drop
+        // 为此需要禁止 const_i32、copy_use、into_value
+        let graph = build_counter_api_graph();
+        let pcpn = Pcpn::from_api_graph(&graph);
+
+        let goal = ParsedGoal::parse(&GoalConfig {
+            want: "own i32".to_string(),
+            count: 1,
+        }).unwrap();
+
+        let config = SimConfig {
+            max_steps: 80,
+            stack_depth: 4,
+            goal: Some(goal),
+            deny_transitions: vec![
+                "const_i32".to_string(),
+                "copy_use".to_string(),
+                "into_value".to_string(),
+            ],
+            ..Default::default()
+        };
+
+        let sim = Simulator::new(&pcpn, config);
+        let result = sim.run();
+        assert!(result.found, "Should find path via borrow + get");
+
+        let code = emit_rust_code(&result.trace, &pcpn);
+        assert!(code.contains("fn main()"));
+        // 应该包含 Counter::new 和某种借用
+        assert!(code.contains("Counter::new()"),
+            "Code should contain Counter::new(), got:\n{}", code);
+        // 应该有 get 调用（可能是 .get() 方法调用或 Counter::get() 关联函数形式）
+        assert!(code.contains("get("),
+            "Code should contain get() call, got:\n{}", code);
+    }
+
+    #[test]
+    fn test_emit_code_structure() {
+        // 验证生成代码的结构完整性
+        let graph = build_counter_api_graph();
+        let pcpn = Pcpn::from_api_graph(&graph);
+
+        let config = SimConfig {
+            max_steps: 20,
+            stack_depth: 4,
+            goal: None,
+            ..Default::default()
+        };
+
+        let sim = Simulator::new(&pcpn, config);
+        let result = sim.run();
+        assert!(result.found);
+
+        let code = emit_rust_code(&result.trace, &pcpn);
+
+        // 结构验证
+        assert!(code.contains("#![allow(unused_variables)]"));
+        assert!(code.contains("#![allow(unused_mut)]"));
+        assert!(code.contains("fn main() {"));
+        assert!(code.contains("}"));
+
+        // 每一行 let 都应该有 =
+        for line in code.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("let ") {
+                assert!(trimmed.contains("="),
+                    "let statement should have assignment: {}", trimmed);
+            }
+        }
     }
 }

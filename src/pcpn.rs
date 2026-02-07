@@ -1,6 +1,6 @@
 //! PCPN (Pushdown Colored Petri Net) - 9-Place 模型
 //!
-//! 对每个基础类型 T，区分 {T, &T, &mut T} × {own, frz, blk} = 9 个 place。
+//! 对每个基础类型 T,区分 {T, &T, &mut T} × {own, frz, blk} = 9 个 place.
 
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
@@ -19,8 +19,8 @@ pub struct Transition {
     pub output_arcs: Vec<Arc>,
     pub guards: Vec<Guard>,
     pub is_const_producer: bool,
-    /// 生命周期绑定信息：返回引用的 API 调用会携带此信息，
-    /// 用于仿真时确定借用来源（source_param_index → 对应 input_arcs 中的位置）
+    /// 生命周期绑定信息:返回引用的 API 调用会携带此信息,
+    /// 用于仿真时确定借用来源(source_param_index → 对应 input_arcs 中的位置)
     #[serde(default)]
     pub lifetime_bindings: Vec<LifetimeBindingInfo>,
 }
@@ -28,7 +28,7 @@ pub struct Transition {
 /// 用于 PCPN Transition 的生命周期绑定信息
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LifetimeBindingInfo {
-    /// 返回引用绑定到的输入参数索引（在 input_arcs 中的位置）
+    /// 返回引用绑定到的输入参数索引(在 input_arcs 中的位置)
     pub source_arc_index: usize,
     /// 是否是共享引用
     pub is_shared: bool,
@@ -138,13 +138,17 @@ impl Pcpn {
         match tk {
             TypeKey::Primitive(s) => Some(TyGround::primitive(s)),
             TypeKey::Path { crate_path, args } => {
-                let converted_args: Vec<TyGround> =
-                    args.iter().filter_map(|a| self.convert_type_key(a)).collect();
+                let converted_args: Vec<TyGround> = args
+                    .iter()
+                    .filter_map(|a| self.convert_type_key(a))
+                    .collect();
                 Some(TyGround::path_with_args(crate_path, converted_args))
             }
             TypeKey::Tuple(elems) => {
-                let converted: Vec<TyGround> =
-                    elems.iter().filter_map(|e| self.convert_type_key(e)).collect();
+                let converted: Vec<TyGround> = elems
+                    .iter()
+                    .filter_map(|e| self.convert_type_key(e))
+                    .collect();
                 // Use TyGround::tuple() to normalize empty tuples to Unit
                 Some(TyGround::tuple(converted))
             }
@@ -194,12 +198,23 @@ impl Pcpn {
         }
     }
 
-    pub fn get_place(&self, base_type: &TyGround, form: &TypeForm, cap: Capability) -> Option<PlaceId> {
+    pub fn get_place(
+        &self,
+        base_type: &TyGround,
+        form: &TypeForm,
+        cap: Capability,
+    ) -> Option<PlaceId> {
         let key = PlaceKey::new(base_type.clone(), form.clone(), cap);
         self.place_index.get(&key).copied()
     }
 
-    fn get_or_create_place(&mut self, base_type: &TyGround, form: &TypeForm, cap: Capability, budget: usize) -> PlaceId {
+    fn get_or_create_place(
+        &mut self,
+        base_type: &TyGround,
+        form: &TypeForm,
+        cap: Capability,
+        budget: usize,
+    ) -> PlaceId {
         let key = PlaceKey::new(base_type.clone(), form.clone(), cap);
         if let Some(&id) = self.place_index.get(&key) {
             return id;
@@ -241,7 +256,11 @@ impl Pcpn {
         result
     }
 
-    fn collect_fn_generics(&self, graph: &ApiGraph, fn_node: &FunctionNode) -> Vec<(String, String, Vec<String>)> {
+    fn collect_fn_generics(
+        &self,
+        graph: &ApiGraph,
+        fn_node: &FunctionNode,
+    ) -> Vec<(String, String, Vec<String>)> {
         let mut params = Vec::new();
         for edge in graph.get_input_edges(fn_node.id) {
             let ty = &graph.type_nodes[edge.type_node].type_key;
@@ -264,7 +283,10 @@ impl Pcpn {
         params
     }
 
-    fn enumerate_instantiations(&self, params: &[(String, String, Vec<String>)]) -> Vec<HashMap<(String, String), TyGround>> {
+    fn enumerate_instantiations(
+        &self,
+        params: &[(String, String, Vec<String>)],
+    ) -> Vec<HashMap<(String, String), TyGround>> {
         if params.is_empty() {
             return vec![HashMap::new()];
         }
@@ -290,7 +312,7 @@ impl Pcpn {
     fn satisfies_bounds(&self, ty: &TyGround, bounds: &[String]) -> bool {
         for bound in bounds {
             let ok = match bound.as_str() {
-                // 精确匹配 trait bound（区分大小写，符合 Rust 惯例）
+                // 精确匹配 trait bound(区分大小写,符合 Rust 惯例)
                 "Copy" | "copy" => ty.is_copy(),
                 "Clone" | "clone" => {
                     // Copy 蕴含 Clone
@@ -313,7 +335,7 @@ impl Pcpn {
                     ty.is_primitive()
                 }
                 _ => {
-                    // 未知 bound：保守接受（允许单态化尝试）
+                    // 未知 bound:保守接受(允许单态化尝试)
                     true
                 }
             };
@@ -324,12 +346,15 @@ impl Pcpn {
         true
     }
 
-    fn cartesian_product(&self, candidates: &[Vec<(&(String, String, Vec<String>), &TyGround)>]) -> Vec<HashMap<(String, String), TyGround>> {
+    fn cartesian_product(
+        &self,
+        candidates: &[Vec<(&(String, String, Vec<String>), &TyGround)>],
+    ) -> Vec<HashMap<(String, String), TyGround>> {
         if candidates.is_empty() {
             return vec![HashMap::new()];
         }
 
-        // 限制组合爆炸：总实例化数量不超过阈值
+        // 限制组合爆炸:总实例化数量不超过阈值
         const MAX_INSTANTIATIONS: usize = 64;
 
         let first = &candidates[0];
@@ -375,7 +400,11 @@ impl Pcpn {
         }
     }
 
-    fn apply_subst_to_type_key(&self, tk: &TypeKey, subst: &HashMap<(String, String), TyGround>) -> Option<TyGround> {
+    fn apply_subst_to_type_key(
+        &self,
+        tk: &TypeKey,
+        subst: &HashMap<(String, String), TyGround>,
+    ) -> Option<TyGround> {
         let substituted = tk.substitute(
             &subst
                 .iter()
@@ -392,9 +421,12 @@ impl Pcpn {
                 crate_path: name.clone(),
                 args: args.iter().map(|a| self.ty_ground_to_type_key(a)).collect(),
             },
-            TyGround::Tuple(elems) => {
-                TypeKey::Tuple(elems.iter().map(|e| self.ty_ground_to_type_key(e)).collect())
-            }
+            TyGround::Tuple(elems) => TypeKey::Tuple(
+                elems
+                    .iter()
+                    .map(|e| self.ty_ground_to_type_key(e))
+                    .collect(),
+            ),
             // Both Unit and empty Tuple map to empty TypeKey::Tuple
             TyGround::Unit => TypeKey::Tuple(vec![]),
         }
@@ -522,7 +554,7 @@ impl Pcpn {
             .filter_map(|lb| {
                 // source_param_index 指的是 API 签名中的参数位置
                 // 需要映射到 input_arcs 中的实际索引
-                // input_arcs 的顺序跟随 get_input_edges，索引与 param_index 对应
+                // input_arcs 的顺序跟随 get_input_edges,索引与 param_index 对应
                 let arc_idx = input_arcs.iter().position(|arc| {
                     arc.annotation
                         .as_ref()
@@ -570,12 +602,27 @@ impl Pcpn {
             TransitionKind::BorrowShrFirst {
                 base_type: base_type.clone(),
             },
-            vec![Arc { place_id: own_val, consumes: true, annotation: None }],
+            vec![Arc {
+                place_id: own_val,
+                consumes: true,
+                annotation: None,
+            }],
             vec![
-                Arc { place_id: frz_val, consumes: false, annotation: None },
-                Arc { place_id: own_shr, consumes: false, annotation: None },
+                Arc {
+                    place_id: frz_val,
+                    consumes: false,
+                    annotation: None,
+                },
+                Arc {
+                    place_id: own_shr,
+                    consumes: false,
+                    annotation: None,
+                },
             ],
-            vec![Guard { kind: GuardKind::NoBlk, base_type: base_type.clone() }],
+            vec![Guard {
+                kind: GuardKind::NoBlk,
+                base_type: base_type.clone(),
+            }],
         );
 
         self.add_transition(
@@ -583,8 +630,16 @@ impl Pcpn {
             TransitionKind::BorrowShrNext {
                 base_type: base_type.clone(),
             },
-            vec![Arc { place_id: frz_val, consumes: false, annotation: None }],
-            vec![Arc { place_id: own_shr, consumes: false, annotation: None }],
+            vec![Arc {
+                place_id: frz_val,
+                consumes: false,
+                annotation: None,
+            }],
+            vec![Arc {
+                place_id: own_shr,
+                consumes: false,
+                annotation: None,
+            }],
             vec![],
         );
 
@@ -594,11 +649,26 @@ impl Pcpn {
                 base_type: base_type.clone(),
             },
             vec![
-                Arc { place_id: frz_val, consumes: false, annotation: None },
-                Arc { place_id: own_shr, consumes: true, annotation: None },
+                Arc {
+                    place_id: frz_val,
+                    consumes: false,
+                    annotation: None,
+                },
+                Arc {
+                    place_id: own_shr,
+                    consumes: true,
+                    annotation: None,
+                },
             ],
-            vec![Arc { place_id: frz_val, consumes: false, annotation: None }],
-            vec![Guard { kind: GuardKind::StackTopMatches, base_type: base_type.clone() }],
+            vec![Arc {
+                place_id: frz_val,
+                consumes: false,
+                annotation: None,
+            }],
+            vec![Guard {
+                kind: GuardKind::StackTopMatches,
+                base_type: base_type.clone(),
+            }],
         );
 
         self.add_transition(
@@ -607,11 +677,26 @@ impl Pcpn {
                 base_type: base_type.clone(),
             },
             vec![
-                Arc { place_id: frz_val, consumes: true, annotation: None },
-                Arc { place_id: own_shr, consumes: true, annotation: None },
+                Arc {
+                    place_id: frz_val,
+                    consumes: true,
+                    annotation: None,
+                },
+                Arc {
+                    place_id: own_shr,
+                    consumes: true,
+                    annotation: None,
+                },
             ],
-            vec![Arc { place_id: own_val, consumes: false, annotation: None }],
-            vec![Guard { kind: GuardKind::StackTopMatches, base_type: base_type.clone() }],
+            vec![Arc {
+                place_id: own_val,
+                consumes: false,
+                annotation: None,
+            }],
+            vec![Guard {
+                kind: GuardKind::StackTopMatches,
+                base_type: base_type.clone(),
+            }],
         );
 
         self.add_transition(
@@ -619,12 +704,27 @@ impl Pcpn {
             TransitionKind::BorrowMut {
                 base_type: base_type.clone(),
             },
-            vec![Arc { place_id: own_val, consumes: true, annotation: None }],
+            vec![Arc {
+                place_id: own_val,
+                consumes: true,
+                annotation: None,
+            }],
             vec![
-                Arc { place_id: blk_val, consumes: false, annotation: None },
-                Arc { place_id: own_mut, consumes: false, annotation: None },
+                Arc {
+                    place_id: blk_val,
+                    consumes: false,
+                    annotation: None,
+                },
+                Arc {
+                    place_id: own_mut,
+                    consumes: false,
+                    annotation: None,
+                },
             ],
-            vec![Guard { kind: GuardKind::NoFrzNoBlk, base_type: base_type.clone() }],
+            vec![Guard {
+                kind: GuardKind::NoFrzNoBlk,
+                base_type: base_type.clone(),
+            }],
         );
 
         self.add_transition(
@@ -633,11 +733,26 @@ impl Pcpn {
                 base_type: base_type.clone(),
             },
             vec![
-                Arc { place_id: blk_val, consumes: true, annotation: None },
-                Arc { place_id: own_mut, consumes: true, annotation: None },
+                Arc {
+                    place_id: blk_val,
+                    consumes: true,
+                    annotation: None,
+                },
+                Arc {
+                    place_id: own_mut,
+                    consumes: true,
+                    annotation: None,
+                },
             ],
-            vec![Arc { place_id: own_val, consumes: false, annotation: None }],
-            vec![Guard { kind: GuardKind::StackTopMatches, base_type: base_type.clone() }],
+            vec![Arc {
+                place_id: own_val,
+                consumes: false,
+                annotation: None,
+            }],
+            vec![Guard {
+                kind: GuardKind::StackTopMatches,
+                base_type: base_type.clone(),
+            }],
         );
 
         self.add_transition(
@@ -646,9 +761,16 @@ impl Pcpn {
                 ty: base_type.clone(),
                 form: TypeForm::Value,
             },
-            vec![Arc { place_id: own_val, consumes: true, annotation: None }],
+            vec![Arc {
+                place_id: own_val,
+                consumes: true,
+                annotation: None,
+            }],
             vec![],
-            vec![Guard { kind: GuardKind::NotBlocked, base_type: base_type.clone() }],
+            vec![Guard {
+                kind: GuardKind::NotBlocked,
+                base_type: base_type.clone(),
+            }],
         );
 
         self.add_transition(
@@ -657,7 +779,11 @@ impl Pcpn {
                 ty: base_type.clone(),
                 form: TypeForm::RefShr,
             },
-            vec![Arc { place_id: own_shr, consumes: true, annotation: None }],
+            vec![Arc {
+                place_id: own_shr,
+                consumes: true,
+                annotation: None,
+            }],
             vec![],
             vec![],
         );
@@ -668,7 +794,11 @@ impl Pcpn {
                 ty: base_type.clone(),
                 form: TypeForm::RefMut,
             },
-            vec![Arc { place_id: own_mut, consumes: true, annotation: None }],
+            vec![Arc {
+                place_id: own_mut,
+                consumes: true,
+                annotation: None,
+            }],
             vec![],
             vec![],
         );
@@ -676,9 +806,15 @@ impl Pcpn {
         if base_type.is_primitive() {
             self.add_transition(
                 format!("const_{}", short),
-                TransitionKind::CreatePrimitive { ty: base_type.clone() },
+                TransitionKind::CreatePrimitive {
+                    ty: base_type.clone(),
+                },
                 vec![],
-                vec![Arc { place_id: own_val, consumes: false, annotation: None }],
+                vec![Arc {
+                    place_id: own_val,
+                    consumes: false,
+                    annotation: None,
+                }],
                 vec![],
             );
         }
@@ -686,9 +822,19 @@ impl Pcpn {
         if base_type.is_copy() {
             self.add_transition(
                 format!("copy_use({})", short),
-                TransitionKind::CopyUse { ty: base_type.clone() },
-                vec![Arc { place_id: own_val, consumes: false, annotation: None }],
-                vec![Arc { place_id: own_val, consumes: false, annotation: None }],
+                TransitionKind::CopyUse {
+                    ty: base_type.clone(),
+                },
+                vec![Arc {
+                    place_id: own_val,
+                    consumes: false,
+                    annotation: None,
+                }],
+                vec![Arc {
+                    place_id: own_val,
+                    consumes: false,
+                    annotation: None,
+                }],
                 vec![],
             );
         }
@@ -703,7 +849,10 @@ impl Pcpn {
         guards: Vec<Guard>,
     ) {
         let id = self.transitions.len();
-        let is_const = matches!(kind, TransitionKind::CreatePrimitive { .. } | TransitionKind::ConstProducer { .. });
+        let is_const = matches!(
+            kind,
+            TransitionKind::CreatePrimitive { .. } | TransitionKind::ConstProducer { .. }
+        );
         self.transitions.push(Transition {
             id,
             name,
@@ -744,7 +893,9 @@ impl Pcpn {
         for trans in &self.transitions {
             let color = match &trans.kind {
                 TransitionKind::ApiCall { .. } => "palegreen",
-                TransitionKind::ConstProducer { .. } | TransitionKind::CreatePrimitive { .. } => "lightcyan",
+                TransitionKind::ConstProducer { .. } | TransitionKind::CreatePrimitive { .. } => {
+                    "lightcyan"
+                }
                 TransitionKind::BorrowShrFirst { .. }
                 | TransitionKind::BorrowShrNext { .. }
                 | TransitionKind::BorrowMut { .. } => "lavender",
@@ -784,8 +935,21 @@ impl Pcpn {
     }
 
     pub fn stats(&self) -> PcpnStats {
-        let api_trans = self.transitions.iter().filter(|t| matches!(t.kind, TransitionKind::ApiCall { .. })).count();
-        let const_trans = self.transitions.iter().filter(|t| matches!(t.kind, TransitionKind::CreatePrimitive { .. } | TransitionKind::ConstProducer { .. })).count();
+        let api_trans = self
+            .transitions
+            .iter()
+            .filter(|t| matches!(t.kind, TransitionKind::ApiCall { .. }))
+            .count();
+        let const_trans = self
+            .transitions
+            .iter()
+            .filter(|t| {
+                matches!(
+                    t.kind,
+                    TransitionKind::CreatePrimitive { .. } | TransitionKind::ConstProducer { .. }
+                )
+            })
+            .count();
         PcpnStats {
             num_places: self.places.len(),
             num_types: self.type_universe.len(),
@@ -829,10 +993,10 @@ impl std::fmt::Display for PcpnStats {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::apigraph::build_counter_api_graph;
 
     #[test]
     fn test_9_places_created() {
@@ -842,11 +1006,26 @@ mod tests {
 
         assert_eq!(pcpn.places.len(), 9);
 
-        assert!(pcpn.get_place(&ty, &TypeForm::Value, Capability::Own).is_some());
-        assert!(pcpn.get_place(&ty, &TypeForm::Value, Capability::Frz).is_some());
-        assert!(pcpn.get_place(&ty, &TypeForm::Value, Capability::Blk).is_some());
-        assert!(pcpn.get_place(&ty, &TypeForm::RefShr, Capability::Own).is_some());
-        assert!(pcpn.get_place(&ty, &TypeForm::RefMut, Capability::Own).is_some());
+        assert!(
+            pcpn.get_place(&ty, &TypeForm::Value, Capability::Own)
+                .is_some()
+        );
+        assert!(
+            pcpn.get_place(&ty, &TypeForm::Value, Capability::Frz)
+                .is_some()
+        );
+        assert!(
+            pcpn.get_place(&ty, &TypeForm::Value, Capability::Blk)
+                .is_some()
+        );
+        assert!(
+            pcpn.get_place(&ty, &TypeForm::RefShr, Capability::Own)
+                .is_some()
+        );
+        assert!(
+            pcpn.get_place(&ty, &TypeForm::RefMut, Capability::Own)
+                .is_some()
+        );
     }
 
     #[test]
@@ -857,12 +1036,188 @@ mod tests {
         pcpn.create_9_places_for_type(&ty, 3);
         pcpn.create_structural_transitions(&ty);
 
-        let has_borrow_shr = pcpn.transitions.iter().any(|t| t.name.contains("borrow_shr"));
-        let has_borrow_mut = pcpn.transitions.iter().any(|t| t.name.contains("borrow_mut"));
+        let has_borrow_shr = pcpn
+            .transitions
+            .iter()
+            .any(|t| t.name.contains("borrow_shr"));
+        let has_borrow_mut = pcpn
+            .transitions
+            .iter()
+            .any(|t| t.name.contains("borrow_mut"));
         let has_const = pcpn.transitions.iter().any(|t| t.name.contains("const_"));
 
         assert!(has_borrow_shr);
         assert!(has_borrow_mut);
         assert!(has_const);
+    }
+
+    // ===================================================================
+    //  Counter ApiGraph → PCPN 转换测试
+    // ===================================================================
+
+    #[test]
+    fn test_counter_api_to_pcpn() {
+        let graph = build_counter_api_graph();
+        let pcpn = Pcpn::from_api_graph(&graph);
+
+        let counter_ty = TyGround::path("Counter");
+        let i32_ty = TyGround::primitive("i32");
+
+        // --- Places: 2 types × 9 = 18 ---
+        assert_eq!(pcpn.places.len(), 18, "Counter×9 + i32×9 = 18 places");
+
+        for form in [TypeForm::Value, TypeForm::RefShr, TypeForm::RefMut] {
+            for cap in [Capability::Own, Capability::Frz, Capability::Blk] {
+                assert!(
+                    pcpn.get_place(&counter_ty, &form, cap).is_some(),
+                    "Missing place: Counter {:?} {:?}", form, cap
+                );
+                assert!(
+                    pcpn.get_place(&i32_ty, &form, cap).is_some(),
+                    "Missing place: i32 {:?} {:?}", form, cap
+                );
+            }
+        }
+
+        // --- API Transitions ---
+        let api_trans: Vec<_> = pcpn.transitions.iter()
+            .filter(|t| matches!(t.kind, TransitionKind::ApiCall { .. } | TransitionKind::ConstProducer { .. }))
+            .collect();
+        assert_eq!(api_trans.len(), 4, "new/get/inc/into_value");
+
+        // Counter::new → ConstProducer, output = (Counter, Value, Own)
+        let new_t = api_trans.iter().find(|t| t.name == "Counter::new").unwrap();
+        assert!(matches!(new_t.kind, TransitionKind::ConstProducer { .. }));
+        assert!(new_t.input_arcs.is_empty());
+        assert_eq!(new_t.output_arcs.len(), 1);
+        let new_out = &pcpn.places[new_t.output_arcs[0].place_id];
+        assert_eq!(new_out.base_type, counter_ty);
+        assert_eq!(new_out.form, TypeForm::Value);
+        assert_eq!(new_out.cap, Capability::Own);
+
+        // Counter::get → input &Counter (RefShr,Own) read, output i32 (Value,Own)
+        let get_t = api_trans.iter().find(|t| t.name == "Counter::get").unwrap();
+        assert!(matches!(get_t.kind, TransitionKind::ApiCall { .. }));
+        assert_eq!(get_t.input_arcs.len(), 1);
+        let get_in = &pcpn.places[get_t.input_arcs[0].place_id];
+        assert_eq!(get_in.base_type, counter_ty);
+        assert_eq!(get_in.form, TypeForm::RefShr);
+        assert!(!get_t.input_arcs[0].consumes, "&self is read-only");
+        assert!(get_t.output_arcs.iter().any(|a| {
+            let p = &pcpn.places[a.place_id];
+            p.base_type == i32_ty && p.form == TypeForm::Value
+        }));
+        assert!(get_t.guards.iter().any(|g| g.kind == GuardKind::NoBlk));
+
+        // Counter::inc → input &mut Counter (RefMut,Own) read, no meaningful output
+        let inc_t = api_trans.iter().find(|t| t.name == "Counter::inc").unwrap();
+        assert_eq!(inc_t.input_arcs.len(), 1);
+        let inc_in = &pcpn.places[inc_t.input_arcs[0].place_id];
+        assert_eq!(inc_in.base_type, counter_ty);
+        assert_eq!(inc_in.form, TypeForm::RefMut);
+        assert!(!inc_t.input_arcs[0].consumes);
+        assert!(inc_t.guards.iter().any(|g| g.kind == GuardKind::NoFrzNoOtherBlk));
+
+        // Counter::into_value → input Counter (Value,Own) consume, output i32
+        let into_t = api_trans.iter().find(|t| t.name == "Counter::into_value").unwrap();
+        assert_eq!(into_t.input_arcs.len(), 1);
+        let into_in = &pcpn.places[into_t.input_arcs[0].place_id];
+        assert_eq!(into_in.base_type, counter_ty);
+        assert_eq!(into_in.form, TypeForm::Value);
+        assert!(into_t.input_arcs[0].consumes, "move consumes token");
+        assert!(into_t.output_arcs.iter().any(|a| {
+            let p = &pcpn.places[a.place_id];
+            p.base_type == i32_ty && p.form == TypeForm::Value
+        }));
+        assert!(into_t.guards.iter().any(|g| g.kind == GuardKind::NoFrzNoBlk));
+    }
+
+    #[test]
+    fn test_pcpn_structural_completeness() {
+        let graph = build_counter_api_graph();
+        let pcpn = Pcpn::from_api_graph(&graph);
+
+        let counter_ty = TyGround::path("Counter");
+        let i32_ty = TyGround::primitive("i32");
+
+        // i32 有 CreatePrimitive + CopyUse
+        assert!(pcpn.transitions.iter().any(|t|
+            matches!(&t.kind, TransitionKind::CreatePrimitive { ty } if *ty == i32_ty)));
+        assert!(pcpn.transitions.iter().any(|t|
+            matches!(&t.kind, TransitionKind::CopyUse { ty } if *ty == i32_ty)));
+
+        // Counter 无 CreatePrimitive / CopyUse
+        assert!(!pcpn.transitions.iter().any(|t|
+            matches!(&t.kind, TransitionKind::CreatePrimitive { ty } if *ty == counter_ty)));
+        assert!(!pcpn.transitions.iter().any(|t|
+            matches!(&t.kind, TransitionKind::CopyUse { ty } if *ty == counter_ty)));
+
+        // 每个类型都有 9 个标准结构转换
+        for ty in [&counter_ty, &i32_ty] {
+            let short = ty.short_name();
+            for pat in [
+                "borrow_shr_first", "borrow_shr_next",
+                "end_shr_keep_frz", "end_shr_unfreeze",
+                "borrow_mut", "end_mut",
+                "drop_val", "drop_shr", "drop_mut",
+            ] {
+                let expected = format!("{}({})", pat, short);
+                assert!(
+                    pcpn.transitions.iter().any(|t| t.name == expected),
+                    "Missing structural transition: {}", expected
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_pcpn_guards() {
+        let graph = build_counter_api_graph();
+        let pcpn = Pcpn::from_api_graph(&graph);
+        let counter_ty = TyGround::path("Counter");
+
+        let bsf = pcpn.transitions.iter()
+            .find(|t| t.name == "borrow_shr_first(Counter)").unwrap();
+        assert!(bsf.guards.iter().any(|g| g.kind == GuardKind::NoBlk));
+
+        let bm = pcpn.transitions.iter()
+            .find(|t| t.name == "borrow_mut(Counter)").unwrap();
+        assert!(bm.guards.iter().any(|g| g.kind == GuardKind::NoFrzNoBlk));
+
+        for name in [
+            "end_shr_keep_frz(Counter)",
+            "end_shr_unfreeze(Counter)",
+            "end_mut(Counter)",
+        ] {
+            let t = pcpn.transitions.iter().find(|t| t.name == name).unwrap();
+            assert!(t.guards.iter().any(|g| g.kind == GuardKind::StackTopMatches),
+                "{} should have StackTopMatches guard", name);
+        }
+
+        let dv = pcpn.transitions.iter()
+            .find(|t| t.name == "drop_val(Counter)").unwrap();
+        assert!(dv.guards.iter().any(|g| g.kind == GuardKind::NotBlocked && g.base_type == counter_ty));
+
+        let ds = pcpn.transitions.iter()
+            .find(|t| t.name == "drop_shr(Counter)").unwrap();
+        assert!(ds.guards.is_empty());
+
+        let dm = pcpn.transitions.iter()
+            .find(|t| t.name == "drop_mut(Counter)").unwrap();
+        assert!(dm.guards.is_empty());
+    }
+
+    #[test]
+    fn test_pcpn_stats() {
+        let graph = build_counter_api_graph();
+        let pcpn = Pcpn::from_api_graph(&graph);
+        let stats = pcpn.stats();
+
+        assert_eq!(stats.num_places, 18);
+        assert_eq!(stats.num_types, 2);
+        assert_eq!(stats.num_api_transitions, 3, "get, inc, into_value");
+        assert_eq!(stats.num_const_transitions, 2, "Counter::new + const_i32");
+        let total = stats.num_api_transitions + stats.num_const_transitions + stats.num_structural_transitions;
+        assert_eq!(total, stats.num_transitions);
     }
 }

@@ -1,19 +1,9 @@
 //! RustSynth - Pushdown CPN Safe Rust Synthesizer
 //!
-//! 从 rustdoc JSON 提取 API 签名，构建 Pushdown Colored Petri Net，
-//! 通过有界可达性搜索生成可编译的 Safe Rust 代码片段。
+//! 从 rustdoc JSON 提取 API 签名,构建 Pushdown Colored Petri Net,
+//! 通过有界可达性搜索生成可编译的 Safe Rust 代码片段.
 
-mod apigraph;
-mod config;
-mod emitter;
-mod extract;
-mod lifetime_analyzer;
-mod pcpn;
-mod rustdoc_loader;
-mod simulator;
-mod type_model;
-mod types;
-mod unify;
+use RustSynth::{apigraph, config, emitter, extract, pcpn, rustdoc_loader, simulator};
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
@@ -24,8 +14,8 @@ use tracing_subscriber::EnvFilter;
 #[command(
     name = "RustSynth",
     about = "Pushdown CPN Safe Rust Synthesizer",
-    long_about = "从 rustdoc JSON 提取 API 签名，构建 Pushdown Colored Petri Net，\n\
-                  通过有界可达性搜索生成可编译的 Safe Rust 代码片段。\n\n\
+    long_about = "从 rustdoc JSON 提取 API 签名,构建 Pushdown Colored Petri Net,\n\
+                  通过有界可达性搜索生成可编译的 Safe Rust 代码片段.\n\n\
                   Extracts API signatures from rustdoc JSON, builds a Pushdown Colored Petri Net,\n\
                   and synthesizes compilable Safe Rust code snippets via bounded reachability."
 )]
@@ -132,7 +122,7 @@ enum Commands {
         modules: Vec<String>,
     },
 
-    /// 完整流水线：PCPN → 仿真 → 代码生成
+    /// 完整流水线:PCPN → 仿真 → 代码生成
     Generate {
         #[arg(short, long)]
         input: PathBuf,
@@ -242,10 +232,15 @@ fn run_synth(doc_json: &PathBuf, task_path: &PathBuf, out: Option<&PathBuf>) -> 
     let task = config::TaskConfig::load(task_path).context("Failed to load task config")?;
 
     tracing::info!("Loading rustdoc JSON: {:?}", doc_json);
-    let krate = rustdoc_loader::load_rustdoc_json(doc_json).context("Failed to load rustdoc JSON")?;
+    let krate =
+        rustdoc_loader::load_rustdoc_json(doc_json).context("Failed to load rustdoc JSON")?;
 
     let crate_name = get_crate_name(&krate);
-    tracing::info!("Crate: {} (version: {})", crate_name, krate.crate_version.as_deref().unwrap_or("unknown"));
+    tracing::info!(
+        "Crate: {} (version: {})",
+        crate_name,
+        krate.crate_version.as_deref().unwrap_or("unknown")
+    );
 
     tracing::info!("Building API Graph...");
     let graph = extract::build_api_graph(&krate, &[])?;
@@ -266,7 +261,10 @@ fn run_synth(doc_json: &PathBuf, task_path: &PathBuf, out: Option<&PathBuf>) -> 
     let result = sim.run();
 
     if result.found {
-        tracing::info!("✓ Found witness ({} states explored)", result.states_explored);
+        tracing::info!(
+            "✓ Found witness ({} states explored)",
+            result.states_explored
+        );
         simulator::print_trace(&result.trace);
 
         let code = emitter::emit_rust_code(&result.trace, &pcpn);
@@ -278,7 +276,10 @@ fn run_synth(doc_json: &PathBuf, task_path: &PathBuf, out: Option<&PathBuf>) -> 
             tracing::info!("✓ Code written to: {:?}", out_path);
         }
     } else {
-        tracing::warn!("✗ No witness found ({} states explored)", result.states_explored);
+        tracing::warn!(
+            "✗ No witness found ({} states explored)",
+            result.states_explored
+        );
         tracing::info!("Try increasing max_steps or adjusting bounds in task config");
     }
 
@@ -290,7 +291,11 @@ fn run_apigraph(input: &PathBuf, out: &PathBuf, modules: &[String]) -> Result<()
     let krate = rustdoc_loader::load_rustdoc_json(input).context("Failed to load rustdoc JSON")?;
 
     let crate_name = get_crate_name(&krate);
-    tracing::info!("Crate: {} (version: {})", crate_name, krate.crate_version.as_deref().unwrap_or("unknown"));
+    tracing::info!(
+        "Crate: {} (version: {})",
+        crate_name,
+        krate.crate_version.as_deref().unwrap_or("unknown")
+    );
 
     tracing::info!("Building API Graph...");
     let graph = extract::build_api_graph(&krate, modules)?;
@@ -315,7 +320,11 @@ fn run_pcpn(input: &PathBuf, out: &PathBuf, modules: &[String]) -> Result<()> {
     let krate = rustdoc_loader::load_rustdoc_json(input).context("Failed to load rustdoc JSON")?;
 
     let crate_name = get_crate_name(&krate);
-    tracing::info!("Crate: {} (version: {})", crate_name, krate.crate_version.as_deref().unwrap_or("unknown"));
+    tracing::info!(
+        "Crate: {} (version: {})",
+        crate_name,
+        krate.crate_version.as_deref().unwrap_or("unknown")
+    );
 
     tracing::info!("Building API Graph...");
     let graph = extract::build_api_graph(&krate, modules)?;
@@ -339,7 +348,12 @@ fn run_pcpn(input: &PathBuf, out: &PathBuf, modules: &[String]) -> Result<()> {
     Ok(())
 }
 
-fn run_simulate(input: &PathBuf, max_steps: usize, max_stack: usize, modules: &[String]) -> Result<()> {
+fn run_simulate(
+    input: &PathBuf,
+    max_steps: usize,
+    max_stack: usize,
+    modules: &[String],
+) -> Result<()> {
     let (pcpn, _) = build_pcpn(input, modules)?;
 
     let config = simulator::SimConfig {
@@ -348,22 +362,38 @@ fn run_simulate(input: &PathBuf, max_steps: usize, max_stack: usize, modules: &[
         ..Default::default()
     };
 
-    tracing::info!("Running simulator (max_steps={}, stack_depth={})...", max_steps, max_stack);
+    tracing::info!(
+        "Running simulator (max_steps={}, stack_depth={})...",
+        max_steps,
+        max_stack
+    );
 
     let sim = simulator::Simulator::new(&pcpn, config);
     let result = sim.run();
 
     if result.found {
-        tracing::info!("✓ Found witness ({} states explored)", result.states_explored);
+        tracing::info!(
+            "✓ Found witness ({} states explored)",
+            result.states_explored
+        );
         simulator::print_trace(&result.trace);
     } else {
-        tracing::warn!("✗ No witness found ({} states explored)", result.states_explored);
+        tracing::warn!(
+            "✗ No witness found ({} states explored)",
+            result.states_explored
+        );
     }
 
     Ok(())
 }
 
-fn run_reachability(input: &PathBuf, out: &PathBuf, max_states: usize, max_stack: usize, modules: &[String]) -> Result<()> {
+fn run_reachability(
+    input: &PathBuf,
+    out: &PathBuf,
+    max_states: usize,
+    max_stack: usize,
+    modules: &[String],
+) -> Result<()> {
     let (pcpn, _) = build_pcpn(input, modules)?;
 
     std::fs::create_dir_all(out).context("Failed to create output directory")?;
@@ -375,13 +405,17 @@ fn run_reachability(input: &PathBuf, out: &PathBuf, max_states: usize, max_stack
     };
 
     let sim = simulator::Simulator::new(&pcpn, config);
-    tracing::info!("Generating reachability graph (max_states={})...", max_states);
+    tracing::info!(
+        "Generating reachability graph (max_states={})...",
+        max_states
+    );
 
     let reachability = sim.generate_reachability_graph(max_states);
     tracing::info!("{}", reachability.stats());
 
     let dot_path = out.join("reachability.dot");
-    std::fs::write(&dot_path, reachability.to_dot(&pcpn)).context("Failed to write reachability.dot")?;
+    std::fs::write(&dot_path, reachability.to_dot(&pcpn))
+        .context("Failed to write reachability.dot")?;
     tracing::info!("✓ Reachability DOT: {:?}", dot_path);
 
     println!("\n=== Reachability Stats ===");
@@ -391,7 +425,13 @@ fn run_reachability(input: &PathBuf, out: &PathBuf, max_states: usize, max_stack
     Ok(())
 }
 
-fn run_generate(input: &PathBuf, out: &PathBuf, max_steps: usize, max_stack: usize, modules: &[String]) -> Result<()> {
+fn run_generate(
+    input: &PathBuf,
+    out: &PathBuf,
+    max_steps: usize,
+    max_stack: usize,
+    modules: &[String],
+) -> Result<()> {
     let (pcpn, _) = build_pcpn(input, modules)?;
 
     std::fs::create_dir_all(out).context("Failed to create output directory")?;
@@ -406,13 +446,20 @@ fn run_generate(input: &PathBuf, out: &PathBuf, max_steps: usize, max_stack: usi
         ..Default::default()
     };
 
-    tracing::info!("Running simulator (max_steps={}, stack_depth={})...", max_steps, max_stack);
+    tracing::info!(
+        "Running simulator (max_steps={}, stack_depth={})...",
+        max_steps,
+        max_stack
+    );
 
     let sim = simulator::Simulator::new(&pcpn, config);
     let result = sim.run();
 
     if result.found {
-        tracing::info!("✓ Found witness ({} states explored)", result.states_explored);
+        tracing::info!(
+            "✓ Found witness ({} states explored)",
+            result.states_explored
+        );
         simulator::print_trace(&result.trace);
 
         let code = emitter::emit_rust_code(&result.trace, &pcpn);
@@ -424,7 +471,10 @@ fn run_generate(input: &PathBuf, out: &PathBuf, max_steps: usize, max_stack: usi
         println!("\n=== Generated Rust Code ===\n");
         println!("{}", code);
     } else {
-        tracing::warn!("✗ No witness found ({} states explored)", result.states_explored);
+        tracing::warn!(
+            "✗ No witness found ({} states explored)",
+            result.states_explored
+        );
         tracing::info!("Try increasing --max-steps");
     }
 
@@ -436,7 +486,11 @@ fn build_pcpn(input: &PathBuf, modules: &[String]) -> Result<(pcpn::Pcpn, apigra
     let krate = rustdoc_loader::load_rustdoc_json(input).context("Failed to load rustdoc JSON")?;
 
     let crate_name = get_crate_name(&krate);
-    tracing::info!("Crate: {} (version: {})", crate_name, krate.crate_version.as_deref().unwrap_or("unknown"));
+    tracing::info!(
+        "Crate: {} (version: {})",
+        crate_name,
+        krate.crate_version.as_deref().unwrap_or("unknown")
+    );
 
     tracing::info!("Building API Graph...");
     let graph = extract::build_api_graph(&krate, modules)?;
@@ -451,7 +505,10 @@ fn build_pcpn(input: &PathBuf, modules: &[String]) -> Result<(pcpn::Pcpn, apigra
 
 fn get_crate_name(krate: &rustdoc_types::Crate) -> String {
     if let Some(root_item) = krate.index.get(&krate.root) {
-        root_item.name.clone().unwrap_or_else(|| "unknown".to_string())
+        root_item
+            .name
+            .clone()
+            .unwrap_or_else(|| "unknown".to_string())
     } else {
         "unknown".to_string()
     }

@@ -3,24 +3,24 @@
 [![Rust](https://img.shields.io/badge/rust-1.85+-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 
-RustSynth 是一个基于 **Pushdown Colored Petri Net (Pushdown CPN)** 的 Safe Rust 代码片段合成器。它从 rustdoc JSON 文档中解析公开 API 签名，构建 9-place 所有权模型的 PCPN，通过有界可达性搜索合成可编译的 Safe Rust 代码。
+RustSynth 是一个基于 **Pushdown Colored Petri Net (Pushdown CPN)** 的 Safe Rust 代码片段合成器.它从 rustdoc JSON 文档中解析公开 API 签名,构建 9-place 所有权模型的 PCPN,通过有界可达性搜索合成可编译的 Safe Rust 代码.
 
 ## 核心特性
 
-- **9-Place 模型**：对每个基础类型 T，区分 {T, &T, &mut T} × {own, frz, blk} = 9 个 place
-- **Pushdown 栈**：记录 outstanding borrows，实现 LIFO 借用/归还语义
-- **类型统一**：支持泛型函数的 unification 和 completion
-- **规范化**：状态空间 canonicalization（vid/region 重命名）避免无限状态爆炸
-- **0-ary Producer**：自动识别无参数的 const fn 作为值源
-- **TOML 配置**：灵活的任务规范，支持目标、边界和过滤器
-- **代码生成**：将 witness firing sequence 转换为可编译的 Rust 代码
+- **9-Place 模型**:对每个基础类型 T,区分 {T, &T, &mut T} × {own, frz, blk} = 9 个 place
+- **Pushdown 栈**:记录 outstanding borrows,实现 LIFO 借用/归还语义
+- **类型统一**:支持泛型函数的 unification 和 completion
+- **规范化**:状态空间 canonicalization(vid/region 重命名)避免无限状态爆炸
+- **0-ary Producer**:自动识别无参数的 const fn 作为值源
+- **TOML 配置**:灵活的任务规范,支持目标、边界和过滤器
+- **代码生成**:将 witness firing sequence 转换为可编译的 Rust 代码
 
 ## 快速开始
 
 ### 前置条件
 
 - Rust 工具链 (1.85+)
-- Rust nightly（用于生成 rustdoc JSON）
+- Rust nightly(用于生成 rustdoc JSON)
 
 ### 安装
 
@@ -54,7 +54,7 @@ rustc --edition 2021 synthesized.rs --crate-type lib
 python3 run_tests.py
 ```
 
-或使用 Docker：
+或使用 Docker:
 
 ```bash
 docker build -t RustSynth .
@@ -68,13 +68,13 @@ rustdoc JSON
      │
      ▼
 ┌─────────────────┐
-│  API Graph      │  二分图：函数 ↔ 类型
+│  API Graph      │  二分图:函数 ↔ 类型
 │  extract.rs     │
 └────────┬────────┘
          │
          ▼
 ┌─────────────────┐
-│  PCPN 模型      │  每类型 9 个 place，Pushdown 栈
+│  PCPN 模型      │  每类型 9 个 place,Pushdown 栈
 │  pcpn.rs        │
 └────────┬────────┘
          │
@@ -93,7 +93,7 @@ rustdoc JSON
 
 ## 任务配置
 
-任务配置使用 TOML 格式：
+任务配置使用 TOML 格式:
 
 ```toml
 [inputs]
@@ -111,33 +111,33 @@ max_steps = 100           # 最大搜索步数
 allow = ["Counter::new", "Counter::inc", "Counter::get"]
 
 [goal]
-want = "own i32"          # 目标：获得一个 owned i32
+want = "own i32"          # 目标:获得一个 owned i32
 count = 1
 ```
 
 ## 命令列表
 
-| 命令 | 说明 |
-|------|------|
-| `synth` | 使用任务配置运行完整合成流水线 |
-| `apigraph` | 生成 API Graph (DOT/JSON) |
-| `pcpn` | 生成 PCPN 模型 (DOT/JSON) |
-| `simulate` | 运行仿真器搜索 witness |
-| `reachability` | 生成可达图 |
-| `generate` | 完整流水线：PCPN → 仿真 → 代码 |
+| 命令           | 说明                           |
+| -------------- | ------------------------------ |
+| `synth`        | 使用任务配置运行完整合成流水线 |
+| `apigraph`     | 生成 API Graph (DOT/JSON)      |
+| `pcpn`         | 生成 PCPN 模型 (DOT/JSON)      |
+| `simulate`     | 运行仿真器搜索 witness         |
+| `reachability` | 生成可达图                     |
+| `generate`     | 完整流水线:PCPN → 仿真 → 代码  |
 
 ## 模块概览
 
-| 模块 | 行数 | 说明 |
-|------|------|------|
-| `types.rs` | 567 | 9-place 类型定义 (TypeForm, Capability, Token) |
-| `config.rs` | 316 | TOML 任务配置解析 |
-| `unify.rs` | 388 | 类型统一和补全 |
-| `pcpn.rs` | 775 | Pushdown CPN 模型构建 |
-| `simulator.rs` | 775 | 有界可达性搜索 + canonicalization |
-| `emitter.rs` | 366 | Witness 到 Rust 代码转换 |
-| `extract.rs` | 672 | rustdoc JSON → API Graph |
-| `apigraph.rs` | 423 | API 二分图 |
+| 模块           | 行数 | 说明                                           |
+| -------------- | ---- | ---------------------------------------------- |
+| `types.rs`     | 567  | 9-place 类型定义 (TypeForm, Capability, Token) |
+| `config.rs`    | 316  | TOML 任务配置解析                              |
+| `unify.rs`     | 388  | 类型统一和补全                                 |
+| `pcpn.rs`      | 775  | Pushdown CPN 模型构建                          |
+| `simulator.rs` | 775  | 有界可达性搜索 + canonicalization              |
+| `emitter.rs`   | 366  | Witness 到 Rust 代码转换                       |
+| `extract.rs`   | 672  | rustdoc JSON → API Graph                       |
+| `apigraph.rs`  | 423  | API 二分图                                     |
 
 ## 示例输出
 
@@ -162,18 +162,18 @@ fn main() {
 - 可变引用 (&mut T)
 - 方法 (self, &self, &mut self)
 - 自由函数
-- const fn（作为 0-ary producer）
+- const fn(作为 0-ary producer)
 
 ## 限制
 
-- 不支持生命周期省略推断（使用启发式）
+- 不支持生命周期省略推断(使用启发式)
 - 不支持关联类型 / trait impl 分析
 - 不支持 async/await
 - 通过栈顺序简化 outlives 检查
 
 ## 许可证
 
-可选择以下任一许可证：
+可选择以下任一许可证:
 
 - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
 - MIT License ([LICENSE-MIT](LICENSE-MIT))

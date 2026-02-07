@@ -1,6 +1,6 @@
 //! 任务配置文件解析
 //!
-//! 支持 TOML 格式的任务配置，包括搜索参数、过滤规则和目标定义。
+//! 支持 TOML 格式的任务配置,包括搜索参数、过滤规则和目标定义.
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
@@ -260,8 +260,10 @@ mod tests {
         let parsed = ParsedGoal::parse(&goal).unwrap();
         assert_eq!(parsed.cap, Capability::Own);
         assert_eq!(parsed.form, TypeForm::Value);
-        assert!(matches!(parsed.base_type, TyGround::Path { ref name, ref args } 
-            if name == "Vec" && args.len() == 1));
+        assert!(
+            matches!(parsed.base_type, TyGround::Path { ref name, ref args } 
+            if name == "Vec" && args.len() == 1)
+        );
     }
 
     #[test]
