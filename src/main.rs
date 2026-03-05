@@ -261,13 +261,23 @@ fn run_synth(doc_json: &PathBuf, task_path: &PathBuf, out: Option<&PathBuf>) -> 
     let result = sim.run();
 
     if result.found {
+        let total_traces = 1 + result.extra_traces.len();
         tracing::info!(
-            "✓ Found witness ({} states explored)",
+            "✓ Found {} witness trace(s) ({} states explored)",
+            total_traces,
             result.states_explored
         );
         simulator::print_trace(&result.trace);
 
-        let code = emitter::emit_rust_code(&result.trace, &pcpn);
+        let code = if result.extra_traces.is_empty() {
+            emitter::emit_rust_code(&result.trace, &pcpn)
+        } else {
+            let mut all_traces = vec![result.trace.clone()];
+            all_traces.extend(result.extra_traces.clone());
+            tracing::info!("Generating {} test functions from witness traces", all_traces.len());
+            emitter::emit_multi_traces(&all_traces, &pcpn, Some(&crate_name))
+        };
+
         println!("\n=== Generated Rust Code ===\n");
         println!("{}", code);
 

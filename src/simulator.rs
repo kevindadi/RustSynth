@@ -670,6 +670,24 @@ impl<'a> Simulator<'a> {
                     true
                 }
             }
+            GuardKind::PlaceCountRange {
+                ref form,
+                cap,
+                min,
+                max,
+            } => {
+                let place = self.pcpn.get_place(base, form, cap);
+                let count = place.map(|p| state.marking.count(p)).unwrap_or(0);
+                count >= min && count <= max
+            }
+            GuardKind::StackDepthMax { max_depth } => state.stack.len() <= max_depth,
+            GuardKind::And(ref sub_guards) => sub_guards.iter().all(|sub_kind| {
+                let sub_guard = Guard {
+                    kind: sub_kind.clone(),
+                    base_type: base.clone(),
+                };
+                self.check_guard(&sub_guard, state, bindings)
+            }),
         }
     }
 

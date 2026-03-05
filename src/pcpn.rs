@@ -49,11 +49,32 @@ pub enum TransitionKind {
     CopyUse { ty: TyGround },
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Arc {
     pub place_id: PlaceId,
+    #[serde(default)]
     pub consumes: bool,
+    #[serde(default)]
     pub annotation: Option<ArcAnnotation>,
+    /// Optional inscription for CPN token transformation on this arc
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub inscription: Option<ArcInscription>,
+}
+
+impl Arc {
+    pub fn new(place_id: PlaceId, consumes: bool, annotation: Option<ArcAnnotation>) -> Self {
+        Arc {
+            place_id,
+            consumes,
+            annotation,
+            inscription: None,
+        }
+    }
+
+    pub fn with_inscription(mut self, inscription: ArcInscription) -> Self {
+        self.inscription = Some(inscription);
+        self
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -77,6 +98,31 @@ pub enum GuardKind {
     NoFrzNoOtherBlk,
     NotBlocked,
     StackTopMatches,
+    /// Token count in a specific place must be within [min, max]
+    PlaceCountRange {
+        form: TypeForm,
+        cap: Capability,
+        min: usize,
+        max: usize,
+    },
+    /// Stack depth must not exceed a threshold
+    StackDepthMax { max_depth: usize },
+    /// Conjunction of multiple guard conditions (all must hold)
+    And(Vec<GuardKind>),
+}
+
+/// Arc inscription defines how tokens are transformed when flowing through an arc.
+/// Standard CPN uses inscription functions to map input tokens to output tokens.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum ArcInscription {
+    /// Identity: token passes through unchanged (default behavior)
+    Identity,
+    /// Project: extract a field/component from the token type
+    Project { field: String },
+    /// Wrap: wrap the token in a container type (e.g., T -> Option<T>)
+    Wrap { wrapper_type: TyGround },
+    /// Filter: only tokens matching a type predicate can flow
+    Filter { expected_type: TyGround },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -466,18 +512,10 @@ impl Pcpn {
                 }
             });
 
-            input_arcs.push(Arc {
-                place_id,
-                consumes,
-                annotation,
-            });
+            input_arcs.push(Arc::new(place_id, consumes, annotation));
 
             if base_ty.is_copy() && form == TypeForm::Value {
-                output_arcs.push(Arc {
-                    place_id,
-                    consumes: false,
-                    annotation: Some(ArcAnnotation::ReturnArc),
-                });
+                output_arcs.push(Arc::new(place_id, false, Some(ArcAnnotation::ReturnArc)));
             }
 
             match edge.ownership {
@@ -516,11 +554,7 @@ impl Pcpn {
             };
 
             let place_id = self.get_or_create_place(&base_ty, &form, cap, 3);
-            output_arcs.push(Arc {
-                place_id,
-                consumes: false,
-                annotation: Some(ArcAnnotation::Return),
-            });
+            output_arcs.push(Arc::new(place_id, false, Some(ArcAnnotation::Return)));
         }
 
         if input_arcs.is_empty() && output_arcs.is_empty() {
@@ -602,22 +636,10 @@ impl Pcpn {
             TransitionKind::BorrowShrFirst {
                 base_type: base_type.clone(),
             },
-            vec![Arc {
-                place_id: own_val,
-                consumes: true,
-                annotation: None,
-            }],
+            vec![Arc::new(own_val, true, None)],
             vec![
-                Arc {
-                    place_id: frz_val,
-                    consumes: false,
-                    annotation: None,
-                },
-                Arc {
-                    place_id: own_shr,
-                    consumes: false,
-                    annotation: None,
-                },
+                Arc::new(frz_val, false, None),
+                Arc::new(own_shr, false, None),
             ],
             vec![Guard {
                 kind: GuardKind::NoBlk,
@@ -630,16 +652,8 @@ impl Pcpn {
             TransitionKind::BorrowShrNext {
                 base_type: base_type.clone(),
             },
-            vec![Arc {
-                place_id: frz_val,
-                consumes: false,
-                annotation: None,
-            }],
-            vec![Arc {
-                place_id: own_shr,
-                consumes: false,
-                annotation: None,
-            }],
+            vec![Arc::new(frz_val, false, None)],
+            vec![Arc::new(own_shr, false, None)],
             vec![],
         );
 
@@ -649,22 +663,10 @@ impl Pcpn {
                 base_type: base_type.clone(),
             },
             vec![
-                Arc {
-                    place_id: frz_val,
-                    consumes: false,
-                    annotation: None,
-                },
-                Arc {
-                    place_id: own_shr,
-                    consumes: true,
-                    annotation: None,
-                },
+                Arc::new(frz_val, false, None),
+                Arc::new(own_shr, true, None),
             ],
-            vec![Arc {
-                place_id: frz_val,
-                consumes: false,
-                annotation: None,
-            }],
+            vec![Arc::new(frz_val, false, None)],
             vec![Guard {
                 kind: GuardKind::StackTopMatches,
                 base_type: base_type.clone(),
@@ -677,22 +679,10 @@ impl Pcpn {
                 base_type: base_type.clone(),
             },
             vec![
-                Arc {
-                    place_id: frz_val,
-                    consumes: true,
-                    annotation: None,
-                },
-                Arc {
-                    place_id: own_shr,
-                    consumes: true,
-                    annotation: None,
-                },
+                Arc::new(frz_val, true, None),
+                Arc::new(own_shr, true, None),
             ],
-            vec![Arc {
-                place_id: own_val,
-                consumes: false,
-                annotation: None,
-            }],
+            vec![Arc::new(own_val, false, None)],
             vec![Guard {
                 kind: GuardKind::StackTopMatches,
                 base_type: base_type.clone(),
@@ -704,22 +694,10 @@ impl Pcpn {
             TransitionKind::BorrowMut {
                 base_type: base_type.clone(),
             },
-            vec![Arc {
-                place_id: own_val,
-                consumes: true,
-                annotation: None,
-            }],
+            vec![Arc::new(own_val, true, None)],
             vec![
-                Arc {
-                    place_id: blk_val,
-                    consumes: false,
-                    annotation: None,
-                },
-                Arc {
-                    place_id: own_mut,
-                    consumes: false,
-                    annotation: None,
-                },
+                Arc::new(blk_val, false, None),
+                Arc::new(own_mut, false, None),
             ],
             vec![Guard {
                 kind: GuardKind::NoFrzNoBlk,
@@ -733,22 +711,10 @@ impl Pcpn {
                 base_type: base_type.clone(),
             },
             vec![
-                Arc {
-                    place_id: blk_val,
-                    consumes: true,
-                    annotation: None,
-                },
-                Arc {
-                    place_id: own_mut,
-                    consumes: true,
-                    annotation: None,
-                },
+                Arc::new(blk_val, true, None),
+                Arc::new(own_mut, true, None),
             ],
-            vec![Arc {
-                place_id: own_val,
-                consumes: false,
-                annotation: None,
-            }],
+            vec![Arc::new(own_val, false, None)],
             vec![Guard {
                 kind: GuardKind::StackTopMatches,
                 base_type: base_type.clone(),
@@ -761,11 +727,7 @@ impl Pcpn {
                 ty: base_type.clone(),
                 form: TypeForm::Value,
             },
-            vec![Arc {
-                place_id: own_val,
-                consumes: true,
-                annotation: None,
-            }],
+            vec![Arc::new(own_val, true, None)],
             vec![],
             vec![Guard {
                 kind: GuardKind::NotBlocked,
@@ -779,11 +741,7 @@ impl Pcpn {
                 ty: base_type.clone(),
                 form: TypeForm::RefShr,
             },
-            vec![Arc {
-                place_id: own_shr,
-                consumes: true,
-                annotation: None,
-            }],
+            vec![Arc::new(own_shr, true, None)],
             vec![],
             vec![],
         );
@@ -794,11 +752,7 @@ impl Pcpn {
                 ty: base_type.clone(),
                 form: TypeForm::RefMut,
             },
-            vec![Arc {
-                place_id: own_mut,
-                consumes: true,
-                annotation: None,
-            }],
+            vec![Arc::new(own_mut, true, None)],
             vec![],
             vec![],
         );
@@ -810,11 +764,7 @@ impl Pcpn {
                     ty: base_type.clone(),
                 },
                 vec![],
-                vec![Arc {
-                    place_id: own_val,
-                    consumes: false,
-                    annotation: None,
-                }],
+                vec![Arc::new(own_val, false, None)],
                 vec![],
             );
         }
@@ -825,16 +775,8 @@ impl Pcpn {
                 TransitionKind::CopyUse {
                     ty: base_type.clone(),
                 },
-                vec![Arc {
-                    place_id: own_val,
-                    consumes: false,
-                    annotation: None,
-                }],
-                vec![Arc {
-                    place_id: own_val,
-                    consumes: false,
-                    annotation: None,
-                }],
+                vec![Arc::new(own_val, false, None)],
+                vec![Arc::new(own_val, false, None)],
                 vec![],
             );
         }
