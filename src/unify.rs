@@ -1,7 +1,7 @@
 //! 类型统一 (Unification) 和补全 (Completion)
 //!
-//! 实现论文中的泛型处理：先 unification 反推类型参数，
-//! 再对未约束的泛型参数用有限地面类型宇宙做 completion。
+//! 实现论文中的泛型处理:先 unification 反推类型参数,
+//! 再对未约束的泛型参数用有限地面类型宇宙做 completion.
 
 use std::collections::HashMap;
 
@@ -55,8 +55,7 @@ impl Substitution {
                     }
                 }
 
-                let new_args: Option<Vec<_>> =
-                    args.iter().map(|a| self.apply_ground(a)).collect();
+                let new_args: Option<Vec<_>> = args.iter().map(|a| self.apply_ground(a)).collect();
                 Some(TyGround::Path {
                     name: name.clone(),
                     args: new_args?,
@@ -85,7 +84,9 @@ impl Substitution {
             (TyGround::Primitive(a), TyGround::Primitive(b)) => a == b,
             (TyGround::Unit, TyGround::Unit) => true,
 
-            (TyGround::Path { name, args }, ground) if Self::is_type_var(name) && args.is_empty() => {
+            (TyGround::Path { name, args }, ground)
+                if Self::is_type_var(name) && args.is_empty() =>
+            {
                 if let Some(existing) = subst.type_vars.get(name) {
                     existing == ground
                 } else {
@@ -166,7 +167,12 @@ impl Substitution {
         Some(result)
     }
 
-    pub fn complete(&mut self, unbound: &[TypeVar], universe: &[TyGround], bounds: &[(String, Vec<String>)]) {
+    pub fn complete(
+        &mut self,
+        unbound: &[TypeVar],
+        universe: &[TyGround],
+        bounds: &[(String, Vec<String>)],
+    ) {
         for var in unbound {
             if self.type_vars.contains_key(var) {
                 continue;
@@ -285,7 +291,9 @@ fn enumerate_helper(
 
     for candidate in candidates {
         let mut new_subst = current.clone();
-        new_subst.type_vars.insert(var_name.clone(), candidate.clone());
+        new_subst
+            .type_vars
+            .insert(var_name.clone(), candidate.clone());
         enumerate_helper(type_vars, idx + 1, new_subst, universe, results);
     }
 }
@@ -373,10 +381,7 @@ mod tests {
         let mut subst = Substitution::new();
         subst.bind_type("T".to_string(), TyGround::primitive("i32"));
 
-        let scheme = TyScheme::ground(TyGround::path_with_args(
-            "Vec",
-            vec![TyGround::path("T")],
-        ));
+        let scheme = TyScheme::ground(TyGround::path_with_args("Vec", vec![TyGround::path("T")]));
 
         let applied = subst.apply(&scheme).unwrap();
         match applied {

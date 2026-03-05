@@ -1,6 +1,6 @@
 //! 生命周期分析器 - 提取和分析函数签名中的生命周期信息
 //!
-//! 主要功能：
+//! 主要功能:
 //! 1. 从 rustdoc JSON 提取生命周期参数
 //! 2. 分析参数类型中的生命周期标注
 //! 3. 分析返回值类型中的生命周期标注
@@ -8,7 +8,7 @@
 //!
 //! ## 典型场景
 //!
-//! ```rust
+//! ```text
 //! // 场景 1: 返回值绑定到 self
 //! fn get<'a>(&'a self) -> &'a i32 { ... }
 //! // 分析结果: return lifetime 'a -> param 0 (self)
@@ -27,7 +27,7 @@ use rustdoc_types::{FunctionSignature, GenericParamDefKind, Generics, Type};
 /// 生命周期信息
 #[derive(Clone, Debug)]
 pub struct LifetimeInfo {
-    /// 生命周期参数名（如 'a, 'b）
+    /// 生命周期参数名(如 'a, 'b)
     pub name: String,
     /// 是否是 'static
     pub is_static: bool,
@@ -53,9 +53,9 @@ pub struct ReturnLifetimes {
 /// 表示返回值的生命周期绑定到哪个参数
 #[derive(Clone, Debug)]
 pub struct LifetimeBinding {
-    /// 生命周期名称（如 'a）
+    /// 生命周期名称(如 'a)
     pub lifetime: String,
-    /// 绑定到的参数索引（0 表示 self，1+ 表示其他参数）
+    /// 绑定到的参数索引(0 表示 self,1+ 表示其他参数)
     pub bound_to_param: usize,
 }
 
@@ -76,16 +76,11 @@ impl FunctionLifetimeAnalysis {
     /// 检查函数是否返回引用
     pub fn returns_reference(&self) -> bool {
         self.return_lifetimes.is_some()
-            && !self
-                .return_lifetimes
-                .as_ref()
-                .unwrap()
-                .lifetimes
-                .is_empty()
+            && !self.return_lifetimes.as_ref().unwrap().lifetimes.is_empty()
     }
 
     /// 获取返回值绑定到的主要参数索引
-    /// 如果返回值有多个生命周期，返回第一个绑定的参数
+    /// 如果返回值有多个生命周期,返回第一个绑定的参数
     pub fn primary_source_param(&self) -> Option<usize> {
         self.lifetime_bindings.first().map(|b| b.bound_to_param)
     }
@@ -174,7 +169,7 @@ impl LifetimeAnalyzer {
             Type::BorrowedRef {
                 lifetime, type_, ..
             } => {
-                // 引用类型：提取生命周期
+                // 引用类型:提取生命周期
                 if let Some(lt) = lifetime {
                     if !lifetimes.contains(lt) {
                         lifetimes.push(lt.clone());
@@ -184,10 +179,9 @@ impl LifetimeAnalyzer {
                 Self::extract_lifetimes_recursive(type_, lifetimes);
             }
             Type::ResolvedPath(path) => {
-                // 路径类型：检查泛型参数
+                // 路径类型:检查泛型参数
                 if let Some(ref args) = path.args {
-                    if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = args.as_ref()
-                    {
+                    if let rustdoc_types::GenericArgs::AngleBracketed { args, .. } = args.as_ref() {
                         for arg in args {
                             if let rustdoc_types::GenericArg::Type(t) = arg {
                                 Self::extract_lifetimes_recursive(t, lifetimes);
@@ -219,41 +213,38 @@ impl LifetimeAnalyzer {
 
     /// 建立返回值生命周期到参数的绑定
     ///
-    /// 规则：
-    /// 1. 如果返回值包含生命周期 'a，找到所有参数中也包含 'a 的参数
-    /// 2. 如果只有一个参数包含 'a，则绑定到该参数
-    /// 3. 如果多个参数包含 'a，优先绑定到 self（如果存在）
-    /// 4. 如果返回值有多个生命周期，为每个生命周期建立绑定
+    /// 使用 Rust 的生命周期省略规则（Lifetime Elision Rules）:
+    /// 1. 每个引用参数获得自己的生命周期参数
+    /// 2. 如果只有一个输入生命周期参数，它被赋给所有输出生命周期
+    /// 3. 如果有 &self 或 &mut self，self 的生命周期被赋给所有输出生命周期
+    ///
+    /// 当有显式标注时，使用显式标注匹配；否则应用省略规则推断。
     fn build_lifetime_bindings(analysis: &FunctionLifetimeAnalysis) -> Vec<LifetimeBinding> {
         let mut bindings = Vec::new();
 
-        if let Some(return_lts) = &analysis.return_lifetimes {
-            for ret_lifetime in &return_lts.lifetimes {
-                // 跳过 'static（不需要绑定）
-                if ret_lifetime == "'static" {
-                    continue;
-                }
+        let return_lts = match &analysis.return_lifetimes {
+            Some(rl) if !rl.lifetimes.is_empty() => rl,
+            _ => return bindings,
+        };
 
-                // 找到所有包含此生命周期的参数
-                let mut matching_params = Vec::new();
-                for param_lt in &analysis.param_lifetimes {
-                    if param_lt.lifetimes.contains(ret_lifetime) {
-                        matching_params.push(param_lt.param_index);
-                    }
-                }
+        for ret_lifetime in &return_lts.lifetimes {
+            if ret_lifetime == "'static" {
+                continue;
+            }
 
-                // 确定绑定的参数
-                let bound_to = if matching_params.is_empty() {
-                    // 没有显式标注，推断为第一个参数（通常是 self）
-                    0
-                } else if matching_params.len() == 1 {
-                    // 只有一个匹配，绑定到它
+            let mut matching_params = Vec::new();
+            for param_lt in &analysis.param_lifetimes {
+                if param_lt.lifetimes.contains(ret_lifetime) {
+                    matching_params.push(param_lt.param_index);
+                }
+            }
+
+            if !matching_params.is_empty() {
+                let bound_to = if matching_params.len() == 1 {
                     matching_params[0]
                 } else {
-                    // 多个匹配，优先绑定到第一个（self）
                     matching_params[0]
                 };
-
                 bindings.push(LifetimeBinding {
                     lifetime: ret_lifetime.clone(),
                     bound_to_param: bound_to,
@@ -261,7 +252,71 @@ impl LifetimeAnalyzer {
             }
         }
 
+        if !bindings.is_empty() {
+            return bindings;
+        }
+
+        // Apply Rust lifetime elision rules when no explicit binding was found
+        Self::apply_elision_rules(analysis, return_lts, &mut bindings);
+
         bindings
+    }
+
+    /// Apply Rust lifetime elision rules to infer bindings
+    fn apply_elision_rules(
+        analysis: &FunctionLifetimeAnalysis,
+        return_lts: &ReturnLifetimes,
+        bindings: &mut Vec<LifetimeBinding>,
+    ) {
+        let ref_params: Vec<usize> = analysis
+            .param_lifetimes
+            .iter()
+            .filter(|p| !p.lifetimes.is_empty())
+            .map(|p| p.param_index)
+            .collect();
+
+        // Elision rule 3: if there is &self / &mut self (param 0), bind to self
+        let has_self_ref = analysis
+            .param_lifetimes
+            .iter()
+            .any(|p| p.param_index == 0 && !p.lifetimes.is_empty());
+
+        if has_self_ref {
+            for ret_lt in &return_lts.lifetimes {
+                if ret_lt != "'static" {
+                    bindings.push(LifetimeBinding {
+                        lifetime: ret_lt.clone(),
+                        bound_to_param: 0,
+                    });
+                }
+            }
+            return;
+        }
+
+        // Elision rule 2: exactly one input lifetime -> bind all output lifetimes to it
+        if ref_params.len() == 1 {
+            for ret_lt in &return_lts.lifetimes {
+                if ret_lt != "'static" {
+                    bindings.push(LifetimeBinding {
+                        lifetime: ret_lt.clone(),
+                        bound_to_param: ref_params[0],
+                    });
+                }
+            }
+            return;
+        }
+
+        // Fallback: bind to first parameter
+        if !analysis.param_lifetimes.is_empty() {
+            for ret_lt in &return_lts.lifetimes {
+                if ret_lt != "'static" {
+                    bindings.push(LifetimeBinding {
+                        lifetime: ret_lt.clone(),
+                        bound_to_param: 0,
+                    });
+                }
+            }
+        }
     }
 
     /// 检查类型是否包含引用
@@ -284,16 +339,48 @@ impl LifetimeAnalyzer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustdoc_types::{GenericParamDef, GenericParamDefKind};
 
     #[test]
     fn test_extract_lifetime_params() {
-        // 这里需要构造 Generics 对象进行测试
-        // 由于 rustdoc_types 的结构较复杂，这里先留空
+        let generics = Generics {
+            params: vec![
+                GenericParamDef {
+                    name: "'a".to_string(),
+                    kind: GenericParamDefKind::Lifetime {
+                        outlives: vec![],
+                    },
+                },
+                GenericParamDef {
+                    name: "'b".to_string(),
+                    kind: GenericParamDefKind::Lifetime {
+                        outlives: vec!["'a".to_string()],
+                    },
+                },
+            ],
+            where_predicates: vec![],
+        };
+
+        let params = LifetimeAnalyzer::extract_lifetime_params(&generics);
+        assert_eq!(params.len(), 2);
+        assert_eq!(params[0].name, "'a");
+        assert!(!params[0].is_static);
+        assert_eq!(params[1].name, "'b");
     }
 
     #[test]
-    fn test_lifetime_binding_logic() {
-        // 测试绑定逻辑
+    fn test_extract_lifetime_params_empty() {
+        let generics = Generics {
+            params: vec![],
+            where_predicates: vec![],
+        };
+        let params = LifetimeAnalyzer::extract_lifetime_params(&generics);
+        assert!(params.is_empty());
+    }
+
+    #[test]
+    fn test_explicit_binding_single_param() {
+        // fn get<'a>(&'a self) -> &'a i32
         let analysis = FunctionLifetimeAnalysis {
             lifetime_params: vec![LifetimeInfo {
                 name: "'a".to_string(),
@@ -319,5 +406,150 @@ mod tests {
         assert_eq!(bindings.len(), 1);
         assert_eq!(bindings[0].lifetime, "'a");
         assert_eq!(bindings[0].bound_to_param, 0);
+    }
+
+    #[test]
+    fn test_elision_rule2_single_input_lifetime() {
+        // fn first(data: &[i32]) -> &i32
+        // Elision rule 2: one input lifetime -> output gets the same
+        let analysis = FunctionLifetimeAnalysis {
+            lifetime_params: vec![],
+            param_lifetimes: vec![ParamLifetimes {
+                param_index: 0,
+                lifetimes: vec!["'elided_0".to_string()],
+            }],
+            return_lifetimes: Some(ReturnLifetimes {
+                lifetimes: vec!["'elided_ret".to_string()],
+            }),
+            lifetime_bindings: vec![],
+        };
+
+        let bindings = LifetimeAnalyzer::build_lifetime_bindings(&analysis);
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].bound_to_param, 0);
+    }
+
+    #[test]
+    fn test_elision_rule3_self_reference() {
+        // fn get(&self) -> &i32
+        // Elision rule 3: &self lifetime -> output gets self's lifetime
+        let analysis = FunctionLifetimeAnalysis {
+            lifetime_params: vec![],
+            param_lifetimes: vec![
+                ParamLifetimes {
+                    param_index: 0,
+                    lifetimes: vec!["'self".to_string()],
+                },
+                ParamLifetimes {
+                    param_index: 1,
+                    lifetimes: vec!["'other".to_string()],
+                },
+            ],
+            return_lifetimes: Some(ReturnLifetimes {
+                lifetimes: vec!["'ret".to_string()],
+            }),
+            lifetime_bindings: vec![],
+        };
+
+        let bindings = LifetimeAnalyzer::build_lifetime_bindings(&analysis);
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].bound_to_param, 0, "Should bind to self (param 0)");
+    }
+
+    #[test]
+    fn test_static_lifetime_skipped() {
+        let analysis = FunctionLifetimeAnalysis {
+            lifetime_params: vec![],
+            param_lifetimes: vec![],
+            return_lifetimes: Some(ReturnLifetimes {
+                lifetimes: vec!["'static".to_string()],
+            }),
+            lifetime_bindings: vec![],
+        };
+
+        let bindings = LifetimeAnalyzer::build_lifetime_bindings(&analysis);
+        assert!(bindings.is_empty(), "'static should not produce bindings");
+    }
+
+    #[test]
+    fn test_no_return_lifetime() {
+        let analysis = FunctionLifetimeAnalysis {
+            lifetime_params: vec![],
+            param_lifetimes: vec![ParamLifetimes {
+                param_index: 0,
+                lifetimes: vec!["'a".to_string()],
+            }],
+            return_lifetimes: None,
+            lifetime_bindings: vec![],
+        };
+
+        let bindings = LifetimeAnalyzer::build_lifetime_bindings(&analysis);
+        assert!(bindings.is_empty());
+    }
+
+    #[test]
+    fn test_multiple_return_lifetimes() {
+        // fn foo<'a, 'b>(x: &'a T, y: &'b U) -> (&'a T, &'b U)
+        let analysis = FunctionLifetimeAnalysis {
+            lifetime_params: vec![
+                LifetimeInfo { name: "'a".to_string(), is_static: false },
+                LifetimeInfo { name: "'b".to_string(), is_static: false },
+            ],
+            param_lifetimes: vec![
+                ParamLifetimes { param_index: 0, lifetimes: vec!["'a".to_string()] },
+                ParamLifetimes { param_index: 1, lifetimes: vec!["'b".to_string()] },
+            ],
+            return_lifetimes: Some(ReturnLifetimes {
+                lifetimes: vec!["'a".to_string(), "'b".to_string()],
+            }),
+            lifetime_bindings: vec![],
+        };
+
+        let bindings = LifetimeAnalyzer::build_lifetime_bindings(&analysis);
+        assert_eq!(bindings.len(), 2);
+        assert_eq!(bindings[0].bound_to_param, 0);
+        assert_eq!(bindings[1].bound_to_param, 1);
+    }
+
+    #[test]
+    fn test_returns_reference() {
+        let with_ref = FunctionLifetimeAnalysis {
+            lifetime_params: vec![],
+            param_lifetimes: vec![],
+            return_lifetimes: Some(ReturnLifetimes {
+                lifetimes: vec!["'a".to_string()],
+            }),
+            lifetime_bindings: vec![],
+        };
+        assert!(with_ref.returns_reference());
+
+        let without_ref = FunctionLifetimeAnalysis {
+            lifetime_params: vec![],
+            param_lifetimes: vec![],
+            return_lifetimes: None,
+            lifetime_bindings: vec![],
+        };
+        assert!(!without_ref.returns_reference());
+
+        let empty_ref = FunctionLifetimeAnalysis {
+            lifetime_params: vec![],
+            param_lifetimes: vec![],
+            return_lifetimes: Some(ReturnLifetimes { lifetimes: vec![] }),
+            lifetime_bindings: vec![],
+        };
+        assert!(!empty_ref.returns_reference());
+    }
+
+    #[test]
+    fn test_primary_source_param() {
+        let analysis = FunctionLifetimeAnalysis {
+            lifetime_params: vec![],
+            param_lifetimes: vec![],
+            return_lifetimes: None,
+            lifetime_bindings: vec![
+                LifetimeBinding { lifetime: "'a".to_string(), bound_to_param: 2 },
+            ],
+        };
+        assert_eq!(analysis.primary_source_param(), Some(2));
     }
 }

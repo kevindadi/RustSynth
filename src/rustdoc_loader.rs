@@ -15,7 +15,7 @@ pub fn load_rustdoc_json(path: &Path) -> Result<Crate> {
     // 基本验证
     if krate.format_version < 28 {
         tracing::warn!(
-            "rustdoc JSON format version {} 较旧，可能不兼容 (建议 >= 28)",
+            "rustdoc JSON format version {} 较旧,可能不兼容 (建议 >= 28)",
             krate.format_version
         );
     }

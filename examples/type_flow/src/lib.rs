@@ -2,7 +2,7 @@
 //!
 //! 数据流水线: Source → RawData → ParsedData → ProcessedData → Sink
 //!
-//! 设计原则：
+//! 设计原则:
 //! - 避免 'static 生命周期
 //! - 使用基本类型 (i32, usize) 作为参数
 //! - 展示类型之间的转换关系
