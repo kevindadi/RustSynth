@@ -129,6 +129,8 @@ doc_json = "target/doc/my_crate.json"
 stack_depth = 8           # Max borrow stack depth (default: 8)
 default_place_bound = 2   # Max tokens per place (default: 2)
 max_steps = 100           # Max simulation steps (default: 100)
+strategy = "bfs"          # Search strategy: "bfs", "dfs", or "iddfs" (default: "bfs")
+max_traces = 1            # Number of witness traces to collect (default: 1)
 
 # Override bounds for specific places
 [search.place_bounds]
@@ -159,6 +161,24 @@ count = 1                 # How many to produce
 tokens = [
     { type = "i32", count = 1 }
 ]
+```
+
+### Search Strategies
+
+| Strategy | Description | When to Use |
+|----------|-------------|-------------|
+| `bfs` | Breadth-first (default) | Find shortest witness trace |
+| `dfs` | Depth-first | Large state spaces, lower memory |
+| `iddfs` | Iterative deepening DFS | Optimal depth, bounded memory |
+
+### Multi-Trace Mode
+
+Set `max_traces > 1` to generate multiple test functions from different witness traces:
+
+```toml
+[search]
+max_traces = 5            # Collect up to 5 different traces
+strategy = "bfs"          # BFS finds shorter traces first
 ```
 
 ### Goal Specification
