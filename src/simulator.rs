@@ -204,6 +204,10 @@ pub struct SimConfig {
     pub goal: Option<ParsedGoal>,
     pub allow_transitions: Vec<String>,
     pub deny_transitions: Vec<String>,
+    /// Search strategy: "bfs" (default), "dfs", or "iddfs" (iterative deepening)
+    pub strategy: String,
+    /// Maximum number of distinct witness traces to collect (for multi-trace mode)
+    pub max_traces: usize,
 }
 
 impl Default for SimConfig {
@@ -216,6 +220,8 @@ impl Default for SimConfig {
             goal: None,
             allow_transitions: Vec::new(),
             deny_transitions: Vec::new(),
+            strategy: "bfs".to_string(),
+            max_traces: 1,
         }
     }
 }
@@ -241,6 +247,8 @@ impl SimConfig {
             goal,
             allow_transitions: task.filter.allow.clone(),
             deny_transitions: task.filter.deny.clone(),
+            strategy: task.search.strategy.clone(),
+            max_traces: task.search.max_traces,
         }
     }
 
@@ -278,6 +286,8 @@ pub struct SimResult {
     pub trace: Vec<TraceFiring>,
     pub states_explored: usize,
     pub final_state: Option<SimState>,
+    /// Additional witness traces collected in multi-trace mode
+    pub extra_traces: Vec<Vec<TraceFiring>>,
 }
 
 pub struct Simulator<'a> {
@@ -291,7 +301,11 @@ impl<'a> Simulator<'a> {
     }
 
     pub fn run(&self) -> SimResult {
-        self.search_bfs()
+        match self.config.strategy.as_str() {
+            "dfs" => self.search_dfs(),
+            "iddfs" => self.search_iddfs(),
+            _ => self.search_bfs(),
+        }
     }
 
     fn search_bfs(&self) -> SimResult {
@@ -304,6 +318,8 @@ impl<'a> Simulator<'a> {
         queue.push_back((initial, Vec::new()));
 
         let mut states_explored = 0;
+        let mut collected_traces: Vec<Vec<TraceFiring>> = Vec::new();
+        let mut first_state: Option<SimState> = None;
 
         while let Some((state, trace)) = queue.pop_front() {
             states_explored += 1;
@@ -313,12 +329,21 @@ impl<'a> Simulator<'a> {
             }
 
             if self.check_goal(&state) {
-                return SimResult {
-                    found: true,
-                    trace,
-                    states_explored,
-                    final_state: Some(state),
-                };
+                if collected_traces.is_empty() {
+                    first_state = Some(state.clone());
+                }
+                collected_traces.push(trace.clone());
+                if collected_traces.len() >= self.config.max_traces {
+                    let first = collected_traces.remove(0);
+                    return SimResult {
+                        found: true,
+                        trace: first,
+                        states_explored,
+                        final_state: first_state,
+                        extra_traces: collected_traces,
+                    };
+                }
+                continue;
             }
 
             for trans in &self.pcpn.transitions {
@@ -349,11 +374,193 @@ impl<'a> Simulator<'a> {
             }
         }
 
+        if !collected_traces.is_empty() {
+            let first = collected_traces.remove(0);
+            return SimResult {
+                found: true,
+                trace: first,
+                states_explored,
+                final_state: first_state,
+                extra_traces: collected_traces,
+            };
+        }
+
         SimResult {
             found: false,
             trace: Vec::new(),
             states_explored,
             final_state: None,
+            extra_traces: Vec::new(),
+        }
+    }
+
+    fn search_dfs(&self) -> SimResult {
+        let initial = self.initial_state();
+        let mut stack: Vec<(SimState, Vec<TraceFiring>)> = Vec::new();
+        let mut visited: HashSet<String> = HashSet::new();
+
+        let canon = initial.canonicalize();
+        visited.insert(canon.hash_key());
+        stack.push((initial, Vec::new()));
+
+        let mut states_explored = 0;
+        let mut collected_traces: Vec<Vec<TraceFiring>> = Vec::new();
+        let mut first_state: Option<SimState> = None;
+
+        while let Some((state, trace)) = stack.pop() {
+            states_explored += 1;
+
+            if trace.len() >= self.config.max_steps {
+                continue;
+            }
+
+            if self.check_goal(&state) {
+                if collected_traces.is_empty() {
+                    first_state = Some(state.clone());
+                }
+                collected_traces.push(trace.clone());
+                if collected_traces.len() >= self.config.max_traces {
+                    let first = collected_traces.remove(0);
+                    return SimResult {
+                        found: true,
+                        trace: first,
+                        states_explored,
+                        final_state: first_state,
+                        extra_traces: collected_traces,
+                    };
+                }
+                continue;
+            }
+
+            for trans in &self.pcpn.transitions {
+                if !self.config.is_transition_allowed(&trans.name) {
+                    continue;
+                }
+                if let Some((consume_bindings, read_bindings)) = self.enabled(trans, &state) {
+                    if let Some((next_state, firing)) =
+                        self.fire(trans, &state, &consume_bindings, &read_bindings)
+                    {
+                        if !self.check_bounds(&next_state) {
+                            continue;
+                        }
+                        if next_state.stack.len() > self.config.stack_depth {
+                            continue;
+                        }
+
+                        let canon = next_state.canonicalize();
+                        let hash = canon.hash_key();
+                        if !visited.contains(&hash) {
+                            visited.insert(hash);
+                            let mut next_trace = trace.clone();
+                            next_trace.push(firing);
+                            stack.push((next_state, next_trace));
+                        }
+                    }
+                }
+            }
+        }
+
+        if !collected_traces.is_empty() {
+            let first = collected_traces.remove(0);
+            return SimResult {
+                found: true,
+                trace: first,
+                states_explored,
+                final_state: first_state,
+                extra_traces: collected_traces,
+            };
+        }
+
+        SimResult {
+            found: false,
+            trace: Vec::new(),
+            states_explored,
+            final_state: None,
+            extra_traces: Vec::new(),
+        }
+    }
+
+    fn search_iddfs(&self) -> SimResult {
+        let mut total_explored = 0;
+
+        for depth_limit in 1..=self.config.max_steps {
+            let initial = self.initial_state();
+            let mut stack: Vec<(SimState, Vec<TraceFiring>)> = Vec::new();
+            let mut visited: HashSet<String> = HashSet::new();
+
+            let canon = initial.canonicalize();
+            visited.insert(canon.hash_key());
+            stack.push((initial, Vec::new()));
+
+            let mut found_at_depth = false;
+            let mut collected_traces: Vec<Vec<TraceFiring>> = Vec::new();
+            let mut first_state: Option<SimState> = None;
+
+            while let Some((state, trace)) = stack.pop() {
+                total_explored += 1;
+
+                if trace.len() >= depth_limit {
+                    continue;
+                }
+
+                if self.check_goal(&state) {
+                    if collected_traces.is_empty() {
+                        first_state = Some(state.clone());
+                    }
+                    collected_traces.push(trace.clone());
+                    found_at_depth = true;
+                    if collected_traces.len() >= self.config.max_traces {
+                        break;
+                    }
+                    continue;
+                }
+
+                for trans in &self.pcpn.transitions {
+                    if !self.config.is_transition_allowed(&trans.name) {
+                        continue;
+                    }
+                    if let Some((consume_bindings, read_bindings)) = self.enabled(trans, &state) {
+                        if let Some((next_state, firing)) =
+                            self.fire(trans, &state, &consume_bindings, &read_bindings)
+                        {
+                            if !self.check_bounds(&next_state) {
+                                continue;
+                            }
+                            if next_state.stack.len() > self.config.stack_depth {
+                                continue;
+                            }
+
+                            let canon = next_state.canonicalize();
+                            let hash = canon.hash_key();
+                            if !visited.contains(&hash) {
+                                visited.insert(hash);
+                                let mut next_trace = trace.clone();
+                                next_trace.push(firing);
+                                stack.push((next_state, next_trace));
+                            }
+                        }
+                    }
+                }
+            }
+
+            if found_at_depth {
+                let first = collected_traces.remove(0);
+                return SimResult {
+                    found: true,
+                    trace: first,
+                    states_explored: total_explored,
+                    final_state: first_state,
+                    extra_traces: collected_traces,
+                };
+            }
+        }
+
+        SimResult {
+            found: false,
+            trace: Vec::new(),
+            states_explored: total_explored,
+            final_state: None,
+            extra_traces: Vec::new(),
         }
     }
 

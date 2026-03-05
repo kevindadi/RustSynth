@@ -551,7 +551,7 @@ mod tests {
 
         // 添加类型节点
         let counter_id = graph.get_or_create_type_node(TypeKey::path("Counter"));
-        let i32_id = graph.get_or_create_type_node(TypeKey::primitive("i32"));
+        let _i32_id = graph.get_or_create_type_node(TypeKey::primitive("i32"));
 
         // 添加函数节点
         let new_fn = FunctionNode {

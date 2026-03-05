@@ -358,20 +358,6 @@ impl<'a> CodeEmitter<'a> {
             .unwrap_or_else(|| format!("v{}", vid))
     }
 
-    fn is_likely_method_receiver(&self, vid: VarId) -> bool {
-        self.var_is_ref.get(&vid).copied().unwrap_or(false)
-            || self
-                .var_types
-                .get(&vid)
-                .map(|t| !t.is_primitive())
-                .unwrap_or(false)
-    }
-
-    fn format_fn_call(&self, fn_path: &str, args: &[String]) -> String {
-        // 保留原始的 Rust 路径语法
-        format!("{}({})", fn_path, args.join(", "))
-    }
-
     fn default_value(&self, ty: &TyGround) -> String {
         match ty {
             TyGround::Primitive(name) => match name.as_str() {
@@ -422,7 +408,7 @@ mod tests {
     use crate::apigraph::build_counter_api_graph;
     use crate::config::{GoalConfig, ParsedGoal};
     use crate::pcpn::Pcpn;
-    use crate::simulator::{SimConfig, Simulator, TraceFiring};
+    use crate::simulator::{SimConfig, Simulator};
 
     #[test]
     fn test_emit_const_producer() {

@@ -1,7 +1,9 @@
 //! RustSynth - Pushdown CPN Safe Rust Synthesizer
 //!
-//! 从 rustdoc JSON 提取 API 签名，构建 Pushdown Colored Petri Net，
-//! 通过有界可达性搜索生成可编译的 Safe Rust 代码片段。
+//! Extract API signatures from rustdoc JSON, build a Pushdown Colored Petri Net,
+//! and synthesize compilable Safe Rust code snippets via bounded reachability search.
+
+#![allow(non_snake_case)]
 
 pub mod apigraph;
 pub mod config;

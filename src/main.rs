@@ -195,10 +195,10 @@ fn main() -> Result<()> {
             max_stack,
             max_steps,
             min_steps: _,
-            strategy: _,
+            strategy,
             modules,
         } => {
-            run_simulate(&input, max_steps, max_stack, &modules)?;
+            run_simulate(&input, max_steps, max_stack, &strategy, &modules)?;
         }
         Commands::Reachability {
             input,
@@ -217,10 +217,10 @@ fn main() -> Result<()> {
             max_stack,
             max_steps,
             min_steps: _,
-            strategy: _,
+            strategy,
             modules,
         } => {
-            run_generate(&input, &out, max_steps, max_stack, &modules)?;
+            run_generate(&input, &out, max_steps, max_stack, &strategy, &modules)?;
         }
     }
 
@@ -352,6 +352,7 @@ fn run_simulate(
     input: &PathBuf,
     max_steps: usize,
     max_stack: usize,
+    strategy: &str,
     modules: &[String],
 ) -> Result<()> {
     let (pcpn, _) = build_pcpn(input, modules)?;
@@ -359,6 +360,7 @@ fn run_simulate(
     let config = simulator::SimConfig {
         max_steps,
         stack_depth: max_stack,
+        strategy: strategy.to_string(),
         ..Default::default()
     };
 
@@ -430,6 +432,7 @@ fn run_generate(
     out: &PathBuf,
     max_steps: usize,
     max_stack: usize,
+    strategy: &str,
     modules: &[String],
 ) -> Result<()> {
     let (pcpn, _) = build_pcpn(input, modules)?;
@@ -443,6 +446,7 @@ fn run_generate(
     let config = simulator::SimConfig {
         max_steps,
         stack_depth: max_stack,
+        strategy: strategy.to_string(),
         ..Default::default()
     };
 

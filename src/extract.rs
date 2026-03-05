@@ -647,10 +647,12 @@ fn passing_mode_to_ownership(mode: &PassingMode) -> OwnershipType {
     }
 }
 
-/// 检查是否需要解引用
+/// 检查参数传递是否可能涉及隐式 Deref 转换
+///
+/// 当函数期望 Move（取所有权）参数，但调用者可能持有引用时，
+/// 需要通过 Deref/Clone 获取所有权值。此信息用于 PCPN 的弧标注。
 fn requires_deref(mode: &PassingMode) -> bool {
-    // 当需要 own 但当前持有引用时,需要解引用
-    matches!(mode, PassingMode::Move) && false // 简化版:暂不检测
+    matches!(mode, PassingMode::Move)
 }
 
 /// 为函数添加边

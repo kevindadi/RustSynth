@@ -35,6 +35,10 @@ pub struct SearchConfig {
     pub place_bounds: HashMap<String, usize>,
     #[serde(default = "default_max_steps")]
     pub max_steps: usize,
+    #[serde(default = "default_strategy")]
+    pub strategy: String,
+    #[serde(default = "default_max_traces")]
+    pub max_traces: usize,
 }
 
 fn default_stack_depth() -> usize {
@@ -45,6 +49,12 @@ fn default_place_bound() -> usize {
 }
 fn default_max_steps() -> usize {
     100
+}
+fn default_strategy() -> String {
+    "bfs".to_string()
+}
+fn default_max_traces() -> usize {
+    1
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -219,6 +229,8 @@ impl Default for SearchConfig {
             default_place_bound: default_place_bound(),
             place_bounds: HashMap::new(),
             max_steps: default_max_steps(),
+            strategy: default_strategy(),
+            max_traces: default_max_traces(),
         }
     }
 }
@@ -303,6 +315,7 @@ mod tests {
                 default_place_bound: 2,
                 place_bounds,
                 max_steps: 100,
+                ..Default::default()
             },
             filter: FilterConfig::default(),
             goal: GoalConfig {

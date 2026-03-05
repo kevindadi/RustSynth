@@ -213,41 +213,38 @@ impl LifetimeAnalyzer {
 
     /// 建立返回值生命周期到参数的绑定
     ///
-    /// 规则:
-    /// 1. 如果返回值包含生命周期 'a,找到所有参数中也包含 'a 的参数
-    /// 2. 如果只有一个参数包含 'a,则绑定到该参数
-    /// 3. 如果多个参数包含 'a,优先绑定到 self(如果存在)
-    /// 4. 如果返回值有多个生命周期,为每个生命周期建立绑定
+    /// 使用 Rust 的生命周期省略规则（Lifetime Elision Rules）:
+    /// 1. 每个引用参数获得自己的生命周期参数
+    /// 2. 如果只有一个输入生命周期参数，它被赋给所有输出生命周期
+    /// 3. 如果有 &self 或 &mut self，self 的生命周期被赋给所有输出生命周期
+    ///
+    /// 当有显式标注时，使用显式标注匹配；否则应用省略规则推断。
     fn build_lifetime_bindings(analysis: &FunctionLifetimeAnalysis) -> Vec<LifetimeBinding> {
         let mut bindings = Vec::new();
 
-        if let Some(return_lts) = &analysis.return_lifetimes {
-            for ret_lifetime in &return_lts.lifetimes {
-                // 跳过 'static(不需要绑定)
-                if ret_lifetime == "'static" {
-                    continue;
-                }
+        let return_lts = match &analysis.return_lifetimes {
+            Some(rl) if !rl.lifetimes.is_empty() => rl,
+            _ => return bindings,
+        };
 
-                // 找到所有包含此生命周期的参数
-                let mut matching_params = Vec::new();
-                for param_lt in &analysis.param_lifetimes {
-                    if param_lt.lifetimes.contains(ret_lifetime) {
-                        matching_params.push(param_lt.param_index);
-                    }
-                }
+        for ret_lifetime in &return_lts.lifetimes {
+            if ret_lifetime == "'static" {
+                continue;
+            }
 
-                // 确定绑定的参数
-                let bound_to = if matching_params.is_empty() {
-                    // 没有显式标注,推断为第一个参数(通常是 self)
-                    0
-                } else if matching_params.len() == 1 {
-                    // 只有一个匹配,绑定到它
+            let mut matching_params = Vec::new();
+            for param_lt in &analysis.param_lifetimes {
+                if param_lt.lifetimes.contains(ret_lifetime) {
+                    matching_params.push(param_lt.param_index);
+                }
+            }
+
+            if !matching_params.is_empty() {
+                let bound_to = if matching_params.len() == 1 {
                     matching_params[0]
                 } else {
-                    // 多个匹配,优先绑定到第一个(self)
                     matching_params[0]
                 };
-
                 bindings.push(LifetimeBinding {
                     lifetime: ret_lifetime.clone(),
                     bound_to_param: bound_to,
@@ -255,7 +252,71 @@ impl LifetimeAnalyzer {
             }
         }
 
+        if !bindings.is_empty() {
+            return bindings;
+        }
+
+        // Apply Rust lifetime elision rules when no explicit binding was found
+        Self::apply_elision_rules(analysis, return_lts, &mut bindings);
+
         bindings
+    }
+
+    /// Apply Rust lifetime elision rules to infer bindings
+    fn apply_elision_rules(
+        analysis: &FunctionLifetimeAnalysis,
+        return_lts: &ReturnLifetimes,
+        bindings: &mut Vec<LifetimeBinding>,
+    ) {
+        let ref_params: Vec<usize> = analysis
+            .param_lifetimes
+            .iter()
+            .filter(|p| !p.lifetimes.is_empty())
+            .map(|p| p.param_index)
+            .collect();
+
+        // Elision rule 3: if there is &self / &mut self (param 0), bind to self
+        let has_self_ref = analysis
+            .param_lifetimes
+            .iter()
+            .any(|p| p.param_index == 0 && !p.lifetimes.is_empty());
+
+        if has_self_ref {
+            for ret_lt in &return_lts.lifetimes {
+                if ret_lt != "'static" {
+                    bindings.push(LifetimeBinding {
+                        lifetime: ret_lt.clone(),
+                        bound_to_param: 0,
+                    });
+                }
+            }
+            return;
+        }
+
+        // Elision rule 2: exactly one input lifetime -> bind all output lifetimes to it
+        if ref_params.len() == 1 {
+            for ret_lt in &return_lts.lifetimes {
+                if ret_lt != "'static" {
+                    bindings.push(LifetimeBinding {
+                        lifetime: ret_lt.clone(),
+                        bound_to_param: ref_params[0],
+                    });
+                }
+            }
+            return;
+        }
+
+        // Fallback: bind to first parameter
+        if !analysis.param_lifetimes.is_empty() {
+            for ret_lt in &return_lts.lifetimes {
+                if ret_lt != "'static" {
+                    bindings.push(LifetimeBinding {
+                        lifetime: ret_lt.clone(),
+                        bound_to_param: 0,
+                    });
+                }
+            }
+        }
     }
 
     /// 检查类型是否包含引用
