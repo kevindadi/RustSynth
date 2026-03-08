@@ -1,0 +1,10 @@
+{
+  "task_id": "bench_shr_from_mut_01",
+  "crate_name": "bench_shr_from_mut",
+  "crate_path": "benchmarks/bench_shr_from_mut",
+  "goal": {"form": "own", "type": "Data", "count": 1},
+  "initial_resources": [],
+  "max_trace_len": 6,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "description": "Create Data, reborrow &mut as &, read through shared ref"
+}

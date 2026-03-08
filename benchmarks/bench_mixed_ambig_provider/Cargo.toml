@@ -1,0 +1,8 @@
+[package]
+name = "bench_mixed_ambig_provider"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+name = "gold_ambig_provider"
+path = "gold/ambig_provider.rs"

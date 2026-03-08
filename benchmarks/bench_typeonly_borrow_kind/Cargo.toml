@@ -1,0 +1,8 @@
+[package]
+name = "bench_typeonly_borrow_kind"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+name = "gold_borrow_kind"
+path = "gold/borrow_kind.rs"

@@ -1,0 +1,11 @@
+{
+  "task_id": "bench_generic_container_01",
+  "crate_name": "bench_generic_container",
+  "crate_path": "benchmarks/bench_generic_container",
+  "goal": {"form": "own", "type": "usize", "count": 1},
+  "initial_resources": [],
+  "max_trace_len": 6,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "fragment": "scaffold",
+  "description": "Create Stack<i32>, push values, get len() — scaffold-only due to generic turbofish"
+}

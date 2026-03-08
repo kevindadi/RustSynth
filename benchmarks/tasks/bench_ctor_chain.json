@@ -1,0 +1,10 @@
+{
+  "task_id": "bench_ctor_chain_01",
+  "crate_name": "bench_ctor_chain",
+  "crate_path": "benchmarks/bench_ctor_chain",
+  "goal": {"form": "own", "type": "Product", "count": 1},
+  "initial_resources": [],
+  "max_trace_len": 6,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "description": "Use Builder chain: new().set_x().set_y().build() to get Product"
+}

@@ -1,0 +1,8 @@
+[package]
+name = "bench_typeonly_dead_provider"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+name = "gold_dead_provider"
+path = "gold/dead_provider.rs"

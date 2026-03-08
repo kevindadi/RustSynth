@@ -1,0 +1,8 @@
+[package]
+name = "bench_stack_last_reader"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+name = "gold_last_reader"
+path = "gold/last_reader.rs"

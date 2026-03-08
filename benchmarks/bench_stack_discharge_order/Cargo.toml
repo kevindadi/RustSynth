@@ -1,0 +1,8 @@
+[package]
+name = "bench_stack_discharge_order"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+name = "gold_discharge_order"
+path = "gold/discharge_order.rs"

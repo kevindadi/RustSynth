@@ -1,0 +1,10 @@
+{
+  "task_id": "bench_mut_reborrow_01",
+  "crate_name": "bench_mut_reborrow",
+  "crate_path": "benchmarks/bench_mut_reborrow",
+  "goal": {"form": "own", "type": "State", "count": 1},
+  "initial_resources": [],
+  "max_trace_len": 6,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "description": "Create State, modify() to get &mut i32, increment, then read()"
+}

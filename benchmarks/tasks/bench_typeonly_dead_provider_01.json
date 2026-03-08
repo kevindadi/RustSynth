@@ -1,0 +1,11 @@
+{
+  "task_id": "bench_typeonly_dead_provider_01",
+  "crate_name": "bench_typeonly_dead_provider",
+  "crate_path": "benchmarks/bench_typeonly_dead_provider",
+  "goal": {"type": "bool", "form": "own", "count": 1},
+  "max_trace_len": 8,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "family": "typeonly_trap",
+  "fragment": "core_emit",
+  "description": "After consume Source can't use provide; TypeOnly doesn't know it's moved"
+}

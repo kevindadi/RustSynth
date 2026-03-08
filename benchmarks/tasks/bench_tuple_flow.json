@@ -1,0 +1,10 @@
+{
+  "task_id": "bench_tuple_flow_01",
+  "crate_name": "bench_tuple_flow",
+  "crate_path": "benchmarks/bench_tuple_flow",
+  "goal": {"form": "own", "type": "i32", "count": 1},
+  "initial_resources": [],
+  "max_trace_len": 6,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "description": "Create pair via make_pair(), extract element via fst() or snd()"
+}

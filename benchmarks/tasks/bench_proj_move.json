@@ -1,0 +1,10 @@
+{
+  "task_id": "bench_proj_move_01",
+  "crate_name": "bench_proj_move",
+  "crate_path": "benchmarks/bench_proj_move",
+  "goal": {"form": "own", "type": "Pair", "count": 1},
+  "initial_resources": [],
+  "max_trace_len": 6,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "description": "Create Pair, project field .a to get i32"
+}

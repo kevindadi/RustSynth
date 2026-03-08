@@ -1,0 +1,8 @@
+[package]
+name = "bench_mixed_ctor_borrow_proj"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+name = "gold_ctor_borrow_proj"
+path = "gold/ctor_borrow_proj.rs"

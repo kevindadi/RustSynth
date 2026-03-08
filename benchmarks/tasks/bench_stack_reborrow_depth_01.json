@@ -1,0 +1,11 @@
+{
+  "task_id": "bench_stack_reborrow_depth_01",
+  "crate_name": "bench_stack_reborrow_depth",
+  "crate_path": "benchmarks/bench_stack_reborrow_depth",
+  "goal": {"type": "i32", "form": "own", "count": 1},
+  "max_trace_len": 8,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "family": "stack_sensitive",
+  "fragment": "core_emit",
+  "description": "nested reborrows requiring stack depth tracking"
+}

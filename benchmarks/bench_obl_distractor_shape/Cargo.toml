@@ -1,0 +1,8 @@
+[package]
+name = "bench_obl_distractor_shape"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+name = "gold_distractor_shape"
+path = "gold/distractor_shape.rs"

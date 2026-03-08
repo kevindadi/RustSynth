@@ -1,0 +1,8 @@
+[package]
+name = "bench_stack_nested_scope"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+name = "gold_nested_scope"
+path = "gold/nested_scope.rs"

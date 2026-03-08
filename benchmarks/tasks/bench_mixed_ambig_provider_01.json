@@ -1,0 +1,11 @@
+{
+  "task_id": "bench_mixed_ambig_provider_01",
+  "crate_name": "bench_mixed_ambig_provider",
+  "crate_path": "benchmarks/bench_mixed_ambig_provider",
+  "goal": {"type": "bool", "form": "own", "count": 1},
+  "max_trace_len": 8,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "family": "mixed_hard",
+  "fragment": "core_emit",
+  "description": "Multiple providers for same type; distractor actions causing state explosion"
+}

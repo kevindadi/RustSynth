@@ -1,0 +1,11 @@
+{
+  "task_id": "bench_stack_last_reader_01",
+  "crate_name": "bench_stack_last_reader",
+  "crate_path": "benchmarks/bench_stack_last_reader",
+  "goal": {"type": "i32", "form": "own", "count": 1},
+  "max_trace_len": 8,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "family": "stack_sensitive",
+  "fragment": "core_emit",
+  "description": "last-reader-drop then mutable borrow"
+}

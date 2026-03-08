@@ -1,0 +1,11 @@
+{
+  "task_id": "bench_cap_copy_reuse_01",
+  "crate_name": "bench_cap_copy_reuse",
+  "crate_path": "benchmarks/bench_cap_copy_reuse",
+  "goal": {"type": "CopyNum", "form": "own", "count": 1},
+  "max_trace_len": 8,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "family": "capability_sensitive",
+  "fragment": "core_emit",
+  "description": "CopyNum add reuse: produce CopyNum from add, reuse operand after (Copy allows)"
+}

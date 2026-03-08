@@ -1,0 +1,8 @@
+[package]
+name = "bench_cap_alias_diff_cap"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+name = "gold_alias_diff_cap"
+path = "gold/alias_diff_cap.rs"

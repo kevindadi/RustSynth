@@ -1,0 +1,10 @@
+{
+  "task_id": "bench_trait_bound_01",
+  "crate_name": "bench_trait_bound",
+  "crate_path": "benchmarks/bench_trait_bound",
+  "goal": {"form": "own", "type": "String", "count": 1},
+  "initial_resources": [],
+  "max_trace_len": 6,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "description": "Call format_val or to_string_val with a Display type"
+}

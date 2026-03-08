@@ -1,0 +1,11 @@
+{
+  "task_id": "bench_stack_nested_scope_01",
+  "crate_name": "bench_stack_nested_scope",
+  "crate_path": "benchmarks/bench_stack_nested_scope",
+  "goal": {"type": "i32", "form": "own", "count": 1},
+  "max_trace_len": 8,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "family": "stack_sensitive",
+  "fragment": "core_emit",
+  "description": "nested scope: shared borrow in inner scope, drop ref, then mutate; NoStack cannot track borrow is dead"
+}

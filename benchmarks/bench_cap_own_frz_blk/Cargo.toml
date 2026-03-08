@@ -1,0 +1,8 @@
+[package]
+name = "bench_cap_own_frz_blk"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+name = "gold_own_frz_blk"
+path = "gold/own_frz_blk.rs"

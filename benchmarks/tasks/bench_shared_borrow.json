@@ -1,0 +1,10 @@
+{
+  "task_id": "bench_shared_borrow_01",
+  "crate_name": "bench_shared_borrow",
+  "crate_path": "benchmarks/bench_shared_borrow",
+  "goal": {"form": "own", "type": "Container", "count": 1},
+  "initial_resources": [],
+  "max_trace_len": 6,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "description": "Create Container, borrow via get(), read through ref, drop borrow"
+}

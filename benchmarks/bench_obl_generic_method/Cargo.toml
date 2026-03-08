@@ -1,0 +1,8 @@
+[package]
+name = "bench_obl_generic_method"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+name = "gold_generic_method"
+path = "gold/generic_method.rs"

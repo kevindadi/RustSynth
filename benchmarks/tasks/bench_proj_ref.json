@@ -1,0 +1,10 @@
+{
+  "task_id": "bench_proj_ref_01",
+  "crate_name": "bench_proj_ref",
+  "crate_path": "benchmarks/bench_proj_ref",
+  "goal": {"form": "own", "type": "Record", "count": 1},
+  "initial_resources": [],
+  "max_trace_len": 6,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "description": "Create Record, get id_val() via &self"
+}

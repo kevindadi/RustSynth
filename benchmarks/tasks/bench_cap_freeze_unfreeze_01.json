@@ -1,0 +1,11 @@
+{
+  "task_id": "bench_cap_freeze_unfreeze_01",
+  "crate_name": "bench_cap_freeze_unfreeze",
+  "crate_path": "benchmarks/bench_cap_freeze_unfreeze",
+  "goal": {"type": "i32", "form": "own", "count": 1},
+  "max_trace_len": 8,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "family": "capability_sensitive",
+  "fragment": "core_emit",
+  "description": "Freeze/thaw: produce i32 from consume after freeze, drop ref, thaw"
+}

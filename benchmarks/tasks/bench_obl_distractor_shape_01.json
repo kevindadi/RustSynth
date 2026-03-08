@@ -1,0 +1,18 @@
+{
+  "task_id": "bench_obl_distractor_shape_01",
+  "crate_name": "bench_obl_distractor_shape",
+  "crate_path": "benchmarks/bench_obl_distractor_shape",
+  "goal": {
+    "type": "ProcessedOutput",
+    "form": "own",
+    "count": 1
+  },
+  "max_trace_len": 8,
+  "bounds": {
+    "stack_depth": 4,
+    "token_per_place": 3
+  },
+  "family": "obligation_sensitive",
+  "fragment": "core_emit",
+  "description": "Same type shape but different trait bounds; must use ValidInput"
+}

@@ -1,0 +1,11 @@
+{
+  "task_id": "bench_cap_alias_diff_cap_01",
+  "crate_name": "bench_cap_alias_diff_cap",
+  "crate_path": "benchmarks/bench_cap_alias_diff_cap",
+  "goal": {"type": "i32", "form": "own", "count": 1},
+  "max_trace_len": 8,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "family": "capability_sensitive",
+  "fragment": "core_emit",
+  "description": "Slot vs Slot2 same shape different capability: produce i32 from take on Slot"
+}

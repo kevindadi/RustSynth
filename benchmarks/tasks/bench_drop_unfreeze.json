@@ -1,0 +1,10 @@
+{
+  "task_id": "bench_drop_unfreeze_01",
+  "crate_name": "bench_drop_unfreeze",
+  "crate_path": "benchmarks/bench_drop_unfreeze",
+  "goal": {"form": "own", "type": "Holder", "count": 1},
+  "initial_resources": [],
+  "max_trace_len": 6,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "description": "Create Holder, borrow view(), drop borrow to unfreeze, then set() and into_inner()"
+}

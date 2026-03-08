@@ -1,0 +1,8 @@
+[package]
+name = "bench_cap_copy_reuse"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+name = "gold_copy_reuse"
+path = "gold/copy_reuse.rs"

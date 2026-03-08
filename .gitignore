@@ -1,27 +1,19 @@
-# 生成的文件
-/target/
-**/*.rs.bk
-*.pdb
-/paper/
-**/target/
-test_output/
-
-Cargo.lock
-
-# IDE / 编辑器
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.venv/
+results/raw/
+results/csv/
+results/figures/
+results/tables/
+results/summary.md
+target/
+*.so
+*.dylib
 .DS_Store
 
-# 测试生成的文件
-*.json
-witness*.rs
-verify_*/
-
-# 日志
-*.log
-
-README-CN.md
+.cursor/
+/docs
+results/

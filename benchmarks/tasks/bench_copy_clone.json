@@ -1,0 +1,10 @@
+{
+  "task_id": "bench_copy_clone_01",
+  "crate_name": "bench_copy_clone",
+  "crate_path": "benchmarks/bench_copy_clone",
+  "goal": {"form": "own", "type": "Line", "count": 1},
+  "initial_resources": [],
+  "max_trace_len": 6,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "description": "Create Points, use copy semantics, create Line (clone-only)"
+}

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rustsynth-pcpn"
+version = "0.1.0"
+description = "Safe Rust code synthesis via Pushdown Colored Petri Nets"
+requires-python = ">=3.11"
+dependencies = [
+    "matplotlib>=3.8",
+    "pandas>=2.1",
+    "tabulate>=0.9",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "ruff>=0.1"]
+
+[project.scripts]
+rustsynth = "rustsynth.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["rustsynth*"]

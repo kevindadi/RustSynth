@@ -1,0 +1,11 @@
+{
+  "task_id": "bench_stack_discharge_order_01",
+  "crate_name": "bench_stack_discharge_order",
+  "crate_path": "benchmarks/bench_stack_discharge_order",
+  "goal": {"type": "i32", "form": "own", "count": 2},
+  "max_trace_len": 8,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "family": "stack_sensitive",
+  "fragment": "core_emit",
+  "description": "two borrows from same owner discharged in LIFO order"
+}

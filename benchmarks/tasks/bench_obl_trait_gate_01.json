@@ -1,0 +1,11 @@
+{
+  "task_id": "bench_obl_trait_gate_01",
+  "crate_name": "bench_obl_trait_gate",
+  "crate_path": "benchmarks/bench_obl_trait_gate",
+  "goal": {"type": "PrintResult", "form": "own", "count": 1},
+  "max_trace_len": 8,
+  "bounds": {"stack_depth": 4, "token_per_place": 3},
+  "family": "obligation_sensitive",
+  "fragment": "core_emit",
+  "description": "PrintResult can only come from print_it<T: Printable>; NoObligation allows invalid instantiations"
+}

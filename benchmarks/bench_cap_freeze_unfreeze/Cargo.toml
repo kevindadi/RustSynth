@@ -1,0 +1,8 @@
+[package]
+name = "bench_cap_freeze_unfreeze"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+name = "gold_freeze_unfreeze"
+path = "gold/freeze_unfreeze.rs"

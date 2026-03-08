@@ -1,0 +1,18 @@
+{
+  "task_id": "bench_obl_assoc_decides_01",
+  "crate_name": "bench_obl_assoc_decides",
+  "crate_path": "benchmarks/bench_obl_assoc_decides",
+  "goal": {
+    "type": "TransformResult",
+    "form": "own",
+    "count": 1
+  },
+  "max_trace_len": 8,
+  "bounds": {
+    "stack_depth": 4,
+    "token_per_place": 3
+  },
+  "family": "obligation_sensitive",
+  "fragment": "core_emit",
+  "description": "Associated type determines return type; must use Doubler"
+}
