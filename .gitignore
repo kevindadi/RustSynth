@@ -4,9 +4,9 @@
 *.pdb
 /paper/
 **/target/
+test_output/
 
-# Cargo.lock (对于库项目通常忽略,但工具项目可保留)
-# Cargo.lock
+Cargo.lock
 
 # IDE / 编辑器
 .vscode/
