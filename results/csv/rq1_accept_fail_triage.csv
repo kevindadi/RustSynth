@@ -1,0 +1,2 @@
+task_id,fragment,variant,pcpn_decision,emit_status,compiler_status,root_cause,fixed_or_not,final_bucket
+bench_generic_container_01_pos_1,core_emit,Full,accept,success,fail,unclassified accept-fail (defaulting to emitter),not_fixed,emitter_failure

@@ -1,0 +1,9 @@
+metric,value
+true_positive,102
+false_positive,0
+false_negative,62
+true_negative,9
+precision,1.0
+recall,0.622
+f1,0.7669
+emitter_failures,0

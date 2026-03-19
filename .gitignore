@@ -10,6 +10,7 @@ Cargo.lock
 
 # IDE / 编辑器
 .vscode/
+.cursor/
 .idea/
 *.swp
 *.swo
@@ -20,6 +21,7 @@ Cargo.lock
 *.json
 witness*.rs
 verify_*/
+*.pyc
 
 # 日志
 *.log

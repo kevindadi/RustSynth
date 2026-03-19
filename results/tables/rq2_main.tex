@@ -1,0 +1,16 @@
+\begin{table}[t]
+\centering
+\caption{RQ2: Ablation Study — Compile Pass Rate by Family}
+\label{tab:rq2_ablation}
+\begin{tabular}{lrrrrr}
+\toprule
+Family & Full & No\-Stack & No\-Capability & No\-Obligation & TypeOnly \\
+\midrule
+capability\_sensitive & 5/5 & 5/5 & 5/5 & 5/5 & 5/5 \\
+mixed\_hard & 3/3 & 3/3 & 3/3 & 3/3 & 3/3 \\
+obligation\_sensitive & 4/4 & 4/4 & 4/4 & 0/4 (4FA) & 0/4 (4FA) \\
+stack\_sensitive & 5/5 & 5/5 & 5/5 & 5/5 & 5/5 \\
+typeonly\_trap & 3/3 & 3/3 & 3/3 & 3/3 & 3/3 \\
+\bottomrule
+\end{tabular}
+\end{table}
